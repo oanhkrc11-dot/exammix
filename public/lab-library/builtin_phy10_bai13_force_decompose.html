@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Phân tích lực theo hai phương</title>
+<style>
+body{background:#071018;color:#fff;font-family:Arial;padding:20px}
+h1{text-align:center;color:#38f08f}
+.wrap{display:flex;gap:20px;max-width:1200px;margin:auto}
+.panel{width:300px;background:#10202e;padding:18px;border-radius:15px}
+canvas{background:#08121b;border-radius:15px}
+input{width:100%}label{display:block;margin:15px 0 5px;font-weight:bold}
+button{width:100%;padding:10px;margin-top:8px;border:0;border-radius:8px;font-weight:bold;background:#38f08f}
+</style>
+</head>
+<body>
+<h1>PHÂN TÍCH LỰC THEO HAI PHƯƠNG</h1>
+<div class="wrap">
+<div class="panel">
+<label>F (N): <span id="fv">10</span></label><input id="F" type="range" min="2" max="20" value="10">
+<label>Góc lực F: <span id="av">35</span>°</label><input id="alpha" type="range" min="10" max="80" value="35">
+<label>Góc giữa hai phương: <span id="tv">90</span>°</label><input id="theta" type="range" min="45" max="135" value="90">
+<button onclick="auto()">▶ Dựng từng bước</button>
+<button onclick="next()">⏭ Bước tiếp</button>
+<button onclick="reset()">↺ Đặt lại</button>
+<p id="note"></p>
+</div>
+<canvas id="cv" width="800" height="600"></canvas>
+</div>
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+let step=0;
+function arrow(x1,y1,x2,y2,c){
+ctx.strokeStyle=c;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+let a=Math.atan2(y2-y1,x2-x1);ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-12*Math.cos(a-.5),y2-12*Math.sin(a-.5));ctx.lineTo(x2-12*Math.cos(a+.5),y2-12*Math.sin(a+.5));ctx.fill();
+}
+function draw(){
+ctx.clearRect(0,0,800,600);
+let O=[260,380], L=180;
+let Fv=+F.value*12, a=+alpha.value*Math.PI/180;
+let E=[O[0]+Fv*Math.cos(a),O[1]-Fv*Math.sin(a)];
+let t=+theta.value*Math.PI/180;
+let u=[Math.cos(t),-Math.sin(t)], v=[1,0];
+// solve E = m*u+n*v
+let m=(E[1]-O[1])/u[1], n=E[0]-O[0]-m*u[0];
+let P1=[O[0]+n,O[1]], P2=[O[0]+m*u[0],O[1]+m*u[1]];
+ctx.fillStyle="white";ctx.font="18px Arial";ctx.fillText("O",O[0]-20,O[1]+25);
+if(step>=1) arrow(O[0],O[1],E[0],E[1],"#ff5d6c");
+if(step>=2){arrow(O[0],O[1],O[0]+L,O[1],"#ffd84d");arrow(O[0],O[1],O[0]+L*u[0],O[1]+L*u[1],"#22d3ee");}
+if(step>=3){
+ctx.setLineDash([8,8]);ctx.strokeStyle="#aaa";ctx.beginPath();ctx.moveTo(P1[0],P1[1]);ctx.lineTo(E[0],E[1]);ctx.moveTo(P2[0],P2[1]);ctx.lineTo(E[0],E[1]);ctx.stroke();ctx.setLineDash([]);
+}
+if(step>=4){
+arrow(O[0],O[1],P1[0],P1[1],"#ffd84d");
+arrow(O[0],O[1],P2[0],P2[1],"#22d3ee");
+ctx.fillStyle="#38f08f";ctx.fillText("F = F₁ + F₂",520,120);
+ctx.fillText("F₁",P1[0]-20,P1[1]+25);ctx.fillText("F₂",P2[0]-20,P2[1]-15);
+}
+note.innerHTML="Bước "+step+": "+["","Lực F xuất hiện","Chọn hai phương","Dựng hình bình hành","Xuất hiện lực thành phần"][step];
+}
+function auto(){step=0;let i=setInterval(()=>{step++;draw();if(step==4)clearInterval(i)},900)}
+function next(){if(step<4)step++;draw()}
+function reset(){step=0;draw()}
+F.oninput=()=>{fv.innerHTML=F.value;draw()}
+alpha.oninput=()=>{av.innerHTML=alpha.value;draw()}
+theta.oninput=()=>{tv.innerHTML=theta.value;draw()}
+draw();
+<\/script>
+</body></html>

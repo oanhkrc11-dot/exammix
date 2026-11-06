@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-31 Giao thoa hai nguồn có độ lệch pha tùy chỉnh</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#030b14;color:#eef8fb}
+#app{display:grid;grid-template-columns:250px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800;letter-spacing:1px}h1{font-size:17px;margin:4px 0 6px}.desc{font-size:10.5px;color:#aac3cd;line-height:1.35;margin:0 0 8px}
+.ctl{display:grid;grid-template-columns:72px 1fr 58px;gap:5px;align-items:center;margin:5px 0}.ctl label{font-size:9.7px}.ctl output{font-size:9.2px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}
+.check,.btn{font-size:9.4px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}
+.btn{font-weight:800;cursor:pointer}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 50% 35%,#123d58 0%,#0a263b 42%,#061725 75%,#030b13 100%)}
+#sim{position:absolute;inset:0;width:100%;height:100%}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10.4px;font-weight:700}
+#hud{position:absolute;right:12px;bottom:12px;display:flex;gap:10px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:7px 9px}
+.hud span{display:block;font-size:8px;color:#98bac8}.hud b{font-size:10.3px}
+#note{position:absolute;left:12px;bottom:12px;width:420px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.2px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);font-size:10px;font-weight:700}
+.rec{font-size:9px;color:#bcd2db;margin-top:7px}.legend{font-size:9px;color:#bcd2db;margin-top:7px;line-height:1.5}.sw{display:inline-block;width:10px;height:3px;margin-right:4px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="ey">PHYSICS 11 LAB · STABLE</div>
+<h1>31 · Giao thoa hai nguồn lệch pha tùy chỉnh</h1>
+<p class="desc">Điều chỉnh độ lệch pha giữa hai nguồn để quan sát sự dịch chuyển liên tục của hệ đường cực đại – cực tiểu.</p>
+
+<div class="ctl"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Biên độ A</label><input id="amp" type="range" min=".2" max="1.2" step=".05" value=".75"><output id="ampOut"></output></div>
+<div class="ctl"><label>Tần số f</label><input id="freq" type="range" min=".5" max="2.5" step=".05" value="1.2"><output id="freqOut"></output></div>
+<div class="ctl"><label>Vận tốc v</label><input id="waveV" type="range" min=".8" max="4" step=".1" value="2.4"><output id="waveVOut"></output></div>
+<div class="ctl"><label>Khoảng S₁S₂</label><input id="sep" type="range" min="2" max="8" step=".2" value="5"><output id="sepOut"></output></div>
+<div class="ctl"><label>Độ lệch pha</label><input id="phaseDiff" type="range" min="0" max="360" step="5" value="90"><output id="phaseDiffOut"></output></div>
+<div class="ctl"><label>Độ phân giải</label><input id="quality" type="range" min="2" max="6" step="1" value="4"><output id="qualityOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showMax" type="checkbox" checked> Cực đại</label>
+<label class="check"><input id="showMin" type="checkbox" checked> Cực tiểu</label>
+<label class="check"><input id="showSources" type="checkbox" checked> Mặt sóng nguồn</label>
+<label class="check"><input id="showProbe" type="checkbox" checked> Điểm M</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="centerBtn" class="btn">⌖ Đưa M về giữa</button>
+<button id="phase0Btn" class="btn">0° Cùng pha</button><button id="phase180Btn" class="btn">180° Ngược pha</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+
+<div class="legend">
+<span class="sw" style="background:#ffd166"></span>cực đại &nbsp;
+<span class="sw" style="background:#ff6b8a"></span>cực tiểu<br>
+Đường vân được tính theo độ lệch pha tổng tại mỗi điểm.
+</div>
+<div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view">
+<canvas id="sim"></canvas>
+<div id="formula">ΔΦ(M)=2π(r₂-r₁)/λ + Δφ₀ &nbsp; · &nbsp; cực đại: ΔΦ=2kπ &nbsp; · &nbsp; cực tiểu: ΔΦ=(2k+1)π</div>
+<div id="hud">
+<div class="hud"><span>λ</span><b id="lambdaHud"></b></div>
+<div class="hud"><span>Δφ₀</span><b id="phaseHud"></b></div>
+<div class="hud"><span>Δd</span><b id="ddHud"></b></div>
+<div class="hud"><span>ΔΦ(M)</span><b id="totalPhaseHud"></b></div>
+<div class="hud"><span>M</span><b id="typeHud"></b></div>
+</div>
+<div id="note">Nhấp lên mặt nước để đặt M. Khi thay đổi Δφ₀, toàn bộ hệ vân dịch chuyển. 0° cho trường hợp cùng pha; 180° cho trường hợp ngược pha.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id),canvas=$('sim'),ctx=canvas.getContext('2d'),view=$('view');
+const state={running:true,t:0,speed:1,A:.75,f:1.2,v:2.4,sep:5,phaseDeg:90,step:4,probe:{x:0,y:3.2},last:performance.now()};
+let rect={x:55,y:62,w:800,h:600};
+const off=document.createElement('canvas'),octx=off.getContext('2d');
+
+function resize(){const r=view.getBoundingClientRect();canvas.width=Math.floor(r.width*devicePixelRatio);canvas.height=Math.floor(r.height*devicePixelRatio);canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+window.addEventListener('resize',resize);resize();
+
+const lam=()=>state.v/state.f,omega=()=>2*Math.PI*state.f,kval=()=>2*Math.PI/lam(),phase0=()=>state.phaseDeg*Math.PI/180;
+const sources=()=>[{x:-state.sep/2,y:0},{x:state.sep/2,y:0}],dist=(x,y,s)=>Math.hypot(x-s.x,y-s.y);
+function field(x,y){const [s1,s2]=sources(),r1=Math.max(.08,dist(x,y,s1)),r2=Math.max(.08,dist(x,y,s2));return state.A*(Math.sin(omega()*state.t-kval()*r1)+Math.sin(omega()*state.t-kval()*r2+phase0()))/2}
+function ddSigned(x,y){const [s1,s2]=sources();return dist(x,y,s2)-dist(x,y,s1)}
+function phaseDifference(x,y){return kval()*ddSigned(x,y)+phase0()}
+function phaseMod(p){p%=2*Math.PI;if(p<0)p+=2*Math.PI;return p}
+function classifyPhase(p){const q=phaseMod(p),eMax=Math.min(q,2*Math.PI-q),eMin=Math.abs(q-Math.PI);if(eMax<.18)return 'Cực đại';if(eMin<.18)return 'Cực tiểu';return 'Trung gian'}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('ampOut').value=state.A.toFixed(2);$('freqOut').value=state.f.toFixed(2)+' Hz';$('waveVOut').value=state.v.toFixed(2)+' m/s';$('sepOut').value=state.sep.toFixed(1)+' m';$('phaseDiffOut').value=state.phaseDeg.toFixed(0)+'°';$('qualityOut').value=state.step+' px';
+ const dd=Math.abs(ddSigned(state.probe.x,state.probe.y)),p=phaseDifference(state.probe.x,state.probe.y);
+ $('lambdaHud').textContent=lam().toFixed(2)+' m';$('phaseHud').textContent=state.phaseDeg.toFixed(0)+'°';$('ddHud').textContent=dd.toFixed(2)+' m';$('totalPhaseHud').textContent=(phaseMod(p)*180/Math.PI).toFixed(0)+'°';$('typeHud').textContent=classifyPhase(p)
+}
+function sync(){state.speed=+$('speed').value;state.A=+$('amp').value;state.f=+$('freq').value;state.v=+$('waveV').value;state.sep=+$('sep').value;state.phaseDeg=+$('phaseDiff').value;state.step=+$('quality').value;updateUI()}
+['speed','amp','freq','waveV','sep','phaseDiff','quality'].forEach(id=>$(id).addEventListener('input',sync));
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;$('centerBtn').onclick=()=>{state.probe={x:0,y:3.2};updateUI()};
+$('phase0Btn').onclick=()=>{$('phaseDiff').value=0;sync()};$('phase180Btn').onclick=()=>{$('phaseDiff').value=180;sync()};
+$('resetBtn').onclick=()=>{Object.assign(state,{running:true,t:0,speed:1,A:.75,f:1.2,v:2.4,sep:5,phaseDeg:90,step:4,probe:{x:0,y:3.2}});for(const [id,val] of [['speed',1],['amp',.75],['freq',1.2],['waveV',2.4],['sep',5],['phaseDiff',90],['quality',4]])$(id).value=val;updateUI()};
+$('fullscreenBtn').onclick=async()=>{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()};
+
+function line(x1,y1,x2,y2,c,w=1,d=[]){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=w;ctx.setLineDash(d);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore()}
+function circle(x,y,r,f,s=null){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=f;ctx.fill();if(s){ctx.strokeStyle=s;ctx.lineWidth=2;ctx.stroke()}}
+function text(t,x,y,s=12,c='#fff',a='left',w='normal'){ctx.font=`${w} ${s}px Segoe UI`;ctx.fillStyle=c;ctx.textAlign=a;ctx.fillText(t,x,y)}
+
+function geometry(){const W=view.clientWidth,H=view.clientHeight;rect={x:55,y:62,w:Math.max(500,W-110),h:Math.max(430,H-145)};const worldW=16,worldH=10;return {W,H,worldW,worldH,mapX:x=>rect.x+rect.w*(x+worldW/2)/worldW,mapY:y=>rect.y+rect.h*(worldH/2-y)/worldH,invX:X=>(X-rect.x)/rect.w*worldW-worldW/2,invY:Y=>worldH/2-(Y-rect.y)/rect.h*worldH}}
+function renderField(g){
+ const step=state.step,ow=Math.max(1,Math.floor(rect.w/step)),oh=Math.max(1,Math.floor(rect.h/step));if(off.width!==ow||off.height!==oh){off.width=ow;off.height=oh}
+ const img=octx.createImageData(ow,oh),d=img.data;
+ for(let j=0;j<oh;j++){const wy=g.worldH/2-(j+.5)/oh*g.worldH;for(let i=0;i<ow;i++){const wx=(i+.5)/ow*g.worldW-g.worldW/2,q=Math.max(-1,Math.min(1,field(wx,wy)/Math.max(.001,state.A)));let r,gg,b;if(q>=0){r=8+40*q;gg=38+170*q;b=70+185*q}else{const a=-q;r=5+22*a;gg=22+45*a;b=50+100*a}const p=(j*ow+i)*4;d[p]=r;d[p+1]=gg;d[p+2]=b;d[p+3]=255}}
+ octx.putImageData(img,0,0);ctx.drawImage(off,rect.x,rect.y,rect.w,rect.h)
+}
+function drawContours(g){
+ for(let y=-g.worldH/2;y<=g.worldH/2;y+=.13){for(let x=-g.worldW/2;x<=g.worldW/2;x+=.13){const p=phaseMod(phaseDifference(x,y)),eMax=Math.min(p,2*Math.PI-p),eMin=Math.abs(p-Math.PI);if($('showMax').checked&&eMax<.055){ctx.fillStyle='rgba(255,209,102,.88)';ctx.fillRect(g.mapX(x),g.mapY(y),1.4,1.4)}if($('showMin').checked&&eMin<.055){ctx.fillStyle='rgba(255,107,138,.80)';ctx.fillRect(g.mapX(x),g.mapY(y),1.3,1.3)}}}
+}
+function drawSourceCircles(g,s,color,extraPhase){
+ if(!$('showSources').checked)return;
+ const lambda=lam(),maxR=Math.hypot(g.worldW,g.worldH),phase=((state.v*state.t+extraPhase/(2*Math.PI)*lambda)%lambda+lambda)%lambda;
+ ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1;ctx.globalAlpha=.33;
+ for(let r=phase;r<maxR;r+=lambda){if(r<.08)continue;ctx.beginPath();ctx.ellipse(g.mapX(s.x),g.mapY(s.y),r/g.worldW*rect.w,r/g.worldH*rect.h,0,0,Math.PI*2);ctx.stroke()}
+ ctx.restore()
+}
+function draw(){
+ const g=geometry(),{W,H}=g;ctx.clearRect(0,0,W,H);renderField(g);ctx.strokeStyle='#4b7080';ctx.lineWidth=2;ctx.strokeRect(rect.x,rect.y,rect.w,rect.h);
+ const [s1,s2]=sources();drawSourceCircles(g,s1,'#9feaff',0);drawSourceCircles(g,s2,'#e8b7ff',phase0());drawContours(g);
+ circle(g.mapX(s1.x),g.mapY(s1.y),10,'#4cc9f0','#fff');circle(g.mapX(s2.x),g.mapY(s2.y),10,'#d971ff','#fff');
+ text('S₁',g.mapX(s1.x),g.mapY(s1.y)-18,12,'#9feaff','center','bold');text(`S₂ (${state.phaseDeg.toFixed(0)}°)`,g.mapX(s2.x),g.mapY(s2.y)-18,12,'#e8b7ff','center','bold');
+ line(g.mapX(s1.x),g.mapY(s1.y)+25,g.mapX(s2.x),g.mapY(s2.y)+25,'rgba(255,255,255,.8)',2,[6,5]);text(`S₁S₂ = ${state.sep.toFixed(1)} m`,(g.mapX(s1.x)+g.mapX(s2.x))/2,g.mapY(0)+48,11,'#fff','center','bold');
+
+ if($('showProbe').checked){
+  const px=g.mapX(state.probe.x),py=g.mapY(state.probe.y),p=phaseDifference(state.probe.x,state.probe.y),typ=classifyPhase(p),dd=Math.abs(ddSigned(state.probe.x,state.probe.y));
+  line(px,py,g.mapX(s1.x),g.mapY(s1.y),'rgba(255,255,255,.38)',1,[5,5]);line(px,py,g.mapX(s2.x),g.mapY(s2.y),'rgba(255,255,255,.38)',1,[5,5]);
+  circle(px,py,8,'#ff6b6b','#fff');text('M',px,py-16,12,'#ffb1b1','center','bold');
+  const col=typ==='Cực đại'?'#ffd166':typ==='Cực tiểu'?'#ff6b8a':'#ffffff';
+  text(`${typ} · Δd=${dd.toFixed(2)} m`,px+13,py+4,10,col,'left','bold')
+ }
+
+ ctx.fillStyle='rgba(6,18,27,.72)';ctx.fillRect(rect.x+12,rect.y+12,305,66);
+ text('ĐỘ LỆCH PHA NGUỒN TÙY CHỈNH',rect.x+24,rect.y+34,12,'#dff6ff','left','bold');
+ text(`Δφ₀=${state.phaseDeg.toFixed(0)}°   f=${state.f.toFixed(2)} Hz   λ=${lam().toFixed(2)} m`,rect.x+24,rect.y+58,11,'#aeeaff','left','bold')
+}
+canvas.addEventListener('click',e=>{const g=geometry(),r=canvas.getBoundingClientRect(),X=e.clientX-r.left,Y=e.clientY-r.top;if(X<rect.x||X>rect.x+rect.w||Y<rect.y||Y>rect.y+rect.h)return;state.probe.x=Math.max(-g.worldW/2,Math.min(g.worldW/2,g.invX(X)));state.probe.y=Math.max(-g.worldH/2,Math.min(g.worldH/2,g.invY(Y)));updateUI()});
+function tick(now){requestAnimationFrame(tick);const dt=Math.min(.033,(now-state.last)/1000);state.last=now;if(state.running)state.t+=dt*state.speed;draw();updateUI()}
+updateUI();requestAnimationFrame(tick);
+
+let rec=null,chunks=[],recStart=0,timer=null;
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!canvas.captureStream||!window.MediaRecorder)return;const m=mime();rec=new MediaRecorder(canvas.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`031_Giao_thoa_nguon_lech_pha_tuy_chinh.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+</script>
+</body>
+</html>

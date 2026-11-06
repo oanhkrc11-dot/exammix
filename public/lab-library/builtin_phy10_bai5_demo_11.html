@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Mô phỏng chuyển động theo vận tốc có dấu</title>
+<style>
+body{font-family:Arial;background:#eef6ff;margin:0;color:#172033}
+.wrap{max-width:1250px;margin:auto;padding:18px}
+.grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.card{background:white;border-radius:18px;padding:16px;box-shadow:0 6px 20px #0002}
+canvas{width:100%;background:linear-gradient(#bfe9ff,#fff);border-radius:14px}
+input,button{padding:8px;border-radius:8px;margin:3px}
+button{font-weight:bold}
+.info{background:#fff8df;padding:12px;border-radius:12px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Mô phỏng hai ô tô - vận tốc có dấu</h1>
+<div class="grid">
+<div class="card">
+<canvas id="cv" width="900" height="430"></canvas><br>
+Xe 1: x₁₀=<input id="x1" value="0"> km
+v₁=<input id="v1" value="60"> km/h<br>
+Xe 2: x₂₀=<input id="x2" value="40"> km
+v₂=<input id="v2" value="-40"> km/h<br>
+Tốc độ mô phỏng <input id="rate" type="range" min="1" max="5" value="1"><br>
+<button onclick="run()">▶ Chạy</button>
+<button onclick="pause()">⏸ Dừng</button>
+<button onclick="reset()">↺ Lại</button>
+</div>
+<div class="card">
+<h2>Dữ liệu</h2><div class="info" id="out"></div>
+<h2>Phân tích</h2><div class="info" id="ana"></div>
+</div>
+</div>
+</div>
+<script>
+let c=document.getElementById("cv"),ctx=c.getContext("2d"),t=0,timer=null;
+function n(id){return Number(document.getElementById(id).value)||0}
+function car(x,y,color,flip){
+ctx.save();ctx.translate(x,y);if(flip)ctx.scale(-1,1);
+ctx.fillStyle=color;ctx.fillRect(-30,-10,60,25);
+ctx.fillStyle="#d9f1ff";ctx.fillRect(-10,-25,22,15);
+ctx.fillStyle="#111";ctx.beginPath();ctx.arc(-18,18,7,0,7);ctx.arc(18,18,7,0,7);ctx.fill();
+ctx.restore();
+}
+function draw(){
+let x10=n("x1"),x20=n("x2"),v1=n("v1"),v2=n("v2");
+let x1=x10+v1*t,x2=x20+v2*t;
+let d=Math.abs(x2-x1);
+let meet=d<0.05;
+ctx.clearRect(0,0,900,430);
+ctx.fillStyle="#666";ctx.fillRect(70,230,760,70);
+ctx.strokeStyle="white";ctx.setLineDash([25,20]);ctx.beginPath();ctx.moveTo(70,265);ctx.lineTo(830,265);ctx.stroke();ctx.setLineDash([]);
+let min=Math.min(x1,x2,x10,x20)-20,max=Math.max(x1,x2,x10,x20)+20;
+let scale=700/(max-min);
+let px=x=>100+(x-min)*scale;
+car(px(x1),210,"#2563eb",v1<0);
+car(px(x2),330,"#ef4444",v2<0);
+ctx.fillStyle="#111";ctx.font="18px Arial";
+ctx.fillText("x₁="+x1.toFixed(2)+" km",px(x1)-40,150);
+ctx.fillText("x₂="+x2.toFixed(2)+" km",px(x2)-40,380);
+document.getElementById("out").innerHTML=
+`t = ${t.toFixed(2)} h<br>
+Xe 1: x₁=${x1.toFixed(2)} km ; s₁=${Math.abs(v1*t).toFixed(2)} km<br>
+Xe 2: x₂=${x2.toFixed(2)} km ; s₂=${Math.abs(v2*t).toFixed(2)} km<br>
+Khoảng cách d=${d.toFixed(2)} km<br>
+${meet?"🏁 Hai xe gặp nhau và dừng":"Đang chuyển động"}`;
+document.getElementById("ana").innerHTML=
+`Phương trình:<br>
+x₁=${x10}+${v1}t<br>
+x₂=${x20}+${v2}t<br><br>
+${v1*v2<0?"Hai xe chuyển động ngược chiều":"Hai xe chuyển động cùng chiều"}<br>
+${v1==v2?"Hai xe cùng vận tốc, khoảng cách không đổi":""}`;
+if(meet)pause();
+}
+function run(){pause();timer=setInterval(()=>{t+=0.002*n("rate");draw()},30)}
+function pause(){clearInterval(timer)}
+function reset(){pause();t=0;draw()}
+draw();
+</script>
+</body>
+</html>

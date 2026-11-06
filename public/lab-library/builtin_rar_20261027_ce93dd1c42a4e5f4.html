@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-46 Khúc xạ sóng mặt nước 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#020912;color:#eef8fb}
+#app{display:grid;grid-template-columns:252px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800}.desc{font-size:10.4px;color:#a9c2cd;line-height:1.35}h1{font-size:17px;margin:4px 0 6px;line-height:1.1}
+.ctl{display:grid;grid-template-columns:72px 1fr 64px;gap:5px;align-items:center;margin:5px 0}.ctl label{font-size:9.6px}.ctl output{font-size:9.1px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9.2px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 55% 32%,#123d58 0,#0a263b 38%,#061725 70%,#030b13 100%)}#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label{position:absolute;transform:translate(-50%,-50%);background:rgba(244,250,252,.95);color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9.3px;white-space:nowrap}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10.4px;font-weight:700}
+#hud{position:absolute;right:12px;bottom:12px;z-index:7;display:flex;gap:9px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:7px 9px}.hud span{display:block;font-size:8px;color:#98bac8}.hud b{font-size:10.3px}
+#note{position:absolute;left:12px;bottom:12px;z-index:7;width:470px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.2px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700}.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style></head>
+<body>
+<div id="app"><aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D</div><h1>46 · Khúc xạ sóng mặt nước</h1>
+<p class="desc">Sóng đi từ vùng sâu sang nông đổi vận tốc, bước sóng và hướng truyền; tần số do nguồn quyết định nên không đổi.</p>
+
+<div class="ctl"><label>Tốc độ mô phỏng</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Biên độ A</label><input id="amp" type="range" min=".2" max="1.0" step=".05" value=".65"><output id="ampOut"></output></div>
+<div class="ctl"><label>Tần số f</label><input id="freq" type="range" min=".5" max="3" step=".05" value="1.2"><output id="freqOut"></output></div>
+<div class="ctl"><label>v sâu</label><input id="v1" type="range" min="1.2" max="4" step=".1" value="3.0"><output id="v1Out"></output></div>
+<div class="ctl"><label>v nông</label><input id="v2" type="range" min=".5" max="3.5" step=".1" value="1.8"><output id="v2Out"></output></div>
+<div class="ctl"><label>Góc tới i</label><input id="angleI" type="range" min="0" max="70" step="1" value="40"><output id="angleIOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showFronts" type="checkbox" checked> Mặt sóng</label>
+<label class="check"><input id="showRays" type="checkbox" checked> Tia truyền</label>
+<label class="check"><input id="showNormal" type="checkbox" checked> Pháp tuyến</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showParticles" type="checkbox" checked> Hạt mặt nước</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Căn giữa</button>
+<button id="deepToShallow" class="btn">Sâu → nông</button><button id="equalSpeed" class="btn">v₁=v₂</button>
+<button id="normalBtn" class="btn">i=0°</button><button id="obliqueBtn" class="btn">i=50°</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div><div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view"><div id="three"></div><div id="labels"></div>
+<div id="formula">sin i / sin r = v₁ / v₂ = λ₁ / λ₂ &nbsp; · &nbsp; f₁=f₂=f</div>
+<div id="hud">
+<div class="hud"><span>λ₁</span><b id="lam1Hud"></b></div>
+<div class="hud"><span>λ₂</span><b id="lam2Hud"></b></div>
+<div class="hud"><span>i</span><b id="iHud"></b></div>
+<div class="hud"><span>r</span><b id="rHud"></b></div>
+<div class="hud"><span>f qua biên</span><b id="fHud"></b></div>
+</div>
+<div id="note">Khi đi từ vùng sâu có vận tốc lớn sang vùng nông có vận tốc nhỏ, tia sóng lệch về phía pháp tuyến và bước sóng giảm. Nếu v₁=v₂ thì không có khúc xạ. Tần số giữ nguyên qua biên.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id),view=$('view');
+const state={running:true,t:0,speed:1,A:.65,f:1.2,v1:3.0,v2:1.8,iDeg:40};
+
+const lam1=()=>state.v1/state.f;
+const lam2=()=>state.v2/state.f;
+const iRad=()=>THREE.MathUtils.degToRad(state.iDeg);
+function rRad(){
+ const s=Math.sin(iRad())*state.v2/state.v1;
+ return Math.asin(Math.max(-1,Math.min(1,s)));
+}
+function rDeg(){return THREE.MathUtils.radToDeg(rRad())}
+
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=7;controls.maxDistance=26;controls.minPolarAngle=.35;controls.maxPolarAngle=1.45;
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x172832,4.2));
+const dl=new THREE.DirectionalLight(0xffffff,3.8);dl.position.set(5,10,8);scene.add(dl);
+const lab=new THREE.Group();scene.add(lab);lab.position.set(0,-.9,0);
+
+// two water regions
+const deepMat=new THREE.MeshStandardMaterial({color:0x083a5b,roughness:.8,transparent:true,opacity:.96,side:THREE.DoubleSide});
+const shallowMat=new THREE.MeshStandardMaterial({color:0x176b7b,roughness:.8,transparent:true,opacity:.96,side:THREE.DoubleSide});
+const deep=new THREE.Mesh(new THREE.PlaneGeometry(9,12),deepMat);deep.rotation.x=-Math.PI/2;deep.position.set(-4.5,0,0);lab.add(deep);
+const shallow=new THREE.Mesh(new THREE.PlaneGeometry(9,12),shallowMat);shallow.rotation.x=-Math.PI/2;shallow.position.set(4.5,.02,0);lab.add(shallow);
+const grid=new THREE.GridHelper(18,24,0x2e586a,0x123345);grid.position.y=.04;lab.add(grid);
+
+// boundary and normal
+const boundary=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,.08,-6),new THREE.Vector3(0,.08,6)]),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.75}));lab.add(boundary);
+const normal=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-5,.1,0),new THREE.Vector3(5,.1,0)]),new THREE.LineDashedMaterial({color:0xffd166,dashSize:.25,gapSize:.15,transparent:true,opacity:.75}));normal.computeLineDistances();lab.add(normal);
+
+// rays
+const rayG=new THREE.Group();lab.add(rayG);
+const rayMat1=new THREE.LineBasicMaterial({color:0x63dcff});
+const rayMat2=new THREE.LineBasicMaterial({color:0xffb45a});
+function rebuildRays(){
+ rayG.clear();
+ const i=iRad(),r=rRad(),L=6;
+ const p0=new THREE.Vector3(-L*Math.cos(i),.12,-L*Math.sin(i));
+ const hit=new THREE.Vector3(0,.12,0);
+ const p2=new THREE.Vector3(L*Math.cos(r),.12,L*Math.sin(r));
+ rayG.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([p0,hit]),rayMat1));
+ rayG.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([hit,p2]),rayMat2));
+ const ah1=new THREE.ArrowHelper(new THREE.Vector3(Math.cos(i),0,Math.sin(i)),p0,2.0,0x63dcff,.22,.12);rayG.add(ah1);
+ const ah2=new THREE.ArrowHelper(new THREE.Vector3(Math.cos(r),0,Math.sin(r)),hit,2.0,0xffb45a,.22,.12);rayG.add(ah2);
+}
+
+// wavefront groups
+const fronts1=new THREE.Group(),fronts2=new THREE.Group();lab.add(fronts1,fronts2);
+function makeFront(x,z,ang,len,color){
+ const dir=new THREE.Vector3(-Math.sin(ang),0,Math.cos(ang));
+ const c=new THREE.Vector3(x,.08,z),p1=c.clone().addScaledVector(dir,-len/2),p2=c.clone().addScaledVector(dir,len/2);
+ return new THREE.Line(new THREE.BufferGeometry().setFromPoints([p1,p2]),new THREE.LineBasicMaterial({color,transparent:true,opacity:.9}));
+}
+function rebuildFronts(){
+ fronts1.clear();fronts2.clear();
+ const i=iRad(),r=rRad();
+ for(let n=-7;n<=7;n++){
+   const s=n*lam1(),x=s*Math.cos(i)-3.2,z=s*Math.sin(i)-3.2*Math.tan(i);
+   const ln=makeFront(x,z,i,7.5,0x63dcff);ln.userData={s0:s,region:1};fronts1.add(ln)
+ }
+ for(let n=0;n<=13;n++){
+   const s=n*lam2(),x=s*Math.cos(r),z=s*Math.sin(r);
+   const ln=makeFront(x,z,r,7.5,0xffb45a);ln.userData={s0:s,region:2};fronts2.add(ln)
+ }
+}
+
+// particles
+const pg=new THREE.SphereGeometry(.035,8,6),pm1=new THREE.MeshStandardMaterial({color:0xa9ebff,emissive:0x145d79,emissiveIntensity:.45}),pm2=new THREE.MeshStandardMaterial({color:0xffd0a0,emissive:0x80451d,emissiveIntensity:.4});
+const NX=28,NZ=18,COUNT=NX*NZ;
+const particles1=new THREE.InstancedMesh(pg,pm1,COUNT/2),particles2=new THREE.InstancedMesh(pg,pm2,COUNT/2);lab.add(particles1,particles2);
+
+function ampDeep(x,z){
+ const i=iRad(),s=x*Math.cos(i)+z*Math.sin(i);
+ return state.A*Math.sin(2*Math.PI*(state.f*state.t-s/lam1()));
+}
+function ampShallow(x,z){
+ const r=rRad(),s=x*Math.cos(r)+z*Math.sin(r);
+ return state.A*Math.sin(2*Math.PI*(state.f*state.t-s/lam2()));
+}
+
+function updatePhysics(dt){if(state.running)state.t+=dt*state.speed}
+
+function updateVisuals(){
+ const i=iRad(),r=rRad(),ph1=(state.v1*state.t)%lam1(),ph2=(state.v2*state.t)%lam2();
+
+ let idx1=0,idx2=0,dummy=new THREE.Object3D();
+ for(let ix=0;ix<NX;ix++){
+   const x=-8+16*ix/(NX-1);
+   for(let iz=0;iz<NZ;iz++){
+     const z=-5+10*iz/(NZ-1);
+     if(x<0 && idx1<particles1.count){
+       const a=ampDeep(x,z);dummy.position.set(x,.06+.18*a,z);dummy.scale.setScalar(.75+.25*Math.abs(a)/Math.max(.001,state.A));dummy.updateMatrix();particles1.setMatrixAt(idx1++,dummy.matrix)
+     } else if(x>=0 && idx2<particles2.count){
+       const a=ampShallow(x,z);dummy.position.set(x,.06+.18*a,z);dummy.scale.setScalar(.75+.25*Math.abs(a)/Math.max(.001,state.A));dummy.updateMatrix();particles2.setMatrixAt(idx2++,dummy.matrix)
+     }
+   }
+ }
+ particles1.instanceMatrix.needsUpdate=true;particles2.instanceMatrix.needsUpdate=true;
+ particles1.visible=particles2.visible=$('showParticles').checked;
+
+ // animate wavefront positions along propagation direction
+ let n=0;
+ for(const ln of fronts1.children){
+   const s=ln.userData.s0+ph1;
+   const x=s*Math.cos(i)-3.2,z=s*Math.sin(i)-3.2*Math.tan(i);
+   const dir=new THREE.Vector3(-Math.sin(i),0,Math.cos(i));
+   const c=new THREE.Vector3(x,.08,z),p1=c.clone().addScaledVector(dir,-3.75),p2=c.clone().addScaledVector(dir,3.75);
+   ln.geometry.dispose();ln.geometry=new THREE.BufferGeometry().setFromPoints([p1,p2]);n++
+ }
+ for(const ln of fronts2.children){
+   const s=ln.userData.s0+ph2;
+   const x=s*Math.cos(r),z=s*Math.sin(r);
+   const dir=new THREE.Vector3(-Math.sin(r),0,Math.cos(r));
+   const c=new THREE.Vector3(x,.08,z),p1=c.clone().addScaledVector(dir,-3.75),p2=c.clone().addScaledVector(dir,3.75);
+   ln.geometry.dispose();ln.geometry=new THREE.BufferGeometry().setFromPoints([p1,p2])
+ }
+ fronts1.visible=fronts2.visible=$('showFronts').checked;
+ rayG.visible=$('showRays').checked;
+ normal.visible=$('showNormal').checked;
+ grid.visible=$('showGrid').checked;
+}
+
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';
+ $('ampOut').value=state.A.toFixed(2);
+ $('freqOut').value=state.f.toFixed(2)+' Hz';
+ $('v1Out').value=state.v1.toFixed(2)+' m/s';
+ $('v2Out').value=state.v2.toFixed(2)+' m/s';
+ $('angleIOut').value=state.iDeg.toFixed(0)+'°';
+ $('lam1Hud').textContent=lam1().toFixed(2)+' m';
+ $('lam2Hud').textContent=lam2().toFixed(2)+' m';
+ $('iHud').textContent=state.iDeg.toFixed(0)+'°';
+ $('rHud').textContent=rDeg().toFixed(1)+'°';
+ $('fHud').textContent=state.f.toFixed(2)+' Hz';
+}
+function sync(reset=false){
+ state.speed=+$('speed').value;state.A=+$('amp').value;state.f=+$('freq').value;state.v1=+$('v1').value;state.v2=+$('v2').value;state.iDeg=+$('angleI').value;
+ if(reset)state.t=0;
+ rebuildRays();rebuildFronts();updateUI();
+}
+['amp','freq','v1','v2','angleI'].forEach(id=>$(id).addEventListener('input',()=>sync(false)));
+$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;
+$('deepToShallow').onclick=()=>{$('v1').value=3.0;$('v2').value=1.8;sync(true)};
+$('equalSpeed').onclick=()=>{$('v2').value=$('v1').value;sync(true)};
+$('normalBtn').onclick=()=>{$('angleI').value=0;sync(true)};
+$('obliqueBtn').onclick=()=>{$('angleI').value=50;sync(true)};
+$('resetBtn').onclick=()=>{
+ Object.assign(state,{running:true,t:0,speed:1,A:.65,f:1.2,v1:3.0,v2:1.8,iDeg:40});
+ for(const [id,v] of [['speed',1],['amp',.65],['freq',1.2],['v1',3],['v2',1.8],['angleI',40]])$(id).value=v;
+ rebuildRays();rebuildFronts();fit();updateUI()
+};
+$('fitBtn').onclick=fit;
+$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fit()},80));
+
+const labels=$('labels');function mk(t){const e=document.createElement('div');e.className='label';e.textContent=t;labels.appendChild(e);return e}
+const lDeep=mk('Vùng sâu · v₁ lớn'),lShallow=mk('Vùng nông · v₂ nhỏ'),lBoundary=mk('Biên sâu – nông');
+function project(el,p){const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=(q.z>1||!$('showLabels').checked)?'none':'block'}
+
+function fit(){controls.target.set(0,0,0);camera.position.set(10.5,9.0,13.5);camera.lookAt(controls.target);controls.update()}
+function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}
+window.addEventListener('resize',()=>{resize();fit()});
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{
+ if(!renderer.domElement.captureStream||!window.MediaRecorder)return;
+ const m=mime();rec=new MediaRecorder(renderer.domElement.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});
+ chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`046_Khuc_xa_song_mat_nuoc_3D.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};
+ rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false
+};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+resize();rebuildRays();rebuildFronts();fit();updateUI();
+let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);
+ const dt=Math.min(.033,(now-last)/1000);last=now;
+ updatePhysics(dt);updateVisuals();updateUI();
+ project(lDeep,new THREE.Vector3(-4.3,.8,-3.8));
+ project(lShallow,new THREE.Vector3(4.3,.8,-3.8));
+ project(lBoundary,new THREE.Vector3(0,1.0,3.5));
+ controls.update();renderer.render(scene,camera)
+}
+requestAnimationFrame(animate);
+</script></body></html>

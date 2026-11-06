@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mô phỏng giao thoa sóng mặt nước - GV Nguyễn Huy Hùng</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #eef6ff 0%, #dcecff 100%);
+      color: #0f172a;
+    }
+    .app {
+      width: min(1400px, 97vw);
+      margin: 18px auto;
+      background: #fff;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid #dbe7f5;
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.16);
+    }
+    header {
+      padding: 18px 24px;
+      background: linear-gradient(180deg, #0b3b78 0%, #134b93 100%);
+      color: white;
+    }
+    .teacher {
+      font-size: 18px;
+      font-weight: 700;
+      color: #dbeafe;
+      margin-bottom: 8px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+    header p {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.55;
+      opacity: 0.96;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #f8fbff;
+    }
+    .btnMain {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      font-size: 15px;
+    }
+    #startBtn { background: #16a34a; }
+    #pauseBtn { background: #f59e0b; color: #111827; }
+    #resetBtn { background: #2563eb; }
+    .box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #dbe5f2;
+      background: white;
+      border-radius: 12px;
+      padding: 9px 12px;
+      font-size: 15px;
+    }
+    .box input[type="range"] {
+      width: 140px;
+      accent-color: #2563eb;
+    }
+    .box select {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-weight: 700;
+      background: #fff;
+    }
+    .modeBar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px 2px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .modeBar .label {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0b3b78;
+    }
+    .modeButtons {
+      display: inline-flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .modeButtons button {
+      min-width: 140px;
+      border: 2px solid #1d4ed8;
+      background: linear-gradient(180deg, #93c5fd 0%, #60a5fa 100%);
+      color: #dc2626;
+      border-radius: 15px;
+      padding: 11px 18px;
+      font-size: 19px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.18);
+      transition: all 0.18s ease;
+    }
+    .modeButtons button.active {
+      background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+      color: #ef4444;
+      box-shadow: 0 6px 14px rgba(37, 99, 235, 0.34);
+      transform: translateY(-1px);
+    }
+    .stage {
+      padding: 16px 18px 0;
+    }
+    .card {
+      border: 1px solid #dbe5f2;
+      border-radius: 18px;
+      overflow: hidden;
+      background: white;
+    }
+    .cardTitle {
+      padding: 12px 16px;
+      font-weight: 700;
+      color: #0b3b78;
+      border-bottom: 1px solid #e5edf8;
+      background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #fff;
+    }
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      padding: 16px 18px 20px;
+    }
+    .note {
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid #dbe5f2;
+      line-height: 1.55;
+      font-size: 15px;
+    }
+    .note.blue { background: #eff6ff; }
+    .note.green { background: #f0fdf4; }
+    .note.amber { background: #fffbeb; }
+    .note b { color: #0b3b78; }
+    @media (max-width: 1020px) {
+      .notes { grid-template-columns: 1fr; }
+      h1 { font-size: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="teacher">GV Nguyễn Huy Hùng</div>
+      <h1>Mô phỏng HTML/JavaScript: Giao thoa sóng trên mặt nước</h1>
+      <p>Mô phỏng góc nhìn từ trên xuống. Chọn <b>1 nguồn</b> để thấy các mặt sóng tròn đồng tâm; chọn <b>2 nguồn</b> để thấy hình ảnh giao thoa của hai nguồn kết hợp với các vân gần dạng hypebol.</p>
+    </header>
+
+    <div class="controls">
+      <button id="startBtn" class="btnMain">▶ Bắt đầu</button>
+      <button id="pauseBtn" class="btnMain">⏸ Tạm dừng</button>
+      <button id="resetBtn" class="btnMain">↻ Đặt lại</button>
+
+      <label class="box">Biên độ A:
+        <input id="ampSlider" type="range" min="10" max="36" step="2" value="22">
+        <b><span id="ampValue">22</span></b>
+      </label>
+
+      <label class="box">Tần số f:
+        <input id="freqSlider" type="range" min="0.6" max="2.0" step="0.1" value="1.0">
+        <b><span id="freqValue">1.0</span> Hz</b>
+      </label>
+
+      <label class="box">Bước sóng λ:
+        <input id="lambdaSlider" type="range" min="70" max="180" step="5" value="110">
+        <b><span id="lambdaValue">110</span> px</b>
+      </label>
+
+      <label class="box">Khoảng cách S₁S₂:
+        <input id="sourceSepSlider" type="range" min="50" max="180" step="5" value="100">
+        <b><span id="sourceSepValue">100</span> px</b>
+      </label>
+
+      <label class="box">Pha hai nguồn:
+        <select id="phaseMode">
+          <option value="same" selected>Cùng pha</option>
+          <option value="opposite">Ngược pha</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="modeBar">
+      <div class="label">Chọn số nguồn:</div>
+      <div class="modeButtons">
+        <button id="mode1Btn" type="button">1 nguồn</button>
+        <button id="mode2Btn" type="button" class="active">2 nguồn</button>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="card">
+        <div class="cardTitle">Mặt nước nhìn từ trên xuống</div>
+        <canvas id="simCanvas" width="1320" height="760"></canvas>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note blue">
+        <b>Trường hợp 1 nguồn:</b> Các đỉnh sóng lan truyền thành những đường tròn đồng tâm quanh nguồn S.
+      </div>
+      <div class="note green">
+        <b>Trường hợp 2 nguồn:</b> Hai nguồn kết hợp tạo hệ vân giao thoa; các dãy cực đại và cực tiểu đối xứng qua trung trực của đoạn nối hai nguồn.
+      </div>
+      <div class="note amber">
+        <b>Gợi ý dạy học:</b> Thay đổi khoảng cách hai nguồn, bước sóng và pha để học sinh quan sát rõ sự thay đổi của hình giao thoa.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const mode1Btn = document.getElementById('mode1Btn');
+    const mode2Btn = document.getElementById('mode2Btn');
+    const ampSlider = document.getElementById('ampSlider');
+    const freqSlider = document.getElementById('freqSlider');
+    const lambdaSlider = document.getElementById('lambdaSlider');
+    const sourceSepSlider = document.getElementById('sourceSepSlider');
+    const phaseMode = document.getElementById('phaseMode');
+
+    const ampValue = document.getElementById('ampValue');
+    const freqValue = document.getElementById('freqValue');
+    const lambdaValue = document.getElementById('lambdaValue');
+    const sourceSepValue = document.getElementById('sourceSepValue');
+
+    let A = 22;
+    let f = 1.0;
+    let lambda = 110;
+    let sourceSeparation = 100;
+    let sourceMode = 2;
+    let phaseOffset = 0;
+
+    let running = true;
+    let pausedTime = 0;
+    let lastStart = performance.now();
+
+    const W = canvas.width;
+    const H = canvas.height;
+    const pool = { x: 18, y: 18, w: W - 36, h: H - 36, r: 18 };
+
+    function updateParams() {
+      A = Number(ampSlider.value);
+      f = Number(freqSlider.value);
+      lambda = Number(lambdaSlider.value);
+      sourceSeparation = Number(sourceSepSlider.value);
+      phaseOffset = phaseMode.value === 'opposite' ? Math.PI : 0;
+      ampValue.textContent = A;
+      freqValue.textContent = f.toFixed(1);
+      lambdaValue.textContent = lambda;
+      sourceSepValue.textContent = sourceSeparation;
+      sourceSepSlider.disabled = sourceMode === 1;
+      phaseMode.disabled = sourceMode === 1;
+      mode1Btn.classList.toggle('active', sourceMode === 1);
+      mode2Btn.classList.toggle('active', sourceMode === 2);
+    }
+
+    function waveNumber(pxLambda) {
+      return 2 * Math.PI / pxLambda;
+    }
+
+    function simTime(now) {
+      return running ? (pausedTime + (now - lastStart)) / 1000 : pausedTime / 1000;
+    }
+
+    function roundedRectPath(c, x, y, w, h, r) {
+      c.beginPath();
+      c.moveTo(x + r, y);
+      c.lineTo(x + w - r, y);
+      c.quadraticCurveTo(x + w, y, x + w, y + r);
+      c.lineTo(x + w, y + h - r);
+      c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      c.lineTo(x + r, y + h);
+      c.quadraticCurveTo(x, y + h, x, y + h - r);
+      c.lineTo(x, y + r);
+      c.quadraticCurveTo(x, y, x + r, y);
+      c.closePath();
+    }
+
+    function drawArrow(c, x1, y1, x2, y2, color, width = 2.5) {
+      c.save();
+      c.strokeStyle = color;
+      c.fillStyle = color;
+      c.lineWidth = width;
+      c.beginPath();
+      c.moveTo(x1, y1);
+      c.lineTo(x2, y2);
+      c.stroke();
+      const ang = Math.atan2(y2 - y1, x2 - x1);
+      const size = 10;
+      c.beginPath();
+      c.moveTo(x2, y2);
+      c.lineTo(x2 - size * Math.cos(ang - Math.PI / 6), y2 - size * Math.sin(ang - Math.PI / 6));
+      c.lineTo(x2 - size * Math.cos(ang + Math.PI / 6), y2 - size * Math.sin(ang + Math.PI / 6));
+      c.closePath();
+      c.fill();
+      c.restore();
+    }
+
+    function sourcesForView() {
+      const cx = pool.x + pool.w / 2;
+      const sourceY = pool.y + 130;
+      if (sourceMode === 1) {
+        return [{ x: cx, y: sourceY, label: 'S' }];
+      }
+      const dx = sourceSeparation * 2.15;
+      return [
+        { x: cx - dx / 2, y: sourceY, label: 'S₁' },
+        { x: cx + dx / 2, y: sourceY, label: 'S₂' }
+      ];
+    }
+
+    function poolWavelength() {
+      return Math.max(32, Math.min(72, lambda * 0.48));
+    }
+
+    function fieldValue(px, py, t, srcs, k, omega) {
+      if (sourceMode === 1) {
+        const r = Math.max(4, Math.hypot(px - srcs[0].x, py - srcs[0].y));
+        return { u: Math.sin(k * r - omega * t), env: 1 };
+      }
+      const r1 = Math.max(4, Math.hypot(px - srcs[0].x, py - srcs[0].y));
+      const r2 = Math.max(4, Math.hypot(px - srcs[1].x, py - srcs[1].y));
+      const u1 = Math.sin(k * r1 - omega * t);
+      const u2 = Math.sin(k * r2 - omega * t + phaseOffset);
+      const u = 0.5 * (u1 + u2);
+      const env = Math.abs(Math.cos((k * (r2 - r1) + phaseOffset) / 2));
+      return { u, env };
+    }
+
+    function drawMachinePanel() {
+      const x = 34, y = 30, w = 274, h = 145;
+      ctx.save();
+      roundedRectPath(ctx, x, y, w, h, 18);
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.fill();
+      ctx.strokeStyle = '#b7c9e6';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      roundedRectPath(ctx, x + 12, y + 12, w - 24, 54, 14);
+      ctx.fillStyle = '#0d5bc4';
+      ctx.fill();
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 29px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText('Máy phát tần số', x + 32, y + 48);
+
+      roundedRectPath(ctx, x + 24, y + 76, 150, 40, 11);
+      ctx.fillStyle = '#f8fbff';
+      ctx.fill();
+      ctx.strokeStyle = '#96b9ef';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#162c63';
+      ctx.font = 'italic bold 21px Arial';
+      ctx.fillText(`f = ${f.toFixed(1)} Hz`, x + 42, y + 103);
+
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#b6ccf5';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(x + 46, y + 128);
+      ctx.lineTo(x + 232, y + 128);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#0d5bc4';
+      ctx.beginPath();
+      ctx.moveTo(x + 46, y + 128);
+      ctx.lineTo(x + 46 + 186 * ((f - 0.6) / 1.4), y + 128);
+      ctx.stroke();
+      const knobX = x + 46 + 186 * ((f - 0.6) / 1.4);
+      ctx.beginPath();
+      ctx.arc(knobX, y + 128, 15, 0, Math.PI * 2);
+      ctx.fillStyle = '#2563eb';
+      ctx.fill();
+      ctx.strokeStyle = '#e0ecff';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawScene(now) {
+      const t = simTime(now);
+      const lam = poolWavelength();
+      const k = waveNumber(lam);
+      const omega = 2 * Math.PI * f;
+      const srcs = sourcesForView();
+
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#f4faff';
+      ctx.fillRect(0, 0, W, H);
+
+      // Pool border and background
+      roundedRectPath(ctx, pool.x, pool.y, pool.w, pool.h, pool.r);
+      ctx.fillStyle = '#e6edf7';
+      ctx.fill();
+      ctx.strokeStyle = '#bcccdc';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Water fill
+      ctx.save();
+      roundedRectPath(ctx, pool.x + 8, pool.y + 8, pool.w - 16, pool.h - 16, 14);
+      ctx.clip();
+      const waterGrad = ctx.createLinearGradient(0, pool.y, 0, pool.y + pool.h);
+      waterGrad.addColorStop(0, '#46abef');
+      waterGrad.addColorStop(0.45, '#1594ea');
+      waterGrad.addColorStop(1, '#1a89d3');
+      ctx.fillStyle = waterGrad;
+      ctx.fillRect(pool.x, pool.y, pool.w, pool.h);
+
+      // Dynamic field shading
+      const step = 6;
+      for (let y = pool.y + 8; y < pool.y + pool.h - 8; y += step) {
+        for (let x = pool.x + 8; x < pool.x + pool.w - 8; x += step) {
+          const { u, env } = fieldValue(x + step * 0.5, y + step * 0.5, t, srcs, k, omega);
+          const light = sourceMode === 1 ? 0.5 : env;
+          const blue = Math.max(150, Math.min(255, Math.round(210 + 34 * u + 18 * light)));
+          const green = Math.max(120, Math.min(245, Math.round(186 + 22 * u + 10 * light)));
+          const red = Math.max(15, Math.min(90, Math.round(20 + 5 * light)));
+          ctx.fillStyle = `rgba(${red}, ${green}, ${blue}, 0.18)`;
+          ctx.fillRect(x, y, step + 0.5, step + 0.5);
+        }
+      }
+
+      // Caustic-like grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+      ctx.lineWidth = 2;
+      for (let x = pool.x - 30; x < pool.x + pool.w + 30; x += 52) {
+        ctx.beginPath();
+        ctx.moveTo(x, pool.y + 12);
+        ctx.bezierCurveTo(x + 22, pool.y + pool.h * 0.28, x - 18, pool.y + pool.h * 0.6, x + 12, pool.y + pool.h - 12);
+        ctx.stroke();
+      }
+      for (let y = pool.y + 16; y < pool.y + pool.h; y += 56) {
+        ctx.beginPath();
+        ctx.moveTo(pool.x + 12, y);
+        ctx.bezierCurveTo(pool.x + pool.w * 0.28, y + 18, pool.x + pool.w * 0.65, y - 22, pool.x + pool.w - 12, y + 8);
+        ctx.stroke();
+      }
+
+      // Wavefronts
+      const speed = lam * f;
+      const travel = (speed * t * 0.95) % lam;
+      const maxR = Math.hypot(pool.w, pool.h) + 120;
+      for (const src of srcs) {
+        for (let r = travel; r < maxR; r += lam) {
+          if (r < 10) continue;
+          ctx.beginPath();
+          ctx.arc(src.x, src.y, r, 0, Math.PI * 2);
+          ctx.strokeStyle = sourceMode === 1 ? 'rgba(255,255,255,0.42)' : 'rgba(255,255,255,0.36)';
+          ctx.lineWidth = sourceMode === 1 ? 2.1 : 1.9;
+          ctx.stroke();
+        }
+      }
+
+      // Subtle hyperbolic hints in 2-source mode
+      if (sourceMode === 2) {
+        for (let y = pool.y + 20; y < pool.y + pool.h - 20; y += 3) {
+          for (let x = pool.x + 20; x < pool.x + pool.w - 20; x += 3) {
+            const r1 = Math.hypot(x - srcs[0].x, y - srcs[0].y);
+            const r2 = Math.hypot(x - srcs[1].x, y - srcs[1].y);
+            const delta = Math.abs(r2 - r1) / lam;
+            const frac = Math.abs(delta - Math.round(delta));
+            if ((phaseMode.value === 'same' && frac < 0.022) || (phaseMode.value === 'opposite' && Math.abs(delta - (Math.floor(delta) + 0.5)) < 0.022)) {
+              ctx.fillStyle = 'rgba(255,255,255,0.16)';
+              ctx.fillRect(x, y, 1.3, 1.3);
+            }
+          }
+        }
+      }
+      ctx.restore();
+
+      // Pool tile rim
+      ctx.save();
+      ctx.strokeStyle = '#2b6eac';
+      ctx.lineWidth = 15;
+      roundedRectPath(ctx, pool.x + 7, pool.y + 7, pool.w - 14, pool.h - 14, 14);
+      ctx.stroke();
+      ctx.restore();
+
+      // Sources, labels, and arrows
+      for (const [i, src] of srcs.entries()) {
+        const localPhase = i === 0 ? 0 : phaseOffset;
+        const bob = 2.5 * Math.sin(omega * t + localPhase);
+        ctx.beginPath();
+        ctx.arc(src.x, src.y + 10 + bob * 0.2, 18, 0, Math.PI * 2);
+        const g = ctx.createRadialGradient(src.x - 6, src.y + 3, 5, src.x, src.y + 10, 21);
+        g.addColorStop(0, '#ffb4b4');
+        g.addColorStop(0.34, '#ef4444');
+        g.addColorStop(1, '#b91c1c');
+        ctx.fillStyle = g;
+        ctx.fill();
+        ctx.strokeStyle = '#fdf2f2';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(src.x, src.y - 58);
+        ctx.lineTo(src.x, src.y - 8);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ef2b2b';
+        ctx.font = 'bold 34px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(src.label, src.x, src.y - 72);
+      }
+
+      if (sourceMode === 2) {
+        drawArrow(ctx, srcs[0].x + 20, srcs[0].y - 38, srcs[1].x - 20, srcs[1].y - 38, '#ff2d2d', 3);
+        drawArrow(ctx, srcs[1].x - 20, srcs[1].y - 38, srcs[0].x + 20, srcs[0].y - 38, '#ff2d2d', 3);
+        ctx.fillStyle = '#ef2b2b';
+        ctx.font = 'bold 33px Arial';
+        ctx.fillText('d = S₁S₂', (srcs[0].x + srcs[1].x) / 2, srcs[0].y - 18);
+      }
+
+      // Machine panel and mode buttons in-scene look
+      drawMachinePanel();
+
+      const bY = H - 96;
+      const bW = 228;
+      const bH = 74;
+      const bGap = 26;
+      const totalW = bW * 2 + bGap;
+      const startX = (W - totalW) / 2;
+      drawModeButton(startX, bY, bW, bH, sourceMode === 1, '1 nguồn', false);
+      drawModeButton(startX + bW + bGap, bY, bW, bH, sourceMode === 2, '2 nguồn', true);
+    }
+
+    function drawModeButton(x, y, w, h, active, text, dual) {
+      ctx.save();
+      roundedRectPath(ctx, x, y, w, h, 20);
+      const g = ctx.createLinearGradient(0, y, 0, y + h);
+      if (active) {
+        g.addColorStop(0, '#5bc4ff');
+        g.addColorStop(1, '#1d8ef1');
+      } else {
+        g.addColorStop(0, '#f6f7fb');
+        g.addColorStop(1, '#e7edf6');
+      }
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.lineWidth = active ? 4 : 2;
+      ctx.strokeStyle = active ? '#facc15' : '#9bb8ef';
+      ctx.stroke();
+
+      const cx = x + 42;
+      const cy = y + h / 2;
+      const centers = dual ? [cx - 10, cx + 14] : [cx + 2];
+      for (const c of centers) {
+        for (let r = 9; r <= 24; r += 7) {
+          ctx.beginPath();
+          ctx.arc(c, cy, r, 0, Math.PI * 2);
+          ctx.strokeStyle = active ? 'rgba(255,255,255,0.55)' : '#8fb8f5';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(c, cy, 5.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ef4444';
+        ctx.fill();
+      }
+
+      ctx.fillStyle = '#ef2b2b';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText(text, x + 96, y + 46);
+      ctx.restore();
+    }
+
+    function animate(now) {
+      drawScene(now);
+      requestAnimationFrame(animate);
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (!running) {
+        running = true;
+        lastStart = performance.now();
+      }
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (running) {
+        pausedTime += performance.now() - lastStart;
+        running = false;
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      A = 22;
+      f = 1.0;
+      lambda = 110;
+      sourceSeparation = 100;
+      sourceMode = 2;
+      phaseOffset = 0;
+      ampSlider.value = A;
+      freqSlider.value = f;
+      lambdaSlider.value = lambda;
+      sourceSepSlider.value = sourceSeparation;
+      phaseMode.value = 'same';
+      pausedTime = 0;
+      lastStart = performance.now();
+      running = true;
+      updateParams();
+    });
+
+    mode1Btn.addEventListener('click', () => {
+      sourceMode = 1;
+      updateParams();
+    });
+    mode2Btn.addEventListener('click', () => {
+      sourceMode = 2;
+      updateParams();
+    });
+
+    ampSlider.addEventListener('input', updateParams);
+    freqSlider.addEventListener('input', updateParams);
+    lambdaSlider.addEventListener('input', updateParams);
+    sourceSepSlider.addEventListener('input', updateParams);
+    phaseMode.addEventListener('change', updateParams);
+
+    updateParams();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

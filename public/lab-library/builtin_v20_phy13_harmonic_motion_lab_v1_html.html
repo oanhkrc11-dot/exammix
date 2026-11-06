@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Harmonic Motion Lab</title>
+<style>
+body{
+margin:0;background:#061321;color:white;font-family:Segoe UI,Arial;
+overflow-x:hidden
+}
+.container{width:95%;margin:auto;padding:20px}
+h1{text-align:center;color:#71e8ff;text-shadow:0 0 15px #71e8ff}
+.panel{
+background:#0d2338;border-radius:18px;padding:15px;margin-bottom:15px;
+box-shadow:0 0 25px #000
+}
+input{width:90px;padding:8px;border-radius:8px;border:0;margin:5px}
+button{
+padding:10px 15px;border:0;border-radius:20px;
+background:#157db5;color:white;cursor:pointer
+}
+.grid{
+display:grid;grid-template-columns:1fr 1fr;gap:15px
+}
+canvas{
+background:#020b14;border-radius:15px;width:100%;
+}
+.info{color:#bce8ff;font-size:18px}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🌀 HARMONIC MOTION LAB</h1>
+
+<div class="panel">
+A = <input id="A" value="10"> cm
+T = <input id="T" value="2"> s
+φ = <input id="phi" value="0"> rad
+<button onclick="reset()">🔄 Reset</button>
+<button onclick="toggle()">▶ / ⏸</button>
+<p class="info" id="equation"></p>
+</div>
+
+<div class="grid">
+<div class="panel">
+<h3>Chuyển động của vật</h3>
+<canvas id="motion" width="600" height="250"></canvas>
+</div>
+
+<div class="panel">
+<h3>Đường tròn lượng giác</h3>
+<canvas id="circle" width="400" height="400"></canvas>
+</div>
+</div>
+
+<div class="panel">
+<h3>Đồ thị dao động</h3>
+<canvas id="graph" width="1000" height="350"></canvas>
+</div>
+</div>
+
+<script>
+let t=0, run=true;
+
+const motion=document.getElementById("motion").getContext("2d");
+const circle=document.getElementById("circle").getContext("2d");
+const graph=document.getElementById("graph").getContext("2d");
+
+function val(id){return Number(document.getElementById(id).value)}
+
+function draw(){
+let A=val("A");
+let T=val("T");
+let phi=val("phi");
+let w=2*Math.PI/T;
+
+document.getElementById("equation").innerHTML=
+`x = ${A}cos(${w.toFixed(2)}t + ${phi}) cm`;
+
+let x=A*Math.cos(w*t+phi);
+let v=-w*A*Math.sin(w*t+phi);
+let a=-w*w*A*Math.cos(w*t+phi);
+
+// vật
+motion.clearRect(0,0,600,250);
+motion.strokeStyle="#7deaff";
+motion.beginPath();
+motion.moveTo(60,125);motion.lineTo(540,125);motion.stroke();
+
+motion.fillStyle="#ffdf5d";
+motion.beginPath();
+let px=300+x*15;
+motion.arc(px,125,15,0,2*Math.PI);motion.fill();
+
+motion.fillStyle="white";
+motion.fillText("v = "+v.toFixed(1),20,30);
+motion.fillText("a = "+a.toFixed(1),20,55);
+
+// vòng tròn
+circle.clearRect(0,0,400,400);
+circle.strokeStyle="#8c7cff";
+circle.beginPath();
+circle.arc(200,200,120,0,2*Math.PI);
+circle.stroke();
+
+let ang=w*t+phi;
+let cx=200+120*Math.cos(ang);
+let cy=200-120*Math.sin(ang);
+
+circle.fillStyle="#ff6b9d";
+circle.beginPath();
+circle.arc(cx,cy,10,0,2*Math.PI);
+circle.fill();
+
+circle.strokeStyle="#55ffcc";
+circle.beginPath();
+circle.moveTo(cx,cy);
+circle.lineTo(cx,200);
+circle.stroke();
+
+// đồ thị
+graph.clearRect(0,0,1000,350);
+graph.strokeStyle="#304d66";
+graph.beginPath();
+graph.moveTo(0,175);graph.lineTo(1000,175);
+graph.stroke();
+
+graph.strokeStyle="#00eaff";
+graph.beginPath();
+
+for(let i=0;i<1000;i++){
+let tt=i/1000*T*3;
+let xx=450*Math.cos(w*tt+phi);
+let yy=175-xx/20;
+if(i==0)graph.moveTo(i,yy);
+else graph.lineTo(i,yy);
+}
+graph.stroke();
+
+if(run)t+=0.02;
+requestAnimationFrame(draw);
+}
+
+function reset(){t=0}
+function toggle(){run=!run}
+draw();
+</script>
+</body>
+</html>

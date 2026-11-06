@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PHYSICS 11 LAB 18 - Hiện tượng phách</title>
+<style>
+:root{
+  --panel:#07141c;--panel2:#0b2230;--line:#214454;--txt:#eef8fb;--muted:#aec4ce;
+  --accent:#4cc9f0;--blue:#61d4ff;--orange:#ffb45a;--violet:#d971ff;--graph:#eaf4f7;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Inter,Segoe UI,Arial,sans-serif;background:#020912}
+#app{display:grid;grid-template-columns:248px 1fr;height:100vh}
+#panel{background:linear-gradient(180deg,var(--panel),var(--panel2));color:var(--txt);padding:10px;overflow:auto;border-right:1px solid #163546}
+.eyebrow{font-size:10px;letter-spacing:1.2px;font-weight:800;color:var(--accent);margin-bottom:4px}
+h1{font-size:17px;line-height:1.08;margin:0 0 6px}.desc{font-size:10.5px;line-height:1.34;color:var(--muted);margin:0}
+hr{border:0;border-top:1px solid #1f4352;margin:8px 0}.section{font-size:10px;font-weight:800;margin:5px 0}
+.control{display:grid;grid-template-columns:64px 1fr 58px;gap:5px;align-items:center;margin:5px 0}.control label{font-size:9.9px}.control output{font-size:9.4px;text-align:right;color:#72e4ff;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:7px 0}.check{font-size:9.6px;display:flex;align-items:center;gap:5px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px}.btn{border:1px solid #2b5769;border-radius:8px;background:#103240;color:#edf9fc;padding:7px 5px;font-size:9.8px;font-weight:800;cursor:pointer}.btn.primary{background:#0f7da7;border-color:#0f7da7}.btn.record{background:#b83e3e;border-color:#b83e3e}
+.recBox{margin-top:7px;border:1px solid #2b5769;border-radius:8px;padding:6px;background:#0e2a37;color:#bcd2db;font-size:9.2px}
+.recStatus{display:flex;justify-content:space-between}.recDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#718891;margin-right:4px}.recDot.on{background:#e33f3f;box-shadow:0 0 0 3px rgba(227,63,63,.17)}
+.model{display:none;margin-top:6px;border:1px solid #2b5769;border-radius:8px;padding:7px;background:#0d2430;color:#bcd2db;font-size:9.2px;line-height:1.35}.model.show{display:block}
+#view{position:relative;height:100vh;min-width:0;background:radial-gradient(circle at 55% 30%,#0d3550 0%,#071e31 36%,#04111f 70%,#020812 100%)}
+#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:6;pointer-events:none}
+.label3d{position:absolute;transform:translate(-50%,-50%);background:rgba(235,245,250,.94);border:1px solid #9ec2d2;color:#17333e;border-radius:6px;padding:4px 6px;font-size:9.8px;white-space:nowrap;box-shadow:0 2px 9px rgba(0,0,0,.18)}
+#formula{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;background:rgba(238,247,250,.92);border:1px solid #8fb4c4;border-radius:9px;padding:6px 10px;font-size:10.3px;color:#14313c}
+#hud{position:absolute;right:12px;bottom:12px;z-index:8;display:flex;gap:9px;background:rgba(7,20,28,.88);border:1px solid #316376;border-radius:10px;padding:7px 9px;backdrop-filter: blur(5px)}
+.hudItem{min-width:58px}.hudItem span{display:block;font-size:8.5px;color:#98bac8}.hudItem b{font-size:10.5px;color:#f3fbff}
+#note{position:absolute;left:12px;bottom:12px;z-index:7;width:292px;background:rgba(7,20,28,.88);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.4px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;color:#dceff7;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+#hint{position:absolute;right:12px;top:12px;z-index:7;font-size:9.5px;color:#eef8fb;background:rgba(8,24,34,.80);border:1px solid #315d70;border-radius:8px;padding:6px 8px}
+@media(max-width:1050px){#app{grid-template-columns:232px 1fr}}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="eyebrow">PHYSICS 11 LAB · 3D</div>
+<h1>18 · Hiện tượng phách</h1>
+<p class="desc">Hai dao động cùng phương có tần số gần nhau tạo ra dao động tổng hợp có biên độ biến thiên chậm. Mô phỏng nền tối, dụng cụ sáng để dễ quan sát khi dạy học.</p>
+<hr>
+<div class="section">THAM SỐ</div>
+<div class="control"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut">1.00×</output></div>
+<div class="control"><label>Biên độ A</label><input id="amp" type="range" min=".20" max="1.40" step=".05" value=".80"><output id="ampOut">0.80 m</output></div>
+<div class="control"><label>f₁</label><input id="f1" type="range" min="0.30" max="1.40" step=".01" value="0.74"><output id="f1Out">0.74 Hz</output></div>
+<div class="control"><label>f₂</label><input id="f2" type="range" min="0.30" max="1.40" step=".01" value="0.82"><output id="f2Out">0.82 Hz</output></div>
+<div class="control"><label>φ₁</label><input id="phi1" type="range" min="-180" max="180" step="5" value="0"><output id="phi1Out">0°</output></div>
+<div class="control"><label>φ₂</label><input id="phi2" type="range" min="-180" max="180" step="5" value="0"><output id="phi2Out">0°</output></div>
+
+<div class="checks">
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+<label class="check"><input id="showComp" type="checkbox" checked> Thành phần</label>
+<label class="check"><input id="showEnvelope" type="checkbox" checked> Bao biên</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Căn giữa</button>
+<button id="fullscreenBtn" class="btn">⛶ Vừa màn hình</button><button id="clearGraphBtn" class="btn">Xóa đồ thị</button>
+<button id="theoryBtn" class="btn">ⓘ Lý thuyết</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button><button id="syncBtn" class="btn">f₂ = f₁ + 0.08</button>
+</div>
+
+<div class="recBox"><div class="recStatus"><span><i id="recDot" class="recDot"></i><b id="recLabel">Chưa quay</b></span><b id="recTime">00:00</b></div><div id="recFormat" style="margin-top:4px">Ưu tiên MP4 nếu trình duyệt hỗ trợ.</div></div>
+<div id="theoryBox" class="model"><b>Mô hình:</b> x₁=Acos(2πf₁t+φ₁), x₂=Acos(2πf₂t+φ₂), x=x₁+x₂. Với f₁-f₂ nhỏ, biên độ tổng hợp thay đổi chậm tạo hiện tượng phách. Tần số phách hiển thị là f₂-f₁.</div>
+</aside>
+
+<main id="view">
+<div id="three"></div><div id="labels"></div>
+<div id="formula">x₁ = A cos(2πf₁t + φ₁) &nbsp; · &nbsp; x₂ = A cos(2πf₂t + φ₂) &nbsp; ⇒ &nbsp; x = x₁ + x₂</div>
+<div id="hint">Kéo: xoay · Lăn: zoom an toàn · 🎥 quay vùng mô phỏng</div>
+<div id="hud">
+  <div class="hudItem"><span>x₁</span><b id="x1Hud">0.00 m</b></div>
+  <div class="hudItem"><span>x₂</span><b id="x2Hud">0.00 m</b></div>
+  <div class="hudItem"><span>x</span><b id="xHud">0.00 m</b></div>
+  <div class="hudItem"><span>f phách</span><b id="fbHud">0.08 Hz</b></div>
+  <div class="hudItem"><span>T phách</span><b id="tbHud">12.5 s</b></div>
+</div>
+<div id="note">Hai xe sáng ở trên là hai dao động thành phần có tần số gần nhau. Điểm tím ở ray dưới là dao động tổng hợp. Đồ thị bên phải vẽ x(t) theo thời gian thực; các đường bao nét đứt cho thấy biên độ phách biến thiên chậm.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const state={running:true,paused:false,t:0,speed:1,A:.80,f1:.74,f2:.82,phi1Deg:0,phi2Deg:0,lastGraphT:-1};
+const MAX_DT=.033,GRAPH_WINDOW=16,X_SCALE=2.2;
+const dom={speed:$('speed'),amp:$('amp'),f1:$('f1'),f2:$('f2'),phi1:$('phi1'),phi2:$('phi2'),
+ speedOut:$('speedOut'),ampOut:$('ampOut'),f1Out:$('f1Out'),f2Out:$('f2Out'),phi1Out:$('phi1Out'),phi2Out:$('phi2Out'),
+ showGrid:$('showGrid'),showLabels:$('showLabels'),showComp:$('showComp'),showEnvelope:$('showEnvelope'),
+ startBtn:$('startBtn'),pauseBtn:$('pauseBtn'),resetBtn:$('resetBtn'),fitBtn:$('fitBtn'),fullscreenBtn:$('fullscreenBtn'),clearGraphBtn:$('clearGraphBtn'),theoryBtn:$('theoryBtn'),theoryBox:$('theoryBox'),syncBtn:$('syncBtn'),
+ recordBtn:$('recordBtn'),stopRecordBtn:$('stopRecordBtn'),recDot:$('recDot'),recLabel:$('recLabel'),recTime:$('recTime'),recFormat:$('recFormat')};
+
+const view=$('view'),scene=new THREE.Scene();scene.fog=new THREE.Fog(0x061220,26,55);
+const camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=9.5;controls.maxDistance=30;controls.minPolarAngle=.45;controls.maxPolarAngle=2.12;
+scene.add(new THREE.HemisphereLight(0xc6ecff,0x0b1726,2.8));const key=new THREE.DirectionalLight(0xcaf2ff,2.8);key.position.set(8,14,10);scene.add(key);
+
+const lab=new THREE.Group();scene.add(lab);lab.position.set(-1.15,-1.1,0);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(36,22),new THREE.MeshStandardMaterial({color:0x061523,roughness:.97,metalness:.02}));floor.rotation.x=-Math.PI/2;floor.position.y=-4.75;lab.add(floor);
+const grid=new THREE.GridHelper(36,36,0x1a3947,0x0f2a3c);grid.position.y=-4.74;(Array.isArray(grid.material)?grid.material:[grid.material]).forEach(m=>{m.transparent=true;m.opacity=.72});lab.add(grid);
+const back=new THREE.Mesh(new THREE.PlaneGeometry(30,15),new THREE.MeshStandardMaterial({color:0x07121c,roughness:1,side:THREE.DoubleSide}));back.position.set(0,2.5,-6.5);lab.add(back);
+
+const graphite=new THREE.MeshStandardMaterial({color:0x233844,roughness:.34,metalness:.72});
+const railGlow=new THREE.MeshStandardMaterial({color:0x0a2230,emissive:0x103a51,emissiveIntensity:.55,roughness:.35,metalness:.55});
+const bench=new THREE.Mesh(new THREE.BoxGeometry(12.0,.40,6.2),graphite);bench.position.set(-2.0,-3.5,0);lab.add(bench);
+const stand=new THREE.Mesh(new THREE.BoxGeometry(.48,5.2,5.8),graphite);stand.position.set(-7.0,-1.0,0);lab.add(stand);
+
+function addRail(y,z){
+  for(const dz of [-.38,.38]){const r=new THREE.Mesh(new THREE.BoxGeometry(9.8,.10,.12),railGlow);r.position.set(-2.3,y,z+dz);lab.add(r)}
+}
+addRail(-2.45,-1.75);addRail(-.95,0);addRail(.60,1.75);
+
+function makeSpringLine(y,z,color){
+  const line=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color}));
+  line.userData={y,z};lab.add(line);return line
+}
+function updateSpring(line,xEnd){
+  const x0=-6.72,y=line.userData.y,z=line.userData.z,turns=18,r=.12,N=170,pts=[];
+  for(let i=0;i<=N;i++){
+    const u=i/N,x=x0+(xEnd-x0)*u,ang=turns*Math.PI*2*u;
+    pts.push(new THREE.Vector3(x,y+r*Math.sin(ang),z+r*Math.cos(ang)))
+  }
+  line.geometry.dispose();line.geometry=new THREE.BufferGeometry().setFromPoints(pts)
+}
+const spring1=makeSpringLine(-1.95,-1.75,0x76ddff),spring2=makeSpringLine(-.45,0,0xffbf71);
+
+function makeCart(color,emissive){
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.BoxGeometry(1.0,.72,.92),new THREE.MeshStandardMaterial({color,emissive,emissiveIntensity:.45,roughness:.18,metalness:.22}));
+  g.add(body);
+  for(const z of [-.33,.33])for(const x of [-.32,.32]){const w=new THREE.Mesh(new THREE.CylinderGeometry(.11,.11,.11,16),new THREE.MeshStandardMaterial({color:0x142028,roughness:.7}));w.rotation.x=Math.PI/2;w.position.set(x,-.45,z);g.add(w)}
+  lab.add(g);return g
+}
+const cart1=makeCart(0x61d4ff,0x1d8bb1),cart2=makeCart(0xffb45a,0xa85e14);
+const probe=new THREE.Group();lab.add(probe);
+const puck=new THREE.Mesh(new THREE.SphereGeometry(.28,28,20),new THREE.MeshStandardMaterial({color:0xd971ff,emissive:0x772592,emissiveIntensity:.58,roughness:.16,metalness:.15}));probe.add(puck);
+const ring=new THREE.Mesh(new THREE.TorusGeometry(.40,.045,12,40),new THREE.MeshBasicMaterial({color:0xe7a5ff}));ring.rotation.x=Math.PI/2;probe.add(ring);
+const axisLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-6.8,1.10,1.75),new THREE.Vector3(2.6,1.10,1.75)]),new THREE.LineBasicMaterial({color:0x9dd8f2}));lab.add(axisLine);
+
+const eq1=new THREE.Mesh(new THREE.BoxGeometry(.04,1.1,.08),new THREE.MeshBasicMaterial({color:0x61d4ff,transparent:true,opacity:.95}));eq1.position.set(-2,-1.95,-1.18);lab.add(eq1);
+const eq2=new THREE.Mesh(new THREE.BoxGeometry(.04,1.1,.08),new THREE.MeshBasicMaterial({color:0xffb45a,transparent:true,opacity:.95}));eq2.position.set(-2,-.45,.58);lab.add(eq2);
+const eqS=new THREE.Mesh(new THREE.BoxGeometry(.04,1.1,.08),new THREE.MeshBasicMaterial({color:0xd971ff,transparent:true,opacity:.95}));eqS.position.set(-2,1.10,2.33);lab.add(eqS);
+
+const wc=document.createElement('canvas');wc.width=1100;wc.height=500;const wg=wc.getContext('2d'),wtex=new THREE.CanvasTexture(wc);wtex.colorSpace=THREE.SRGBColorSpace;
+const frame=new THREE.Mesh(new THREE.BoxGeometry(8.2,3.75,.16),new THREE.MeshStandardMaterial({color:0xeaf4f7,emissive:0x12303d,emissiveIntensity:.16,roughness:.48,metalness:.08}));frame.position.set(5.15,1.2,-1.5);lab.add(frame);
+const board=new THREE.Mesh(new THREE.PlaneGeometry(7.86,3.42),new THREE.MeshBasicMaterial({map:wtex,side:THREE.DoubleSide}));board.position.set(5.15,1.2,-1.40);lab.add(board);
+
+const labelsHost=$('labels');
+function mkLabel(t){const e=document.createElement('div');e.className='label3d';e.textContent=t;labelsHost.appendChild(e);return e}
+const l1=mkLabel('Dao động 1'),l2=mkLabel('Dao động 2'),ls=mkLabel('Dao động tổng hợp');
+function projectLabel(el,pos){const p=pos.clone().project(camera);if(p.z>1){el.style.display='none';return}el.style.display=dom.showLabels.checked?'block':'none';el.style.left=((p.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-p.y*.5+.5)*view.clientHeight)+'px'}
+
+function phi1(){return state.phi1Deg*Math.PI/180}
+function phi2(){return state.phi2Deg*Math.PI/180}
+function x1(){return state.A*Math.cos(2*Math.PI*state.f1*state.t + phi1())}
+function x2(){return state.A*Math.cos(2*Math.PI*state.f2*state.t + phi2())}
+function xs(){return x1()+x2()}
+function fb(){return Math.abs(state.f2-state.f1)}
+function tb(){return fb()<1e-6?Infinity:1/fb()}
+function envelopeAbs(t){
+  const dw = 2*Math.PI*(state.f2-state.f1);
+  const dphi = phi2()-phi1();
+  return 2*state.A*Math.abs(Math.cos(0.5*(dw*t + dphi)));
+}
+
+let data=[];
+function pushGraph(){data.push({t:state.t,x1:x1(),x2:x2(),x:xs(),env:envelopeAbs(state.t)});const t0=state.t-GRAPH_WINDOW;while(data.length&&data[0].t<t0)data.shift()}
+function clearGraph(){data=[];state.lastGraphT=-1}
+function updatePhysics(dt){if(state.running&&!state.paused)state.t+=dt*state.speed;if(state.running&&!state.paused&&state.t-state.lastGraphT>=.03){state.lastGraphT=state.t;pushGraph()}}
+
+function updateVisuals(){
+  const p1=-2+x1()*X_SCALE,p2=-2+x2()*X_SCALE,ps=-2+xs()*X_SCALE*.55;
+  cart1.position.set(p1,-1.95,-1.75);cart2.position.set(p2,-.45,0);probe.position.set(ps,1.10,1.75);
+  updateSpring(spring1,p1-.55);updateSpring(spring2,p2-.55);
+  grid.visible=dom.showGrid.checked;
+  eq1.visible=eq2.visible=eqS.visible=dom.showComp.checked;
+  projectLabel(l1,new THREE.Vector3(p1,-1.20,-1.35));projectLabel(l2,new THREE.Vector3(p2,.30,.35));projectLabel(ls,new THREE.Vector3(ps,1.78,2.05));
+  drawGraph()
+}
+
+function drawGraph(){
+  const w=wc.width,h=wc.height;
+  wg.fillStyle='#f7fbfd';wg.fillRect(0,0,w,h);
+  wg.strokeStyle='#d0dbe0';wg.lineWidth=2;
+  for(let i=0;i<=10;i++){const x=80+(w-130)*i/10;wg.beginPath();wg.moveTo(x,65);wg.lineTo(x,h-55);wg.stroke()}
+  for(let j=0;j<=6;j++){const y=65+(h-120)*j/6;wg.beginPath();wg.moveTo(80,y);wg.lineTo(w-50,y);wg.stroke()}
+  wg.strokeStyle='#34454d';wg.lineWidth=4;wg.beginPath();wg.moveTo(80,h/2);wg.lineTo(w-50,h/2);wg.stroke();wg.beginPath();wg.moveTo(80,65);wg.lineTo(80,h-55);wg.stroke();
+  wg.fillStyle='#24343b';wg.font='bold 28px Segoe UI';wg.fillText('HIỆN TƯỢNG PHÁCH',380,38);
+  const ampMax=Math.max(.2,2.2*state.A),tMax=data.length?data[data.length-1].t:GRAPH_WINDOW,tMin=Math.max(0,tMax-GRAPH_WINDOW),X=t=>80+(w-130)*(t-tMin)/GRAPH_WINDOW,Y=x=>h/2-x/(ampMax)*(h-140)/2;
+  if(dom.showEnvelope.checked){
+    wg.strokeStyle='rgba(181,97,255,.55)';wg.lineWidth=3;wg.setLineDash([10,8]);
+    let first=true;wg.beginPath();for(const p of data){if(p.t<tMin)continue;const xx=X(p.t),yy=Y(p.env);if(first){wg.moveTo(xx,yy);first=false}else wg.lineTo(xx,yy)}wg.stroke();
+    first=true;wg.beginPath();for(const p of data){if(p.t<tMin)continue;const xx=X(p.t),yy=Y(-p.env);if(first){wg.moveTo(xx,yy);first=false}else wg.lineTo(xx,yy)}wg.stroke();wg.setLineDash([])
+  }
+  if(dom.showComp.checked){
+    for(const [key,col] of [['x1','#61d4ff'],['x2','#ffb45a']]){
+      wg.strokeStyle=col;wg.lineWidth=2.4;wg.beginPath();let first=true;
+      for(const p of data){if(p.t<tMin)continue;const xx=X(p.t),yy=Y(p[key]);if(first){wg.moveTo(xx,yy);first=false}else wg.lineTo(xx,yy)}wg.stroke();
+    }
+  }
+  wg.strokeStyle='#d971ff';wg.lineWidth=5;wg.beginPath();let first=true;
+  for(const p of data){if(p.t<tMin)continue;const xx=X(p.t),yy=Y(p.x);if(first){wg.moveTo(xx,yy);first=false}else wg.lineTo(xx,yy)}wg.stroke();
+  if(data.length){const last=data[data.length-1];const xx=X(last.t),yy=Y(last.x);wg.fillStyle='#d971ff';wg.beginPath();wg.arc(xx,yy,8,0,Math.PI*2);wg.fill()}
+  wg.fillStyle='#566a72';wg.font='18px Segoe UI';wg.fillText(`f₁ = ${state.f1.toFixed(2)} Hz   ·   f₂ = ${state.f2.toFixed(2)} Hz   ·   f phách = ${fb().toFixed(2)} Hz`,250,h-18);
+  wtex.needsUpdate=true
+}
+
+function fmt(n,d=2){return(Math.abs(n)<1e-9?0:n).toFixed(d)}
+function updateUI(){
+  dom.speedOut.value=state.speed.toFixed(2)+'×';dom.ampOut.value=state.A.toFixed(2)+' m';dom.f1Out.value=state.f1.toFixed(2)+' Hz';dom.f2Out.value=state.f2.toFixed(2)+' Hz';dom.phi1Out.value=state.phi1Deg.toFixed(0)+'°';dom.phi2Out.value=state.phi2Deg.toFixed(0)+'°';
+  $('x1Hud').textContent=fmt(x1())+' m';$('x2Hud').textContent=fmt(x2())+' m';$('xHud').textContent=fmt(xs())+' m';$('fbHud').textContent=fb().toFixed(2)+' Hz';$('tbHud').textContent=(tb()===Infinity?'∞':tb().toFixed(1)+' s')
+}
+function restart(){state.speed=+dom.speed.value;state.A=+dom.amp.value;state.f1=+dom.f1.value;state.f2=+dom.f2.value;state.phi1Deg=+dom.phi1.value;state.phi2Deg=+dom.phi2.value;state.t=0;clearGraph();pushGraph();updateUI()}
+[dom.amp,dom.f1,dom.f2,dom.phi1,dom.phi2].forEach(e=>e.addEventListener('input',restart));dom.speed.addEventListener('input',()=>{state.speed=+dom.speed.value;updateUI()});
+dom.syncBtn.onclick=()=>{dom.f2.value=(Math.min(1.40,(+dom.f1.value)+0.08)).toFixed(2);restart()};
+dom.startBtn.onclick=()=>{state.running=true;state.paused=false};dom.pauseBtn.onclick=()=>state.paused=true;dom.clearGraphBtn.onclick=()=>{clearGraph();pushGraph()};dom.theoryBtn.onclick=()=>dom.theoryBox.classList.toggle('show');
+dom.fullscreenBtn.onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fitCamera()},80));
+dom.resetBtn.onclick=()=>{dom.speed.value=1;dom.amp.value=.80;dom.f1.value=.74;dom.f2.value=.82;dom.phi1.value=0;dom.phi2.value=0;Object.assign(state,{running:true,paused:false,t:0,speed:1,A:.80,f1:.74,f2:.82,phi1Deg:0,phi2Deg:0,lastGraphT:-1});clearGraph();pushGraph();fitCamera();updateUI()};
+dom.fitBtn.onclick=fitCamera;
+
+let mediaRecorder=null,chunks=[],recStart=0,recTimer=null,recExt='webm';
+function pickMime(){for(const [m,e] of [['video/mp4;codecs=avc1.42E01E','mp4'],['video/mp4','mp4'],['video/webm;codecs=vp9','webm'],['video/webm','webm']])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return{m,e};return{m:'',e:'webm'}}
+function recClock(){const s=Math.floor((performance.now()-recStart)/1000);dom.recTime.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+async function startRec(){
+  if(!renderer.domElement.captureStream||!window.MediaRecorder){dom.recLabel.textContent='Không hỗ trợ quay';return}
+  const p=pickMime(),stream=renderer.domElement.captureStream(30);recExt=p.e;
+  mediaRecorder=new MediaRecorder(stream,p.m?{mimeType:p.m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];
+  mediaRecorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+  mediaRecorder.onstop=()=>{clearInterval(recTimer);dom.recDot.classList.remove('on');dom.recLabel.textContent='Đã dừng';const mime=mediaRecorder.mimeType||p.m||'video/webm';recExt=mime.includes('mp4')?'mp4':'webm';const blob=new Blob(chunks,{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`018_Hien_tuong_phach.${recExt}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);dom.recordBtn.disabled=false;dom.stopRecordBtn.disabled=true;dom.recFormat.textContent='Ưu tiên MP4 nếu trình duyệt hỗ trợ.'};
+  mediaRecorder.start(1000);recStart=performance.now();recClock();recTimer=setInterval(recClock,250);dom.recDot.classList.add('on');dom.recLabel.textContent='Đang quay';dom.recordBtn.disabled=true;dom.stopRecordBtn.disabled=false;dom.recFormat.textContent=recExt==='mp4'?'Đang ghi MP4 · 30 fps':'Đang ghi WebM · 30 fps';
+}
+dom.recordBtn.onclick=startRec;dom.stopRecordBtn.onclick=()=>{if(mediaRecorder&&mediaRecorder.state==='recording')mediaRecorder.stop()};
+
+function fitCamera(){
+  const box=new THREE.Box3();[bench,stand,cart1,cart2,probe,frame,board].forEach(o=>box.expandByObject(o));box.expandByScalar(.9);
+  const size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3()),fov=camera.fov*Math.PI/180,distY=size.y/(2*Math.tan(fov/2)),distX=size.x/(2*Math.tan(fov/2)*camera.aspect),dist=Math.max(distX,distY)*1.30;
+  camera.position.set(center.x+dist*.60,center.y+dist*.04,center.z+dist*.76);controls.target.set(center.x+.22,center.y-.48,center.z);controls.update()
+}
+function importantFits(mx=.91,my=.88){
+  lab.updateMatrixWorld(true);const pts=[];for(const x of [-7.2,9.2])for(const y of [-4.6,3.6])for(const z of [-3.3,2.8])pts.push(lab.localToWorld(new THREE.Vector3(x,y,z)));camera.updateMatrixWorld();
+  for(const q of pts){const p=q.clone().project(camera);if(p.z<-1||p.z>1||Math.abs(p.x)>mx||Math.abs(p.y)>my)return false}return true
+}
+function enforceSafeZoom(){let i=0;while(!importantFits()&&i++<14){const d=camera.position.clone().sub(controls.target);camera.position.copy(controls.target).add(d.multiplyScalar(1.065));camera.updateMatrixWorld()}}
+controls.addEventListener('change',enforceSafeZoom);
+function resize(){const ww=view.clientWidth,hh=view.clientHeight;camera.aspect=ww/hh;camera.updateProjectionMatrix();renderer.setSize(ww,hh,false)}
+window.addEventListener('resize',()=>{resize();fitCamera()});resize();restart();fitCamera();
+
+let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=Math.min(MAX_DT,Math.max(0,(now-last)/1000));last=now;updatePhysics(dt);updateVisuals();updateUI();controls.update();enforceSafeZoom();renderer.render(scene,camera)}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

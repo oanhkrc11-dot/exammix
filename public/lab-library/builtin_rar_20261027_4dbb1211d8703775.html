@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-41 Màng loa tạo sóng âm 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#020912;color:#eef8fb}
+#app{display:grid;grid-template-columns:252px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800}.desc{font-size:10.4px;color:#a9c2cd;line-height:1.35}h1{font-size:17px;margin:4px 0 6px;line-height:1.1}
+.ctl{display:grid;grid-template-columns:72px 1fr 62px;gap:5px;align-items:center;margin:5px 0}.ctl label{font-size:9.6px}.ctl output{font-size:9.1px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9.2px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 55% 32%,#123d58 0,#0a263b 38%,#061725 70%,#030b13 100%)}#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label{position:absolute;transform:translate(-50%,-50%);background:rgba(244,250,252,.95);color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9.3px;white-space:nowrap}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10.4px;font-weight:700}
+#hud{position:absolute;right:12px;bottom:12px;z-index:7;display:flex;gap:9px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:7px 9px}.hud span{display:block;font-size:8px;color:#98bac8}.hud b{font-size:10.3px}
+#note{position:absolute;left:12px;bottom:12px;z-index:7;width:460px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.2px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700}.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style></head>
+<body>
+<div id="app"><aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D</div><h1>41 · Màng loa tạo sóng âm</h1>
+<p class="desc">Màng loa dao động tiến – lùi làm không khí nén – dãn tuần hoàn và tạo sóng âm truyền ra phía trước.</p>
+
+<div class="ctl"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Biên độ màng</label><input id="amp" type="range" min=".01" max=".12" step=".005" value=".05"><output id="ampOut"></output></div>
+<div class="ctl"><label>Tần số f</label><input id="freq" type="range" min="20" max="1000" step="1" value="200"><output id="freqOut"></output></div>
+<div class="ctl"><label>Vận tốc âm v</label><input id="waveV" type="range" min="300" max="360" step="1" value="343"><output id="waveVOut"></output></div>
+<div class="ctl"><label>Điểm M</label><input id="probe" type="range" min="1" max="7" step=".1" value="4.5"><output id="probeOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showParticles" type="checkbox" checked> Hạt không khí</label>
+<label class="check"><input id="showPressure" type="checkbox" checked> Nén – dãn</label>
+<label class="check"><input id="showVectors" type="checkbox" checked> Vectơ dao động</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị áp suất</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showProbe" type="checkbox" checked> Điểm M</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Căn giữa</button>
+<button id="f50" class="btn">50 Hz</button><button id="f200" class="btn">200 Hz</button>
+<button id="f440" class="btn">440 Hz</button><button id="f800" class="btn">800 Hz</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div><div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view"><div id="three"></div><div id="labels"></div>
+<div id="formula">λ=v/f · Δp(x,t)∝cos(ωt−kx) · ξ(x,t)∝sin(ωt−kx)</div>
+<div id="hud">
+<div class="hud"><span>f</span><b id="fHud"></b></div>
+<div class="hud"><span>λ</span><b id="lambdaHud"></b></div>
+<div class="hud"><span>v</span><b id="vHud"></b></div>
+<div class="hud"><span>Δp(M)</span><b id="pHud"></b></div>
+<div class="hud"><span>Pha M</span><b id="phaseHud"></b></div>
+</div>
+<div id="note">Màng loa chuyển động làm các lớp không khí trước loa lần lượt bị nén và dãn. Màu cyan là vùng nén, tím là vùng dãn. Các hạt khí chỉ dao động qua lại quanh vị trí cân bằng; trạng thái áp suất mới lan truyền theo sóng.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id),view=$('view');
+const state={running:true,t:0,speed:1,A:.05,f:200,v:343,probeX:4.5};
+const lambda=()=>state.v/state.f,omega=()=>2*Math.PI*state.f,kval=()=>2*Math.PI/lambda();
+const pressure=(x,t=state.t)=>Math.cos(omega()*t-kval()*x);
+const airDisp=(x,t=state.t)=>Math.sin(omega()*t-kval()*x);
+
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);renderer.shadowMap.enabled=true;$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=6.5;controls.maxDistance=24;
+scene.add(new THREE.HemisphereLight(0xffffff,0x172832,4.2));const dl=new THREE.DirectionalLight(0xffffff,4.4);dl.position.set(5,9,8);scene.add(dl);
+
+const lab=new THREE.Group();scene.add(lab);lab.position.set(-.8,-.7,0);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(20,14),new THREE.MeshStandardMaterial({color:0x0a1c28,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.7;lab.add(floor);
+const grid=new THREE.GridHelper(20,26,0x2e586a,0x123345);grid.position.y=-2.69;lab.add(grid);
+
+// speaker cabinet
+const cabinet=new THREE.Mesh(new THREE.BoxGeometry(2.6,4.8,2.4),new THREE.MeshStandardMaterial({color:0x1d2831,roughness:.45,metalness:.18}));cabinet.position.set(-4.0,.05,0);lab.add(cabinet);
+const rim=new THREE.Mesh(new THREE.TorusGeometry(1.35,.18,18,52),new THREE.MeshStandardMaterial({color:0x65747c,metalness:.55,roughness:.28}));rim.rotation.y=Math.PI/2;rim.position.set(-2.75,.05,0);lab.add(rim);
+
+// cone and dust cap, facing +x
+const coneMat=new THREE.MeshStandardMaterial({color:0x5c6d76,roughness:.55,side:THREE.DoubleSide,emissive:0x102b34,emissiveIntensity:.25});
+const cone=new THREE.Mesh(new THREE.CylinderGeometry(.42,1.16,.65,48,1,true),coneMat);cone.rotation.z=-Math.PI/2;cone.position.set(-2.95,.05,0);lab.add(cone);
+const cap=new THREE.Mesh(new THREE.SphereGeometry(.48,28,18,0,Math.PI*2,0,Math.PI/2),new THREE.MeshStandardMaterial({color:0x94abb5,roughness:.35,metalness:.15,emissive:0x163945,emissiveIntensity:.3}));cap.rotation.z=-Math.PI/2;cap.position.set(-2.57,.05,0);lab.add(cap);
+
+// pressure planes
+const pressureG=new THREE.Group();lab.add(pressureG);
+function rebuildPressure(){
+ pressureG.clear();
+ const lam=lambda(),maxX=8.2,n=Math.ceil(maxX/(lam/2))+2;
+ for(let i=0;i<n;i++){
+   const isComp=i%2===0;
+   const mat=new THREE.MeshBasicMaterial({color:isComp?0x61d4ff:0xd971ff,transparent:true,opacity:isComp?.18:.13,side:THREE.DoubleSide});
+   const disk=new THREE.Mesh(new THREE.CircleGeometry(1.55,36),mat);disk.rotation.y=Math.PI/2;disk.userData={x0:.3+i*lam/2,isComp};pressureG.add(disk)
+ }
+}
+
+// air particles
+const pg=new THREE.SphereGeometry(.042,8,6),pm=new THREE.MeshStandardMaterial({color:0xdaf8ff,emissive:0x24718d,emissiveIntensity:.45});
+const NX=31,NY=7,NZ=5,COUNT=NX*NY*NZ;
+const particles=new THREE.InstancedMesh(pg,pm,COUNT);lab.add(particles);
+
+// probe + vector
+const probe=new THREE.Mesh(new THREE.SphereGeometry(.11,16,12),new THREE.MeshStandardMaterial({color:0xff6b6b,emissive:0x802020,emissiveIntensity:.55}));lab.add(probe);
+const arrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1,0xffd166,.22,.12);lab.add(arrow);
+
+// graph board
+const gc=document.createElement('canvas');gc.width=780;gc.height=320;const gctx=gc.getContext('2d'),gtex=new THREE.CanvasTexture(gc);
+const graphFrame=new THREE.Mesh(new THREE.BoxGeometry(4.8,2.2,.12),new THREE.MeshStandardMaterial({color:0xe9f3f6,roughness:.5}));graphFrame.position.set(3.4,2.6,-2.25);lab.add(graphFrame);
+const graphPlane=new THREE.Mesh(new THREE.PlaneGeometry(4.55,1.96),new THREE.MeshBasicMaterial({map:gtex,side:THREE.DoubleSide}));graphPlane.position.set(3.4,2.6,-2.18);lab.add(graphPlane);
+
+function updateGraph(){
+ gctx.fillStyle='#f7fafb';gctx.fillRect(0,0,gc.width,gc.height);
+ gctx.strokeStyle='#cfdce1';gctx.lineWidth=1;
+ for(let i=0;i<=8;i++){let x=45+i*(gc.width-75)/8;gctx.beginPath();gctx.moveTo(x,40);gctx.lineTo(x,285);gctx.stroke()}
+ for(let j=0;j<=4;j++){let y=55+j*55;gctx.beginPath();gctx.moveTo(45,y);gctx.lineTo(gc.width-25,y);gctx.stroke()}
+ gctx.fillStyle='#263b45';gctx.font='bold 25px Segoe UI';gctx.fillText('ÁP SUẤT THEO VỊ TRÍ',230,30);
+ gctx.strokeStyle='#1677c8';gctx.lineWidth=4;gctx.beginPath();
+ for(let i=0;i<=500;i++){const x=8*i/500,px=45+(gc.width-75)*i/500,py=165-pressure(x)*95;i?gctx.lineTo(px,py):gctx.moveTo(px,py)}gctx.stroke();
+ gctx.fillStyle='#ff5d5d';const px=45+(gc.width-75)*state.probeX/8,py=165-pressure(state.probeX)*95;gctx.beginPath();gctx.arc(px,py,8,0,Math.PI*2);gctx.fill();
+ gctx.fillStyle='#4b6069';gctx.font='17px Segoe UI';gctx.fillText('x (m)',gc.width-70,305);gctx.fillText('Δp',10,55);
+ gtex.needsUpdate=true
+}
+function updateVisuals(){
+ const coneShift=.16*(state.A/.05)*Math.sin(omega()*state.t);
+ cone.position.x=-2.95+coneShift;cap.position.x=-2.57+coneShift;
+
+ const lam=lambda(),phase=(state.v*state.t)%lam;
+ for(const d of pressureG.children){
+   let x=(d.userData.x0+phase)%8.2;if(x<.2)x+=lam;
+   d.position.set(-2.4+x,.05,0);
+   d.material.opacity=$('showPressure').checked?(d.userData.isComp?.20:.14)*Math.max(.25,1-x/9):0
+ }
+
+ const dummy=new THREE.Object3D();let idx=0;
+ for(let ix=0;ix<NX;ix++){
+   const x=8*ix/(NX-1);
+   for(let iy=0;iy<NY;iy++)for(let iz=0;iz<NZ;iz++){
+     const y=(iy-(NY-1)/2)*.36,z=(iz-(NZ-1)/2)*.36;
+     const dx=.13*airDisp(x);
+     dummy.position.set(-2.4+x+dx,.05+y,z);dummy.scale.setScalar(.8+.2*(pressure(x)+1)/2);dummy.updateMatrix();
+     particles.setMatrixAt(idx++,dummy.matrix)
+   }
+ }
+ particles.instanceMatrix.needsUpdate=true;particles.visible=$('showParticles').checked;
+
+ const ppos=new THREE.Vector3(-2.4+state.probeX,.05,0);probe.position.copy(ppos);probe.visible=$('showProbe').checked;
+ const d=airDisp(state.probeX);arrow.position.copy(ppos);arrow.setDirection(new THREE.Vector3(Math.sign(d||1),0,0));arrow.setLength(.25+.5*Math.abs(d),.18,.1);arrow.visible=$('showVectors').checked;
+ graphFrame.visible=graphPlane.visible=$('showGraph').checked;
+ grid.visible=$('showGrid').checked;
+ updateGraph()
+}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('ampOut').value=(state.A*100).toFixed(1)+' cm';$('freqOut').value=state.f.toFixed(0)+' Hz';$('waveVOut').value=state.v.toFixed(0)+' m/s';$('probeOut').value=state.probeX.toFixed(1)+' m';
+ $('fHud').textContent=state.f.toFixed(0)+' Hz';$('lambdaHud').textContent=lambda().toFixed(2)+' m';$('vHud').textContent=state.v.toFixed(0)+' m/s';$('pHud').textContent=pressure(state.probeX).toFixed(2);
+ let ph=(omega()*state.t-kval()*state.probeX)*180/Math.PI;ph=((ph%360)+360)%360;$('phaseHud').textContent=ph.toFixed(0)+'°'
+}
+function sync(reset=false){
+ state.speed=+$('speed').value;state.A=+$('amp').value;state.f=+$('freq').value;state.v=+$('waveV').value;state.probeX=+$('probe').value;
+ if(reset)state.t=0;rebuildPressure();updateUI()
+}
+['amp','freq','waveV','probe'].forEach(id=>$(id).addEventListener('input',()=>sync(false)));$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;
+function setF(f){$('freq').value=f;sync(true)}$('f50').onclick=()=>setF(50);$('f200').onclick=()=>setF(200);$('f440').onclick=()=>setF(440);$('f800').onclick=()=>setF(800);
+$('resetBtn').onclick=()=>{Object.assign(state,{running:true,t:0,speed:1,A:.05,f:200,v:343,probeX:4.5});for(const [id,v] of [['speed',1],['amp',.05],['freq',200],['waveV',343],['probe',4.5]])$(id).value=v;rebuildPressure();fit();updateUI()};
+$('fitBtn').onclick=fit;$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fit()},80));
+
+const labels=$('labels');function mk(t){const e=document.createElement('div');e.className='label';e.textContent=t;labels.appendChild(e);return e}
+const lSpeaker=mk('Màng loa dao động'),lComp=mk('Vùng nén'),lProbe=mk('Điểm M');
+function project(el,p){const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=q.z>1?'none':'block'}
+
+function fit(){controls.target.set(.3,.2,0);camera.position.set(12.2,5.8,16.2);camera.lookAt(controls.target);controls.update()}
+function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}window.addEventListener('resize',()=>{resize();fit()});
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!renderer.domElement.captureStream||!window.MediaRecorder)return;const m=mime();rec=new MediaRecorder(renderer.domElement.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`041_Mang_loa_tao_song_am_3D.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+resize();rebuildPressure();fit();updateUI();
+let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);
+ const dt=Math.min(.033,(now-last)/1000);last=now;if(state.running)state.t+=dt*state.speed;
+ updateVisuals();updateUI();
+ project(lSpeaker,new THREE.Vector3(-2.7,1.7,.3));project(lComp,new THREE.Vector3(-.4,1.7,.3));project(lProbe,new THREE.Vector3(-2.4+state.probeX,.8,.3));
+ controls.update();renderer.render(scene,camera)
+}
+requestAnimationFrame(animate);
+</script></body></html>

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>098 · Hai nguồn giống nhau mắc song song · 3D PRO</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#06131e;color:#ebf7ff;font:12px Segoe UI,Arial,sans-serif}
+#scene{position:fixed;inset:0}#panel{position:fixed;left:12px;top:12px;bottom:12px;width:260px;overflow:auto;z-index:20;padding:12px;border-radius:15px;background:#071a29f2;border:1px solid #315a70}h1{font-size:16px;margin:5px 0}.ey,.section{color:#65d9fa;font-weight:800}.ey{font-size:10px}.section{margin:14px 0 6px}.desc,.note{font-size:10.5px;color:#bed4e1;line-height:1.5}.note{border-left:3px solid #ffc76a;padding:7px;background:#132a37}.ctl{margin:10px 0}.ctl label{display:flex;justify-content:space-between;gap:5px}output{color:#ffce76;font-weight:800}input[type=range]{width:100%;accent-color:#51cfff;margin-top:6px}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:6px}button{border:1px solid #355a70;background:#143044;color:#eefbff;border-radius:8px;padding:7px;font-size:10px;font-weight:750;cursor:pointer}.on{background:#155747}#panel.hide{transform:translateX(-290px)}.check{display:block;margin:8px 0;font-size:11px}#graph{width:100%;height:150px;background:#091c29;border:1px solid #315368;border-radius:8px}
+#toolbar{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:12;background:#071b2be5;border:1px solid #345a73;border-radius:12px;padding:5px;display:flex;gap:4px}
+#hud{position:fixed;right:12px;top:12px;z-index:11;background:#061827e8;border:1px solid #38617b;border-radius:12px;width:260px;padding:11px;line-height:1.75}#hud b{color:#ffdc81}#formula{position:fixed;top:66px;left:50%;transform:translateX(-50%);z-index:10;font-size:14px;font-weight:800;color:#ffe39f;text-shadow:0 2px 6px #000;white-space:nowrap}#credit{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:8;color:#ffdf89;font-weight:bold}#record{position:fixed;right:15px;bottom:16px;z-index:10;background:#9d2337;padding:9px;border-radius:9px;display:none}#status{color:#7ce2fc;font-weight:800}
+@media(max-width:1050px){#hud{top:auto;bottom:20px;width:200px}#formula{display:none}#toolbar{left:66%}}
+</style></head>
+<body>
+<div id="scene"></div>
+<aside id="panel"><div class="ey">PHYSICS 11 LAB · 3D CINEMATIC</div><h1>098 · HAI NGUỒN GIỐNG NHAU MẮC SONG SONG</h1>
+<p class="desc">Hai nguồn có cùng suất điện động E và điện trở trong r. Cực (+) nối cực (+), cực (−) nối cực (−). Mỗi nguồn cung cấp một nửa dòng tải khi hai nguồn giống nhau.</p>
+<div class="section">THÔNG SỐ VẬT LÍ</div>
+<div class="ctl"><label>Suất điện động mỗi nguồn E <output id="Ev">6,0 V</output></label><input id="E" type="range" min="1" max="12" step=".5" value="6"></div>
+<div class="ctl"><label>Điện trở trong mỗi nguồn r <output id="rv">1,0 Ω</output></label><input id="r" type="range" min=".2" max="5" step=".1" value="1"></div>
+<div class="ctl"><label>Điện trở tải R <output id="Rv">5,0 Ω</output></label><input id="R" type="range" min=".5" max="20" step=".5" value="5"></div>
+<div class="ctl"><label>Tốc độ chuyển động <output id="speedv">1,00×</output></label><input id="speed" type="range" min=".25" max="3" step=".05" value="1"></div>
+<div class="section">THAO TÁC</div><div class="buttons">
+<button id="start" class="on">▶ Bắt đầu</button><button id="pause">⏸ Tạm dừng</button><button id="switch">⏻ Ngắt mạch</button><button id="reset">↻ Đặt lại</button>
+<button id="equal">Hai nguồn 6 V</button><button id="lowR">Tải R nhỏ</button><button id="fit">⛶ Fit</button><button id="labelsBtn">Nhãn: Bật</button>
+</div><div class="section">HIỂN THỊ</div><label class="check"><input type="checkbox" id="particles" checked> Hạt mô tả dòng điện quy ước</label><label class="check"><input type="checkbox" id="grid" checked> Lưới</label>
+<canvas id="graph" width="520" height="300"></canvas>
+<p class="note"><b>Đúng bản chất:</b> E<sub>bộ</sub> = E; r<sub>bộ</sub> = r/2; I = E/(R+r/2). Khi đóng mạch, I₁=I₂=I/2. Hạt sáng chỉ biểu diễn hướng dòng điện quy ước, không phải electron. Mô hình bỏ qua điện trở dây nối và thời gian quá độ.</p></aside>
+<div id="toolbar"><button id="panelBtn">☰</button><button id="full">⛶</button><button id="bg">🌗</button><button id="light">💡</button><button id="cam">🎥</button><button id="auto">↻ Cam OFF</button><button id="rec">🔴 Quay</button><button id="stop">⏹ Dừng</button></div>
+<div id="formula">E<sub>bộ</sub> = E &nbsp;·&nbsp; r<sub>bộ</sub> = r/2 &nbsp;·&nbsp; I = E/(R + r/2)</div>
+<div id="hud"><div id="status">● MẠCH ĐANG ĐÓNG</div>
+E mỗi nguồn = <b id="hE"></b><br>r mỗi nguồn = <b id="hr"></b><br>R tải = <b id="hR"></b><br>
+E bộ nguồn = <b id="hEb"></b><br>r bộ nguồn = <b id="hrb"></b><br>
+I toàn mạch = <b id="hI"></b><br>I₁ = I₂ = <b id="hi"></b><br>
+U trên tải = <b id="hU"></b><br>P tải = <b id="hP"></b><br>Điện năng tải = <b id="hW"></b></div>
+<div id="credit">Thầy Hùng vật lí</div><div id="record">● ĐANG QUAY 00:00</div><canvas id="recCanvas" width="1280" height="720" hidden></canvas>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const $=id=>document.getElementById(id),s={E:6,r:1,R:5,speed:1,closed:true,paused:false,t:0,W:0,auto:false,view:0,showLabels:true,history:[]};
+const I=()=>s.closed?s.E/(s.R+s.r/2):0,V=()=>I()*s.R;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x071725);
+const cam=new THREE.PerspectiveCamera(43,innerWidth/innerHeight,.1,140);cam.position.set(3,5,13);
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.45;$('scene').appendChild(renderer.domElement);
+const orbit=new OrbitControls(cam,renderer.domElement);orbit.enableDamping=true;orbit.target.set(0,0,0);orbit.minDistance=5;orbit.maxDistance=26;
+scene.add(new THREE.HemisphereLight(0xe3f6ff,0x122535,3));const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(4,7,8);scene.add(light);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(50,50),new THREE.MeshStandardMaterial({color:0x132838,roughness:.9}));floor.rotation.x=-Math.PI/2;floor.position.y=-3;scene.add(floor);
+const grid=new THREE.GridHelper(40,40,0x40637b,0x223a4a);grid.position.y=-2.98;scene.add(grid);
+const mat=(c,met=.3)=>new THREE.MeshStandardMaterial({color:c,metalness:met,roughness:.4});
+const metal=mat(0xb9d1da,.8),red=mat(0xef5b4c),blue=mat(0x48bfe4),yellow=mat(0xffbe67),dark=mat(0x263947);
+function addBox(pos,size,m){const o=new THREE.Mesh(new THREE.BoxGeometry(...size),m);o.position.set(...pos);scene.add(o);return o}
+function ball(pos,r,m){const o=new THREE.Mesh(new THREE.SphereGeometry(r,14,12),m);o.position.set(...pos);scene.add(o);return o}
+function tube(points,m,r=.037){const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)),false,'centripetal');const o=new THREE.Mesh(new THREE.TubeGeometry(curve,Math.max(20,points.length*12),r,8,false),m);scene.add(o);return curve}
+function caption(txt,x,y,z=0){const c=document.createElement('canvas');c.width=480;c.height=90;const g=c.getContext('2d');g.fillStyle='#0a2539e8';g.fillRect(0,0,480,90);g.strokeStyle='#5db3d6';g.strokeRect(1,1,478,88);g.font='bold 34px Segoe UI';g.fillStyle='#effcff';g.fillText(txt,20,57);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));sp.position.set(x,y,z);sp.scale.set(2.2,.41,1);scene.add(sp);return sp}
+const labels=[];
+for(const [idx,y] of [[1,1.18],[2,-.83]]){
+ addBox([-2.15,y,0],[1.35,.62,.65],mat(0x237394));
+ const left=-2.88,right=-1.42;
+ addBox([left,y,.02],[.19,.25,.22],blue);addBox([right,y,.02],[.19,.25,.22],red);
+ ball([left,y,.16],.075,metal);ball([right,y,.16],.075,metal);
+ labels.push(caption(`Nguồn ${idx} · E, r`,-2.17,y+.65));
+}
+const negativeBus=tube([[-2.88,1.18,.16],[-3.4,1.18,.16],[-3.4,-.83,.16],[-2.88,-.83,.16]],blue,.045);
+const positiveBus=tube([[-1.42,1.18,.16],[-.68,1.18,.16],[-.68,-.83,.16],[-1.42,-.83,.16]],red,.045);
+ball([-.68,1.18,.16],.08,yellow);ball([-3.4,-.83,.16],.08,yellow);
+// External closed circuit: positive common -> load -> switch -> negative common
+const route1=tube([[-.68,1.18,.16],[-.68,2.3,.16],[2.3,2.3,.16],[2.3,1.23,.16]],red,.045);
+const resistor=addBox([2.3,.78,.16],[.37,.84,.36],mat(0xc49a60));for(let k=0;k<5;k++)addBox([2.3,.45+k*.16,.38],[.39,.045,.018],mat(k%2?0x795444:0x4a2c21));
+labels.push(caption('R tải',3.25,.91,.25));tube([[2.3,.34,.16],[2.3,-.35,.16]],red,.045);
+const switchA=ball([2.3,-.35,.16],.12,metal),switchB=ball([2.3,-1.16,.16],.12,metal);
+const blade=addBox([2.3,-.755,.16],[.12,.76,.13],metal);
+tube([[2.3,-1.16,.16],[2.3,-2.25,.16],[-3.4,-2.25,.16],[-3.4,-.83,.16]],blue,.045);
+labels.push(caption('Cực (+) nối (+)',-.2,1.05));labels.push(caption('Cực (−) nối (−)',-4.95,-.5));
+const ePath=[route1];const moving=[];
+const particleMat=new THREE.MeshBasicMaterial({color:0xffe27a});const particleMat2=new THREE.MeshBasicMaterial({color:0x8befff});
+const pathPositive=new THREE.CatmullRomCurve3([[-1.42,1.18,.16],[-.68,1.18,.16],[-.68,2.3,.16],[2.3,2.3,.16],[2.3,1.23,.16],[2.3,.35,.16],[2.3,-.35,.16]].map(p=>new THREE.Vector3(...p)));
+const pathReturn=new THREE.CatmullRomCurve3([[2.3,-1.16,.16],[2.3,-2.25,.16],[-3.4,-2.25,.16],[-3.4,-.83,.16]].map(p=>new THREE.Vector3(...p)));
+const branchPaths=[
+ new THREE.CatmullRomCurve3([[-2.88,1.18,.16],[-3.4,1.18,.16],[-3.4,-.83,.16]].map(p=>new THREE.Vector3(...p))),
+ new THREE.CatmullRomCurve3([[-2.88,-.83,.16],[-3.4,-.83,.16]].map(p=>new THREE.Vector3(...p)))
+];
+for(const [curve,count,m] of [[pathPositive,13,particleMat],[pathReturn,13,particleMat2],[branchPaths[0],5,particleMat2],[branchPaths[1],5,particleMat2]]){
+ for(let j=0;j<count;j++){let dot=ball([0,0,0],.052,m);moving.push({dot,curve,phase:j/count,sign:curve===pathReturn?-1:1})}
+}
+function update(){const nowI=I(),ii=nowI/2,uu=V();$('status').textContent=s.closed?'● MẠCH ĐANG ĐÓNG':'○ MẠCH ĐANG NGẮT';const write=(id,n,unit,d=2)=>$(id).textContent=n.toFixed(d)+' '+unit;
+write('hE',s.E,'V',1);write('hr',s.r,'Ω',1);write('hR',s.R,'Ω',1);write('hEb',s.E,'V',1);write('hrb',s.r/2,'Ω',2);write('hI',nowI,'A',3);write('hi',ii,'A',3);write('hU',uu,'V',2);write('hP',uu*nowI,'W',2);write('hW',s.W,'J',1);
+for(const [key,id,u] of [['E','Ev','V'],['r','rv','Ω'],['R','Rv','Ω'],['speed','speedv','×']])$(id).textContent=s[key].toFixed(key==='speed'?2:1).replace('.',',')+' '+u;
+}
+function drawGraph(){const c=$('graph'),g=c.getContext('2d'),w=c.width,h=c.height;g.fillStyle='#091c29';g.fillRect(0,0,w,h);g.strokeStyle='#234356';g.lineWidth=1;for(let k=0;k<=4;k++){let y=32+k*53;g.beginPath();g.moveTo(45,y);g.lineTo(w-12,y);g.stroke()}g.fillStyle='#e8f6ff';g.font='bold 19px Segoe UI';g.fillText('DÒNG ĐIỆN I(t)',66,25);g.font='13px Segoe UI';g.fillText('A',12,50);const max=Math.max(2,...s.history.map(x=>x.i))*1.18,t0=Math.max(0,s.t-35);g.fillStyle='#94abbc';g.fillText(max.toFixed(1),7,70);g.fillText('0',25,260);g.strokeStyle='#63dfff';g.lineWidth=3;g.beginPath();let started=false;for(const p of s.history){if(p.t<t0)continue;const x=45+(w-60)*(p.t-t0)/35,y=260-p.i/max*200;if(!started){g.moveTo(x,y);started=true}else g.lineTo(x,y)}g.stroke()}
+const views=[{p:[3.8,4.7,14],t:[-.3,0,0]},{p:[-.5,3.4,8],t:[-2,0,0]},{p:[4,3.2,8],t:[2,0,0]},{p:[0,8,8],t:[-.3,0,0]},{p:[-6,3.5,8],t:[-2,0,0]}],position=new THREE.Vector3(),target=new THREE.Vector3();let autoT=0,move=true;
+function goView(n){s.view=(n+views.length)%views.length;position.set(...views[s.view].p);target.set(...views[s.view].t);move=true}
+function animateCamera(dt){if(s.auto){autoT+=dt;if(autoT>5.5){autoT=0;goView(s.view+1)}}if(move){let a=1-Math.exp(-dt*1.6);cam.position.lerp(position,a);orbit.target.lerp(target,a);if(cam.position.distanceTo(position)<.02)move=false}}
+function frame(now){requestAnimationFrame(frame);const dt=Math.min(.06,(now-last)/1000);last=now;if(!s.paused){s.t+=dt*s.speed;s.W+=I()*V()*dt*s.speed;if(!s.history.length||s.t-s.history.at(-1).t>.09)s.history.push({t:s.t,i:I()});while(s.history.length&&s.history[0].t<s.t-36)s.history.shift()}
+ for(const a of moving){const phase=(a.phase+s.t*.09*s.speed*Math.min(2,I()/1.3))%1;a.dot.position.copy(a.curve.getPoint(phase));a.dot.visible=s.closed&&$('particles').checked}
+ blade.rotation.z=s.closed?0:-.68;blade.position.x=s.closed?2.3:2.55;
+ labels.forEach(x=>x.visible=s.showLabels);grid.visible=$('grid').checked;animateCamera(dt);orbit.update();renderer.render(scene,cam);
+ if(counter++%6===0){update();drawGraph()}
+ if(recorder?.state==='recording'){paintRecord();$('record').textContent='● ĐANG QUAY '+new Date(now-recStart).toISOString().slice(14,19)}
+}
+let last=performance.now(),counter=0;
+for(const k of ['E','r','R','speed'])$(k).oninput=()=>s[k]=+$(k).value;
+$('start').onclick=()=>{s.closed=true;s.paused=false};
+$('pause').onclick=()=>s.paused=!s.paused;
+$('switch').onclick=()=>s.closed=!s.closed;
+$('equal').onclick=()=>{s.E=6;s.r=1;s.R=5;for(const k of ['E','r','R'])$(k).value=s[k];s.closed=true};
+$('lowR').onclick=()=>{s.R=1;$('R').value=1;s.closed=true};
+$('reset').onclick=()=>{Object.assign(s,{E:6,r:1,R:5,speed:1,closed:true,paused:false,t:0,W:0,history:[]});for(const k of ['E','r','R','speed'])$(k).value=s[k];goView(0)};
+$('fit').onclick=()=>goView(0);
+$('labelsBtn').onclick=()=>{s.showLabels=!s.showLabels;$('labelsBtn').textContent='Nhãn: '+(s.showLabels?'Bật':'Tắt')};
+$('panelBtn').onclick=()=>$('panel').classList.toggle('hide');
+$('full').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
+let bg=0,lighting=0;
+$('bg').onclick=()=>{bg=(bg+1)%3;scene.background=new THREE.Color(['#071725','#d6e6ee','#171921'][bg]);floor.material.color.set(bg===1?'#9eb7c2':'#132838')};
+$('light').onclick=()=>{lighting=(lighting+1)%3;light.intensity=[3,5,1.4][lighting]};
+$('cam').onclick=()=>{s.auto=false;$('auto').textContent='↻ Cam OFF';goView(s.view+1)};
+$('auto').onclick=()=>{s.auto=!s.auto;autoT=0;$('auto').textContent='↻ Cam '+(s.auto?'ON':'OFF');if(s.auto)goView(s.view+1)};
+const rc=$('recCanvas'),ctx=rc.getContext('2d');let recorder=null,stream=null,recStart=0,mime='';
+function paintRecord(){ctx.fillStyle='#071725';ctx.fillRect(0,0,1280,720);const src=renderer.domElement,scale=Math.min(1280/src.width,720/src.height);ctx.drawImage(src,(1280-src.width*scale)/2,(720-src.height*scale)/2,src.width*scale,src.height*scale);ctx.fillStyle='#061725df';ctx.fillRect(15,13,490,93);ctx.fillStyle='#fbe1a1';ctx.font='bold 23px Segoe UI';ctx.fillText('098 · HAI NGUỒN MẮC SONG SONG',29,44);ctx.fillStyle='white';ctx.font='20px Segoe UI';ctx.fillText(`I = ${I().toFixed(3)} A  ·  I₁ = I₂ = ${(I()/2).toFixed(3)} A`,29,78);ctx.fillStyle='#ffdf87';ctx.font='bold 20px Segoe UI';ctx.fillText('Thầy Hùng vật lí',548,696)}
+$('rec').onclick=()=>{if(!window.MediaRecorder||!rc.captureStream){alert('Trình duyệt không hỗ trợ ghi video.');return}if(recorder?.state==='recording')return;paintRecord();mime=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';stream=rc.captureStream(30);try{recorder=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:5000000}:undefined)}catch(e){alert(e.message);return}const chunks=[];recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};recorder.onstop=()=>{const type=recorder.mimeType||mime||'video/webm',ext=type.includes('mp4')?'mp4':'webm',url=URL.createObjectURL(new Blob(chunks,{type})),a=document.createElement('a');a.href=url;a.download='098_Hai_nguon_song_song_3D_PRO.'+ext;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);stream.getTracks().forEach(t=>t.stop());$('record').style.display='none'};recorder.start(1000);recStart=performance.now();$('record').style.display='block'};
+$('stop').onclick=()=>{if(recorder?.state==='recording')recorder.stop()};
+addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+goView(0);update();requestAnimationFrame(frame);
+</script></body></html>

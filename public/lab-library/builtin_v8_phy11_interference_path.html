@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mô phỏng giao thoa hai nguồn – hiệu đường đi</title>
+<style>
+  :root{
+    --bg:#08121d;
+    --panel:#0d1b2a;
+    --panel2:#102235;
+    --text:#eef6ff;
+    --muted:#a8bfd6;
+    --grid:#24425b;
+    --line:#dce7f3;
+    --green:#85f1a8;
+    --green2:#59d98e;
+    --blue:#84b9ff;
+    --cyan:#8fe9ff;
+    --orange:#ffd166;
+    --red:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:linear-gradient(180deg,#06101a,#0b1520);
+    color:var(--text);
+  }
+  .wrap{max-width:1180px;margin:auto;padding:18px}
+  h1{
+    margin:0 0 8px;
+    text-align:center;
+    font-size:clamp(22px,3vw,34px);
+  }
+  .sub{
+    text-align:center;
+    color:var(--muted);
+    margin:0 0 6px;
+  }
+  .teacher{
+    text-align:center;
+    color:var(--orange);
+    margin:0 0 14px;
+    font-weight:700;
+  }
+  .card{
+    background:rgba(13,27,42,.92);
+    border:1px solid #1f3750;
+    border-radius:18px;
+    padding:14px;
+    box-shadow:0 12px 32px rgba(0,0,0,.24);
+  }
+  canvas{
+    display:block;
+    width:100%;
+    height:auto;
+    background:#071421;
+    border-radius:14px;
+  }
+  .controls{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(180px,1fr));
+    gap:12px;
+    margin-top:14px;
+  }
+  .control{
+    background:#0a1726;
+    border:1px solid #20364c;
+    border-radius:12px;
+    padding:10px 12px;
+  }
+  label{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    font-size:14px;
+    color:#cfdeeb;
+  }
+  input[type=range]{width:100%;margin-top:8px}
+  .buttons{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:center;
+    margin-top:14px;
+  }
+  button{
+    border:0;
+    border-radius:10px;
+    padding:10px 16px;
+    min-width:110px;
+    cursor:pointer;
+    font-weight:700;
+    color:white;
+    background:#2563eb;
+  }
+  button.secondary{background:#475569}
+  .tips{
+    margin-top:12px;
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.5;
+  }
+  .legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:18px;
+    justify-content:center;
+    margin-top:10px;
+    color:#cfdeeb;
+    font-size:14px;
+  }
+  .dot{
+    width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle;
+  }
+  @media(max-width:760px){
+    .controls{grid-template-columns:1fr}
+    .wrap{padding:10px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mô phỏng giao thoa hai nguồn – Hiệu đường đi</h1>
+  <p class="sub">Kéo điểm <b>P</b> để thay đổi hai quãng đường <b>S₁P</b>, <b>S₂P</b> và quan sát <b>Δd = |d₂ − d₁|</b>.</p>
+  <p class="teacher">GV: Nguyễn Huy Hùng</p>
+
+  <div class="card">
+    <canvas id="cv" width="1120" height="760"></canvas>
+
+    <div class="controls">
+      <div class="control">
+        <label><span>Bước sóng λ</span><b id="lambdaVal">1.00 m</b></label>
+        <input id="lambda" type="range" min="0.4" max="2.5" step="0.05" value="1.0">
+      </div>
+      <div class="control">
+        <label><span>Khoảng cách S₁S₂</span><b id="sepVal">6.00 m</b></label>
+        <input id="sep" type="range" min="3" max="10" step="0.2" value="6">
+      </div>
+      <div class="control">
+        <label><span>Tốc độ lan truyền mô phỏng</span><b id="speedVal">1.00×</b></label>
+        <input id="speed" type="range" min="0.3" max="2.5" step="0.1" value="1.0">
+      </div>
+      <div class="control">
+        <label><span>Tỷ lệ hiển thị</span><b id="scaleVal">55 px/m</b></label>
+        <input id="scale" type="range" min="40" max="75" step="1" value="55">
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button id="toggle">Tạm dừng</button>
+      <button id="reset" class="secondary">Đặt lại</button>
+    </div>
+
+    <div class="legend">
+      <span><i class="dot" style="background:#8fe9ff"></i>Vòng sóng từ S₁</span>
+      <span><i class="dot" style="background:#84b9ff"></i>Vòng sóng từ S₂</span>
+      <span><i class="dot" style="background:#85f1a8"></i>Đường đi S₁P, S₂P</span>
+      <span><i class="dot" style="background:#ffd166"></i>Điểm kéo thả P</span>
+    </div>
+
+    <div class="tips">
+      Gợi ý dạy học: <b>cực đại</b> khi <b>Δd = kλ</b>, <b>cực tiểu</b> khi <b>Δd = (k + 1/2)λ</b>.<br>
+      Hãy kéo điểm P để tìm những vị trí thỏa điều kiện trên.
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('cv');
+  const ctx = canvas.getContext('2d');
+
+  const lambdaEl = document.getElementById('lambda');
+  const sepEl = document.getElementById('sep');
+  const speedEl = document.getElementById('speed');
+  const scaleEl = document.getElementById('scale');
+  const lambdaVal = document.getElementById('lambdaVal');
+  const sepVal = document.getElementById('sepVal');
+  const speedVal = document.getElementById('speedVal');
+  const scaleVal = document.getElementById('scaleVal');
+  const toggleBtn = document.getElementById('toggle');
+  const resetBtn = document.getElementById('reset');
+
+  let running = true;
+  let simTime = 0;
+  let last = performance.now();
+  let dragging = false;
+
+  const P = {x: 560, y: 210};
+  const P0 = {x: 560, y: 210};
+
+  const colors = {
+    bg:'#071421',
+    panel:'#0b1a29',
+    panel2:'#0e2134',
+    grid:'#213f58',
+    text:'#eef6ff',
+    muted:'#a8bfd6',
+    line:'#dce7f3',
+    green:'#85f1a8',
+    green2:'#59d98e',
+    blue:'#84b9ff',
+    cyan:'#8fe9ff',
+    orange:'#ffd166',
+    red:'#ff6b6b'
+  };
+
+  const simRect = {x:40, y:70, w:1040, h:500};
+  const bottomTop = 590;
+
+  function fmt(n, digits=2){ return Number(n).toFixed(digits); }
+
+  function updateTexts(){
+    lambdaVal.textContent = `${fmt(lambdaEl.value,2)} m`;
+    sepVal.textContent = `${fmt(sepEl.value,2)} m`;
+    speedVal.textContent = `${fmt(speedEl.value,2)}×`;
+    scaleVal.textContent = `${Math.round(scaleEl.value)} px/m`;
+  }
+  [lambdaEl, sepEl, speedEl, scaleEl].forEach(el => el.addEventListener('input', updateTexts));
+  updateTexts();
+
+  function getScale(){ return Number(scaleEl.value); }
+  function getSeparation(){ return Number(sepEl.value); }
+  function getLambda(){ return Number(lambdaEl.value); }
+  function getSpeed(){ return Number(speedEl.value); }
+
+  function getSources(){
+    const pxpm = getScale();
+    const sepPx = getSeparation() * pxpm;
+    const cx = canvas.width / 2;
+    const y = 455;
+    return {
+      s1: {x: cx - sepPx/2, y},
+      s2: {x: cx + sepPx/2, y}
+    };
+  }
+
+  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+  function dist(a, b){
+    const dx = a.x - b.x, dy = a.y - b.y;
+    return Math.hypot(dx, dy);
+  }
+
+  function line(x1,y1,x2,y2,color,width=1,dash=[]){
+    ctx.save();
+    ctx.strokeStyle=color;
+    ctx.lineWidth=width;
+    ctx.setLineDash(dash);
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function circle(x,y,r,stroke,fill=null,width=2){
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    if(fill){ ctx.fillStyle=fill; ctx.fill(); }
+    ctx.strokeStyle=stroke;
+    ctx.lineWidth=width;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function text(str,x,y,size=16,color=colors.text,align='left',weight='500'){
+    ctx.save();
+    ctx.font = `${weight} ${size}px system-ui,Segoe UI,Arial`;
+    ctx.fillStyle = color;
+    ctx.textAlign = align;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(str, x, y);
+    ctx.restore();
+  }
+
+  function roundedRect(x,y,w,h,r,fill,stroke='#20364c'){
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x,y,w,h,r);
+    if(fill){ ctx.fillStyle = fill; ctx.fill(); }
+    if(stroke){ ctx.strokeStyle = stroke; ctx.lineWidth=1; ctx.stroke(); }
+    ctx.restore();
+  }
+
+  function arrow(x1,y1,x2,y2,color,width=2){
+    line(x1,y1,x2,y2,color,width);
+    const ang = Math.atan2(y2-y1, x2-x1);
+    const s = 10;
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(x2 - s*Math.cos(ang - Math.PI/6), y2 - s*Math.sin(ang - Math.PI/6));
+    ctx.lineTo(x2 - s*Math.cos(ang + Math.PI/6), y2 - s*Math.sin(ang + Math.PI/6));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawWaveRings(src, color, phaseShift = 0){
+    const pxpm = getScale();
+    const lambda = getLambda();
+    const lambdaPx = lambda * pxpm;
+    const speedPxPerSec = lambdaPx * getSpeed(); // 1 λ mỗi giây ở speed=1
+    const maxR = 720;
+    const offset = ((simTime * speedPxPerSec) + phaseShift) % lambdaPx;
+
+    for(let r = offset; r < maxR; r += lambdaPx){
+      const alpha = Math.max(0, 0.55 - r/maxR*0.48);
+      ctx.save();
+      ctx.strokeStyle = color.replace('ALPHA', alpha.toFixed(3));
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(src.x, src.y, r, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function classify(delta, lambda){
+    const kNearest = Math.round(delta / lambda);
+    const maxNearest = Math.abs(delta - kNearest * lambda);
+
+    const halfIndex = Math.round(delta / lambda - 0.5);
+    const halfTarget = (halfIndex + 0.5) * lambda;
+    const minHalf = Math.abs(delta - halfTarget);
+
+    const tol = 0.08 * lambda;
+
+    if (maxNearest <= tol){
+      return {
+        type: 'Cực đại giao thoa',
+        detail: `Δd ≈ ${kNearest}λ`,
+        color: colors.green
+      };
+    }
+    if (minHalf <= tol){
+      return {
+        type: 'Cực tiểu giao thoa',
+        detail: `Δd ≈ (${halfIndex} + 1/2)λ`,
+        color: colors.red
+      };
+    }
+    return {
+      type: 'Vị trí trung gian',
+      detail: 'Chưa đúng điều kiện cực đại/cực tiểu',
+      color: colors.orange
+    };
+  }
+
+  function draw(){
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = colors.bg;
+    ctx.fillRect(0,0,W,H);
+
+    // Simulation region
+    roundedRect(simRect.x, simRect.y, simRect.w, simRect.h, 16, '#081624', '#1c344b');
+
+    // subtle grid
+    for(let x = simRect.x + 20; x < simRect.x + simRect.w; x += 80){
+      line(x, simRect.y + 10, x, simRect.y + simRect.h - 10, colors.grid, 1);
+    }
+    for(let y = simRect.y + 20; y < simRect.y + simRect.h; y += 70){
+      line(simRect.x + 10, y, simRect.x + simRect.w - 10, y, colors.grid, 1);
+    }
+
+    const {s1, s2} = getSources();
+    P.x = clamp(P.x, simRect.x + 40, simRect.x + simRect.w - 40);
+    P.y = clamp(P.y, simRect.y + 30, simRect.y + simRect.h - 40);
+
+    // Waves
+    drawWaveRings(s1, 'rgba(143,233,255,ALPHA)', 0);
+    drawWaveRings(s2, 'rgba(132,185,255,ALPHA)', getLambda() * getScale() / 2);
+
+    // main triangle lines
+    line(s1.x, s1.y, P.x, P.y, colors.green, 3);
+    line(s2.x, s2.y, P.x, P.y, colors.green, 3);
+
+    // distance arrows along paths (visual accent)
+    arrow(s1.x + (P.x - s1.x) * 0.45, s1.y + (P.y - s1.y) * 0.45,
+          s1.x + (P.x - s1.x) * 0.58, s1.y + (P.y - s1.y) * 0.58,
+          colors.line, 2);
+    arrow(s2.x + (P.x - s2.x) * 0.58, s2.y + (P.y - s2.y) * 0.58,
+          s2.x + (P.x - s2.x) * 0.45, s2.y + (P.y - s2.y) * 0.45,
+          colors.line, 2);
+
+    // Source glow
+    function glowPoint(x,y, coreColor, glowColor){
+      for(let i=4;i>=1;i--){
+        ctx.save();
+        ctx.fillStyle = glowColor.replace('ALPHA', (0.08 * i).toFixed(3));
+        ctx.beginPath();
+        ctx.arc(x,y,8 + i*8,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+      circle(x,y,9,coreColor,coreColor,2);
+    }
+    glowPoint(s1.x, s1.y, '#8fe9ff', 'rgba(143,233,255,ALPHA)');
+    glowPoint(s2.x, s2.y, '#84b9ff', 'rgba(132,185,255,ALPHA)');
+    glowPoint(P.x, P.y, '#ffd166', 'rgba(255,209,102,ALPHA)');
+
+    // Labels
+    text('S₁', s1.x - 16, s1.y - 18, 24, colors.text, 'right', '700');
+    text('S₂', s2.x + 16, s2.y - 18, 24, colors.text, 'left', '700');
+    text('P', P.x, P.y - 22, 24, colors.text, 'center', '700');
+
+    // Distances in meters
+    const pxpm = getScale();
+    const d1 = dist(s1, P) / pxpm;
+    const d2 = dist(s2, P) / pxpm;
+    const delta = Math.abs(d2 - d1);
+    const cls = classify(delta, getLambda());
+
+    // Path labels
+    const m1x = s1.x + (P.x - s1.x) * 0.47;
+    const m1y = s1.y + (P.y - s1.y) * 0.47;
+    const m2x = s2.x + (P.x - s2.x) * 0.50;
+    const m2y = s2.y + (P.y - s2.y) * 0.50;
+
+    roundedRect(m1x - 55, m1y - 16, 110, 32, 8, 'rgba(255,255,255,0.10)', 'rgba(255,255,255,0.18)');
+    roundedRect(m2x - 55, m2y - 16, 110, 32, 8, 'rgba(255,255,255,0.10)', 'rgba(255,255,255,0.18)');
+
+    text(`Path 1 = ${fmt(d1,2)} m`, m1x, m1y, 16, colors.text, 'center', '700');
+    text(`Path 2 = ${fmt(d2,2)} m`, m2x, m2y, 16, colors.text, 'center', '700');
+
+    // Big formula at top
+    roundedRect(315, 90, 490, 78, 12, 'rgba(7,20,33,0.70)', 'rgba(255,255,255,0.15)');
+    text(`Hiệu đường đi  Δd = |d₂ − d₁| = ${fmt(delta,2)} m`, 560, 118, 28, colors.text, 'center', '800');
+    text(`= |${fmt(d2,2)} − ${fmt(d1,2)}| = ${fmt(delta,2)} m`, 560, 148, 24, colors.text, 'center', '700');
+
+    // Classification badge
+    roundedRect(420, 180, 280, 40, 20, 'rgba(14,33,52,0.92)', '#28445d');
+    text(`${cls.type}  •  ${cls.detail}`, 560, 200, 18, cls.color, 'center', '700');
+
+    // Bottom info panels
+    roundedRect(40, bottomTop, 330, 135, 14, colors.panel, '#1f3750');
+    roundedRect(395, bottomTop, 330, 135, 14, colors.panel, '#1f3750');
+    roundedRect(750, bottomTop, 330, 135, 14, colors.panel, '#1f3750');
+
+    text('Thông số hiện tại', 205, 618, 20, colors.text, 'center', '700');
+    text(`λ = ${fmt(getLambda(),2)} m`, 70, 652, 17, colors.cyan);
+    text(`S₁S₂ = ${fmt(getSeparation(),2)} m`, 70, 680, 17, colors.cyan);
+    text(`Tỷ lệ = ${Math.round(pxpm)} px/m`, 70, 708, 17, colors.cyan);
+
+    text('Điều kiện giao thoa', 560, 618, 20, colors.text, 'center', '700');
+    text(`Cực đại:  Δd = kλ`, 425, 652, 17, colors.green);
+    text(`Cực tiểu:  Δd = (k + 1/2)λ`, 425, 680, 17, colors.red);
+    text(`k = 0, ±1, ±2, ...`, 425, 708, 17, colors.muted);
+
+    text('Hướng dẫn', 915, 618, 20, colors.text, 'center', '700');
+    text(`• Kéo P để thay đổi d₁, d₂`, 770, 652, 17, colors.text);
+    text(`• Quan sát Δd và kết luận`, 770, 680, 17, colors.text);
+    text(`• Dùng cho bài giao thoa sóng cơ`, 770, 708, 17, colors.text);
+
+    // footer hint in sim area
+    text('Nhấn và kéo điểm P', P.x, P.y + 28, 14, colors.orange, 'center', '700');
+  }
+
+  function anim(now){
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    if(running) simTime += dt;
+    draw();
+    requestAnimationFrame(anim);
+  }
+
+  function canvasPos(evt){
+    const rect = canvas.getBoundingClientRect();
+    const x = (evt.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (evt.clientY - rect.top) * (canvas.height / rect.height);
+    return {x,y};
+  }
+
+  canvas.addEventListener('pointerdown', (evt) => {
+    const pos = canvasPos(evt);
+    if (dist(pos, P) <= 24){
+      dragging = true;
+      canvas.setPointerCapture(evt.pointerId);
+    }
+  });
+
+  canvas.addEventListener('pointermove', (evt) => {
+    if(!dragging) return;
+    const pos = canvasPos(evt);
+    P.x = pos.x;
+    P.y = pos.y;
+  });
+
+  canvas.addEventListener('pointerup', () => dragging = false);
+  canvas.addEventListener('pointercancel', () => dragging = false);
+  canvas.addEventListener('pointerleave', () => {});
+
+  toggleBtn.addEventListener('click', () => {
+    running = !running;
+    toggleBtn.textContent = running ? 'Tạm dừng' : 'Tiếp tục';
+    last = performance.now();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    simTime = 0;
+    P.x = P0.x;
+    P.y = P0.y;
+    running = true;
+    toggleBtn.textContent = 'Tạm dừng';
+    last = performance.now();
+  });
+
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    running = false;
+    toggleBtn.textContent = 'Tiếp tục';
+  }
+
+  requestAnimationFrame(anim);
+})();
+</script>
+</body>
+</html>

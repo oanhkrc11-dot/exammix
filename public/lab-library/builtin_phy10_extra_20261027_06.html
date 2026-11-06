@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Chuyển động ném 34–44</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --panel:#eff7fb;--panel2:#ffffff;--text:#17384a;--muted:#607d8c;--line:#bdd6e2;
+  --cyan:#0b82a6;--yellow:#9b7100;--green:#11845b;--orange:#bc6d32;--red:#b84d4d;
+}
+body.dark{
+  --panel:#17384f;--panel2:#123047;--text:#f7fcff;--muted:#bdd0da;--line:#4a7184;
+  --cyan:#74e6ff;--yellow:#ffe47c;--green:#93ffd2;--orange:#ffad76;--red:#ff8e8e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#dcecf4;color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:278px;min-width:262px;max-width:286px;height:100%;overflow:auto;padding:9px;
+  background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border-right:1px solid var(--line);z-index:20
+}
+#view{position:relative;flex:1;min-width:0;height:100%;overflow:hidden}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.title{font-weight:900;font-size:12.5px}
+.kicker{font-size:9px;color:var(--muted);margin-top:2px}
+.simTitle{font-size:14px;color:var(--cyan);font-weight:900;margin:7px 0 4px;text-transform:uppercase}
+#themeBtn{width:34px;min-height:28px;padding:0}
+.section{margin-top:6px;padding:7px;border:1px solid var(--line);border-radius:9px;background:var(--panel2)}
+.section h3{margin:0 0 5px;font-size:9.5px;color:var(--cyan);text-transform:uppercase}
+.control{margin:6px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:3px}
+.row label{font-size:10.1px;font-weight:700}
+.value{font-size:10.1px;color:var(--yellow);font-weight:800;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:15px;accent-color:#169bc1}
+select{width:100%;height:30px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--text);padding:4px 6px;font-size:10px}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}
+button{min-height:32px;border:1px solid var(--line);border-radius:7px;padding:5px;background:#d9edf5;color:#17384a;font-weight:800;font-size:10px;cursor:pointer}
+body.dark button{background:#244e67;color:white}
+#runBtn{background:#25986a;color:white}
+#resetBtn{background:#e0c5cc;color:#512837}
+body.dark #resetBtn{background:#6a4053;color:#fff}
+#recordBtn{background:#b72c40;color:white}
+#recordBtn.recording{animation:pulse 1s infinite}
+@keyframes pulse{50%{filter:brightness(1.25)}}
+#badge,#info,#graphWrap,#recHud{
+  position:absolute;z-index:10;background:rgba(247,250,252,.88);border:1px solid #a8c0cc;
+  color:#17384a;backdrop-filter:blur(5px)
+}
+body.dark #badge,body.dark #info,body.dark #graphWrap,body.dark #recHud{
+  background:rgba(15,34,46,.84);border-color:#486675;color:white
+}
+#badge{left:14px;top:12px;padding:7px 10px;border-radius:9px;font-size:11px;font-weight:900}
+#recHud{left:14px;top:48px;padding:5px 8px;border-radius:8px;font-size:10px;font-weight:900;display:none}
+#info{right:12px;top:12px;width:275px;padding:8px 10px;border-radius:10px;font-size:10.4px}
+#info .head{font-size:9.5px;color:var(--cyan);font-weight:900;margin-bottom:4px;text-transform:uppercase}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 9px;font-variant-numeric:tabular-nums}
+#graphWrap{left:14px;bottom:40px;width:min(45%,600px);height:205px;border-radius:11px;padding:7px}
+#graph{width:100%;height:100%;display:block}
+#credit{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:9;font-size:15px;font-weight:900;color:#7a5b00;pointer-events:none}
+body.dark #credit{color:#ffe47c}
+.label3d{padding:3px 5px;border-radius:7px;background:rgba(247,250,252,.88);border:1px solid #a8c0cc;color:#17384a;font-size:10px;font-weight:800;white-space:nowrap}
+body.dark .label3d{background:rgba(15,34,46,.84);border-color:#486675;color:white}
+@media(max-width:1000px){
+  #panel{width:258px;min-width:258px}
+  #info{width:225px}
+  #graphWrap{width:42%;height:180px}
+}
+</style>
+</head>
+
+<body class="dark">
+<div id="app">
+  <aside id="panel">
+    <div class="top">
+      <div>
+        <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+        <div class="kicker">PHÒNG THÍ NGHIỆM ẢO</div>
+      </div>
+      <button id="themeBtn" title="Sáng/Tối">🌙</button>
+    </div>
+
+    <div class="simTitle">34–44. Chuyển động ném</div>
+
+    <div class="section">
+      <h3>Chế độ</h3>
+      <select id="mode">
+        <option value="horizontal">34. Ném ngang từ độ cao h</option>
+        <option value="time">35. Thời gian bay</option>
+        <option value="range">36. Tầm xa</option>
+        <option value="velocity">37. Vận tốc tức thời</option>
+        <option value="oblique">38. Ném xiên từ mặt đất</option>
+        <option value="angle">39. Ảnh hưởng góc ném</option>
+        <option value="height">40. Ném xiên từ độ cao khác 0</option>
+        <option value="compare">41. So sánh ném ngang & xiên</option>
+        <option value="target">42. Bắn mục tiêu</option>
+        <option value="drag">43. Có lực cản không khí</option>
+        <option value="water">44. Vòi phun nước</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <h3>Thông số</h3>
+      <div class="control">
+        <div class="row"><label>v₀</label><span class="value" id="v0Text">12.0 m/s</span></div>
+        <input id="v0" type="range" min="3" max="30" step="1" value="12">
+      </div>
+      <div class="control" id="angleControl">
+        <div class="row"><label>Góc ném α</label><span class="value" id="angleText">45°</span></div>
+        <input id="angle" type="range" min="5" max="85" step="1" value="45">
+      </div>
+      <div class="control" id="heightControl">
+        <div class="row"><label>Độ cao h</label><span class="value" id="hText">8 m</span></div>
+        <input id="height" type="range" min="0" max="20" step="1" value="8">
+      </div>
+      <div class="control" id="dragControl" style="display:none">
+        <div class="row"><label>Hệ số cản k</label><span class="value" id="dragText">0.08 s⁻¹</span></div>
+        <input id="drag" type="range" min="0" max="0.25" step="0.01" value="0.08">
+      </div>
+      <div class="control" id="targetControl" style="display:none">
+        <div class="row"><label>x mục tiêu</label><span class="value" id="targetText">15 m</span></div>
+        <input id="targetX" type="range" min="8" max="28" step="1" value="15">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Quan sát</h3>
+      <select id="cameraMode">
+        <option value="all">Toàn cảnh</option>
+        <option value="follow">Theo vật</option>
+        <option value="side">Ngang quỹ đạo</option>
+      </select>
+      <div class="control">
+        <div class="row"><label>Tốc độ mô phỏng</label><span class="value" id="speedText">1.0×</span></div>
+        <input id="simSpeed" type="range" min="0.5" max="2" step="0.5" value="1">
+      </div>
+      <div class="buttons">
+        <button id="runBtn">▶ Bắt đầu</button>
+        <button id="pauseBtn">⏸ Dừng</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+        <button id="fitBtn">⛶ Fit</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Quay thí nghiệm</h3>
+      <div class="buttons">
+        <button id="recordBtn">🎥 Bắt đầu quay</button>
+        <button id="stopRecordBtn">⏹ Dừng quay</button>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label>Thời gian quay</label><span class="value" id="recTimeText">00:00</span>
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="badge">Ném ngang: x=v₀t · y=h−½gt²</div>
+    <div id="recHud">● REC 00:00</div>
+
+    <div id="info">
+      <div class="head">Số liệu tức thời</div>
+      <div class="infoGrid">
+        <span>t</span><b id="tInfo">0.00 s</b>
+        <span>x</span><b id="xInfo">0.00 m</b>
+        <span>y</span><b id="yInfo">8.00 m</b>
+        <span>vₓ</span><b id="vxInfo">12.00 m/s</b>
+        <span>vᵧ</span><b id="vyInfo">0.00 m/s</b>
+        <span>|v|</span><b id="vInfo">12.00 m/s</b>
+        <span>Tầm xa</span><b id="rangeInfo">—</b>
+      </div>
+    </div>
+
+    <div id="graphWrap"><canvas id="graph"></canvas></div>
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $=id=>document.getElementById(id);
+const view=$('view');
+
+const state={
+  mode:'horizontal',v0:12,angle:45,h:8,k:.08,targetX:15,g:9.8,
+  t:0,simSpeed:1,running:false,paused:true,dark:true,cameraMode:'all',
+  lastStamp:performance.now(),
+  pos:{x:0,y:8},vel:{x:12,y:0},
+  trail:[],
+  recording:false,recordStart:0
+};
+
+function rad(){return state.angle*Math.PI/180;}
+function initial(){
+  if(state.mode==='horizontal'||state.mode==='time'||state.mode==='range'||state.mode==='velocity'){
+    return {x:0,y:state.h,vx:state.v0,vy:0};
+  }
+  if(state.mode==='water'){
+    return {x:0,y:1.2,vx:state.v0*Math.cos(rad()),vy:state.v0*Math.sin(rad())};
+  }
+  const y0=(state.mode==='height'||state.mode==='compare'||state.mode==='target'||state.mode==='drag')?state.h:0;
+  return {x:0,y:y0,vx:state.v0*Math.cos(rad()),vy:state.v0*Math.sin(rad())};
+}
+function noDragAt(t){
+  const q=initial();
+  return {x:q.x+q.vx*t,y:q.y+q.vy*t-.5*state.g*t*t,vx:q.vx,vy:q.vy-state.g*t};
+}
+function flightTime(){
+  const q=initial();
+  const disc=q.vy*q.vy+2*state.g*q.y;
+  return (q.vy+Math.sqrt(Math.max(0,disc)))/state.g;
+}
+function rangeIdeal(){
+  const q=initial(),T=flightTime();
+  return q.vx*T;
+}
+function fmt(n,d=2){return n.toFixed(d).replace('-','−');}
+
+/* ================== SCENE / ROOM ================== */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x132633);
+scene.fog=new THREE.Fog(0x132633,42,105);
+
+const camera=new THREE.PerspectiveCamera(44,view.clientWidth/view.clientHeight,.1,180);
+camera.position.set(16,10,21);
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.06;
+controls.minDistance=7;controls.maxDistance=55;
+controls.minPolarAngle=.08;controls.maxPolarAngle=Math.PI*.49;
+controls.target.set(8,3,0);
+
+const hemi=new THREE.HemisphereLight(0xe8f6ff,0x536a76,2.15);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xf4fbff,2.1);sun.position.set(10,18,10);sun.castShadow=true;scene.add(sun);
+const spot=new THREE.SpotLight(0xffffff,1.1,120,Math.PI/6,0.35,1.2);
+spot.position.set(8,20,8);spot.target.position.set(7,0,0);spot.castShadow=false;scene.add(spot);scene.add(spot.target);
+
+/* room */
+const room=new THREE.Group();scene.add(room);
+const floorMat=new THREE.MeshPhongMaterial({color:0x304a58,shininess:18});
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,34),floorMat);
+floor.rotation.x=-Math.PI/2;floor.position.y=0;floor.receiveShadow=true;room.add(floor);
+
+const wallMat=new THREE.MeshPhongMaterial({color:0x28424f});
+const backWall=new THREE.Mesh(new THREE.PlaneGeometry(60,18),wallMat);
+backWall.position.set(0,9,-11);room.add(backWall);
+
+const leftWall=new THREE.Mesh(new THREE.PlaneGeometry(34,18),new THREE.MeshPhongMaterial({color:0x263d49}));
+leftWall.rotation.y=Math.PI/2;leftWall.position.set(-18,9,0);room.add(leftWall);
+
+/* large windows */
+const windowMat=new THREE.MeshPhongMaterial({color:0x6e94a8,transparent:true,opacity:.22,shininess:45});
+for(let i=0;i<4;i++){
+  const win=new THREE.Mesh(new THREE.PlaneGeometry(5.5,7.4),windowMat);
+  win.position.set(-13+i*6,10,-10.92);room.add(win);
+}
+for(let x=-10;x<=8;x+=6){
+  const frameV=new THREE.Mesh(new THREE.BoxGeometry(.12,7.8,.12),new THREE.MeshPhongMaterial({color:0xc4d0d6}));
+  frameV.position.set(x,10,-10.8);room.add(frameV);
+}
+
+/* chalkboard */
+const board=new THREE.Mesh(new THREE.BoxGeometry(9,5,.22),new THREE.MeshPhongMaterial({color:0x1f4e4e}));
+board.position.set(11,8.6,-10.75);room.add(board);
+const bd=document.createElement('div');bd.className='label3d';bd.textContent='VẬT LÍ · KHÁM PHÁ CHUYỂN ĐỘNG';
+const bl=new CSS2DObject(bd);bl.position.set(11,10.3,-10.4);room.add(bl);
+
+/* ceiling light panels */
+for(let x=-10;x<=12;x+=7){
+  const lamp=new THREE.Mesh(new THREE.BoxGeometry(4.2,.08,.7),new THREE.MeshBasicMaterial({color:0xffffff}));
+  lamp.position.set(x,16,-2);room.add(lamp);
+}
+
+/* cabinets / benches */
+for(const x of [-13,13]){
+  const cab=new THREE.Mesh(new THREE.BoxGeometry(4,2.2,2.1),new THREE.MeshPhongMaterial({color:0xbfd1db}));
+  cab.position.set(x,1.1,-8.6);room.add(cab);
+  const top=new THREE.Mesh(new THREE.BoxGeometry(4.2,.15,2.3),new THREE.MeshPhongMaterial({color:0xeaf0f3}));
+  top.position.set(x,2.28,-8.6);room.add(top);
+}
+
+/* plants */
+for(const x of [-15,-8,15]){
+  const pot=new THREE.Mesh(new THREE.CylinderGeometry(.35,.45,.7,18),new THREE.MeshPhongMaterial({color:0xb87950}));
+  pot.position.set(x,.35,-8.2);room.add(pot);
+  const leaf=new THREE.Mesh(new THREE.SphereGeometry(.75,18,12),new THREE.MeshPhongMaterial({color:0x7fb287}));
+  leaf.scale.set(.8,1.3,.8);leaf.position.set(x,1.25,-8.2);room.add(leaf);
+}
+
+/* experiment platform */
+const stage=new THREE.Mesh(new THREE.BoxGeometry(34,.25,8),new THREE.MeshPhongMaterial({color:0x7a8f99,shininess:26}));
+stage.position.set(7,.14,1);stage.receiveShadow=true;scene.add(stage);
+
+const grid=new THREE.GridHelper(34,34,0x7daec2,0xcbdde5);
+grid.position.set(7,.28,1);grid.material.transparent=true;grid.material.opacity=.32;scene.add(grid);
+
+/* launch stand */
+const standMat=new THREE.MeshPhongMaterial({color:0x667b86,shininess:40});
+const stand=new THREE.Group();scene.add(stand);
+const post=new THREE.Mesh(new THREE.BoxGeometry(.35,8,.35),standMat);post.position.set(-1,4,0);stand.add(post);
+const base=new THREE.Mesh(new THREE.BoxGeometry(2.3,.28,1.8),standMat);base.position.set(-1,.18,0);stand.add(base);
+const arm=new THREE.Mesh(new THREE.BoxGeometry(2,.18,.18),standMat);arm.position.set(0,8,0);stand.add(arm);
+
+/* projectile */
+const projectile=new THREE.Mesh(new THREE.SphereGeometry(.34,28,20),new THREE.MeshPhongMaterial({color:0xffb347,shininess:100}));
+projectile.castShadow=true;scene.add(projectile);
+
+const projDiv=document.createElement('div');projDiv.className='label3d';projDiv.textContent='Vật';
+const projLabel=new CSS2DObject(projDiv);projLabel.position.set(0,.75,0);projectile.add(projLabel);
+
+const velocityArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(0,0,0),1,0x0c9ac1,.25,.14);
+scene.add(velocityArrow);
+
+const vxArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(0,0,0),1,0x21a3d2,.22,.12);
+const vyArrow=new THREE.ArrowHelper(new THREE.Vector3(0,1,0),new THREE.Vector3(0,0,0),1,0xd4793f,.22,.12);
+scene.add(vxArrow,vyArrow);
+
+/* target */
+const target=new THREE.Group();scene.add(target);
+const targetRing1=new THREE.Mesh(new THREE.TorusGeometry(.65,.07,12,36),new THREE.MeshBasicMaterial({color:0xe04b4b}));
+targetRing1.rotation.y=Math.PI/2;target.add(targetRing1);
+const targetRing2=new THREE.Mesh(new THREE.TorusGeometry(.35,.06,12,36),new THREE.MeshBasicMaterial({color:0xffffff}));
+targetRing2.rotation.y=Math.PI/2;target.add(targetRing2);
+
+/* water nozzle */
+const nozzle=new THREE.Group();scene.add(nozzle);
+const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,2.2,20),new THREE.MeshPhongMaterial({color:0x7e9098}));
+pipe.rotation.z=Math.PI/2;pipe.position.set(-.8,1.2,0);nozzle.add(pipe);
+const tip=new THREE.Mesh(new THREE.CylinderGeometry(.11,.18,.5,20),new THREE.MeshPhongMaterial({color:0x4f626c}));
+tip.rotation.z=Math.PI/2;tip.position.set(.5,1.2,0);nozzle.add(tip);
+
+/* trail */
+let trailLine=null;
+function rebuildTrail(){
+  if(trailLine){scene.remove(trailLine);trailLine.geometry.dispose();trailLine.material.dispose();}
+  const pts=state.trail.map(p=>new THREE.Vector3(p.x,p.y,0));
+  if(pts.length<2)return;
+  trailLine=new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color:state.mode==='water'?0x39b7e8:0xffb13b})
+  );
+  scene.add(trailLine);
+}
+
+function showModeObjects(){
+  const verticalLaunch=['horizontal','time','range','velocity'].includes(state.mode);
+  stand.visible=verticalLaunch;
+  nozzle.visible=state.mode==='water';
+  projectile.visible=state.mode!=='water';
+  target.visible=state.mode==='target';
+
+  if(verticalLaunch){
+    stand.position.set(0,0,0);
+    post.scale.y=Math.max(.3,state.h/8);
+    post.position.y=state.h/2;
+    arm.position.y=state.h;
+  }
+
+  if(state.mode==='target'){
+    target.position.set(state.targetX,4,0);
+  }
+}
+
+/* ================= PHYSICS ================= */
+function resetPhysics(){
+  state.t=0;state.running=false;state.paused=true;
+  const q=initial();
+  state.pos={x:q.x,y:q.y};
+  state.vel={x:q.vx,y:q.vy};
+  state.trail=[{x:q.x,y:q.y}];
+  $('runBtn').textContent='▶ Bắt đầu';
+  $('pauseBtn').textContent='⏸ Dừng';
+  rebuildTrail();
+  showModeObjects();
+  updateModeUI();
+  fitScene();
+}
+
+function stepPhysics(dt){
+  if(state.mode==='drag'){
+    // simple linear drag: dv/dt = -k v + g
+    state.vel.x += (-state.k*state.vel.x)*dt;
+    state.vel.y += (-state.g-state.k*state.vel.y)*dt;
+    state.pos.x += state.vel.x*dt;
+    state.pos.y += state.vel.y*dt;
+  }else{
+    const p=noDragAt(state.t);
+    state.pos.x=p.x;state.pos.y=p.y;state.vel.x=p.vx;state.vel.y=p.vy;
+  }
+
+  if(state.pos.y<=0){
+    state.pos.y=0;
+    state.running=false;state.paused=true;
+    $('runBtn').textContent='▶ Chạy lại';
+  }
+
+  if(state.trail.length===0 || Math.hypot(
+      state.pos.x-state.trail[state.trail.length-1].x,
+      state.pos.y-state.trail[state.trail.length-1].y)>0.18){
+    state.trail.push({x:state.pos.x,y:state.pos.y});
+    if(state.trail.length>600)state.trail.shift();
+    rebuildTrail();
+  }
+}
+
+function update3D(){
+  const x=state.pos.x,y=state.pos.y,vx=state.vel.x,vy=state.vel.y;
+  projectile.position.set(x,y,0);
+  projDiv.textContent=`(${fmt(x,1)}; ${fmt(y,1)}) m`;
+
+  const speed=Math.hypot(vx,vy);
+  const dir=new THREE.Vector3(vx,vy,0).normalize();
+  velocityArrow.position.set(x,y,0);
+  velocityArrow.setDirection(dir.lengthSq()?dir:new THREE.Vector3(1,0,0));
+  velocityArrow.setLength(Math.max(.001,speed*.12),.25,.14);
+  velocityArrow.visible=state.mode!=='water'&&speed>.02;
+
+  vxArrow.position.set(x,y+.55,0);
+  vxArrow.setDirection(new THREE.Vector3(Math.sign(vx)||1,0,0));
+  vxArrow.setLength(Math.max(.001,Math.abs(vx)*.10),.22,.12);
+  vxArrow.visible=state.mode==='velocity';
+
+  vyArrow.position.set(x,y+.9,0);
+  vyArrow.setDirection(new THREE.Vector3(0,Math.sign(vy)||1,0));
+  vyArrow.setLength(Math.max(.001,Math.abs(vy)*.10),.22,.12);
+  vyArrow.visible=state.mode==='velocity';
+
+  if(state.mode==='water'){
+    nozzle.rotation.z=rad();
+  }
+}
+
+/* ================= GRAPH ================= */
+const graph=$('graph'),ctx=graph.getContext('2d');
+function resizeGraph(){
+  const dpr=Math.min(devicePixelRatio,2),r=graph.getBoundingClientRect();
+  graph.width=Math.max(10,Math.floor(r.width*dpr));
+  graph.height=Math.max(10,Math.floor(r.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);drawGraph();
+}
+function drawGraph(){
+  const W=graph.clientWidth,H=graph.clientHeight;
+  const dark=state.dark;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=dark?'#17384f':'#fbfeff';ctx.fillRect(0,0,W,H);
+
+  const L=42,R=12,T=12,B=28,w=W-L-R,h=H-T-B;
+  const maxX=Math.max(10,rangeIdeal()*1.2,state.targetX*1.2,state.pos.x*1.15);
+  const maxY=Math.max(6,state.h+state.v0*state.v0/(2*state.g)+3,state.pos.y+3);
+
+  const xx=x=>L+x/maxX*w;
+  const yy=y=>T+h-y/maxY*h;
+
+  ctx.strokeStyle=dark?'rgba(200,230,240,.14)':'rgba(60,100,120,.14)';
+  for(let i=0;i<=5;i++){
+    let gx=L+w*i/5;ctx.beginPath();ctx.moveTo(gx,T);ctx.lineTo(gx,T+h);ctx.stroke();
+    let gy=T+h*i/5;ctx.beginPath();ctx.moveTo(L,gy);ctx.lineTo(L+w,gy);ctx.stroke();
+  }
+
+  // ideal theoretical full curve
+  if(state.mode!=='drag'){
+    ctx.globalAlpha=.25;ctx.strokeStyle='#1aa1c8';ctx.lineWidth=1.5;ctx.beginPath();
+    const Tflight=flightTime();
+    for(let i=0;i<=120;i++){
+      const t=Tflight*i/120,p=noDragAt(t);
+      if(i===0)ctx.moveTo(xx(p.x),yy(Math.max(0,p.y))); else ctx.lineTo(xx(p.x),yy(Math.max(0,p.y)));
+    }
+    ctx.stroke();ctx.globalAlpha=1;
+  }
+
+  // actual path
+  ctx.strokeStyle=state.mode==='water'?'#39b7e8':'#e39b35';ctx.lineWidth=2.4;ctx.beginPath();
+  state.trail.forEach((p,i)=>{if(i===0)ctx.moveTo(xx(p.x),yy(p.y));else ctx.lineTo(xx(p.x),yy(p.y));});
+  ctx.stroke();
+
+  // current point
+  ctx.fillStyle='#d9a700';ctx.beginPath();ctx.arc(xx(state.pos.x),yy(state.pos.y),4,0,Math.PI*2);ctx.fill();
+
+  if(state.mode==='target'){
+    ctx.strokeStyle='#d94b4b';ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(xx(state.targetX),yy(0));ctx.lineTo(xx(state.targetX),yy(maxY*.75));ctx.stroke();
+  }
+
+  ctx.fillStyle=dark?'#d9edf5':'#456778';ctx.font='10px Arial';ctx.textAlign='center';
+  for(let i=0;i<=4;i++){let xv=maxX*i/4;ctx.fillText(xv.toFixed(0),xx(xv),H-9);}
+  ctx.fillText('x (m)',L+w/2,H-1);
+  ctx.save();ctx.translate(10,T+h/2);ctx.rotate(-Math.PI/2);ctx.fillText('y (m)',0,0);ctx.restore();
+  ctx.textAlign='left';
+}
+
+/* ================= MODE UI ================= */
+function updateModeUI(){
+  const horizontal=['horizontal','time','range','velocity'].includes(state.mode);
+  $('angleControl').style.display=horizontal?'none':'block';
+  $('heightControl').style.display=['oblique','angle'].includes(state.mode)?'none':'block';
+  $('dragControl').style.display=state.mode==='drag'?'block':'none';
+  $('targetControl').style.display=state.mode==='target'?'block':'none';
+
+  const labels={
+    horizontal:'Ném ngang: x=v₀t · y=h−½gt²',
+    time:'Thời gian bay phụ thuộc h, không phụ thuộc v₀',
+    range:'Tầm xa L = v₀√(2h/g)',
+    velocity:'v = vₓ + vᵧ · vₓ không đổi',
+    oblique:'Ném xiên: x=v₀cosα·t · y=v₀sinα·t−½gt²',
+    angle:'Thay đổi α để quan sát tầm xa',
+    height:'Ném xiên từ độ cao h ≠ 0',
+    compare:'So sánh hai kiểu ném trong cùng trường trọng lực',
+    target:'Điều chỉnh v₀, α để chạm mục tiêu',
+    drag:'Có lực cản: quỹ đạo ngắn và không còn đối xứng',
+    water:'Dòng nước tạo quỹ đạo gần parabol'
+  };
+  $('badge').textContent=labels[state.mode];
+}
+
+/* ================= CAMERA ================= */
+function fitScene(){
+  const rx=Math.max(12,rangeIdeal(),state.targetX+3);
+  const cy=Math.max(3,state.h*.45);
+  controls.target.set(rx*.38,cy,0);
+  camera.position.set(rx*.42+7,Math.max(8,state.h*.55+5),Math.max(18,rx*.55));
+  controls.update();
+}
+function updateCamera(){
+  if(state.cameraMode==='follow'){
+    controls.target.x+=(state.pos.x-controls.target.x)*.08;
+    controls.target.y+=(state.pos.y-controls.target.y)*.08;
+    camera.position.x+=((state.pos.x+7)-camera.position.x)*.05;
+    camera.position.y+=((state.pos.y+5)-camera.position.y)*.05;
+  }else if(state.cameraMode==='side'){
+    controls.target.x+=(state.pos.x-controls.target.x)*.05;
+    controls.target.y+=(state.pos.y-controls.target.y)*.05;
+    camera.position.set(controls.target.x+8,controls.target.y+4,18);
+  }
+}
+
+/* ================= THEME ================= */
+function applyTheme(){
+  document.body.classList.toggle('dark',state.dark);
+  $('themeBtn').textContent=state.dark?'☀':'🌙';
+  if(state.dark){
+    scene.background.set(0x132633);scene.fog.color.set(0x132633);
+    floorMat.color.set(0x304a58);wallMat.color.set(0x28424f);leftWall.material.color.set(0x263d49);
+    stage.material.color.set(0x7a8f99);grid.material.opacity=.18;
+    windowMat.color.set(0x6e94a8);windowMat.opacity=.22;
+    hemi.intensity=2.15;sun.intensity=2.1;
+  }else{
+    scene.background.set(0xc9d6de);scene.fog.color.set(0xc9d6de);
+    floorMat.color.set(0xd4dde1);wallMat.color.set(0xe9eff2);leftWall.material.color.set(0xe1eaee);
+    stage.material.color.set(0xb3c3cb);grid.material.opacity=.22;
+    windowMat.color.set(0xa9c8d7);windowMat.opacity=.30;
+    hemi.intensity=2.35;sun.intensity=2.2;
+  }
+  drawGraph();
+}
+$('themeBtn').addEventListener('click',()=>{state.dark=!state.dark;applyTheme();});
+
+/* ================= UI ================= */
+function updateUI(){
+  $('v0Text').textContent=`${state.v0.toFixed(1)} m/s`;
+  $('angleText').textContent=`${state.angle.toFixed(0)}°`;
+  $('hText').textContent=`${state.h.toFixed(0)} m`;
+  $('dragText').textContent=`${state.k.toFixed(2)} s⁻¹`;
+  $('targetText').textContent=`${state.targetX.toFixed(0)} m`;
+  $('speedText').textContent=`${state.simSpeed.toFixed(1)}×`;
+
+  $('tInfo').textContent=`${state.t.toFixed(2)} s`;
+  $('xInfo').textContent=`${state.pos.x.toFixed(2)} m`;
+  $('yInfo').textContent=`${state.pos.y.toFixed(2)} m`;
+  $('vxInfo').textContent=`${state.vel.x.toFixed(2)} m/s`;
+  $('vyInfo').textContent=`${fmt(state.vel.y,2)} m/s`;
+  $('vInfo').textContent=`${Math.hypot(state.vel.x,state.vel.y).toFixed(2)} m/s`;
+  $('rangeInfo').textContent=state.mode==='drag'?'Thực nghiệm':`${rangeIdeal().toFixed(2)} m`;
+}
+
+/* ================= RECORDING ================= */
+const recordCanvas=document.createElement('canvas');
+recordCanvas.width=1280;recordCanvas.height=720;
+const rctx=recordCanvas.getContext('2d');
+let mediaRecorder=null,recordChunks=[],recordMime='';
+
+function chooseMime(){
+  const prefs=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+  for(const m of prefs){
+    if(window.MediaRecorder && MediaRecorder.isTypeSupported(m))return m;
+  }
+  return '';
+}
+function drawRecordingFrame(){
+  const W=recordCanvas.width,H=recordCanvas.height;
+  rctx.fillStyle=state.dark?'#17384f':'#dcecf4';rctx.fillRect(0,0,W,H);
+  rctx.drawImage(renderer.domElement,0,0,W,H);
+
+  rctx.fillStyle='rgba(8,24,34,.62)';rctx.fillRect(0,0,W,54);
+  rctx.fillStyle='#fff';rctx.font='bold 22px Arial';
+  rctx.fillText('PHYSICS 10 LAB · CHUYỂN ĐỘNG NÉM',22,34);
+
+  rctx.fillStyle='rgba(8,24,34,.72)';rctx.fillRect(W-305,72,280,160);
+  rctx.fillStyle='#fff';rctx.font='bold 17px Arial';
+  rctx.fillText(`t = ${state.t.toFixed(2)} s`,W-285,103);
+  rctx.fillText(`x = ${state.pos.x.toFixed(2)} m`,W-285,132);
+  rctx.fillText(`y = ${state.pos.y.toFixed(2)} m`,W-285,161);
+  rctx.fillText(`v = ${Math.hypot(state.vel.x,state.vel.y).toFixed(2)} m/s`,W-285,190);
+
+  const gw=490,gh=205,gx=22,gy=H-gh-24;
+  rctx.fillStyle='rgba(8,24,34,.77)';rctx.fillRect(gx-6,gy-6,gw+12,gh+12);
+  rctx.drawImage(graph,gx,gy,gw,gh);
+
+  rctx.fillStyle='#ffe17a';rctx.font='bold 18px Arial';
+  rctx.fillText('Thầy Hùng vật lí',W-175,H-22);
+
+  if(state.recording){
+    rctx.fillStyle='#ff4b55';rctx.beginPath();rctx.arc(24,82,7,0,Math.PI*2);rctx.fill();
+    rctx.fillStyle='#fff';rctx.font='bold 15px Arial';rctx.fillText('REC',38,87);
+  }
+}
+async function startRecording(){
+  if(state.recording)return;
+  if(!window.MediaRecorder||!recordCanvas.captureStream){
+    alert('Trình duyệt này chưa hỗ trợ quay video trực tiếp.');
+    return;
+  }
+  recordMime=chooseMime();
+  const stream=recordCanvas.captureStream(30);
+  try{
+    mediaRecorder=new MediaRecorder(stream,recordMime?{mimeType:recordMime,videoBitsPerSecond:6000000}:{videoBitsPerSecond:6000000});
+  }catch(e){
+    mediaRecorder=new MediaRecorder(stream);
+    recordMime=mediaRecorder.mimeType||'video/webm';
+  }
+  recordChunks=[];
+  mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size>0)recordChunks.push(e.data);};
+  mediaRecorder.onstop=()=>{
+    const mime=mediaRecorder.mimeType||recordMime||'video/webm';
+    const ext=mime.includes('mp4')?'mp4':'webm';
+    const blob=new Blob(recordChunks,{type:mime});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=`Physics10_34_44_Chuyen_dong_nem.${ext}`;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  };
+  mediaRecorder.start(250);
+  state.recording=true;state.recordStart=performance.now();
+  $('recordBtn').classList.add('recording');$('recordBtn').textContent='● Đang quay';
+  $('recHud').style.display='block';
+}
+function stopRecording(){
+  if(!state.recording)return;
+  state.recording=false;
+  $('recordBtn').classList.remove('recording');$('recordBtn').textContent='🎥 Bắt đầu quay';
+  $('recHud').style.display='none';
+  if(mediaRecorder&&mediaRecorder.state!=='inactive')mediaRecorder.stop();
+}
+$('recordBtn').addEventListener('click',startRecording);
+$('stopRecordBtn').addEventListener('click',stopRecording);
+
+function updateRecClock(now){
+  if(!state.recording){$('recTimeText').textContent='00:00';return;}
+  const sec=Math.floor((now-state.recordStart)/1000);
+  const mm=String(Math.floor(sec/60)).padStart(2,'0'),ss=String(sec%60).padStart(2,'0');
+  $('recTimeText').textContent=`${mm}:${ss}`;$('recHud').textContent=`● REC ${mm}:${ss}`;
+}
+
+/* ================= EVENTS ================= */
+$('mode').addEventListener('change',e=>{state.mode=e.target.value;resetPhysics();});
+$('v0').addEventListener('input',e=>{state.v0=parseFloat(e.target.value);resetPhysics();});
+$('angle').addEventListener('input',e=>{state.angle=parseFloat(e.target.value);resetPhysics();});
+$('height').addEventListener('input',e=>{state.h=parseFloat(e.target.value);resetPhysics();});
+$('drag').addEventListener('input',e=>{state.k=parseFloat(e.target.value);resetPhysics();});
+$('targetX').addEventListener('input',e=>{state.targetX=parseFloat(e.target.value);resetPhysics();});
+$('simSpeed').addEventListener('input',e=>{state.simSpeed=parseFloat(e.target.value);updateUI();});
+$('cameraMode').addEventListener('change',e=>{state.cameraMode=e.target.value;if(state.cameraMode==='all')fitScene();});
+
+$('runBtn').addEventListener('click',()=>{
+  if(!state.running && state.pos.y<=0 && state.t>0)resetPhysics();
+  state.running=true;state.paused=false;$('runBtn').textContent='▶ Đang chạy';
+});
+$('pauseBtn').addEventListener('click',()=>{
+  if(!state.running)return;
+  state.paused=!state.paused;$('pauseBtn').textContent=state.paused?'▶ Tiếp tục':'⏸ Dừng';
+});
+$('resetBtn').addEventListener('click',resetPhysics);
+$('fitBtn').addEventListener('click',fitScene);
+
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);labelRenderer.setSize(w,h);resizeGraph();
+}
+window.addEventListener('resize',resize);
+
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt=(now-state.lastStamp)/1000;state.lastStamp=now;
+  dt=Math.min(Math.max(dt,0),0.028);
+
+  if(state.running&&!state.paused){
+    const step=dt*state.simSpeed;
+    state.t+=step;
+    stepPhysics(step);
+  }
+
+  update3D();
+  updateCamera();
+  updateUI();
+  drawGraph();
+  updateRecClock(now);
+
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+
+  if(state.recording)drawRecordingFrame();
+}
+
+resetPhysics();
+applyTheme();
+resize();
+animate(performance.now());
+</script>
+</body>
+</html>

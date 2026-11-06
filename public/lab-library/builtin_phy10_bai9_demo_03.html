@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset='utf-8'><title>v-t fix</title>
+<style>body{background:#050505;color:white;font-family:Arial}.box{display:flex}.left{width:280px;padding:15px;background:#111}input,button{display:block;margin:8px;width:180px;padding:8px}button{background:#ffd700;border:0;font-weight:bold}svg{width:75vw;height:85vh;background:#000}.eq{color:#ffd700;font-size:22px}</style></head>
+<body><div class='box'><div class='left'><h2>Hai đồ thị v-t</h2>
+v01<input id='v01' value='10'>a1<input id='a1' value='1'>
+v02<input id='v02' value='0'>a2<input id='a2' value='1'>
+Bước t<input id='st' value='2'>Bước v<input id='sv' value='5'>
+<button onclick='tao()'>Tạo đồ thị</button><button onclick='buoc()'>Vẽ từng bước</button><button onclick='tuDong()'>Tự động</button></div>
+<div><div id='eq' class='eq'></div><svg id='g'></svg></div></div>
+<script>
+let A=[],B=[],n=0,t;
+function tao(){let V1=+v01.value,a=+a1.value,V2=+v02.value,b=+a2.value;
+eq.innerHTML=`v₁=${V1}${a>=0?'+':'-'}${Math.abs(a)}t | v₂=${V2}${b>=0?'+':'-'}${Math.abs(b)}t`;
+A=[];B=[];for(let i=0;i<=10;i++){let x=i*+st.value;A.push({t:x,v:V1+a*x});B.push({t:x,v:V2+b*x})}n=0;ve();}
+function ve(){g.innerHTML='';let L=100,R=800,T=80,Btm=560,W=R-L,H=Btm-T;let m=Math.ceil(Math.max(...A.concat(B).map(x=>Math.abs(x.v)),1)/+sv.value)*+sv.value;let z=T+H/2;
+for(let i=0;i<=10;i++){let x=L+i*W/10;g.innerHTML+=`<line x1='${x}' y1='${T}' x2='${x}' y2='${Btm}' stroke='#333'/>`}
+for(let i=-10;i<=10;i++){let y=z-i*H/20;g.innerHTML+=`<line x1='${L}' y1='${y}' x2='${R}' y2='${y}' stroke='#333'/><text x='35' y='${y}' fill='white'>${i*sv.value}</text>`}
+g.innerHTML+=`
+<defs>
+<marker id='arrow' markerWidth='10' markerHeight='10' refX='8' refY='3' orient='auto'>
+<path d='M0,0 L10,3 L0,6 Z' fill='white'/>
+</marker>
+</defs>
+<line x1='${L}' y1='${z}' x2='830' y2='${z}' stroke='white' stroke-width='3' marker-end='url(#arrow)'/>
+<line x1='${L}' y1='${Btm}' x2='${L}' y2='60' stroke='white' stroke-width='3' marker-end='url(#arrow)'/>
+<text x='840' y='${z}' fill='white'>t(s)</text>
+<text x='50' y='50' fill='white'>v(m/s)</text>`;
+line(A.slice(0,n),'#ffd700',m,z,W,H);line(B.slice(0,n),'#00bfff',m,z,W,H)}
+function line(a,c,m,z,W,H){let q=[];a.forEach(p=>{let x=100+p.t/(10*+st.value)*W,y=z-p.v/m*H/2;q.push(x+','+y)});if(q.length>1)g.innerHTML+=`<polyline points='${q.join(' ')}' fill='none' stroke='${c}' stroke-width='5'/>`}
+function buoc(){if(n<11){n++;ve()}}function tuDong(){t=setInterval(()=>{if(n>=11)clearInterval(t);else buoc()},700)}
+tao();
+</script></body></html>

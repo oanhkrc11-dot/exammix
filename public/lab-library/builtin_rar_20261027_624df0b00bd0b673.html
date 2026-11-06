@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mô phỏng giao thoa sóng mặt nước - GV Nguyễn Huy Hùng</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #eef6ff 0%, #dcecff 100%);
+      color: #0f172a;
+    }
+    .app {
+      width: min(1400px, 97vw);
+      margin: 18px auto;
+      background: #fff;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid #dbe7f5;
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.16);
+    }
+    header {
+      padding: 18px 24px;
+      background: linear-gradient(180deg, #0b3b78 0%, #134b93 100%);
+      color: white;
+    }
+    .teacher {
+      font-size: 18px;
+      font-weight: 700;
+      color: #dbeafe;
+      margin-bottom: 8px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+    header p {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.55;
+      opacity: 0.96;
+    }
+    .teacherStrip {
+      padding: 10px 18px 12px;
+      background: #f8fbff;
+      border-top: 1px solid #e2e8f0;
+      border-bottom: 1px solid #dbe5f2;
+      text-align: center;
+      color: #0b3b78;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+    .teacherStrip .line1 {
+      font-size: 18px;
+    }
+    .teacherStrip .line2 {
+      font-size: 17px;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #f8fbff;
+    }
+    .btnMain {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      font-size: 15px;
+    }
+    #startBtn { background: #16a34a; }
+    #pauseBtn { background: #f59e0b; color: #111827; }
+    #resetBtn { background: #2563eb; }
+    .box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #dbe5f2;
+      background: white;
+      border-radius: 12px;
+      padding: 9px 12px;
+      font-size: 15px;
+    }
+    .box input[type="range"] {
+      width: 140px;
+      accent-color: #2563eb;
+    }
+    .box select {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-weight: 700;
+      background: #fff;
+    }
+    .modeBar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px 2px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .modeBar .label {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0b3b78;
+    }
+    .modeButtons {
+      display: inline-flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .modeButtons button {
+      min-width: 140px;
+      border: 2px solid #1d4ed8;
+      background: linear-gradient(180deg, #93c5fd 0%, #60a5fa 100%);
+      color: #dc2626;
+      border-radius: 15px;
+      padding: 11px 18px;
+      font-size: 19px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.18);
+      transition: all 0.18s ease;
+    }
+    .modeButtons button.active {
+      background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+      color: #ef4444;
+      box-shadow: 0 6px 14px rgba(37, 99, 235, 0.34);
+      transform: translateY(-1px);
+    }
+    .stage {
+      padding: 16px 18px 0;
+    }
+    .card {
+      border: 1px solid #dbe5f2;
+      border-radius: 18px;
+      overflow: hidden;
+      background: white;
+    }
+    .cardTitle {
+      padding: 12px 16px;
+      font-weight: 700;
+      color: #0b3b78;
+      border-bottom: 1px solid #e5edf8;
+      background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #fff;
+    }
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      padding: 16px 18px 20px;
+    }
+    .note {
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid #dbe5f2;
+      line-height: 1.55;
+      font-size: 15px;
+    }
+    .note.blue { background: #eff6ff; }
+    .note.green { background: #f0fdf4; }
+    .note.amber { background: #fffbeb; }
+    .note b { color: #0b3b78; }
+    @media (max-width: 1020px) {
+      .notes { grid-template-columns: 1fr; }
+      h1 { font-size: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+            <h1>Mô phỏng HTML/JavaScript: Giao thoa sóng trên mặt nước</h1>
+      <p>Mô phỏng góc nhìn từ trên xuống. Chọn <b>1 nguồn</b> để thấy các mặt sóng tròn đồng tâm; chọn <b>2 nguồn</b> để thấy hình ảnh giao thoa của hai nguồn kết hợp với các vân gần dạng hypebol. </p>
+    </header>
+
+    <div class="controls">
+      <button id="startBtn" class="btnMain">▶ Bắt đầu</button>
+      <button id="pauseBtn" class="btnMain">⏸ Tạm dừng</button>
+      <button id="resetBtn" class="btnMain">↻ Đặt lại</button>
+
+      <label class="box">Biên độ A:
+        <input id="ampSlider" type="range" min="10" max="36" step="2" value="22">
+        <b><span id="ampValue">22</span></b>
+      </label>
+
+      <label class="box">Tần số f:
+        <input id="freqSlider" type="range" min="0.6" max="2.0" step="0.1" value="1.0">
+        <b><span id="freqValue">1.0</span> Hz</b>
+      </label>
+
+      <label class="box">Bước sóng λ:
+        <input id="lambdaSlider" type="range" min="70" max="180" step="5" value="110">
+        <b><span id="lambdaValue">110</span> px</b>
+      </label>
+
+      <label class="box">Khoảng cách S₁S₂:
+        <input id="sourceSepSlider" type="range" min="50" max="180" step="5" value="100">
+        <b><span id="sourceSepValue">100</span> px</b>
+      </label>
+
+      <label class="box">Pha hai nguồn:
+        <select id="phaseMode">
+          <option value="same" selected>Cùng pha</option>
+          <option value="opposite">Ngược pha</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="modeBar">
+      <div class="label">Chọn số nguồn:</div>
+      <div class="modeButtons">
+        <button id="mode1Btn" type="button">1 nguồn</button>
+        <button id="mode2Btn" type="button" class="active">2 nguồn</button>
+      </div>
+    </div>
+
+    <div class="teacherStrip">
+      <div class="line1">GV: Nguyễn Huy Hùng</div>
+      <div class="line2">THPT số 1 Phan Bội Châu</div>
+    </div>
+
+    <div class="stage">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="cardTitle">Mặt nước nhìn từ trên xuống</div>
+        <canvas id="simCanvas" width="1320" height="760"></canvas>
+      </div>
+      <div class="card">
+        <div class="cardTitle">Sơ đồ giao thoa: cực đại nét liền, cực tiểu nét đứt</div>
+        <canvas id="diagCanvas" width="1320" height="460"></canvas>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note blue">
+        <b>Trường hợp 1 nguồn:</b> Các đỉnh sóng và hõm sóng lan truyền thành những vòng tròn đồng tâm xen kẽ quanh nguồn S.
+      </div>
+      <div class="note green">
+        <b>Trường hợp 2 nguồn:</b> Hai nguồn kết hợp tạo hệ vân giao thoa rõ hơn; các dãy cực đại được làm sáng hơn để dễ nhìn và các cực tiểu tối hơn đối xứng qua trung trực của đoạn nối hai nguồn.
+      </div>
+      <div class="note amber">
+        <b>Gợi ý dạy học:</b> Thay đổi khoảng cách hai nguồn, bước sóng và pha để học sinh quan sát rõ sự thay đổi của hình giao thoa.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const diagCanvas = document.getElementById('diagCanvas');
+    const dctx = diagCanvas.getContext('2d');
+
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const mode1Btn = document.getElementById('mode1Btn');
+    const mode2Btn = document.getElementById('mode2Btn');
+    const ampSlider = document.getElementById('ampSlider');
+    const freqSlider = document.getElementById('freqSlider');
+    const lambdaSlider = document.getElementById('lambdaSlider');
+    const sourceSepSlider = document.getElementById('sourceSepSlider');
+    const phaseMode = document.getElementById('phaseMode');
+
+    const ampValue = document.getElementById('ampValue');
+    const freqValue = document.getElementById('freqValue');
+    const lambdaValue = document.getElementById('lambdaValue');
+    const sourceSepValue = document.getElementById('sourceSepValue');
+
+    let A = 22;
+    let f = 1.0;
+    let lambda = 110;
+    let sourceSeparation = 100;
+    let sourceMode = 2;
+    let phaseOffset = 0;
+
+    let running = true;
+    let pausedTime = 0;
+    let lastStart = performance.now();
+
+    const W = canvas.width;
+    const H = canvas.height;
+    const pool = { x: 18, y: 18, w: W - 36, h: H - 36, r: 18 };
+
+    function updateParams() {
+      A = Number(ampSlider.value);
+      f = Number(freqSlider.value);
+      lambda = Number(lambdaSlider.value);
+      sourceSeparation = Number(sourceSepSlider.value);
+      phaseOffset = phaseMode.value === 'opposite' ? Math.PI : 0;
+      ampValue.textContent = A;
+      freqValue.textContent = f.toFixed(1);
+      lambdaValue.textContent = lambda;
+      sourceSepValue.textContent = sourceSeparation;
+      sourceSepSlider.disabled = sourceMode === 1;
+      phaseMode.disabled = sourceMode === 1;
+      mode1Btn.classList.toggle('active', sourceMode === 1);
+      mode2Btn.classList.toggle('active', sourceMode === 2);
+    }
+
+    function waveNumber(pxLambda) {
+      return 2 * Math.PI / pxLambda;
+    }
+
+    function simTime(now) {
+      return running ? (pausedTime + (now - lastStart)) / 1000 : pausedTime / 1000;
+    }
+
+    function roundedRectPath(c, x, y, w, h, r) {
+      c.beginPath();
+      c.moveTo(x + r, y);
+      c.lineTo(x + w - r, y);
+      c.quadraticCurveTo(x + w, y, x + w, y + r);
+      c.lineTo(x + w, y + h - r);
+      c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      c.lineTo(x + r, y + h);
+      c.quadraticCurveTo(x, y + h, x, y + h - r);
+      c.lineTo(x, y + r);
+      c.quadraticCurveTo(x, y, x + r, y);
+      c.closePath();
+    }
+
+    function drawArrow(c, x1, y1, x2, y2, color, width = 2.5) {
+      c.save();
+      c.strokeStyle = color;
+      c.fillStyle = color;
+      c.lineWidth = width;
+      c.beginPath();
+      c.moveTo(x1, y1);
+      c.lineTo(x2, y2);
+      c.stroke();
+      const ang = Math.atan2(y2 - y1, x2 - x1);
+      const size = 10;
+      c.beginPath();
+      c.moveTo(x2, y2);
+      c.lineTo(x2 - size * Math.cos(ang - Math.PI / 6), y2 - size * Math.sin(ang - Math.PI / 6));
+      c.lineTo(x2 - size * Math.cos(ang + Math.PI / 6), y2 - size * Math.sin(ang + Math.PI / 6));
+      c.closePath();
+      c.fill();
+      c.restore();
+    }
+
+    function sourcesForView() {
+      const cx = pool.x + pool.w / 2;
+      const sourceY = pool.y + pool.h * 0.52;
+      if (sourceMode === 1) {
+        return [{ x: cx, y: sourceY, label: 'S' }];
+      }
+      const dx = sourceSeparation * 2.15;
+      return [
+        { x: cx - dx / 2, y: sourceY, label: 'S₁' },
+        { x: cx + dx / 2, y: sourceY, label: 'S₂' }
+      ];
+    }
+
+    function poolWavelength() {
+      return Math.max(32, Math.min(72, lambda * 0.48));
+    }
+
+    function fieldValue(px, py, t, srcs, k, omega) {
+      if (sourceMode === 1) {
+        const r = Math.max(4, Math.hypot(px - srcs[0].x, py - srcs[0].y));
+        return { u: Math.sin(k * r - omega * t), env: 1 };
+      }
+      const r1 = Math.max(4, Math.hypot(px - srcs[0].x, py - srcs[0].y));
+      const r2 = Math.max(4, Math.hypot(px - srcs[1].x, py - srcs[1].y));
+      const u1 = Math.sin(k * r1 - omega * t);
+      const u2 = Math.sin(k * r2 - omega * t + phaseOffset);
+      const u = 0.5 * (u1 + u2);
+      const env = Math.abs(Math.cos((k * (r2 - r1) + phaseOffset) / 2));
+      return { u, env };
+    }
+    function drawScene(now) {
+      const t = simTime(now);
+      const lam = poolWavelength();
+      const k = waveNumber(lam);
+      const omega = 2 * Math.PI * f;
+      const srcs = sourcesForView();
+
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#f4faff';
+      ctx.fillRect(0, 0, W, H);
+
+      // Pool border and background
+      roundedRectPath(ctx, pool.x, pool.y, pool.w, pool.h, pool.r);
+      ctx.fillStyle = '#e6edf7';
+      ctx.fill();
+      ctx.strokeStyle = '#bcccdc';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Water fill
+      ctx.save();
+      roundedRectPath(ctx, pool.x + 8, pool.y + 8, pool.w - 16, pool.h - 16, 14);
+      ctx.clip();
+      const waterGrad = ctx.createLinearGradient(0, pool.y, 0, pool.y + pool.h);
+      waterGrad.addColorStop(0, '#e3f1f6');
+      waterGrad.addColorStop(0.45, '#c6e0e9');
+      waterGrad.addColorStop(1, '#a8cfdc');
+      ctx.fillStyle = waterGrad;
+      ctx.fillRect(pool.x, pool.y, pool.w, pool.h);
+
+      // Dynamic field shading - softer water color but stronger ripple contrast
+      const step = 5;
+      for (let y = pool.y + 8; y < pool.y + pool.h - 8; y += step) {
+        for (let x = pool.x + 8; x < pool.x + pool.w - 8; x += step) {
+          const { u, env } = fieldValue(x + step * 0.5, y + step * 0.5, t, srcs, k, omega);
+          const light = sourceMode === 1 ? 0.55 : env;
+          const tone = Math.max(138, Math.min(245, Math.round(196 + 42 * light + 44 * u)));
+          const green = Math.max(165, Math.min(248, Math.round(188 + 20 * light + 24 * u)));
+          const red = Math.max(108, Math.min(228, Math.round(172 + 8 * light + 16 * u)));
+          ctx.fillStyle = `rgba(${red}, ${green}, ${tone}, 0.24)`;
+          ctx.fillRect(x, y, step + 0.5, step + 0.5);
+        }
+      }
+
+      // Caustic-like grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+      ctx.lineWidth = 2;
+      for (let x = pool.x - 30; x < pool.x + pool.w + 30; x += 52) {
+        ctx.beginPath();
+        ctx.moveTo(x, pool.y + 12);
+        ctx.bezierCurveTo(x + 22, pool.y + pool.h * 0.28, x - 18, pool.y + pool.h * 0.6, x + 12, pool.y + pool.h - 12);
+        ctx.stroke();
+      }
+      for (let y = pool.y + 16; y < pool.y + pool.h; y += 56) {
+        ctx.beginPath();
+        ctx.moveTo(pool.x + 12, y);
+        ctx.bezierCurveTo(pool.x + pool.w * 0.28, y + 18, pool.x + pool.w * 0.65, y - 22, pool.x + pool.w - 12, y + 8);
+        ctx.stroke();
+      }
+
+      // Wavefronts with alternating crests and troughs
+      const speed = lam * f;
+      const travel = (speed * t * 0.95) % lam;
+      const maxR = Math.hypot(pool.w, pool.h) + 120;
+      const halfLam = lam / 2;
+      for (const src of srcs) {
+        let bandIndex = 0;
+        for (let r = travel; r < maxR; r += halfLam) {
+          if (r < 10) {
+            bandIndex++;
+            continue;
+          }
+          const crest = bandIndex % 2 === 0;
+
+          // main ring
+          ctx.beginPath();
+          ctx.arc(src.x, src.y, r, 0, Math.PI * 2);
+          ctx.strokeStyle = crest
+            ? (sourceMode === 1 ? 'rgba(255,255,255,0.52)' : 'rgba(255,255,255,0.42)')
+            : (sourceMode === 1 ? 'rgba(9,72,140,0.42)' : 'rgba(9,72,140,0.34)');
+          ctx.lineWidth = crest ? (sourceMode === 1 ? 2.8 : 2.4) : (sourceMode === 1 ? 2.4 : 2.0);
+          ctx.stroke();
+
+          // highlight/shadow companion line to make crest-trough relief clearer
+          ctx.beginPath();
+          ctx.arc(src.x, src.y, crest ? r - 1.6 : r + 1.4, 0, Math.PI * 2);
+          ctx.strokeStyle = crest ? 'rgba(255,255,255,0.18)' : 'rgba(5,50,105,0.18)';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+
+          bandIndex++;
+        }
+      }
+
+      // Clearer hyperbolic interference lines in 2-source mode
+      if (sourceMode === 2) {
+        for (let y = pool.y + 20; y < pool.y + pool.h - 20; y += 2.4) {
+          for (let x = pool.x + 20; x < pool.x + pool.w - 20; x += 2.4) {
+            const r1 = Math.hypot(x - srcs[0].x, y - srcs[0].y);
+            const r2 = Math.hypot(x - srcs[1].x, y - srcs[1].y);
+            const norm = Math.abs(r2 - r1) / lam;
+            const fracInt = Math.abs(norm - Math.round(norm));
+            const fracHalf = Math.abs(norm - (Math.floor(norm) + 0.5));
+            const antinodeHit = phaseMode.value === 'same' ? fracInt < 0.016 : fracHalf < 0.016;
+            const nodeHit = phaseMode.value === 'same' ? fracHalf < 0.020 : fracInt < 0.020;
+            if (antinodeHit) {
+              ctx.fillStyle = 'rgba(255,255,255,0.82)';
+              ctx.fillRect(x, y, 1.6, 1.6);
+            } else if (nodeHit) {
+              const band = (Math.floor((x + y) / 8) % 2 === 0);
+              if (band) {
+                ctx.fillStyle = 'rgba(23,56,94,0.18)';
+                ctx.fillRect(x, y, 1.25, 1.25);
+              }
+            }
+          }
+        }
+      }
+      ctx.restore();
+
+      // Pool tile rim
+      ctx.save();
+      ctx.strokeStyle = '#2b6eac';
+      ctx.lineWidth = 15;
+      roundedRectPath(ctx, pool.x + 7, pool.y + 7, pool.w - 14, pool.h - 14, 14);
+      ctx.stroke();
+      ctx.restore();
+
+      // Sources as spherical oscillators vibrating perpendicular to the water surface
+      for (const [i, src] of srcs.entries()) {
+        const localPhase = i === 0 ? 0 : phaseOffset;
+        const z = Math.sin(omega * t + localPhase);
+        const radius = 16 + 2.4 * z;
+
+        // contact ripple right around the sphere
+        ctx.beginPath();
+        ctx.ellipse(src.x, src.y + 8, 22 + 3.2 * z, 8 + 1.2 * z, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.38)';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        // soft glow to suggest vertical oscillation without shifting position in top view
+        ctx.beginPath();
+        ctx.arc(src.x, src.y, radius + 4, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.10)';
+        ctx.fill();
+
+        // spherical source head fixed in x-y, pulsating in size/highlight
+        ctx.beginPath();
+        ctx.arc(src.x, src.y, radius, 0, Math.PI * 2);
+        const g = ctx.createRadialGradient(src.x - 5, src.y - 6, 4, src.x, src.y, radius + 4);
+        g.addColorStop(0, '#ffd7d7');
+        g.addColorStop(0.34, '#ef4444');
+        g.addColorStop(1, '#b91c1c');
+        ctx.fillStyle = g;
+        ctx.fill();
+        ctx.strokeStyle = '#fff5f5';
+        ctx.lineWidth = 2.6;
+        ctx.stroke();
+
+        // specular highlight
+        ctx.beginPath();
+        ctx.arc(src.x - 5, src.y - 6, 3.8, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.58)';
+        ctx.fill();
+
+        // stable label above each source
+        ctx.fillStyle = '#ef2b2b';
+        ctx.font = 'bold 34px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(src.label, src.x, src.y - 52);
+      }
+
+    }
+    function drawInterferenceDiagram() {
+      const Wd = diagCanvas.width;
+      const Hd = diagCanvas.height;
+      dctx.clearRect(0, 0, Wd, Hd);
+      dctx.fillStyle = '#ffffff';
+      dctx.fillRect(0, 0, Wd, Hd);
+
+      const margin = 48;
+      const x = margin, y = 42, w = Wd - 2 * margin, h = Hd - 88;
+      const cx = x + w / 2;
+      const cy = y + h / 2 + 16;
+      const lam = Math.max(20, Math.min(36, lambda * 0.24));
+      const sdx = sourceMode === 1 ? 0 : sourceSeparation * 2.0;
+      const s1x = sourceMode === 1 ? cx : cx - sdx / 2;
+      const s2x = sourceMode === 1 ? cx : cx + sdx / 2;
+
+      dctx.strokeStyle = '#111827';
+      dctx.lineWidth = 1.8;
+      dctx.strokeRect(x, y, w, h);
+      dctx.beginPath();
+      dctx.moveTo(x + 8, cy);
+      dctx.lineTo(x + w - 8, cy);
+      dctx.moveTo(cx, y + 8);
+      dctx.lineTo(cx, y + h - 8);
+      dctx.stroke();
+
+      // Circular wavefronts
+      dctx.strokeStyle = '#3f3f46';
+      dctx.lineWidth = 1.25;
+      const circleCount = 11;
+      if (sourceMode === 1) {
+        for (let i = 1; i <= circleCount; i++) {
+          dctx.beginPath();
+          dctx.arc(cx, cy, i * lam * 0.78, 0, Math.PI * 2);
+          dctx.stroke();
+        }
+      } else {
+        for (const sx of [s1x, s2x]) {
+          for (let i = 1; i <= circleCount; i++) {
+            dctx.beginPath();
+            dctx.arc(sx, cy, i * lam * 0.78, 0, Math.PI * 2);
+            dctx.stroke();
+          }
+        }
+      }
+
+      // Sources
+      dctx.fillStyle = '#ec4899';
+      dctx.strokeStyle = '#7c2d12';
+      dctx.lineWidth = 1.5;
+      if (sourceMode === 1) {
+        dctx.beginPath();
+        dctx.arc(cx, cy, 7, 0, Math.PI * 2);
+        dctx.fill(); dctx.stroke();
+        dctx.fillStyle = '#111827';
+        dctx.font = 'bold 18px Arial';
+        dctx.textAlign = 'center';
+        dctx.fillText('S', cx, cy + 28);
+      } else {
+        for (const [sx, label] of [[s1x, 'S₁'], [s2x, 'S₂']]) {
+          dctx.beginPath();
+          dctx.arc(sx, cy, 7, 0, Math.PI * 2);
+          dctx.fill(); dctx.stroke();
+          dctx.fillStyle = '#111827';
+          dctx.font = 'bold 18px Arial';
+          dctx.textAlign = 'center';
+          dctx.fillText(label, sx, cy + 28);
+          dctx.fillStyle = '#ec4899';
+        }
+      }
+
+      if (sourceMode === 2) {
+        const samePhase = phaseMode.value === 'same';
+        const antinodeTargets = [];
+        const nodeTargets = [];
+        for (let m = 0; m <= 4; m++) {
+          antinodeTargets.push((samePhase ? m : m + 0.5) * lam);
+          nodeTargets.push((samePhase ? m + 0.5 : m) * lam);
+        }
+
+        function plotFamily(targets, color, dashed) {
+          dctx.save();
+          dctx.fillStyle = color;
+          let counter = 0;
+          for (let yy = y + 8; yy < y + h - 8; yy += 1.7) {
+            for (let xx = x + 8; xx < x + w - 8; xx += 1.7) {
+              const delta = Math.abs(Math.hypot(xx - s2x, yy - cy) - Math.hypot(xx - s1x, yy - cy));
+              for (const target of targets) {
+                if (Math.abs(delta - target) < 0.62) {
+                  if (!dashed || (counter % 7 < 4)) dctx.fillRect(xx, yy, 1.5, 1.5);
+                  counter++;
+                  break;
+                }
+              }
+            }
+          }
+          dctx.restore();
+        }
+
+        plotFamily(antinodeTargets, '#b91c1c', false);
+        plotFamily(nodeTargets, '#0ea5e9', true);
+
+        // legend
+        dctx.fillStyle = '#b91c1c';
+        dctx.fillRect(x + 40, Hd - 34, 34, 4);
+        dctx.fillStyle = '#111827';
+        dctx.font = '15px Arial';
+        dctx.textAlign = 'left';
+        dctx.fillText('Cực đại (nét liền)', x + 86, Hd - 28);
+        dctx.fillStyle = '#0ea5e9';
+        for (let i = 0; i < 34; i += 7) dctx.fillRect(x + 310 + i, Hd - 34, 4, 4);
+        dctx.fillStyle = '#111827';
+        dctx.fillText('Cực tiểu (nét đứt)', x + 360, Hd - 28);
+      }
+    }
+
+    function animate(now) {
+      drawScene(now);
+      drawInterferenceDiagram();
+      requestAnimationFrame(animate);
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (!running) {
+        running = true;
+        lastStart = performance.now();
+      }
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (running) {
+        pausedTime += performance.now() - lastStart;
+        running = false;
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      A = 22;
+      f = 1.0;
+      lambda = 110;
+      sourceSeparation = 100;
+      sourceMode = 2;
+      phaseOffset = 0;
+      ampSlider.value = A;
+      freqSlider.value = f;
+      lambdaSlider.value = lambda;
+      sourceSepSlider.value = sourceSeparation;
+      phaseMode.value = 'same';
+      pausedTime = 0;
+      lastStart = performance.now();
+      running = true;
+      updateParams();
+    });
+
+    mode1Btn.addEventListener('click', () => {
+      sourceMode = 1;
+      updateParams();
+    });
+    mode2Btn.addEventListener('click', () => {
+      sourceMode = 2;
+      updateParams();
+    });
+
+    ampSlider.addEventListener('input', updateParams);
+    freqSlider.addEventListener('input', updateParams);
+    lambdaSlider.addEventListener('input', updateParams);
+    sourceSepSlider.addEventListener('input', updateParams);
+    phaseMode.addEventListener('change', updateParams);
+
+    updateParams();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

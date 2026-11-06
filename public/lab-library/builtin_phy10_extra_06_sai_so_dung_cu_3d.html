@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Sai số dụng cụ</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#020812;--panel:#071725;--cyan:#64ddff;--yellow:#ffda69;
+  --green:#7fffc2;--red:#ff8585;--text:#eefaff;--muted:#9bb9ca;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#020812;color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+
+/* COMPACT PANEL FROM SIM 06 ONWARD */
+#panel{
+  width:288px;min-width:270px;max-width:300px;height:100%;overflow:auto;padding:10px;
+  background:linear-gradient(180deg,#081a2a,#04101b);
+  border-right:1px solid rgba(100,221,255,.22);z-index:20
+}
+#view{position:relative;flex:1;height:100%;overflow:hidden;min-width:0}
+.title{font-weight:800;font-size:13px;letter-spacing:.035em}
+.kicker{font-size:9px;color:var(--muted);margin-top:3px}
+.simTitle{font-size:15px;color:var(--cyan);font-weight:800;margin:8px 0 5px;text-transform:uppercase}
+.desc{font-size:10.5px;line-height:1.34;color:#cfe5f2}
+.section{margin-top:7px;padding:8px;border:1px solid rgba(100,221,255,.16);border-radius:9px;background:linear-gradient(180deg,rgba(13,36,55,.92),rgba(6,21,34,.92))}
+.section h3{margin:0 0 6px;font-size:10px;color:#b7edff;text-transform:uppercase;letter-spacing:.05em}
+.control{margin:7px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px}
+.row label{font-size:10.5px;font-weight:700}
+.value{font-size:10.5px;color:var(--yellow);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:16px;accent-color:#55cffa}
+.check{display:flex;align-items:center;gap:6px;font-size:10.5px;margin:5px 0}
+.check input{accent-color:#55cffa}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}
+button{min-height:34px;border:1px solid rgba(120,220,255,.20);border-radius:8px;padding:6px 5px;background:#10314b;color:#fff;font-weight:700;font-size:10.5px;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+#measureBtn{background:#17683f}
+#resetBtn{background:#593549}
+.note{font-size:9.5px;line-height:1.38;color:#b7cede}
+#resultBox{padding:7px;border-radius:8px;background:#06131f;border:1px solid rgba(100,221,255,.13);font-size:10.5px;line-height:1.42}
+.good{color:var(--green);font-weight:700}
+.warn{color:var(--yellow);font-weight:700}
+.bad{color:var(--red);font-weight:700}
+#info{
+  position:absolute;top:12px;right:12px;width:280px;padding:9px 11px;border-radius:11px;
+  background:rgba(4,15,25,.92);border:1px solid rgba(100,221,255,.26);z-index:10;
+  backdrop-filter:blur(4px);font-size:11px;pointer-events:none
+}
+#info .head{font-size:10px;text-transform:uppercase;color:#b8efff;font-weight:800;margin-bottom:5px}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-variant-numeric:tabular-nums}
+#credit{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);color:#ffdc70;font-size:16px;font-weight:800;text-shadow:0 0 12px rgba(255,220,112,.28);z-index:7;pointer-events:none}
+#tooltip{position:absolute;display:none;z-index:30;pointer-events:none;padding:7px 9px;border-radius:8px;background:rgba(4,14,23,.96);border:1px solid rgba(100,219,255,.3);font-size:10px;line-height:1.35;color:#eefaff}
+.label3d{padding:3px 5px;border-radius:7px;background:rgba(4,14,23,.8);border:1px solid rgba(100,219,255,.22);font-size:10px;font-weight:700;color:#e8f8ff;white-space:nowrap}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.card{background:#06131f;border:1px solid rgba(100,221,255,.12);border-radius:7px;padding:6px;font-size:9.5px;line-height:1.35}
+.card b{color:#b7edff}
+#miniChart{display:block;width:100%;height:120px;background:#06131f;border-radius:7px}
+@media(max-width:1000px){#panel{width:265px;min-width:265px}#info{width:245px}#credit{font-size:14px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+    <div class="kicker">ĐO LƯỜNG · SAI SỐ</div>
+    <div class="simTitle">06. Sai số dụng cụ</div>
+    <div class="desc">
+      So sánh cùng một vật khi đo bằng các dụng cụ có <b>ĐCNN khác nhau</b>.
+      ĐCNN càng nhỏ thì khoảng làm tròn nhỏ hơn và khả năng phân biệt giá trị càng tốt.
+    </div>
+
+    <div class="section">
+      <h3>Đại lượng cần đo</h3>
+      <div class="control">
+        <div class="row"><label>Giá trị thật</label><span class="value" id="trueText">12.37 cm</span></div>
+        <input id="trueSlider" type="range" min="5.00" max="20.00" step="0.01" value="12.37">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Dụng cụ</h3>
+      <div class="control">
+        <div class="row"><label>ĐCNN dụng cụ A</label><span class="value" id="resAText">0.50 cm</span></div>
+        <input id="resA" type="range" min="0" max="3" step="1" value="3">
+      </div>
+      <div class="control">
+        <div class="row"><label>ĐCNN dụng cụ B</label><span class="value" id="resBText">0.10 cm</span></div>
+        <input id="resB" type="range" min="0" max="3" step="1" value="2">
+      </div>
+      <div class="check"><input id="halfRule" type="checkbox" checked><label for="halfRule">Ước lượng sai số dụng cụ ≈ ĐCNN/2</label></div>
+    </div>
+
+    <div class="section">
+      <h3>Thao tác</h3>
+      <div class="buttons">
+        <button id="measureBtn">📏 Đo bằng A & B</button>
+        <button id="fitBtn">⛶ Fit</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+        <button id="swapBtn">⇄ Đổi A ↔ B</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>So sánh kết quả</h3>
+      <div class="compare">
+        <div class="card" id="cardA"><b>Dụng cụ A</b><br>Chưa đo</div>
+        <div class="card" id="cardB"><b>Dụng cụ B</b><br>Chưa đo</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Minh họa độ phân giải</h3>
+      <canvas id="miniChart"></canvas>
+    </div>
+
+    <div class="section">
+      <h3>Mô hình hóa</h3>
+      <div class="note">
+        Giá trị đọc được được làm tròn về vạch chia gần nhất của từng dụng cụ.
+        Nếu bật quy tắc ĐCNN/2, sai số dụng cụ minh họa được lấy xấp xỉ bằng nửa ĐCNN.
+        Không thêm sai số ngẫu nhiên hay sai số hệ thống ở mô phỏng này.
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="info">
+      <div class="head">Thông số tức thời</div>
+      <div class="infoGrid">
+        <span>Giá trị thật</span><b id="trueInfo">12.37 cm</b>
+        <span>A - ĐCNN</span><b id="aInfo">0.50 cm</b>
+        <span>B - ĐCNN</span><b id="bInfo">0.10 cm</b>
+        <span>A - số đọc</span><b id="aReadInfo">—</b>
+        <span>B - số đọc</span><b id="bReadInfo">—</b>
+        <span>Dụng cụ phân giải tốt hơn</span><b id="betterInfo">B</b>
+      </div>
+    </div>
+    <div id="tooltip"></div>
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* =========================================================
+   1. STATE
+========================================================= */
+const $=id=>document.getElementById(id);
+const view=$('view');
+const trueSlider=$('trueSlider'),resA=$('resA'),resB=$('resB'),halfRule=$('halfRule');
+const RES=[0.01,0.05,0.10,0.50];
+
+const state={
+  trueValue:12.37,
+  resA:.50,
+  resB:.10,
+  readingA:null,
+  readingB:null
+};
+
+function roundTo(x,res){ return Math.round(x/res)*res; }
+function instrumentError(res){
+  return halfRule.checked ? res/2 : res;
+}
+
+/* =========================================================
+   2. SCENE
+========================================================= */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x020812);
+scene.fog=new THREE.Fog(0x020812,20,46);
+
+const camera=new THREE.PerspectiveCamera(45,view.clientWidth/view.clientHeight,.1,100);
+camera.position.set(11,8,15);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.07;
+controls.minDistance=8;
+controls.maxDistance=32;
+controls.minPolarAngle=.1;
+controls.maxPolarAngle=Math.PI*.49;
+controls.target.set(0,0,0);
+
+scene.add(new THREE.HemisphereLight(0xa8e7ff,0x142331,1.25));
+const key=new THREE.DirectionalLight(0xffffff,1.3);
+key.position.set(8,14,10);key.castShadow=true;scene.add(key);
+
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(38,24),
+  new THREE.MeshPhongMaterial({color:0x07131f,shininess:20})
+);
+floor.rotation.x=-Math.PI/2;floor.position.y=-2.1;floor.receiveShadow=true;scene.add(floor);
+
+const grid=new THREE.GridHelper(38,38,0x1e628b,0x123149);
+grid.position.y=-2.08;grid.material.transparent=true;grid.material.opacity=.22;scene.add(grid);
+
+/* =========================================================
+   3. TWO INSTRUMENTS
+========================================================= */
+const SCALE=.48;
+const x0=-5.7;
+function valueToLocalX(v){return x0+v*SCALE;}
+
+function makeInstrument(z,color,name){
+  const g=new THREE.Group();
+  g.position.z=z;
+  scene.add(g);
+
+  const body=new THREE.Mesh(
+    new THREE.BoxGeometry(12.4,.34,1.05),
+    new THREE.MeshPhongMaterial({color:0xd8c98f,shininess:35})
+  );
+  body.position.y=-.45;
+  body.castShadow=true;body.receiveShadow=true;
+  g.add(body);
+
+  const tickGroup=new THREE.Group();
+  g.add(tickGroup);
+
+  const obj=new THREE.Mesh(
+    new THREE.BoxGeometry(1,.66,.62),
+    new THREE.MeshPhongMaterial({color,emissive:0x062638,shininess:85})
+  );
+  obj.position.y=.15;
+  obj.castShadow=true;
+  g.add(obj);
+
+  const d=document.createElement('div');
+  d.className='label3d';d.textContent=name;
+  const label=new CSS2DObject(d);
+  label.position.set(0,1.05,0);
+  g.add(label);
+
+  const marker=new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0,-.1,-.60),
+      new THREE.Vector3(0,1.05,.60)
+    ]),
+    new THREE.LineBasicMaterial({color})
+  );
+  g.add(marker);
+
+  return {g,body,tickGroup,obj,marker,name};
+}
+
+const instA=makeInstrument(-1.45,0x59d7ff,'Dụng cụ A');
+const instB=makeInstrument(1.45,0xffd966,'Dụng cụ B');
+
+function rebuildTicks(inst,res){
+  while(inst.tickGroup.children.length){
+    const o=inst.tickGroup.children.pop();
+    o.geometry?.dispose();o.material?.dispose();
+  }
+  const max=24;
+  const n=Math.round(max/res);
+  const skip=Math.max(1,Math.ceil(n/240));
+  for(let i=0;i<=n;i+=skip){
+    const v=i*res;
+    const major=Math.abs(v-Math.round(v))<1e-6;
+    const h=major?.40:.22;
+    const t=new THREE.Mesh(
+      new THREE.BoxGeometry(.012,h,.024),
+      new THREE.MeshBasicMaterial({color:major?0x101820:0x374047})
+    );
+    t.position.set(valueToLocalX(v),-.28+h/2,.54);
+    inst.tickGroup.add(t);
+  }
+}
+
+function updateInstrument(inst,res,reading){
+  inst.obj.scale.x=Math.max(.35,state.trueValue*SCALE);
+  inst.obj.position.x=x0+state.trueValue*SCALE/2;
+  inst.marker.position.x=valueToLocalX(reading ?? state.trueValue);
+  rebuildTicks(inst,res);
+}
+
+/* =========================================================
+   4. MEASUREMENT
+========================================================= */
+function performMeasure(){
+  state.readingA=roundTo(state.trueValue,state.resA);
+  state.readingB=roundTo(state.trueValue,state.resB);
+
+  const eA=state.readingA-state.trueValue;
+  const eB=state.readingB-state.trueValue;
+  const dA=instrumentError(state.resA);
+  const dB=instrumentError(state.resB);
+
+  $('cardA').innerHTML=
+    `<b>Dụng cụ A</b><br>`+
+    `ĐCNN: ${state.resA.toFixed(2)} cm<br>`+
+    `Số đọc: <span class="${Math.abs(eA)<=dA?'good':'warn'}">${state.readingA.toFixed(2)} cm</span><br>`+
+    `Sai lệch: ${eA>=0?'+':''}${eA.toFixed(2)} cm<br>`+
+    `Δdc ≈ ±${dA.toFixed(2)} cm`;
+
+  $('cardB').innerHTML=
+    `<b>Dụng cụ B</b><br>`+
+    `ĐCNN: ${state.resB.toFixed(2)} cm<br>`+
+    `Số đọc: <span class="${Math.abs(eB)<=dB?'good':'warn'}">${state.readingB.toFixed(2)} cm</span><br>`+
+    `Sai lệch: ${eB>=0?'+':''}${eB.toFixed(2)} cm<br>`+
+    `Δdc ≈ ±${dB.toFixed(2)} cm`;
+
+  refresh();
+}
+
+/* =========================================================
+   5. MINI CHART
+========================================================= */
+const canvas=$('miniChart');
+const ctx=canvas.getContext('2d');
+
+function resizeChart(){
+  const dpr=Math.min(devicePixelRatio,2);
+  const r=canvas.getBoundingClientRect();
+  canvas.width=Math.max(10,Math.floor(r.width*dpr));
+  canvas.height=Math.max(10,Math.floor(r.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  drawChart();
+}
+
+function drawChart(){
+  const W=canvas.clientWidth,H=canvas.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#06131f';ctx.fillRect(0,0,W,H);
+
+  const L=28,R=8,T=12,B=22,w=W-L-R,h=H-T-B;
+  const min=state.trueValue-1.2,max=state.trueValue+1.2;
+
+  function xMap(v){return L+(v-min)/(max-min)*w;}
+
+  ctx.strokeStyle='rgba(160,200,220,.15)';
+  ctx.beginPath();ctx.moveTo(L,T+h/2);ctx.lineTo(L+w,T+h/2);ctx.stroke();
+
+  ctx.strokeStyle='#7fffc2';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(xMap(state.trueValue),T);ctx.lineTo(xMap(state.trueValue),T+h);ctx.stroke();
+
+  function drawTicks(res,y,color){
+    ctx.strokeStyle=color;ctx.lineWidth=1;
+    const first=Math.floor(min/res)*res;
+    for(let v=first;v<=max;v+=res){
+      const x=xMap(v);
+      ctx.beginPath();ctx.moveTo(x,y-7);ctx.lineTo(x,y+7);ctx.stroke();
+    }
+  }
+  drawTicks(state.resA,T+h*.35,'rgba(89,215,255,.85)');
+  drawTicks(state.resB,T+h*.72,'rgba(255,217,102,.85)');
+
+  if(state.readingA!=null){
+    ctx.fillStyle='#59d7ff';
+    ctx.beginPath();ctx.arc(xMap(state.readingA),T+h*.35,4,0,Math.PI*2);ctx.fill();
+  }
+  if(state.readingB!=null){
+    ctx.fillStyle='#ffd966';
+    ctx.beginPath();ctx.arc(xMap(state.readingB),T+h*.72,4,0,Math.PI*2);ctx.fill();
+  }
+
+  ctx.fillStyle='#a9c2d0';ctx.font='9px Arial';
+  ctx.fillText('A',6,T+h*.35+3);
+  ctx.fillText('B',6,T+h*.72+3);
+  ctx.fillText('x thật',Math.max(2,xMap(state.trueValue)-14),H-6);
+}
+
+/* =========================================================
+   6. UI
+========================================================= */
+function refresh(){
+  $('trueText').textContent=`${state.trueValue.toFixed(2)} cm`;
+  $('resAText').textContent=`${state.resA.toFixed(2)} cm`;
+  $('resBText').textContent=`${state.resB.toFixed(2)} cm`;
+
+  $('trueInfo').textContent=`${state.trueValue.toFixed(2)} cm`;
+  $('aInfo').textContent=`${state.resA.toFixed(2)} cm`;
+  $('bInfo').textContent=`${state.resB.toFixed(2)} cm`;
+  $('aReadInfo').textContent=state.readingA==null?'—':`${state.readingA.toFixed(2)} cm`;
+  $('bReadInfo').textContent=state.readingB==null?'—':`${state.readingB.toFixed(2)} cm`;
+  $('betterInfo').textContent=state.resA<state.resB?'A':state.resB<state.resA?'B':'Như nhau';
+
+  updateInstrument(instA,state.resA,state.readingA);
+  updateInstrument(instB,state.resB,state.readingB);
+  drawChart();
+}
+
+trueSlider.addEventListener('input',()=>{
+  state.trueValue=parseFloat(trueSlider.value);
+  state.readingA=null;state.readingB=null;
+  $('cardA').innerHTML='<b>Dụng cụ A</b><br>Chưa đo';
+  $('cardB').innerHTML='<b>Dụng cụ B</b><br>Chưa đo';
+  refresh();
+});
+resA.addEventListener('input',()=>{
+  state.resA=RES[parseInt(resA.value,10)];
+  state.readingA=null;
+  refresh();
+});
+resB.addEventListener('input',()=>{
+  state.resB=RES[parseInt(resB.value,10)];
+  state.readingB=null;
+  refresh();
+});
+halfRule.addEventListener('change',()=>{if(state.readingA!=null||state.readingB!=null)performMeasure();});
+
+$('measureBtn').addEventListener('click',performMeasure);
+$('swapBtn').addEventListener('click',()=>{
+  const tmp=state.resA;state.resA=state.resB;state.resB=tmp;
+  resA.value=RES.indexOf(state.resA);
+  resB.value=RES.indexOf(state.resB);
+  state.readingA=null;state.readingB=null;
+  $('cardA').innerHTML='<b>Dụng cụ A</b><br>Chưa đo';
+  $('cardB').innerHTML='<b>Dụng cụ B</b><br>Chưa đo';
+  refresh();
+});
+$('fitBtn').addEventListener('click',fitScene);
+$('resetBtn').addEventListener('click',resetAll);
+
+/* =========================================================
+   7. TOOLTIP
+========================================================= */
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();
+renderer.domElement.addEventListener('mousemove',e=>{
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const hits=raycaster.intersectObjects([instA.body,instB.body,instA.obj,instB.obj],false);
+  if(hits.length){
+    tooltip.style.display='block';
+    tooltip.style.left=`${e.offsetX+12}px`;
+    tooltip.style.top=`${e.offsetY+10}px`;
+    const o=hits[0].object;
+    if(o===instA.body) tooltip.innerHTML=`<b>Dụng cụ A</b><br>ĐCNN = ${state.resA.toFixed(2)} cm`;
+    else if(o===instB.body) tooltip.innerHTML=`<b>Dụng cụ B</b><br>ĐCNN = ${state.resB.toFixed(2)} cm`;
+    else tooltip.innerHTML=`<b>Vật cần đo</b><br>x thật = ${state.trueValue.toFixed(2)} cm`;
+  }else tooltip.style.display='none';
+});
+renderer.domElement.addEventListener('mouseleave',()=>tooltip.style.display='none');
+
+/* =========================================================
+   8. CAMERA / RESET
+========================================================= */
+function fitScene(){
+  camera.position.set(11,8,15);
+  controls.target.set(0,0,0);
+  controls.update();
+}
+function resetAll(){
+  trueSlider.value='12.37';
+  resA.value='3';
+  resB.value='2';
+  halfRule.checked=true;
+  state.trueValue=12.37;
+  state.resA=.50;
+  state.resB=.10;
+  state.readingA=null;
+  state.readingB=null;
+  $('cardA').innerHTML='<b>Dụng cụ A</b><br>Chưa đo';
+  $('cardB').innerHTML='<b>Dụng cụ B</b><br>Chưa đo';
+  refresh();
+  fitScene();
+}
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);labelRenderer.setSize(w,h);resizeChart();
+}
+window.addEventListener('resize',resize);
+
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+resetAll();
+resize();
+animate();
+</script>
+</body>
+</html>

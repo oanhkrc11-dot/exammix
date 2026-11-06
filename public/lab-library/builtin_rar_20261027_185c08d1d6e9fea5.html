@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>100 · Mạch điện trong gia đình - tải mắc song song</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#06111b;color:#eef8fb}
+#app{display:grid;grid-template-columns:285px 1fr;height:100vh}
+#panel{background:linear-gradient(180deg,#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#57dcff;font-weight:800;letter-spacing:.7px}h1{font-size:17px;margin:4px 0 7px;line-height:1.08}.desc{font-size:10px;color:#abc4cf;line-height:1.42}
+.model{font-size:9px;background:#0b2230;border:1px solid #21495a;border-radius:9px;padding:7px;color:#d9edf5;line-height:1.35;margin-top:6px}
+.ctrl{display:grid;grid-template-columns:92px 1fr 74px;gap:5px;align-items:center;margin:5px 0}.ctrl label,.ctrl output{font-size:9px}.ctrl output{color:#75ebff;text-align:right;font-weight:700}input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9px;padding:7px 5px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800;cursor:pointer}.primary{background:#0f7da7}.on{background:#176f4d}.warn{background:#9b3b3b}
+#view{position:relative;background:radial-gradient(circle at 52% 28%,#173f58 0,#0a263b 40%,#061725 72%,#030b13 100%)}#sim{position:absolute;inset:0;width:100%;height:100%;display:block}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:3;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10px;font-weight:700}
+#hud{position:absolute;right:12px;top:12px;z-index:3;background:#07141ce8;border:1px solid #316376;border-radius:10px;padding:8px 10px;min-width:290px}.hrow{display:flex;justify-content:space-between;gap:14px;font-size:9px;margin:3px 0}.hrow span{color:#9fc0cd}
+#note{position:absolute;left:12px;bottom:50px;z-index:3;width:750px;background:#07141ce8;border:1px solid #316376;border-radius:9px;padding:7px;font-size:9px;line-height:1.4;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:3;font-size:10px;font-weight:700;color:#ffe082}
+#meter{position:absolute;left:12px;bottom:12px;z-index:3;display:flex;align-items:center;gap:8px;background:#07141ce8;border:1px solid #316376;border-radius:9px;padding:7px 10px;font-size:9px}.bar{width:200px;height:10px;background:#102935;border:1px solid #356579;border-radius:999px;overflow:hidden}.fill{height:100%;width:0%;background:linear-gradient(90deg,#63e06b,#ffd166,#ff6b55)}
+.rec{font-size:9px;color:#bcd2db;margin-top:6px}
+</style></head>
+<body><div id="app">
+<aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D CINEMATIC</div>
+<h1>100 · Mạch điện trong gia đình - các tải mắc song song</h1>
+<p class="desc">Các thiết bị gia đình được mắc song song nên mỗi nhánh nhận cùng điện áp nguồn. Khi bật thêm tải, dòng tổng và công suất tổng tăng.</p>
+<div class="model"><b>Mô hình hóa:</b> nguồn điện áp lý tưởng giữ U không đổi. Các tải thuần trở mắc song song: \(U_i=U\), \(I_i=U/R_i\), \(I_{tổng}=\sum I_i\), \(1/R_{tđ}=\sum 1/R_i\). Dòng quy ước đi từ dây pha qua tải về dây trung tính; electron trôi ngược chiều.</div>
+
+<div class="ctrl"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctrl"><label>Điện áp nguồn U</label><input id="voltage" type="range" min="120" max="240" step="5" value="220"><output id="voltageOut"></output></div>
+<div class="ctrl"><label>R đèn</label><input id="R1" type="range" min="100" max="1200" step="20" value="484"><output id="R1Out"></output></div>
+<div class="ctrl"><label>R quạt</label><input id="R2" type="range" min="80" max="900" step="20" value="322"><output id="R2Out"></output></div>
+<div class="ctrl"><label>R ấm điện</label><input id="R3" type="range" min="20" max="200" step="5" value="48"><output id="R3Out"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showCurrent" type="checkbox" checked> Dòng quy ước</label>
+<label class="check"><input id="showElectrons" type="checkbox"> Electron</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị I tổng</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+</div>
+
+<div class="btns">
+<button id="mainBtn" class="btn primary">⚡ Nguồn đang bật</button><button id="allOffBtn" class="btn">Tắt tất cả tải</button>
+<button id="load1Btn" class="btn on">💡 Đèn: BẬT</button><button id="load2Btn" class="btn">🌀 Quạt: TẮT</button>
+<button id="load3Btn" class="btn">♨ Ấm: TẮT</button><button id="demoBtn" class="btn">Chạy tình huống thực tế</button>
+<button id="startBtn" class="btn primary">▶ Bắt đầu</button><button id="pauseBtn" class="btn">⏸ Tạm dừng</button>
+<button id="clearGraphBtn" class="btn">Xóa đồ thị</button><button id="cameraBtn" class="btn">🎬 Camera tự động</button>
+<button id="fitBtn" class="btn">⛶ Fit toàn cảnh</button><button id="resetBtn" class="btn">↻ Đặt lại</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn warn">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+<div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view">
+<canvas id="sim"></canvas>
+<div id="formula">U₁ = U₂ = U₃ = U &nbsp; · &nbsp; I<sub>tổng</sub> = I₁ + I₂ + I₃ &nbsp; · &nbsp; 1/R<sub>tđ</sub> = Σ1/Rᵢ</div>
+<div id="hud">
+<div class="hrow"><span>Điện áp các nhánh</span><b id="uHud"></b></div>
+<div class="hrow"><span>I₁ / I₂ / I₃</span><b id="branchesHud"></b></div>
+<div class="hrow"><span>Dòng tổng</span><b id="itHud"></b></div>
+<div class="hrow"><span>R tương đương</span><b id="reqHud"></b></div>
+<div class="hrow"><span>Công suất tổng</span><b id="ptHud"></b></div>
+<div class="hrow"><span>Số tải đang bật</span><b id="nHud"></b></div>
+</div>
+<div id="note">Trong mạch song song, bật thêm tải <b>không làm các tải khác bị mắc nối tiếp</b>; mỗi nhánh vẫn nhận cùng điện áp nguồn trong mô hình nguồn lý tưởng. Khi thêm tải, \(R_{tđ}\) giảm còn \(I_{tổng}\) và \(P_{tổng}\) tăng.</div>
+<div id="meter"><b>Dòng tổng:</b><div class="bar"><div id="currentFill" class="fill"></div></div><span id="currentText">0 A</span></div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main></div>
+
+<script>
+const $=id=>document.getElementById(id),canvas=$('sim'),ctx=canvas.getContext('2d'),view=$('view');
+const s={running:true,t:0,speed:1,U:220,R:[484,322,48],on:[true,false,false],source:true,hist:[],demo:false,demoT:0,az:.55,el:.26,zoom:1,cameraAuto:false,cameraT:0,drag:false,lastX:0,lastY:0,record:{rec:null,chunks:[],timer:null,start:0}};
+let W=1,H=1,dpr=1;
+function Ii(i){return s.source&&s.on[i]?s.U/s.R[i]:0}
+function It(){return Ii(0)+Ii(1)+Ii(2)}
+function Req(){let g=0;for(let i=0;i<3;i++)if(s.on[i]&&s.source)g+=1/s.R[i];return g>0?1/g:Infinity}
+function Pt(){return s.U*It()}
+
+function resize(){dpr=Math.min(devicePixelRatio||1,2);W=view.clientWidth;H=view.clientHeight;canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
+window.addEventListener('resize',resize);
+function rot3(p){let[x,y,z]=p,ca=Math.cos(s.az),sa=Math.sin(s.az),ce=Math.cos(s.el),se=Math.sin(s.el);let x1=ca*x-sa*z,z1=sa*x+ca*z;let y1=ce*y-se*z1,z2=se*y+ce*z1;return[x1,y1,z2]}
+function proj(p){let[x,y,z]=rot3(p),depth=15-z,sc=(590*s.zoom)/Math.max(4,depth);return[W*.48+x*sc,H*.55-y*sc,sc,depth]}
+function line3(a,b,color,w=2){const A=proj(a),B=proj(b);ctx.strokeStyle=color;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(A[0],A[1]);ctx.lineTo(B[0],B[1]);ctx.stroke()}
+function circle3(p,r,fill,stroke=null){const q=proj(p),rr=Math.max(1,r*q[2]);ctx.beginPath();ctx.arc(q[0],q[1],rr,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke()}}
+function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function label3(text,p){if(!$('showLabels').checked)return;const q=proj(p);ctx.font='12px Segoe UI';const tw=ctx.measureText(text).width;ctx.fillStyle='#f6fbfc';ctx.strokeStyle='#9ec2d2';roundRect(ctx,q[0]-tw/2-6,q[1]-11,tw+12,20,6);ctx.fill();ctx.stroke();ctx.fillStyle='#16323d';ctx.fillText(text,q[0]-tw/2,q[1]+3)}
+function drawArrow(a,b,color){const A=proj(a),B=proj(b);ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(A[0],A[1]);ctx.lineTo(B[0],B[1]);ctx.stroke();const ang=Math.atan2(B[1]-A[1],B[0]-A[0]);ctx.beginPath();ctx.moveTo(B[0],B[1]);ctx.lineTo(B[0]-10*Math.cos(ang-.45),B[1]-10*Math.sin(ang-.45));ctx.lineTo(B[0]-10*Math.cos(ang+.45),B[1]-10*Math.sin(ang+.45));ctx.closePath();ctx.fill()}
+
+const branchX=[-2.6,0,2.6], names=['Đèn','Quạt','Ấm điện'];
+function drawLoad(i,x,y,z){
+  const active=s.source&&s.on[i],q=proj([x,y,z]);
+  ctx.save();ctx.translate(q[0],q[1]);ctx.scale(Math.max(.65,q[2]*.06),Math.max(.65,q[2]*.06));
+  if(i===0){
+    ctx.fillStyle=active?'#ffe082':'#70808a';ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#cdd7dc';ctx.stroke();
+    if(active){ctx.fillStyle='rgba(255,230,130,.15)';ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.fill()}
+  } else if(i===1){
+    ctx.strokeStyle=active?'#7ee7ff':'#70808a';ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.stroke();
+    ctx.rotate(s.t*(active?3:0));ctx.fillStyle=active?'#7ee7ff':'#70808a';for(let k=0;k<3;k++){ctx.rotate(2*Math.PI/3);ctx.fillRect(0,-3,16,6)}
+  } else {
+    ctx.strokeStyle=active?'#ff9d5c':'#70808a';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-14,8);ctx.lineTo(-10,-8);ctx.lineTo(10,-8);ctx.lineTo(14,8);ctx.stroke();
+    if(active){ctx.strokeStyle='#ffcb78';for(let k=-1;k<=1;k++){ctx.beginPath();ctx.moveTo(k*6,-16);ctx.quadraticCurveTo(k*6+5,-24,k*6,-32);ctx.stroke()}}
+  }
+  ctx.restore()
+}
+function drawGraphPanel(){
+  if(!$('showGraph').checked)return;
+  const x=W-375,y=178,w=335,h=182;ctx.fillStyle='#f8fafb';ctx.strokeStyle='#9fb8c3';ctx.lineWidth=2;roundRect(ctx,x,y,w,h,10);ctx.fill();ctx.stroke();ctx.fillStyle='#263b45';ctx.font='bold 14px Segoe UI';ctx.fillText('DÒNG TỔNG I(t)',x+110,y+22);
+  const L=x+46,T=y+38,Rr=x+w-20,B=y+h-28;ctx.strokeStyle='#60727c';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(L,T);ctx.lineTo(L,B);ctx.lineTo(Rr,B);ctx.stroke();const tmin=Math.max(0,s.t-12);let maxI=1;for(const p of s.hist)if(p.t>=tmin)maxI=Math.max(maxI,p.I);
+  if(s.hist.length>1){ctx.strokeStyle='#d85c36';ctx.lineWidth=2.5;ctx.beginPath();let first=true;for(const p of s.hist){if(p.t<tmin)continue;let X=L+(Rr-L)*(p.t-tmin)/12,Y=B-(B-T)*p.I/maxI;if(first){ctx.moveTo(X,Y);first=false}else ctx.lineTo(X,Y)}ctx.stroke()}
+  ctx.fillStyle='#50656f';ctx.font='11px Segoe UI';ctx.fillText('t (s)',Rr-28,B+18);ctx.fillText('I (A)',x+8,T+8)
+}
+function drawScene(){
+  ctx.clearRect(0,0,W,H);const grd=ctx.createLinearGradient(0,0,0,H);grd.addColorStop(0,'#173b50');grd.addColorStop(1,'#06111b');ctx.fillStyle=grd;ctx.fillRect(0,0,W,H);
+  if($('showGrid').checked){for(let i=-7;i<=7;i++)line3([i,-2.2,-5],[i,-2.2,5],'#1b4151',1);for(let z=-5;z<=5;z++)line3([-7,-2.2,z],[7,-2.2,z],'#173846',1)}
+  // rails / source
+  line3([-4.8,2.0,0],[4.8,2.0,0],s.source?'#ff6b5f':'#6a777e',6);
+  line3([-4.8,-1.7,0],[4.8,-1.7,0],s.source?'#5fdcff':'#6a777e',6);
+  circle3([-5.2,.1,0],.5,s.source?'#ffd166':'#6a777e','#d0d8dc');
+  const q=proj([-5.2,.1,0]);ctx.fillStyle='#16323d';ctx.font='bold 14px Segoe UI';ctx.fillText('U',q[0]-5,q[1]+5);
+
+  for(let i=0;i<3;i++){
+    const x=branchX[i],col=s.source&&s.on[i]?'#f6d365':'#60717a';
+    line3([x,2,0],[x,.6,0],col,4);line3([x,-.6,0],[x,-1.7,0],col,4);
+    drawLoad(i,x,0,0);
+    if(s.source&&s.on[i]){
+      if($('showCurrent').checked){
+        for(let k=0;k<7;k++){let u=(k/7+s.t*.35*s.speed)%1;circle3([x,2-3.7*u,.08],.028,'#fff0a8')}
+        drawArrow([x,1.65,.14],[x,1.15,.14],'#ffd166');
+      }
+      if($('showElectrons').checked){
+        for(let k=0;k<5;k++){let u=(k/5+s.t*.24*s.speed)%1;circle3([x,-1.55+3.3*u,-.08],.025,'#79dfff')}
+      }
+    }
+    label3(`${names[i]} · ${s.on[i]?'BẬT':'TẮT'}`,[x,.75,0]);
+  }
+  if(s.source&&It()>0 && $('showCurrent').checked){
+    for(let k=0;k<18;k++){let u=(k/18+s.t*.25*s.speed)%1;circle3([-4.4+8.8*u,2.0,.08],.025,'#fff0a8')}
+  }
+  label3('Dây pha / cực dương mô hình',[0,2.55,0]);label3('Dây trung tính / cực âm mô hình',[0,-2.1,0]);
+  drawGraphPanel();
+}
+function updatePhysics(dt){
+  if(!s.running)return;s.t+=dt*s.speed;
+  if(s.demo){s.demoT+=dt*s.speed;const p=s.demoT%16;s.on=[p>2,p>6,p>10];if(p<2)s.on=[false,false,false];syncButtons()}
+  s.hist.push({t:s.t,I:It()});while(s.hist.length&&s.hist[0].t<s.t-12.5)s.hist.shift()
+}
+function updateVisuals(){drawScene()}
+function updateUI(){
+  $('speedOut').value=s.speed.toFixed(2)+'×';$('voltageOut').value=s.U.toFixed(0)+' V';for(let i=0;i<3;i++)$('R'+(i+1)+'Out').value=s.R[i].toFixed(0)+' Ω';
+  $('uHud').textContent=s.source?s.U.toFixed(0)+' V mỗi nhánh':'0 V';$('branchesHud').textContent=[0,1,2].map(i=>Ii(i).toFixed(2)).join(' / ')+' A';$('itHud').textContent=It().toFixed(2)+' A';$('reqHud').textContent=Number.isFinite(Req())?Req().toFixed(1)+' Ω':'∞';$('ptHud').textContent=Pt().toFixed(0)+' W';$('nHud').textContent=s.on.filter(Boolean).length.toString();
+  const pct=Math.min(100,It()/25*100);$('currentFill').style.width=pct.toFixed(1)+'%';$('currentText').textContent=It().toFixed(2)+' A'
+}
+function sync(clear=true){s.speed=+$('speed').value;s.U=+$('voltage').value;s.R=[+$('R1').value,+$('R2').value,+$('R3').value];if(clear){s.t=0;s.hist=[];s.demo=false;s.demoT=0;$('demoBtn').textContent='Chạy tình huống thực tế'}updateUI()}
+function syncButtons(){
+ $('mainBtn').textContent=s.source?'⚡ Nguồn đang bật':'⚡ Nguồn đang tắt';$('mainBtn').classList.toggle('primary',s.source);
+ for(let i=0;i<3;i++){const b=$('load'+(i+1)+'Btn');const icons=['💡 Đèn','🌀 Quạt','♨ Ấm'];b.textContent=icons[i]+': '+(s.on[i]?'BẬT':'TẮT');b.classList.toggle('on',s.on[i])}
+}
+['voltage','R1','R2','R3'].forEach(id=>$(id).addEventListener('input',()=>sync(true)));$('speed').addEventListener('input',()=>sync(false));
+$('mainBtn').onclick=()=>{s.source=!s.source;syncButtons();s.hist=[];s.t=0};
+$('allOffBtn').onclick=()=>{s.on=[false,false,false];syncButtons();s.hist=[];s.t=0};
+for(let i=0;i<3;i++)$('load'+(i+1)+'Btn').onclick=()=>{s.on[i]=!s.on[i];s.demo=false;syncButtons();s.hist=[];s.t=0};
+$('demoBtn').onclick=()=>{s.demo=!s.demo;s.demoT=0;s.t=0;s.hist=[];$('demoBtn').textContent=s.demo?'Dừng tình huống':'Chạy tình huống thực tế';s.running=true};
+$('startBtn').onclick=()=>s.running=true;$('pauseBtn').onclick=()=>s.running=false;$('clearGraphBtn').onclick=()=>{s.hist=[];s.t=0};
+$('fitBtn').onclick=()=>{s.az=.55;s.el=.26;s.zoom=1};
+$('cameraBtn').onclick=()=>{s.cameraAuto=!s.cameraAuto;s.cameraT=0;$('cameraBtn').textContent=s.cameraAuto?'🎬 Dừng camera tự động':'🎬 Camera tự động';$('cameraBtn').classList.toggle('primary',s.cameraAuto)};
+$('resetBtn').onclick=()=>{Object.assign(s,{running:true,t:0,speed:1,U:220,R:[484,322,48],on:[true,false,false],source:true,hist:[],demo:false,demoT:0,az:.55,el:.26,zoom:1,cameraAuto:false,cameraT:0});for(const [id,v] of [['speed',1],['voltage',220],['R1',484],['R2',322],['R3',48]])$(id).value=v;syncButtons();$('demoBtn').textContent='Chạy tình huống thực tế';$('cameraBtn').textContent='🎬 Camera tự động';updateUI()};
+$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+
+canvas.addEventListener('pointerdown',e=>{s.drag=true;s.lastX=e.clientX;s.lastY=e.clientY;s.cameraAuto=false;$('cameraBtn').textContent='🎬 Camera tự động'});
+window.addEventListener('pointerup',()=>s.drag=false);window.addEventListener('pointermove',e=>{if(!s.drag)return;s.az+=(e.clientX-s.lastX)*.006;s.el=Math.max(-.12,Math.min(1.0,s.el+(e.clientY-s.lastY)*.005));s.lastX=e.clientX;s.lastY=e.clientY});
+canvas.addEventListener('wheel',e=>{e.preventDefault();s.zoom=Math.max(.68,Math.min(1.55,s.zoom*(e.deltaY>0?.92:1.08)))},{passive:false});
+function updateCamera(dt){if(!s.cameraAuto)return;s.cameraT+=dt*.48;s.az=.55+.75*Math.sin(s.cameraT*.5);s.el=.24+.24*(.5+.5*Math.sin(s.cameraT*.78));s.zoom=.92+.12*Math.sin(s.cameraT*.41)}
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function recClock(){const z=Math.floor((performance.now()-s.record.start)/1000);$('recTime').textContent=String(Math.floor(z/60)).padStart(2,'0')+':'+String(z%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!canvas.captureStream||!window.MediaRecorder)return;const m=mime(),stream=canvas.captureStream(30);s.record.chunks=[];s.record.rec=new MediaRecorder(stream,m?{mimeType:m,videoBitsPerSecond:8500000}:{videoBitsPerSecond:8500000});s.record.rec.ondataavailable=e=>{if(e.data.size)s.record.chunks.push(e.data)};s.record.rec.onstop=()=>{clearInterval(s.record.timer);const real=s.record.rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(s.record.chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`100_Mach_dien_gia_dinh_song_song.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true;$('recLabel').textContent='Đã xuất video'};s.record.rec.start(1000);s.record.start=performance.now();s.record.timer=setInterval(recClock,250);$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false;$('recLabel').textContent='Đang quay'};
+$('stopRecordBtn').onclick=()=>{if(s.record.rec&&s.record.rec.state==='recording')s.record.rec.stop()};
+
+resize();syncButtons();updateUI();let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=Math.min(.033,(now-last)/1000);last=now;updatePhysics(dt);updateCamera(dt);updateUI();updateVisuals()}requestAnimationFrame(animate);
+</script></body></html>

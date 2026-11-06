@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PHYSICS 11 LAB 16 - Dao động tổng hợp vuông góc - đường Lissajous</title>
+<style>
+:root{
+ --panel:#081820;--panel2:#0d2631;--line:#2b4b58;--txt:#eef8fb;--muted:#aec4cd;
+ --accent:#4cc9f0;--blue:#1677c8;--orange:#e67e22;--sum:#b43fb5
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Inter,Segoe UI,Arial,sans-serif;background:#b9c7cd}
+#app{display:grid;grid-template-columns:242px 1fr;height:100vh}
+#panel{background:linear-gradient(180deg,var(--panel),var(--panel2));color:var(--txt);padding:10px;overflow:auto;border-right:1px solid #2c4b57}
+.eyebrow{font-size:10px;letter-spacing:1.2px;font-weight:800;color:var(--accent);margin-bottom:4px}
+h1{font-size:17px;line-height:1.1;margin:0 0 6px}.desc{font-size:10.5px;line-height:1.34;color:var(--muted);margin:0}
+hr{border:0;border-top:1px solid #284651;margin:8px 0}.section{font-size:10px;font-weight:800;margin:5px 0}
+.control{display:grid;grid-template-columns:62px 1fr 56px;gap:5px;align-items:center;margin:5px 0}.control label{font-size:9.9px}.control output{font-size:9.5px;text-align:right;color:#72e4ff;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.preset{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:6px 0}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px}.btn{border:1px solid #315665;border-radius:8px;background:#123340;color:#edf9fc;padding:7px 5px;font-size:9.8px;font-weight:800;cursor:pointer}
+.btn.primary{background:#147da5;border-color:#147da5}.btn.record{background:#b84040;border-color:#b84040}.btn.small{padding:5px 3px;font-size:9.3px}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:7px 0}.check{font-size:9.6px;display:flex;align-items:center;gap:5px;padding:6px;border:1px solid #315665;border-radius:8px;background:#102c38}
+.recBox{margin-top:7px;border:1px solid #315665;border-radius:8px;padding:6px;background:#102c38;color:#bcd2db;font-size:9.2px}
+.recStatus{display:flex;justify-content:space-between}.recDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#718891;margin-right:4px}.recDot.on{background:#e33f3f;box-shadow:0 0 0 3px rgba(227,63,63,.17)}
+.model{display:none;margin-top:6px;border:1px solid #315665;border-radius:8px;padding:7px;background:#0d2834;color:#bcd2db;font-size:9.2px;line-height:1.35}.model.show{display:block}
+#view{position:relative;height:100vh;min-width:0;background:radial-gradient(circle at 52% 28%,#d7dfe2 0%,#c3ced3 38%,#acbcc3 70%,#92a8b1 100%)}
+#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:6;pointer-events:none}
+.label3d{position:absolute;transform:translate(-50%,-50%);background:rgba(250,252,253,.96);border:1px solid #aebdc4;color:#24343b;border-radius:6px;padding:4px 6px;font-size:9.8px;white-space:nowrap;box-shadow:0 2px 9px rgba(28,44,51,.12)}
+#formula{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;background:rgba(250,252,253,.93);border:1px solid #aebdc4;border-radius:9px;padding:6px 10px;font-size:10.4px;color:#23353d}
+#hud{position:absolute;left:12px;bottom:12px;z-index:8;display:flex;gap:9px;background:rgba(248,250,251,.94);border:1px solid #aebdc4;border-radius:10px;padding:7px 9px}
+.hudItem{min-width:50px}.hudItem span{display:block;font-size:8.5px;color:#657982}.hudItem b{font-size:10.5px;color:#20333b}
+#note{position:absolute;left:12px;bottom:64px;z-index:7;width:280px;background:rgba(248,250,251,.94);border:1px solid #aebdc4;border-radius:9px;padding:7px;font-size:9.4px;color:#415861}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;color:#2c4651;font-weight:700}
+#hint{position:absolute;right:12px;bottom:12px;z-index:7;font-size:9.5px;color:#eef8fb;background:rgba(38,52,58,.84);border-radius:8px;padding:6px 8px}
+@media(max-width:1050px){#app{grid-template-columns:228px 1fr}}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="eyebrow">PHYSICS 11 LAB · 3D</div>
+<h1>16 · Đường Lissajous</h1>
+<p class="desc">Một điểm chịu hai dao động điều hòa vuông góc. Hai con trượt \(x\) và \(y\) điều khiển vị trí giao nhau và tạo quỹ đạo Lissajous.</p>
+<hr>
+<div class="section">THAM SỐ</div>
+<div class="control"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut">1.00×</output></div>
+<div class="control"><label>Aₓ</label><input id="ax" type="range" min=".4" max="2.2" step=".05" value="1.7"><output id="axOut">1.70</output></div>
+<div class="control"><label>Aᵧ</label><input id="ay" type="range" min=".4" max="2.2" step=".05" value="1.4"><output id="ayOut">1.40</output></div>
+<div class="control"><label>fₓ</label><input id="fx" type="range" min=".20" max="1.20" step=".05" value=".50"><output id="fxOut">0.50 Hz</output></div>
+<div class="control"><label>fᵧ/fₓ</label><input id="ratio" type="range" min=".5" max="3" step=".05" value="2"><output id="ratioOut">2.00</output></div>
+<div class="control"><label>Δφ</label><input id="phase" type="range" min="0" max="360" step="5" value="90"><output id="phaseOut">90°</output></div>
+<div class="section">MẪU NHANH</div>
+<div class="preset">
+<button class="btn small" data-r="1">1:1</button>
+<button class="btn small" data-r="2">2:1</button>
+<button class="btn small" data-r="1.5">3:2</button>
+</div>
+<div class="checks">
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+<label class="check"><input id="showTrail" type="checkbox" checked> Quỹ đạo</label>
+<label class="check"><input id="showProjections" type="checkbox" checked> Hình chiếu</label>
+</div>
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="clearTrailBtn" class="btn">Xóa quỹ đạo</button>
+<button id="fitBtn" class="btn">⛶ Căn giữa</button><button id="fullscreenBtn" class="btn">⛶ Vừa màn hình</button>
+<button id="theoryBtn" class="btn">ⓘ Lý thuyết</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+<div class="recBox"><div class="recStatus"><span><i id="recDot" class="recDot"></i><b id="recLabel">Chưa quay</b></span><b id="recTime">00:00</b></div><div id="recFormat" style="margin-top:4px">Ưu tiên MP4 nếu trình duyệt hỗ trợ.</div></div>
+<div id="theoryBox" class="model"><b>Mô hình:</b> x=Aₓcos(ωₓt), y=Aᵧcos(ωᵧt+Δφ). Quỹ đạo phụ thuộc tỉ số \(f_y/f_x\) và độ lệch pha. Khi tỉ số là số hữu tỉ đơn giản, quỹ đạo khép kín.</div>
+</aside>
+
+<main id="view">
+<div id="three"></div><div id="labels"></div>
+<div id="formula">x = Aₓ cos(ωₓt) &nbsp;&nbsp; · &nbsp;&nbsp; y = Aᵧ cos(ωᵧt + Δφ)</div>
+<div id="hud">
+<div class="hudItem"><span>x</span><b id="xHud">0.00</b></div>
+<div class="hudItem"><span>y</span><b id="yHud">0.00</b></div>
+<div class="hudItem"><span>fₓ</span><b id="fxHud">0.50 Hz</b></div>
+<div class="hudItem"><span>fᵧ</span><b id="fyHud">1.00 Hz</b></div>
+<div class="hudItem"><span>Δφ</span><b id="phaseHud">90°</b></div>
+</div>
+<div id="note">Con trượt xanh chỉ dao động theo trục \(x\), con trượt cam chỉ dao động theo trục \(y\). Điểm tím ở giao hai thanh dẫn chịu đồng thời cả hai dao động và vẽ quỹ đạo Lissajous.</div>
+<div id="credit">Thầy Hùng vật lí</div><div id="hint">Kéo: xoay · Lăn: zoom an toàn · 🎥 quay vùng mô phỏng</div>
+</main>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const state={running:true,paused:false,t:0,speed:1,Ax:1.7,Ay:1.4,fx:.5,ratio:2,phaseDeg:90,lastTrailT:-1};
+const MAX_DT=.033,SCALE=1.55,TRAIL_MAX=1500;
+const dom={speed:$('speed'),ax:$('ax'),ay:$('ay'),fx:$('fx'),ratio:$('ratio'),phase:$('phase'),
+speedOut:$('speedOut'),axOut:$('axOut'),ayOut:$('ayOut'),fxOut:$('fxOut'),ratioOut:$('ratioOut'),phaseOut:$('phaseOut'),
+showGrid:$('showGrid'),showLabels:$('showLabels'),showTrail:$('showTrail'),showProjections:$('showProjections'),
+startBtn:$('startBtn'),pauseBtn:$('pauseBtn'),resetBtn:$('resetBtn'),clearTrailBtn:$('clearTrailBtn'),fitBtn:$('fitBtn'),fullscreenBtn:$('fullscreenBtn'),theoryBtn:$('theoryBtn'),theoryBox:$('theoryBox'),
+recordBtn:$('recordBtn'),stopRecordBtn:$('stopRecordBtn'),recDot:$('recDot'),recLabel:$('recLabel'),recTime:$('recTime'),recFormat:$('recFormat')};
+
+const view=$('view'),scene=new THREE.Scene();scene.fog=new THREE.Fog(0xb3c2c8,28,55);
+const camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=8.5;controls.maxDistance=28;controls.minPolarAngle=.45;controls.maxPolarAngle=2.2;
+scene.add(new THREE.HemisphereLight(0xffffff,0x5c7079,3.0));const key=new THREE.DirectionalLight(0xffffff,2.5);key.position.set(8,12,10);scene.add(key);
+
+const lab=new THREE.Group();scene.add(lab);lab.position.set(-1.0,-.7,0);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(30,20),new THREE.MeshStandardMaterial({color:0xd8e0e3,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-4.8;lab.add(floor);
+const gridFloor=new THREE.GridHelper(30,30,0x65767e,0xb5c0c5);gridFloor.position.y=-4.79;(Array.isArray(gridFloor.material)?gridFloor.material:[gridFloor.material]).forEach(m=>{m.transparent=true;m.opacity=.22});lab.add(gridFloor);
+
+// vertical XY plotting frame
+const frameMat=new THREE.MeshStandardMaterial({color:0x26343a,roughness:.35,metalness:.68});
+const panelMat=new THREE.MeshStandardMaterial({color:0xf4f7f8,roughness:.85,metalness:.02});
+const plotPanel=new THREE.Mesh(new THREE.BoxGeometry(8.4,7.2,.22),panelMat);plotPanel.position.set(0,.2,-.45);lab.add(plotPanel);
+for(const [sx,sy,sw,sh] of [[0,3.85,8.9,.28],[0,-3.45,8.9,.28],[-4.45,.2,.28,7.6],[4.45,.2,.28,7.6]]){
+ const b=new THREE.Mesh(new THREE.BoxGeometry(sw,sh,.36),frameMat);b.position.set(sx,sy,-.28);lab.add(b)
+}
+
+// grid drawn on panel
+const gridGroup=new THREE.Group();lab.add(gridGroup);
+const gridMat=new THREE.LineBasicMaterial({color:0xbac5ca,transparent:true,opacity:.72});
+for(let i=-6;i<=6;i++){
+ const x=i*.58;let g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x,-3.15,-.30),new THREE.Vector3(x,3.55,-.30)]);gridGroup.add(new THREE.Line(g,gridMat))
+}
+for(let j=-5;j<=5;j++){
+ const y=j*.58;let g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-3.95,y+.2,-.30),new THREE.Vector3(3.95,y+.2,-.30)]);gridGroup.add(new THREE.Line(g,gridMat))
+}
+// axes
+const axisX=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-4.0,.2,-.26),new THREE.Vector3(4.0,.2,-.26)]),new THREE.LineBasicMaterial({color:0x41535b}));
+const axisY=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-3.1,-.26),new THREE.Vector3(0,3.5,-.26)]),new THREE.LineBasicMaterial({color:0x41535b}));lab.add(axisX,axisY);
+
+// XY gantry: vertical bar moves in x, horizontal bar moves in y
+const barX=new THREE.Mesh(new THREE.BoxGeometry(.10,6.7,.16),new THREE.MeshStandardMaterial({color:0x1677c8,roughness:.25,metalness:.35}));lab.add(barX);
+const barY=new THREE.Mesh(new THREE.BoxGeometry(7.8,.10,.16),new THREE.MeshStandardMaterial({color:0xe67e22,roughness:.25,metalness:.28}));lab.add(barY);
+const sliderX=new THREE.Mesh(new THREE.BoxGeometry(.62,.40,.34),new THREE.MeshStandardMaterial({color:0x1677c8,roughness:.18,metalness:.2}));lab.add(sliderX);
+const sliderY=new THREE.Mesh(new THREE.BoxGeometry(.40,.62,.34),new THREE.MeshStandardMaterial({color:0xe67e22,roughness:.18,metalness:.2}));lab.add(sliderY);
+
+// intersection puck
+const puck=new THREE.Mesh(new THREE.SphereGeometry(.20,28,20),new THREE.MeshStandardMaterial({color:0xb43fb5,emissive:0x4b164c,emissiveIntensity:.35,roughness:.18,metalness:.2}));lab.add(puck);
+const ring=new THREE.Mesh(new THREE.TorusGeometry(.28,.035,12,40),new THREE.MeshBasicMaterial({color:0xb43fb5}));ring.rotation.x=Math.PI/2;lab.add(ring);
+
+// projection dots on axes
+const projX=new THREE.Mesh(new THREE.SphereGeometry(.11,18,14),new THREE.MeshStandardMaterial({color:0x1677c8}));lab.add(projX);
+const projY=new THREE.Mesh(new THREE.SphereGeometry(.11,18,14),new THREE.MeshStandardMaterial({color:0xe67e22}));lab.add(projY);
+
+// trail
+let trailPts=[];
+const trailGeo=new THREE.BufferGeometry();
+const trailMat=new THREE.LineBasicMaterial({color:0xb43fb5,linewidth:3});
+const trail=new THREE.Line(trailGeo,trailMat);lab.add(trail);
+
+const labelsHost=$('labels');function mkLabel(t){const e=document.createElement('div');e.className='label3d';e.textContent=t;labelsHost.appendChild(e);return e}
+const lx=mkLabel('Dao động x'),ly=mkLabel('Dao động y'),lp=mkLabel('Điểm tổng hợp');
+function projectLabel(el,pos){const p=pos.clone().project(camera);if(p.z>1){el.style.display='none';return}el.style.display=dom.showLabels.checked?'block':'none';el.style.left=((p.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-p.y*.5+.5)*view.clientHeight)+'px'}
+
+function fy(){return state.fx*state.ratio}
+function px(){return state.Ax*Math.cos(2*Math.PI*state.fx*state.t)}
+function py(){return state.Ay*Math.cos(2*Math.PI*fy()*state.t+state.phaseDeg*Math.PI/180)}
+function clearTrail(){trailPts=[];trail.geometry.dispose();trail.geometry=new THREE.BufferGeometry();state.lastTrailT=-1}
+function pushTrail(){trailPts.push(new THREE.Vector3(px()*SCALE,py()*SCALE+.2,-.12));if(trailPts.length>TRAIL_MAX)trailPts.splice(0,trailPts.length-TRAIL_MAX);trail.geometry.dispose();trail.geometry=new THREE.BufferGeometry().setFromPoints(trailPts)}
+
+function updatePhysics(dt){
+ if(state.running&&!state.paused)state.t+=dt*state.speed;
+ if(state.running&&!state.paused&&state.t-state.lastTrailT>.018){state.lastTrailT=state.t;pushTrail()}
+}
+function updateVisuals(){
+ const x=px()*SCALE,y=py()*SCALE+.2;
+ barX.position.set(x,.2,-.05);barY.position.set(0,y,.02);
+ sliderX.position.set(x,-3.18,.12);sliderY.position.set(-4.18,y,.12);
+ puck.position.set(x,y,.18);ring.position.copy(puck.position);ring.position.z=.17;
+ projX.position.set(x,.2,.17);projY.position.set(0,y,.17);
+ trail.visible=dom.showTrail.checked;projX.visible=projY.visible=dom.showProjections.checked;
+ gridGroup.visible=gridFloor.visible=dom.showGrid.checked;
+ projectLabel(lx,new THREE.Vector3(x,-3.55,.3));projectLabel(ly,new THREE.Vector3(-4.5,y,.3));projectLabel(lp,new THREE.Vector3(x,y+.48,.35))
+}
+function fmt(n,d=2){return(Math.abs(n)<1e-9?0:n).toFixed(d)}
+function updateUI(){
+ dom.speedOut.value=state.speed.toFixed(2)+'×';dom.axOut.value=state.Ax.toFixed(2);dom.ayOut.value=state.Ay.toFixed(2);dom.fxOut.value=state.fx.toFixed(2)+' Hz';dom.ratioOut.value=state.ratio.toFixed(2);dom.phaseOut.value=state.phaseDeg.toFixed(0)+'°';
+ $('xHud').textContent=fmt(px());$('yHud').textContent=fmt(py());$('fxHud').textContent=state.fx.toFixed(2)+' Hz';$('fyHud').textContent=fy().toFixed(2)+' Hz';$('phaseHud').textContent=state.phaseDeg.toFixed(0)+'°'
+}
+function restartFromControls(){
+ state.speed=+dom.speed.value;state.Ax=+dom.ax.value;state.Ay=+dom.ay.value;state.fx=+dom.fx.value;state.ratio=+dom.ratio.value;state.phaseDeg=+dom.phase.value;state.t=0;clearTrail();pushTrail();updateUI()
+}
+[dom.ax,dom.ay,dom.fx,dom.ratio,dom.phase].forEach(e=>e.addEventListener('input',restartFromControls));
+dom.speed.addEventListener('input',()=>{state.speed=+dom.speed.value;updateUI()});
+document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{dom.ratio.value=b.dataset.r;restartFromControls()});
+dom.startBtn.onclick=()=>{state.running=true;state.paused=false};
+dom.pauseBtn.onclick=()=>state.paused=true;
+dom.clearTrailBtn.onclick=()=>{clearTrail();pushTrail()};
+dom.theoryBtn.onclick=()=>dom.theoryBox.classList.toggle('show');
+dom.fullscreenBtn.onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fitCamera()},80));
+dom.resetBtn.onclick=()=>{dom.speed.value=1;dom.ax.value=1.7;dom.ay.value=1.4;dom.fx.value=.5;dom.ratio.value=2;dom.phase.value=90;Object.assign(state,{running:true,paused:false,t:0,speed:1,Ax:1.7,Ay:1.4,fx:.5,ratio:2,phaseDeg:90,lastTrailT:-1});clearTrail();pushTrail();fitCamera();updateUI()};
+dom.fitBtn.onclick=fitCamera;
+
+// recording
+let mediaRecorder=null,chunks=[],recStart=0,recTimer=null,recExt='webm';
+function pickMime(){for(const [m,e] of [['video/mp4;codecs=avc1.42E01E','mp4'],['video/mp4','mp4'],['video/webm;codecs=vp9','webm'],['video/webm','webm']])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return{m,e};return{m:'',e:'webm'}}
+function recClock(){const s=Math.floor((performance.now()-recStart)/1000);dom.recTime.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+async function startRec(){
+ if(!renderer.domElement.captureStream||!window.MediaRecorder){dom.recLabel.textContent='Không hỗ trợ quay';return}
+ const p=pickMime(),stream=renderer.domElement.captureStream(30);recExt=p.e;
+ mediaRecorder=new MediaRecorder(stream,p.m?{mimeType:p.m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];
+ mediaRecorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ mediaRecorder.onstop=()=>{clearInterval(recTimer);dom.recDot.classList.remove('on');dom.recLabel.textContent='Đã dừng';const mime=mediaRecorder.mimeType||p.m||'video/webm';recExt=mime.includes('mp4')?'mp4':'webm';const blob=new Blob(chunks,{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`016_Dao_dong_tong_hop_vuong_goc_Lissajous.${recExt}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);dom.recordBtn.disabled=false;dom.stopRecordBtn.disabled=true;dom.recFormat.textContent=recExt==='mp4'?'Đã xuất MP4.':'Đã xuất WebM vì trình duyệt chưa hỗ trợ MP4 trực tiếp.'};
+ mediaRecorder.start(1000);recStart=performance.now();recClock();recTimer=setInterval(recClock,250);dom.recDot.classList.add('on');dom.recLabel.textContent='Đang quay';dom.recordBtn.disabled=true;dom.stopRecordBtn.disabled=false;dom.recFormat.textContent=recExt==='mp4'?'Đang ghi MP4 · 30 fps':'Đang ghi WebM · 30 fps'
+}
+dom.recordBtn.onclick=startRec;dom.stopRecordBtn.onclick=()=>{if(mediaRecorder&&mediaRecorder.state==='recording')mediaRecorder.stop()};
+
+function fitCamera(){
+ const box=new THREE.Box3();[plotPanel,puck,sliderX,sliderY].forEach(o=>box.expandByObject(o));box.expandByScalar(.9);
+ const size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
+ const fov=camera.fov*Math.PI/180,distY=size.y/(2*Math.tan(fov/2)),distX=size.x/(2*Math.tan(fov/2)*camera.aspect),dist=Math.max(distX,distY)*1.38;
+ camera.position.set(center.x+dist*.42,center.y+dist*.04,center.z+dist*.92);controls.target.copy(center);controls.update()
+}
+function importantFits(mx=.92,my=.89){
+ lab.updateMatrixWorld(true);
+ const pts=[
+ new THREE.Vector3(-4.7,-3.7,-.6),new THREE.Vector3(4.7,-3.7,-.6),new THREE.Vector3(-4.7,4.1,-.6),new THREE.Vector3(4.7,4.1,-.6),
+ new THREE.Vector3(-4.7,-3.7,.8),new THREE.Vector3(4.7,-3.7,.8),new THREE.Vector3(-4.7,4.1,.8),new THREE.Vector3(4.7,4.1,.8)
+ ].map(p=>lab.localToWorld(p));
+ camera.updateMatrixWorld();
+ for(const q of pts){const p=q.clone().project(camera);if(p.z<-1||p.z>1||Math.abs(p.x)>mx||Math.abs(p.y)>my)return false}
+ return true
+}
+function enforceSafeZoom(){
+ let i=0;while(!importantFits()&&i++<14){const d=camera.position.clone().sub(controls.target);camera.position.copy(controls.target).add(d.multiplyScalar(1.065));camera.updateMatrixWorld()}
+}
+function resize(){const ww=view.clientWidth,hh=view.clientHeight;camera.aspect=ww/hh;camera.updateProjectionMatrix();renderer.setSize(ww,hh,false)}
+window.addEventListener('resize',()=>{resize();fitCamera()});resize();restartFromControls();fitCamera();
+
+let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=Math.min(MAX_DT,Math.max(0,(now-last)/1000));last=now;updatePhysics(dt);updateVisuals();updateUI();controls.update();enforceSafeZoom();renderer.render(scene,camera)}
+requestAnimationFrame(animate);
+</script>
+</body></html>

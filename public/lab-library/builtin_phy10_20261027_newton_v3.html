@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Các định luật Newton 45–51</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --panel:#183546;--panel2:#102837;--text:#f5fbff;--muted:#b8cbd5;--line:#456779;
+  --cyan:#73ddff;--yellow:#ffe176;--green:#8ff0c4;--orange:#ffad76;--red:#ff8e8e;
+}
+body.soft{
+  --panel:#d7e2e8;--panel2:#c6d4dc;--text:#17384a;--muted:#5c7481;--line:#99b4c1;
+  --cyan:#0d7898;--yellow:#846400;--green:#0c7d55;--orange:#ae6332;--red:#a94343;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#142936;color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:282px;min-width:265px;max-width:292px;height:100%;overflow:auto;padding:9px;
+  background:linear-gradient(180deg,var(--panel),var(--panel2));
+  border-right:1px solid var(--line);z-index:20
+}
+#view{position:relative;flex:1;min-width:0;height:100%;overflow:hidden}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.title{font-weight:900;font-size:12.5px}
+.kicker{font-size:9px;color:var(--muted);margin-top:2px}
+.simTitle{font-size:14px;color:var(--cyan);font-weight:900;margin:7px 0 4px;text-transform:uppercase}
+#themeBtn{width:34px;min-height:28px;padding:0}
+.section{margin-top:6px;padding:7px;border:1px solid var(--line);border-radius:9px;background:rgba(14,38,53,.88)}
+body.soft .section{background:rgba(240,246,249,.86)}
+.section h3{margin:0 0 5px;font-size:9.5px;color:var(--cyan);text-transform:uppercase}
+.control{margin:6px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:3px}
+.row label{font-size:10.1px;font-weight:700}
+.value{font-size:10.1px;color:var(--yellow);font-weight:800;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:15px;accent-color:#1598bd}
+select{width:100%;height:30px;border:1px solid var(--line);border-radius:7px;background:#23495d;color:var(--text);padding:4px 6px;font-size:10px}
+body.soft select{background:#eef5f8}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}
+button{min-height:32px;border:1px solid var(--line);border-radius:7px;padding:5px;background:#244b60;color:#fff;font-weight:800;font-size:10px;cursor:pointer}
+body.soft button{background:#dce9ef;color:#17384a}
+#runBtn{background:#1f8f63;color:white}
+#resetBtn{background:#63424f}
+body.soft #resetBtn{background:#dbc4cb;color:#4e2634}
+#recordBtn{background:#a52c3d;color:white}
+#recordBtn.recording{animation:pulse 1s infinite}
+@keyframes pulse{50%{filter:brightness(1.25)}}
+
+#badge,#info,#graphWrap,#recHud{
+  position:absolute;z-index:10;background:rgba(12,31,43,.84);border:1px solid #446677;
+  color:#f5fbff;backdrop-filter:blur(5px)
+}
+body.soft #badge,body.soft #info,body.soft #graphWrap,body.soft #recHud{
+  background:rgba(239,246,249,.90);border-color:#9bb5c2;color:#17384a
+}
+#badge{left:14px;top:12px;padding:7px 10px;border-radius:9px;font-size:11px;font-weight:900}
+#recHud{left:14px;top:48px;padding:5px 8px;border-radius:8px;font-size:10px;font-weight:900;display:none}
+#info{right:12px;top:12px;width:280px;padding:8px 10px;border-radius:10px;font-size:10.4px}
+#info .head{font-size:9.5px;color:var(--cyan);font-weight:900;margin-bottom:4px;text-transform:uppercase}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 9px;font-variant-numeric:tabular-nums}
+#graphWrap{left:14px;bottom:40px;width:min(44%,585px);height:190px;border-radius:11px;padding:7px}
+#graph{width:100%;height:100%;display:block}
+#credit{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:9;font-size:15px;font-weight:900;color:#ffe176;pointer-events:none}
+body.soft #credit{color:#765900}
+.label3d{padding:3px 5px;border-radius:7px;background:rgba(14,35,48,.86);border:1px solid #456879;color:#f5fbff;font-size:10px;font-weight:800;white-space:nowrap}
+body.soft .label3d{background:rgba(239,246,249,.92);border-color:#9bb5c2;color:#17384a}
+@media(max-width:1000px){#panel{width:258px;min-width:258px}#info{width:230px}#graphWrap{width:42%;height:170px}}
+</style>
+</head>
+
+<body>
+<div id="app">
+<aside id="panel">
+  <div class="top">
+    <div>
+      <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+      <div class="kicker">PHÒNG THÍ NGHIỆM NEWTON</div>
+    </div>
+    <button id="themeBtn" title="Đổi nền">◐</button>
+  </div>
+
+  <div class="simTitle">45–51. Các định luật Newton</div>
+
+  <div class="section">
+    <h3>Tình huống</h3>
+    <select id="mode">
+      <option value="inertia">45. Quán tính trên xe</option>
+      <option value="newton1">46. Định luật I Newton</option>
+      <option value="oneforce">47. Định luật II – một lực</option>
+      <option value="multiforce">48. Định luật II – nhiều lực</option>
+      <option value="newton3">49. Định luật III Newton</option>
+      <option value="wall">50. Người đẩy tường</option>
+      <option value="skaters">51. Hai người trên ván trượt</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <h3>Thông số</h3>
+    <div class="control">
+      <div class="row"><label>Khối lượng m₁</label><span class="value" id="m1Text">2.0 kg</span></div>
+      <input id="m1" type="range" min="1" max="10" step="0.5" value="2">
+    </div>
+    <div class="control" id="m2Control">
+      <div class="row"><label>Khối lượng m₂</label><span class="value" id="m2Text">3.0 kg</span></div>
+      <input id="m2" type="range" min="1" max="10" step="0.5" value="3">
+    </div>
+    <div class="control" id="forceControl">
+      <div class="row"><label>Lực tác dụng F</label><span class="value" id="forceText">6.0 N</span></div>
+      <input id="force" type="range" min="-15" max="15" step="0.5" value="6">
+    </div>
+    <div class="control" id="force2Control" style="display:none">
+      <div class="row"><label>Lực thứ hai F₂</label><span class="value" id="force2Text">−2.0 N</span></div>
+      <input id="force2" type="range" min="-15" max="15" step="0.5" value="-2">
+    </div>
+    <div class="control" id="cartV0Control" style="display:none">
+      <div class="row"><label>Vận tốc đầu xe</label><span class="value" id="cartV0Text">2.0 m/s</span></div>
+      <input id="cartV0" type="range" min="0" max="5" step="0.5" value="2">
+    </div>
+    <div class="control" id="cartAccelControl" style="display:none">
+      <div class="row"><label>Gia tốc xe nền</label><span class="value" id="cartAccelText">2.0 m/s²</span></div>
+      <input id="cartAccel" type="range" min="-4" max="4" step="0.5" value="2">
+    </div>
+    <div class="control" id="pushDurationControl" style="display:none">
+      <div class="row"><label>Thời gian đẩy</label><span class="value" id="pushDurationText">0.8 s</span></div>
+      <input id="pushDuration" type="range" min="0.2" max="1.5" step="0.1" value="0.8">
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Quan sát</h3>
+    <select id="cameraMode">
+      <option value="all">Toàn cảnh</option>
+      <option value="follow1">Theo vật 1</option>
+      <option value="follow2">Theo vật 2</option>
+    </select>
+    <div class="control">
+      <div class="row"><label>Tốc độ</label><span class="value" id="speedText">1.0×</span></div>
+      <input id="simSpeed" type="range" min="0.5" max="2" step="0.5" value="1">
+    </div>
+    <div class="buttons">
+      <button id="runBtn">▶ Bắt đầu</button>
+      <button id="pauseBtn">⏸ Dừng</button>
+      <button id="resetBtn">↻ Đặt lại</button>
+      <button id="fitBtn">⛶ Fit</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Quay thí nghiệm</h3>
+    <div class="buttons">
+      <button id="recordBtn">🎥 Bắt đầu quay</button>
+      <button id="stopRecordBtn">⏹ Dừng quay</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <label>Thời gian quay</label><span class="value" id="recTimeText">00:00</span>
+    </div>
+  </div>
+</aside>
+
+<main id="view">
+  <div id="badge">Quán tính: vật có xu hướng giữ trạng thái chuyển động</div>
+  <div id="recHud">● REC 00:00</div>
+
+  <div id="info">
+    <div class="head">Số liệu tức thời</div>
+    <div class="infoGrid">
+      <span>t</span><b id="tInfo">0.00 s</b>
+      <span>F hợp</span><b id="fnetInfo">0.00 N</b>
+      <span>a₁</span><b id="a1Info">0.00 m/s²</b>
+      <span>v₁</span><b id="v1Info">0.00 m/s</b>
+      <span id="secondLabel">a₂</span><b id="a2Info">—</b>
+      <span>Trạng thái</span><b id="stateInfo">Sẵn sàng</b>
+    </div>
+  </div>
+
+  <div id="graphWrap"><canvas id="graph"></canvas></div>
+  <div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $=id=>document.getElementById(id), view=$('view');
+const state={
+  mode:'inertia',m1:2,m2:3,F:6,F2:-2,cartAccel:2,
+  cartV0:2,pushDuration:0.8,
+  t:0,simSpeed:1,running:false,paused:true,soft:false,cameraMode:'all',
+  x1:0,v1:0,x2:4,v2:0,cartX:0,cartV:0,
+  lastStamp:performance.now(),recording:false,recordStart:0
+};
+const fmt=(n,d=2)=>n.toFixed(d).replace('-','−');
+
+/* ---------- SCENE ---------- */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x142936);
+scene.fog=new THREE.Fog(0x142936,38,100);
+
+const camera=new THREE.PerspectiveCamera(44,view.clientWidth/view.clientHeight,.1,180);
+camera.position.set(15,8.5,18);
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.06;
+controls.minDistance=7;controls.maxDistance=50;
+controls.minPolarAngle=.08;controls.maxPolarAngle=Math.PI*.49;
+controls.target.set(0,1.5,0);
+
+const hemi=new THREE.HemisphereLight(0xe9f7ff,0x4c6572,2.15);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xf7fbff,2.05);sun.position.set(9,16,11);sun.castShadow=true;scene.add(sun);
+const spot=new THREE.SpotLight(0xffffff,1.0,100,Math.PI/5,.38,1.2);
+spot.position.set(6,17,8);spot.target.position.set(0,0,0);scene.add(spot,spot.target);
+
+/* lab room */
+const floorMat=new THREE.MeshPhongMaterial({color:0x304a58,shininess:16});
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,32),floorMat);
+floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+
+const wallMat=new THREE.MeshPhongMaterial({color:0x28424f});
+const backWall=new THREE.Mesh(new THREE.PlaneGeometry(60,17),wallMat);
+backWall.position.set(0,8.5,-11);scene.add(backWall);
+
+const leftWall=new THREE.Mesh(new THREE.PlaneGeometry(32,17),new THREE.MeshPhongMaterial({color:0x263d49}));
+leftWall.rotation.y=Math.PI/2;leftWall.position.set(-20,8.5,0);scene.add(leftWall);
+
+const windowMat=new THREE.MeshPhongMaterial({color:0x7095a7,transparent:true,opacity:.22,shininess:42});
+for(let i=0;i<4;i++){
+  const win=new THREE.Mesh(new THREE.PlaneGeometry(5.4,7.2),windowMat);
+  win.position.set(-15+i*6,10,-10.9);scene.add(win);
+}
+const board=new THREE.Mesh(new THREE.BoxGeometry(8.5,4.8,.2),new THREE.MeshPhongMaterial({color:0x1e4b4b}));
+board.position.set(12,8.5,-10.75);scene.add(board);
+const bd=document.createElement('div');bd.className='label3d';bd.textContent='NEWTON · LỰC VÀ CHUYỂN ĐỘNG';
+const bl=new CSS2DObject(bd);bl.position.set(12,10.3,-10.4);scene.add(bl);
+
+for(const x of [-14,14]){
+  const cab=new THREE.Mesh(new THREE.BoxGeometry(4,2.2,2.1),new THREE.MeshPhongMaterial({color:0x536d7a}));
+  cab.position.set(x,1.1,-8.6);scene.add(cab);
+}
+
+/* table/track */
+const table=new THREE.Mesh(new THREE.BoxGeometry(30,.35,6),new THREE.MeshPhongMaterial({color:0x7b8e97,shininess:25}));
+table.position.set(0,.2,0);table.receiveShadow=true;scene.add(table);
+const track=new THREE.Mesh(new THREE.BoxGeometry(28,.16,2.1),new THREE.MeshPhongMaterial({color:0x4c626d,shininess:30}));
+track.position.set(0,.48,0);scene.add(track);
+
+for(let x=-13;x<=13;x+=1){
+  const tick=new THREE.Mesh(new THREE.BoxGeometry(.02,.18,.03),new THREE.MeshBasicMaterial({color:x===0?0xffdc6b:0x9db9c7}));
+  tick.position.set(x,.62,-.95);scene.add(tick);
+}
+
+/* movable cart */
+const cart=new THREE.Group();scene.add(cart);
+const cartBody=new THREE.Mesh(new THREE.BoxGeometry(3.4,.5,1.5),new THREE.MeshPhongMaterial({color:0x407e98,shininess:70}));
+cartBody.position.y=.88;cart.add(cartBody);
+for(const sx of [-1.1,1.1])for(const sz of [-.58,.58]){
+  const w=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.14,24),new THREE.MeshPhongMaterial({color:0x202d34}));
+  w.rotation.x=Math.PI/2;w.position.set(sx,.55,sz);cart.add(w);
+}
+const cartLabelDiv=document.createElement('div');cartLabelDiv.className='label3d';cartLabelDiv.textContent='Xe nền';
+const cartLabel=new CSS2DObject(cartLabelDiv);cartLabel.position.set(0,1.55,0);cart.add(cartLabel);
+
+/* block */
+function makeBlock(color,label,z=0){
+  const g=new THREE.Group();scene.add(g);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(1.2,.9,1.0),new THREE.MeshPhongMaterial({color,shininess:65}));
+  body.position.y=1.05;body.castShadow=true;g.add(body);
+  const d=document.createElement('div');d.className='label3d';d.textContent=label;
+  const l=new CSS2DObject(d);l.position.set(0,1.78,0);g.add(l);
+  g.position.z=z;
+  return {g,label:d};
+}
+const block1=makeBlock(0x35a6d4,'Vật 1',-.45);
+const block2=makeBlock(0xe58b52,'Vật 2',.45);
+
+/* people */
+function makePerson(color,label){
+  const g=new THREE.Group();scene.add(g);
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.25,.8,6,14),new THREE.MeshPhongMaterial({color}));
+  torso.position.y=1.35;g.add(torso);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.23,18,12),new THREE.MeshPhongMaterial({color:0xe7c7ad}));
+  head.position.y=2.05;g.add(head);
+  const board=new THREE.Mesh(new THREE.BoxGeometry(1.1,.14,.55),new THREE.MeshPhongMaterial({color:0x50626d}));
+  board.position.y=.58;g.add(board);
+  for(const sx of [-.35,.35]){
+    const wh=new THREE.Mesh(new THREE.CylinderGeometry(.11,.11,.08,18),new THREE.MeshPhongMaterial({color:0x202d34}));
+    wh.rotation.x=Math.PI/2;wh.position.set(sx,.48,.25);g.add(wh);
+  }
+  const d=document.createElement('div');d.className='label3d';d.textContent=label;
+  const l=new CSS2DObject(d);l.position.set(0,2.5,0);g.add(l);
+  return {g,label:d};
+}
+const person1=makePerson(0x3ca7d8,'A');
+const person2=makePerson(0xe38851,'B');
+
+/* wall */
+const wall=new THREE.Mesh(new THREE.BoxGeometry(.6,4.5,5),new THREE.MeshPhongMaterial({color:0x6b7c85}));
+wall.position.set(6,2.3,0);scene.add(wall);
+
+/* arrows */
+const force1=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1,0x73ddff,.24,.14);
+const force2=new THREE.ArrowHelper(new THREE.Vector3(-1,0,0),new THREE.Vector3(),1,0xffad76,.24,.14);
+const accelArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1,0x8ff0c4,.24,.14);
+scene.add(force1,force2,accelArrow);
+
+/* ---------- PHYSICS ---------- */
+function resetState(){
+  state.t=0;state.running=false;state.paused=true;
+  state.cartX=-4;
+  state.cartV=state.cartV0;
+  state.x1=state.cartX;      // vật nằm trên xe lúc đầu
+  state.v1=state.cartV0;     // cùng vận tốc với xe trước khi xe đổi chuyển động
+  state.x2=4;state.v2=0;
+  $('runBtn').textContent='▶ Bắt đầu';$('pauseBtn').textContent='⏸ Dừng';
+  applyModeVisuals();
+  updateUI();
+  fitScene();
+}
+
+function physics(){
+  let a1=0,a2=null,fnet=0;
+
+  if(state.mode==='inertia'){
+    // Vật trên sàn xe lý tưởng không ma sát: không có lực ngang lên vật.
+    // Xe có gia tốc riêng, vật giữ vận tốc ban đầu theo hệ quy chiếu mặt đất.
+    a1=0; fnet=0;
+  }else if(state.mode==='newton1'){
+    a1=0; fnet=0;
+  }else if(state.mode==='oneforce'){
+    fnet=state.F;
+    a1=fnet/state.m1;
+  }else if(state.mode==='multiforce'){
+    fnet=state.F+state.F2;
+    a1=fnet/state.m1;
+  }else if(state.mode==='newton3'){
+    // Lực tương tác chỉ tồn tại trong thời gian tiếp xúc.
+    const active=state.t<=state.pushDuration;
+    const F=active?state.F:0;
+    a1=F/state.m1;
+    a2=-F/state.m2;
+    fnet=F;
+  }else if(state.mode==='wall'){
+    // Người và tường không chuyển dời; lực tác dụng và phản lực bằng nhau.
+    a1=0; fnet=0;
+  }else if(state.mode==='skaters'){
+    // Hai người chỉ đẩy nhau trong một khoảng thời gian ngắn,
+    // sau đó chuyển động thẳng đều.
+    const active=state.t<=state.pushDuration;
+    const F=active?state.F:0;
+    a1=-F/state.m1;
+    a2= F/state.m2;
+    fnet=F;
+  }
+  return {a1,a2,fnet};
+}
+function step(dt){
+  const {a1,a2}=physics();
+
+  if(state.mode==='inertia'){
+    // Xe đổi chuyển động; vật không chịu lực ngang nên giữ v ban đầu.
+    state.cartV += state.cartAccel*dt;
+    state.cartX += state.cartV*dt;
+    state.x1 += state.v1*dt;
+
+    // Giới hạn vật trong phạm vi sàn xe về mặt hiển thị; nếu trượt khỏi xe thì rơi xuống.
+    const rel=state.x1-state.cartX;
+    if(Math.abs(rel)>1.55){
+      // sau khi rời sàn xe, vẫn giữ vận tốc ngang; chỉ hạ thấp vị trí để thấy đã rơi khỏi xe
+    }
+  }else if(state.mode==='newton1'){
+    if(state.t<.05 && Math.abs(state.v1-state.cartV0)<1e-6)state.v1=2;
+    state.x1 += state.v1*dt;
+  }else if(['oneforce','multiforce'].includes(state.mode)){
+    state.v1 += a1*dt;
+    state.x1 += state.v1*dt;
+  }else if(state.mode==='newton3'){
+    state.v1 += a1*dt; state.v2 += a2*dt;
+    state.x1 += state.v1*dt; state.x2 += state.v2*dt;
+  }else if(state.mode==='wall'){
+    // Không dịch chuyển vì người đứng trên sàn; hai lực được biểu diễn bằng véc tơ.
+  }else if(state.mode==='skaters'){
+    state.v1 += a1*dt; state.v2 += a2*dt;
+    state.x1 += state.v1*dt; state.x2 += state.v2*dt;
+  }
+
+  if(Math.abs(state.x1)>13 || Math.abs(state.x2)>13 || Math.abs(state.cartX)>13){
+    state.running=false;state.paused=true;$('runBtn').textContent='▶ Chạy lại';
+  }
+}
+
+function setLabelVisible(obj, visible){
+  if(!obj) return;
+  obj.visible = visible;
+}
+
+function applyModeVisuals(){
+  cart.visible=false;block1.g.visible=false;block2.g.visible=false;
+  person1.g.visible=false;person2.g.visible=false;wall.visible=false;
+  force1.visible=false;force2.visible=false;accelArrow.visible=false;
+
+  // Ẩn toàn bộ nhãn trước, tránh nhãn dư khi chuyển tình huống.
+  setLabelVisible(cartLabel,false);
+  setLabelVisible(block1.g.children.find(o=>o.isCSS2DObject),false);
+  setLabelVisible(block2.g.children.find(o=>o.isCSS2DObject),false);
+  setLabelVisible(person1.g.children.find(o=>o.isCSS2DObject),false);
+  setLabelVisible(person2.g.children.find(o=>o.isCSS2DObject),false);
+
+  $('m2Control').style.display='none';
+  $('forceControl').style.display='none';
+  $('force2Control').style.display='none';
+  $('cartV0Control').style.display='none';
+  $('cartAccelControl').style.display='none';
+  $('pushDurationControl').style.display='none';
+
+  if(state.mode==='inertia'){
+    cart.visible=true;block1.g.visible=true;
+    setLabelVisible(cartLabel,true);
+    setLabelVisible(block1.g.children.find(o=>o.isCSS2DObject),true);
+    block1.label.textContent='Vật trên xe';
+    cartLabelDiv.textContent='Xe nền';
+    $('cartV0Control').style.display='block';
+    $('cartAccelControl').style.display='block';
+    block1.g.position.set(state.x1,1.45,0);
+    cart.position.set(state.cartX,0,0);
+    $('badge').textContent='Xe đổi vận tốc; vật giữ vận tốc ban đầu nếu bỏ qua ma sát';
+  }
+  if(state.mode==='newton1'){
+    block1.g.visible=true;
+    setLabelVisible(block1.g.children.find(o=>o.isCSS2DObject),true);
+    block1.label.textContent='Vật 1';
+    block1.g.position.set(state.x1,0,0);
+    $('badge').textContent='ΣF = 0 → vật giữ nguyên trạng thái chuyển động';
+  }
+  if(state.mode==='oneforce'){
+    block1.g.visible=true;
+    setLabelVisible(block1.g.children.find(o=>o.isCSS2DObject),true);
+    block1.label.textContent='Vật 1';
+    $('forceControl').style.display='block';
+    $('badge').textContent='Định luật II: a = F/m';
+  }
+  if(state.mode==='multiforce'){
+    block1.g.visible=true;
+    setLabelVisible(block1.g.children.find(o=>o.isCSS2DObject),true);
+    block1.label.textContent='Vật 1';
+    $('forceControl').style.display='block';
+    $('force2Control').style.display='block';
+    $('badge').textContent='ΣF = F₁ + F₂ → a = ΣF/m';
+  }
+  if(state.mode==='newton3'){
+    block1.g.visible=true;block2.g.visible=true;
+    setLabelVisible(block1.g.children.find(o=>o.isCSS2DObject),true);
+    setLabelVisible(block2.g.children.find(o=>o.isCSS2DObject),true);
+    block1.label.textContent='Vật 1';
+    block2.label.textContent='Vật 2';
+    $('m2Control').style.display='block';
+    $('forceControl').style.display='block';
+    $('pushDurationControl').style.display='block';
+    $('badge').textContent='Trong lúc tương tác: F₁₂ = −F₂₁; hết tiếp xúc → hai vật chuyển động thẳng đều';
+  }
+  if(state.mode==='wall'){
+    person1.g.visible=true;wall.visible=true;
+    setLabelVisible(person1.g.children.find(o=>o.isCSS2DObject),true);
+    person1.label.textContent='Người';
+    $('forceControl').style.display='block';
+    person1.g.position.set(3.8,0,0);
+    $('badge').textContent='Người đẩy tường ↔ tường đẩy người';
+  }
+  if(state.mode==='skaters'){
+    person1.g.visible=true;person2.g.visible=true;
+    setLabelVisible(person1.g.children.find(o=>o.isCSS2DObject),true);
+    setLabelVisible(person2.g.children.find(o=>o.isCSS2DObject),true);
+    person1.label.textContent='Người A';
+    person2.label.textContent='Người B';
+    $('m2Control').style.display='block';
+    $('forceControl').style.display='block';
+    $('pushDurationControl').style.display='block';
+    $('badge').textContent='Chỉ khi đang đẩy mới có gia tốc; sau đó mỗi người giữ vận tốc đã có';
+  }
+}
+
+function update3D(){
+  const {a1,a2}=physics();
+
+  if(state.mode==='inertia'){
+    cart.position.x=state.cartX;
+    const rel=state.x1-state.cartX;
+    // Khi còn trên mặt xe: vật nằm trên sàn xe; khi trượt khỏi mép: hạ xuống để minh họa rơi khỏi xe.
+    const onDeck=Math.abs(rel)<=1.55;
+    block1.g.position.set(state.x1,onDeck?1.10:0,0);
+    block1.label.textContent=onDeck ? `v vật=${fmt(state.v1,1)} m/s` : 'Vật đã trượt khỏi xe';
+    cartLabelDiv.textContent=`Xe · v=${fmt(state.cartV,1)} m/s`;
+    accelArrow.position.set(state.cartX,2.0,0);
+    accelArrow.setDirection(new THREE.Vector3(Math.sign(state.cartAccel)||1,0,0));
+    accelArrow.setLength(Math.max(.2,Math.abs(state.cartAccel)*.55),.24,.14);
+    accelArrow.visible=Math.abs(state.cartAccel)>0.01;
+  }
+
+  if(state.mode==='newton1'){
+    block1.g.position.set(state.x1,0,0);
+    block1.label.textContent=`Vật 1 · v=${fmt(state.v1,1)} m/s`;
+  }
+
+  if(['oneforce','multiforce'].includes(state.mode)){
+    block1.g.position.set(state.x1,0,0);
+    force1.position.set(state.x1,2.0,-.2);
+    force1.setDirection(new THREE.Vector3(Math.sign(state.F)||1,0,0));
+    force1.setLength(Math.max(.15,Math.abs(state.F)*.16),.24,.14);force1.visible=Math.abs(state.F)>.01;
+
+    if(state.mode==='multiforce'){
+      force2.position.set(state.x1,2.35,.2);
+      force2.setDirection(new THREE.Vector3(Math.sign(state.F2)||1,0,0));
+      force2.setLength(Math.max(.15,Math.abs(state.F2)*.16),.24,.14);force2.visible=Math.abs(state.F2)>.01;
+    }
+    accelArrow.position.set(state.x1,2.7,0);
+    accelArrow.setDirection(new THREE.Vector3(Math.sign(a1)||1,0,0));
+    accelArrow.setLength(Math.max(.12,Math.abs(a1)*.55),.24,.14);accelArrow.visible=Math.abs(a1)>.01;
+  }
+
+  if(state.mode==='newton3'){
+    block1.g.position.set(state.x1,0,-.45);block2.g.position.set(state.x2,0,.45);
+    const active=state.t<=state.pushDuration;
+    force1.position.set(state.x1,2.0,-.45);
+    force1.setDirection(new THREE.Vector3(Math.sign(state.F)||1,0,0));
+    force1.setLength(Math.max(.15,Math.abs(state.F)*.14),.24,.14);force1.visible=active;
+    force2.position.set(state.x2,2.0,.45);
+    force2.setDirection(new THREE.Vector3(-Math.sign(state.F)||-1,0,0));
+    force2.setLength(Math.max(.15,Math.abs(state.F)*.14),.24,.14);force2.visible=active;
+  }
+
+  if(state.mode==='wall'){
+    const mag=Math.abs(state.F);
+    force1.position.set(4.4,1.7,-.4);force1.setDirection(new THREE.Vector3(1,0,0));
+    force1.setLength(Math.max(.2,mag*.14),.24,.14);force1.visible=true;
+    force2.position.set(5.6,1.7,.4);force2.setDirection(new THREE.Vector3(-1,0,0));
+    force2.setLength(Math.max(.2,mag*.14),.24,.14);force2.visible=true;
+  }
+
+  if(state.mode==='skaters'){
+    person1.g.position.set(state.x1,0,-.45);person2.g.position.set(state.x2,0,.45);
+    const active=state.t<=state.pushDuration;
+    force1.position.set(state.x1,2.6,-.45);force1.setDirection(new THREE.Vector3(-1,0,0));
+    force1.setLength(Math.max(.2,Math.abs(state.F)*.12),.24,.14);force1.visible=active;
+    force2.position.set(state.x2,2.6,.45);force2.setDirection(new THREE.Vector3(1,0,0));
+    force2.setLength(Math.max(.2,Math.abs(state.F)*.12),.24,.14);force2.visible=active;
+  }
+}
+
+/* ---------- GRAPH ---------- */
+const graph=$('graph'),ctx=graph.getContext('2d');
+function resizeGraph(){
+  const dpr=Math.min(devicePixelRatio,2),r=graph.getBoundingClientRect();
+  graph.width=Math.max(10,Math.floor(r.width*dpr));graph.height=Math.max(10,Math.floor(r.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);drawGraph();
+}
+function drawGraph(){
+  const W=graph.clientWidth,H=graph.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=state.soft?'#f3f8fa':'#173444';ctx.fillRect(0,0,W,H);
+
+  const L=42,R=12,T=12,B=28,w=W-L-R,h=H-T-B;
+  const tmax=8;
+  const tx=t=>L+t/tmax*w;
+  const lim=6;
+  const yy=v=>T+h-(v+lim)/(2*lim)*h;
+
+  ctx.strokeStyle=state.soft?'rgba(60,95,110,.15)':'rgba(200,230,240,.14)';
+  for(let i=0;i<=5;i++){
+    const gx=L+w*i/5;ctx.beginPath();ctx.moveTo(gx,T);ctx.lineTo(gx,T+h);ctx.stroke();
+    const gy=T+h*i/5;ctx.beginPath();ctx.moveTo(L,gy);ctx.lineTo(L+w,gy);ctx.stroke();
+  }
+
+  const {a1,a2}=physics();
+  const v1t=t=>{
+    if(state.mode==='newton1')return 2;
+    if(state.mode==='inertia')return state.cartV0;
+    if(state.mode==='wall')return 0;
+    if(state.mode==='newton3'){
+      const ap=state.F/state.m1;
+      return t<=state.pushDuration ? ap*t : ap*state.pushDuration;
+    }
+    if(state.mode==='skaters'){
+      const ap=-state.F/state.m1;
+      return t<=state.pushDuration ? ap*t : ap*state.pushDuration;
+    }
+    return a1*t;
+  };
+  const v2t=t=>{
+    if(a2===null)return null;
+    if(state.mode==='newton3'){
+      const ap=-state.F/state.m2;
+      return t<=state.pushDuration ? ap*t : ap*state.pushDuration;
+    }
+    if(state.mode==='skaters'){
+      const ap=state.F/state.m2;
+      return t<=state.pushDuration ? ap*t : ap*state.pushDuration;
+    }
+    return a2*t;
+  };
+
+  ctx.globalAlpha=.26;ctx.strokeStyle='#73ddff';ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.moveTo(tx(0),yy(v1t(0)));ctx.lineTo(tx(tmax),yy(v1t(tmax)));ctx.stroke();ctx.globalAlpha=1;
+  ctx.strokeStyle='#73ddff';ctx.lineWidth=2.4;
+  ctx.beginPath();ctx.moveTo(tx(0),yy(v1t(0)));ctx.lineTo(tx(Math.min(state.t,tmax)),yy(v1t(Math.min(state.t,tmax))));ctx.stroke();
+
+  if(a2!==null){
+    ctx.globalAlpha=.26;ctx.strokeStyle='#ffad76';ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(tx(0),yy(v2t(0)));ctx.lineTo(tx(tmax),yy(v2t(tmax)));ctx.stroke();ctx.globalAlpha=1;
+    ctx.strokeStyle='#ffad76';ctx.lineWidth=2.4;
+    ctx.beginPath();ctx.moveTo(tx(0),yy(v2t(0)));ctx.lineTo(tx(Math.min(state.t,tmax)),yy(v2t(Math.min(state.t,tmax))));ctx.stroke();
+  }
+
+  ctx.fillStyle=state.soft?'#456778':'#d9edf5';ctx.font='10px Arial';ctx.textAlign='center';
+  for(let i=0;i<=4;i++){const t=tmax*i/4;ctx.fillText(t.toFixed(1),tx(t),H-9);}
+  ctx.fillText('t (s)',L+w/2,H-1);
+  ctx.save();ctx.translate(10,T+h/2);ctx.rotate(-Math.PI/2);ctx.fillText('v (m/s)',0,0);ctx.restore();
+  ctx.textAlign='left';
+}
+
+/* ---------- UI / CAMERA ---------- */
+function updateUI(){
+  const {a1,a2,fnet}=physics();
+  $('m1Text').textContent=`${state.m1.toFixed(1)} kg`;
+  $('m2Text').textContent=`${state.m2.toFixed(1)} kg`;
+  $('forceText').textContent=`${fmt(state.F,1)} N`;
+  $('force2Text').textContent=`${fmt(state.F2,1)} N`;
+  $('cartV0Text').textContent=`${fmt(state.cartV0,1)} m/s`;
+  $('cartAccelText').textContent=`${fmt(state.cartAccel,1)} m/s²`;
+  $('pushDurationText').textContent=`${state.pushDuration.toFixed(1)} s`;
+  $('speedText').textContent=`${state.simSpeed.toFixed(1)}×`;
+
+  $('tInfo').textContent=`${state.t.toFixed(2)} s`;
+  $('fnetInfo').textContent=`${fmt(fnet,2)} N`;
+  $('a1Info').textContent=`${fmt(a1,2)} m/s²`;
+  $('v1Info').textContent=`${fmt(state.v1,2)} m/s`;
+
+  $('a2Info').textContent=a2===null?'—':`${fmt(a2,2)} m/s²`;
+  $('secondLabel').textContent=a2===null?'a₂':'a₂';
+
+  let s='Sẵn sàng';
+  if(state.mode==='inertia' && state.t>0){
+    const rel=state.x1-state.cartX;
+    s=Math.abs(rel)<=1.55?'Vật đang trượt tương đối trên xe':'Vật đã rời sàn xe';
+  }else if((state.mode==='newton3'||state.mode==='skaters') && state.t>0){
+    s=state.t<=state.pushDuration?'Đang tương tác':'Hết tương tác · chuyển động thẳng đều';
+  }else if(state.running&&!state.paused)s='Đang chuyển động';
+  else if(state.paused&&state.t>0)s='Tạm dừng';
+  $('stateInfo').textContent=s;
+}
+function fitScene(){
+  camera.position.set(15,8.5,18);controls.target.set(0,1.4,0);controls.update();
+}
+function updateCamera(){
+  let tx=null;
+  if(state.cameraMode==='follow1'){
+    if(state.mode==='wall')tx=person1.g.position.x;
+    else if(state.mode==='skaters')tx=person1.g.position.x;
+    else if(state.mode==='inertia')tx=block1.g.position.x;
+    else tx=block1.g.position.x;
+  }
+  if(state.cameraMode==='follow2'){
+    if(state.mode==='newton3')tx=block2.g.position.x;
+    else if(state.mode==='skaters')tx=person2.g.position.x;
+  }
+  if(tx!==null){
+    controls.target.x+=(tx-controls.target.x)*.08;
+    camera.position.x+=((tx+7)-camera.position.x)*.05;
+  }
+}
+
+/* ---------- THEME ---------- */
+function applyTheme(){
+  document.body.classList.toggle('soft',state.soft);
+  if(state.soft){
+    scene.background.set(0xb9c8d0);scene.fog.color.set(0xb9c8d0);
+    floorMat.color.set(0x9daeb7);wallMat.color.set(0xb8c6cd);leftWall.material.color.set(0xaebdc5);
+    windowMat.color.set(0x9fbcc9);windowMat.opacity=.28;hemi.intensity=2.3;sun.intensity=2.15;
+  }else{
+    scene.background.set(0x142936);scene.fog.color.set(0x142936);
+    floorMat.color.set(0x304a58);wallMat.color.set(0x28424f);leftWall.material.color.set(0x263d49);
+    windowMat.color.set(0x7095a7);windowMat.opacity=.22;hemi.intensity=2.15;sun.intensity=2.05;
+  }
+  drawGraph();
+}
+$('themeBtn').addEventListener('click',()=>{state.soft=!state.soft;applyTheme();});
+
+/* ---------- RECORD ---------- */
+const recCanvas=document.createElement('canvas');recCanvas.width=1280;recCanvas.height=720;
+const rctx=recCanvas.getContext('2d');
+let recorder=null,chunks=[],mime='';
+function chooseMime(){
+  const a=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+  for(const m of a)if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;
+  return '';
+}
+function drawRec(){
+  const W=1280,H=720;
+  rctx.fillStyle='#142936';rctx.fillRect(0,0,W,H);
+  rctx.drawImage(renderer.domElement,0,0,W,H);
+  rctx.fillStyle='rgba(8,23,32,.66)';rctx.fillRect(0,0,W,52);
+  rctx.fillStyle='#fff';rctx.font='bold 22px Arial';rctx.fillText('PHYSICS 10 LAB · CÁC ĐỊNH LUẬT NEWTON',22,33);
+
+  rctx.fillStyle='rgba(8,23,32,.72)';rctx.fillRect(W-305,72,278,150);
+  const {a1,a2,fnet}=physics();
+  rctx.fillStyle='#fff';rctx.font='bold 17px Arial';
+  rctx.fillText(`t = ${state.t.toFixed(2)} s`,W-285,102);
+  rctx.fillText(`ΣF = ${fmt(fnet,2)} N`,W-285,131);
+  rctx.fillText(`a₁ = ${fmt(a1,2)} m/s²`,W-285,160);
+  if(a2!==null)rctx.fillText(`a₂ = ${fmt(a2,2)} m/s²`,W-285,189);
+
+  rctx.fillStyle='rgba(8,23,32,.76)';rctx.fillRect(18,H-215,490,195);
+  rctx.drawImage(graph,24,H-209,478,183);
+  rctx.fillStyle='#ffe176';rctx.font='bold 18px Arial';rctx.fillText('Thầy Hùng vật lí',W-175,H-22);
+
+  if(state.recording){
+    rctx.fillStyle='#ff4b55';rctx.beginPath();rctx.arc(24,81,7,0,Math.PI*2);rctx.fill();
+    rctx.fillStyle='#fff';rctx.font='bold 15px Arial';rctx.fillText('REC',38,86);
+  }
+}
+async function startRecord(){
+  if(state.recording)return;
+  if(!window.MediaRecorder||!recCanvas.captureStream){alert('Trình duyệt này chưa hỗ trợ quay trực tiếp.');return;}
+  mime=chooseMime();const stream=recCanvas.captureStream(30);
+  try{recorder=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:6000000}:{videoBitsPerSecond:6000000});}
+  catch(e){recorder=new MediaRecorder(stream);mime=recorder.mimeType||'video/webm';}
+  chunks=[];
+  recorder.ondataavailable=e=>{if(e.data&&e.data.size>0)chunks.push(e.data);};
+  recorder.onstop=()=>{
+    const mt=recorder.mimeType||mime||'video/webm',ext=mt.includes('mp4')?'mp4':'webm';
+    const blob=new Blob(chunks,{type:mt}),url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=`Physics10_45_51_Newton.${ext}`;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  };
+  recorder.start(250);state.recording=true;state.recordStart=performance.now();
+  $('recordBtn').classList.add('recording');$('recordBtn').textContent='● Đang quay';$('recHud').style.display='block';
+}
+function stopRecord(){
+  if(!state.recording)return;
+  state.recording=false;$('recordBtn').classList.remove('recording');$('recordBtn').textContent='🎥 Bắt đầu quay';$('recHud').style.display='none';
+  if(recorder&&recorder.state!=='inactive')recorder.stop();
+}
+$('recordBtn').addEventListener('click',startRecord);
+$('stopRecordBtn').addEventListener('click',stopRecord);
+function updateRecClock(now){
+  if(!state.recording){$('recTimeText').textContent='00:00';return;}
+  const sec=Math.floor((now-state.recordStart)/1000),mm=String(Math.floor(sec/60)).padStart(2,'0'),ss=String(sec%60).padStart(2,'0');
+  $('recTimeText').textContent=`${mm}:${ss}`;$('recHud').textContent=`● REC ${mm}:${ss}`;
+}
+
+/* ---------- EVENTS ---------- */
+$('mode').addEventListener('change',e=>{state.mode=e.target.value;resetState();});
+$('m1').addEventListener('input',e=>{state.m1=parseFloat(e.target.value);resetState();});
+$('m2').addEventListener('input',e=>{state.m2=parseFloat(e.target.value);resetState();});
+$('force').addEventListener('input',e=>{state.F=parseFloat(e.target.value);resetState();});
+$('force2').addEventListener('input',e=>{state.F2=parseFloat(e.target.value);resetState();});
+$('cartV0').addEventListener('input',e=>{state.cartV0=parseFloat(e.target.value);resetState();});
+$('cartAccel').addEventListener('input',e=>{state.cartAccel=parseFloat(e.target.value);resetState();});
+$('pushDuration').addEventListener('input',e=>{state.pushDuration=parseFloat(e.target.value);resetState();});
+$('simSpeed').addEventListener('input',e=>{state.simSpeed=parseFloat(e.target.value);updateUI();});
+$('cameraMode').addEventListener('change',e=>{state.cameraMode=e.target.value;if(state.cameraMode==='all')fitScene();});
+
+$('runBtn').addEventListener('click',()=>{if(!state.running&&state.t>8)resetState();state.running=true;state.paused=false;$('runBtn').textContent='▶ Đang chạy';});
+$('pauseBtn').addEventListener('click',()=>{if(!state.running)return;state.paused=!state.paused;$('pauseBtn').textContent=state.paused?'▶ Tiếp tục':'⏸ Dừng';});
+$('resetBtn').addEventListener('click',resetState);
+$('fitBtn').addEventListener('click',fitScene);
+
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);labelRenderer.setSize(w,h);resizeGraph();
+}
+window.addEventListener('resize',resize);
+
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt=(now-state.lastStamp)/1000;state.lastStamp=now;
+  dt=Math.min(Math.max(dt,0),0.028);
+
+  if(state.running&&!state.paused){
+    state.t+=dt*state.simSpeed;
+    step(dt*state.simSpeed);
+  }
+
+  update3D();
+  updateCamera();
+  updateUI();
+  drawGraph();
+  updateRecClock(now);
+
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+
+  if(state.recording)drawRec();
+}
+
+resetState();
+applyTheme();
+resize();
+animate(performance.now());
+</script>
+</body>
+</html>

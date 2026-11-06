@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-32 Đường hyperbol cực đại giao thoa</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#030b14;color:#eef8fb}
+#app{display:grid;grid-template-columns:248px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800;letter-spacing:1px}h1{font-size:17px;margin:4px 0 6px}.desc{font-size:10.5px;color:#aac3cd;line-height:1.35;margin:0 0 8px}
+.ctl{display:grid;grid-template-columns:68px 1fr 58px;gap:5px;align-items:center;margin:5px 0}.ctl label{font-size:9.7px}.ctl output{font-size:9.2px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9.4px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800;cursor:pointer}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 50% 35%,#123d58 0%,#0a263b 42%,#061725 75%,#030b13 100%)}#sim{position:absolute;inset:0;width:100%;height:100%}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10.5px;font-weight:700}
+#hud{position:absolute;right:12px;bottom:12px;display:flex;gap:10px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:7px 9px}.hud span{display:block;font-size:8px;color:#98bac8}.hud b{font-size:10.3px}
+#note{position:absolute;left:12px;bottom:12px;width:410px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.2px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);font-size:10px;font-weight:700}.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="ey">PHYSICS 11 LAB · STABLE</div>
+<h1>32 · Đường hyperbol cực đại</h1>
+<p class="desc">Quỹ tích các điểm cực đại giao thoa của hai nguồn cùng pha thỏa mãn hiệu đường đi bằng một số nguyên lần bước sóng.</p>
+
+<div class="ctl"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Tần số f</label><input id="freq" type="range" min=".5" max="2.5" step=".05" value="1.2"><output id="freqOut"></output></div>
+<div class="ctl"><label>Vận tốc v</label><input id="waveV" type="range" min=".8" max="4" step=".1" value="2.4"><output id="waveVOut"></output></div>
+<div class="ctl"><label>Khoảng S₁S₂</label><input id="sep" type="range" min="2" max="8" step=".2" value="5"><output id="sepOut"></output></div>
+<div class="ctl"><label>Bậc k</label><input id="order" type="range" min="0" max="4" step="1" value="1"><output id="orderOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showAll" type="checkbox" checked> Tất cả cực đại</label>
+<label class="check"><input id="showWave" type="checkbox" checked> Nền mặt nước</label>
+<label class="check"><input id="showFocus" type="checkbox" checked> Nối tới S₁,S₂</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="centerBtn" class="btn">⌖ M về đường k</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+<div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view">
+<canvas id="sim"></canvas>
+<div id="formula">Cực đại: Δd = |r₂-r₁| = kλ, &nbsp; k = 0, ±1, ±2, ...</div>
+<div id="hud">
+<div class="hud"><span>λ</span><b id="lambdaHud"></b></div>
+<div class="hud"><span>k chọn</span><b id="kHud"></b></div>
+<div class="hud"><span>kλ</span><b id="klHud"></b></div>
+<div class="hud"><span>Δd(M)</span><b id="ddHud"></b></div>
+<div class="hud"><span>Sai số</span><b id="errHud"></b></div>
+</div>
+<div id="note">Đường vàng đậm là hyperbol cực đại đang chọn. Mọi điểm trên đường đó có cùng hiệu đường đi |r₂-r₁|=kλ. Với k=0, quỹ tích suy biến thành đường trung trực S₁S₂.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id),canvas=$('sim'),ctx=canvas.getContext('2d'),view=$('view');
+const state={running:true,t:0,speed:1,f:1.2,v:2.4,sep:5,k:1,probe:{x:0,y:3},last:performance.now()};
+const WORLD_W=16,WORLD_H=10;
+function resize(){const r=view.getBoundingClientRect();canvas.width=Math.floor(r.width*devicePixelRatio);canvas.height=Math.floor(r.height*devicePixelRatio);canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+window.addEventListener('resize',resize);resize();
+
+const lam=()=>state.v/state.f;
+const sources=()=>[{x:-state.sep/2,y:0},{x:state.sep/2,y:0}];
+const dist=(x,y,s)=>Math.hypot(x-s.x,y-s.y);
+function dd(x,y){const [s1,s2]=sources();return Math.abs(dist(x,y,s2)-dist(x,y,s1))}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('freqOut').value=state.f.toFixed(2)+' Hz';$('waveVOut').value=state.v.toFixed(2)+' m/s';$('sepOut').value=state.sep.toFixed(1)+' m';$('orderOut').value=state.k;
+ $('lambdaHud').textContent=lam().toFixed(2)+' m';$('kHud').textContent=state.k;$('klHud').textContent=(state.k*lam()).toFixed(2)+' m';
+ const d=dd(state.probe.x,state.probe.y),err=Math.abs(d-state.k*lam());$('ddHud').textContent=d.toFixed(2)+' m';$('errHud').textContent=err.toFixed(2)+' m'
+}
+function sync(){state.speed=+$('speed').value;state.f=+$('freq').value;state.v=+$('waveV').value;state.sep=+$('sep').value;state.k=+$('order').value;updateUI()}
+['speed','freq','waveV','sep','order'].forEach(id=>$(id).addEventListener('input',sync));
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;
+$('resetBtn').onclick=()=>{Object.assign(state,{running:true,t:0,speed:1,f:1.2,v:2.4,sep:5,k:1,probe:{x:0,y:3}});for(const [id,val] of [['speed',1],['freq',1.2],['waveV',2.4],['sep',5],['order',1]])$(id).value=val;updateUI()};
+$('fullscreenBtn').onclick=async()=>{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()};
+
+function line(x1,y1,x2,y2,c,w=1,d=[]){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=w;ctx.setLineDash(d);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore()}
+function circle(x,y,r,f,s=null){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=f;ctx.fill();if(s){ctx.strokeStyle=s;ctx.lineWidth=2;ctx.stroke()}}
+function text(t,x,y,s=12,c='#fff',a='left',w='normal'){ctx.font=`${w} ${s}px Segoe UI`;ctx.fillStyle=c;ctx.textAlign=a;ctx.fillText(t,x,y)}
+function geom(){const W=view.clientWidth,H=view.clientHeight,rect={x:55,y:60,w:W-110,h:H-140};return {W,H,rect,mapX:x=>rect.x+rect.w*(x+WORLD_W/2)/WORLD_W,mapY:y=>rect.y+rect.h*(WORLD_H/2-y)/WORLD_H,invX:X=>(X-rect.x)/rect.w*WORLD_W-WORLD_W/2,invY:Y=>WORLD_H/2-(Y-rect.y)/rect.h*WORLD_H}}
+
+function drawWaveBackground(g){
+ if(!$('showWave').checked)return;
+ const [s1,s2]=sources(),k0=2*Math.PI/lam(),w=2*Math.PI*state.f;
+ for(let py=g.rect.y;py<g.rect.y+g.rect.h;py+=5){
+  for(let px=g.rect.x;px<g.rect.x+g.rect.w;px+=5){
+   const x=g.invX(px),y=g.invY(py),r1=dist(x,y,s1),r2=dist(x,y,s2),z=(Math.sin(w*state.t-k0*r1)+Math.sin(w*state.t-k0*r2))/2,q=Math.max(-1,Math.min(1,z));
+   const a=Math.abs(q);ctx.fillStyle=q>=0?`rgba(70,205,255,${.05+.18*a})`:`rgba(40,70,160,${.05+.16*a})`;ctx.fillRect(px,py,5,5)
+  }
+ }
+}
+function drawHyperbolaLevel(g,target,color,width){
+ const tol=.035*lam();
+ for(let y=-WORLD_H/2;y<=WORLD_H/2;y+=.08){
+  let prev=null;
+  for(let x=-WORLD_W/2;x<=WORLD_W/2;x+=.08){
+   const e=Math.abs(dd(x,y)-target);
+   if(e<tol){
+    const X=g.mapX(x),Y=g.mapY(y);
+    if(prev&&Math.hypot(X-prev.X,Y-prev.Y)<12)line(prev.X,prev.Y,X,Y,color,width);
+    prev={X,Y}
+   }else prev=null
+  }
+ }
+}
+function moveProbeToSelected(){
+ const target=state.k*lam();
+ if(state.k===0){state.probe={x:0,y:3};updateUI();return}
+ let best={e:1e9,x:0,y:3};
+ for(let y=.4;y<4.5;y+=.04)for(let x=0;x<7.8;x+=.04){const e=Math.abs(dd(x,y)-target);if(e<best.e)best={e,x,y}}
+ state.probe={x:best.x,y:best.y};updateUI()
+}
+$('centerBtn').onclick=moveProbeToSelected;
+
+function draw(){
+ const g=geom(),{W,H,rect}=g;ctx.clearRect(0,0,W,H);
+ ctx.fillStyle='#071b29';ctx.fillRect(rect.x,rect.y,rect.w,rect.h);
+ drawWaveBackground(g);
+ if($('showGrid').checked){for(let x=-8;x<=8;x+=1)line(g.mapX(x),rect.y,g.mapX(x),rect.y+rect.h,'rgba(100,160,185,.11)');for(let y=-5;y<=5;y+=1)line(rect.x,g.mapY(y),rect.x+rect.w,g.mapY(y),'rgba(100,160,185,.11)')}
+
+ const maxK=Math.min(6,Math.floor(state.sep/lam()));
+ if($('showAll').checked){for(let n=0;n<=maxK;n++)drawHyperbolaLevel(g,n*lam(),n===0?'rgba(255,209,102,.38)':'rgba(255,209,102,.30)',1.4)}
+ drawHyperbolaLevel(g,state.k*lam(),'#ffd166',4);
+
+ const [s1,s2]=sources();circle(g.mapX(s1.x),g.mapY(s1.y),10,'#4cc9f0','#fff');circle(g.mapX(s2.x),g.mapY(s2.y),10,'#d971ff','#fff');text('S₁',g.mapX(s1.x),g.mapY(s1.y)-18,12,'#9feaff','center','bold');text('S₂',g.mapX(s2.x),g.mapY(s2.y)-18,12,'#e8b7ff','center','bold');
+
+ const px=g.mapX(state.probe.x),py=g.mapY(state.probe.y),D=dd(state.probe.x,state.probe.y);
+ if($('showFocus').checked){line(px,py,g.mapX(s1.x),g.mapY(s1.y),'rgba(255,255,255,.45)',1,[5,5]);line(px,py,g.mapX(s2.x),g.mapY(s2.y),'rgba(255,255,255,.45)',1,[5,5])}
+ circle(px,py,8,'#ff6b6b','#fff');text('M',px,py-16,12,'#ffb1b1','center','bold');text(`Δd=${D.toFixed(2)} m`,px+12,py+4,10,'#fff','left','bold');
+
+ ctx.fillStyle='rgba(6,18,27,.78)';ctx.fillRect(rect.x+12,rect.y+12,295,70);
+ text('HYPERBOL CỰC ĐẠI ĐANG CHỌN',rect.x+24,rect.y+34,12,'#dff6ff','left','bold');
+ text(`k=${state.k}  ·  kλ=${(state.k*lam()).toFixed(2)} m  ·  λ=${lam().toFixed(2)} m`,rect.x+24,rect.y+58,11,'#ffd166','left','bold');
+
+ ctx.strokeStyle='#4b7080';ctx.lineWidth=2;ctx.strokeRect(rect.x,rect.y,rect.w,rect.h)
+}
+canvas.addEventListener('click',e=>{const g=geom(),r=canvas.getBoundingClientRect(),X=e.clientX-r.left,Y=e.clientY-r.top;if(X<g.rect.x||X>g.rect.x+g.rect.w||Y<g.rect.y||Y>g.rect.y+g.rect.h)return;state.probe={x:g.invX(X),y:g.invY(Y)};updateUI()});
+function tick(now){requestAnimationFrame(tick);const dt=Math.min(.033,(now-state.last)/1000);state.last=now;if(state.running)state.t+=dt*state.speed;draw();updateUI()}updateUI();requestAnimationFrame(tick);
+
+let rec=null,chunks=[],recStart=0,timer=null;
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!canvas.captureStream||!window.MediaRecorder)return;const m=mime();rec=new MediaRecorder(canvas.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`032_Hyperbol_cuc_dai_giao_thoa.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+</script>
+</body></html>

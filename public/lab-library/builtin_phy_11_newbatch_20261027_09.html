@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>047 - Phản xạ âm - tiếng vang</title>
+<style>
+:root{--bg:#07131e;--text:#eef9ff;--gold:#ffd972}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 68% 34%,#12344a 0%,#07131e 48%,#02070b 100%);color:var(--text);font-family:Inter,Segoe UI,system-ui,sans-serif}
+#app{position:fixed;inset:0}
+#panel{position:fixed;left:12px;top:12px;bottom:12px;width:262px;z-index:40;overflow:auto;padding:11px;border-radius:16px;background:linear-gradient(180deg,rgba(8,18,28,.96),rgba(5,12,20,.94));border:1px solid rgba(111,193,235,.22);box-shadow:0 18px 52px rgba(0,0,0,.42);backdrop-filter:blur(14px);transition:.25s}
+#panel.hide{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none}
+#panel::-webkit-scrollbar{width:6px}#panel::-webkit-scrollbar-thumb{background:#31536a;border-radius:8px}
+h1{font-size:14px;margin:0 0 3px;font-weight:900}.sub{font-size:10.5px;color:#7bdcff;font-weight:800}
+.desc{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(12,28,41,.72);border:1px solid rgba(94,171,211,.14);font-size:10.3px;line-height:1.45;color:#cce1ee}
+.section{margin:10px 0 6px;color:#75d8ff;font-weight:900;font-size:10.5px;letter-spacing:.6px}
+label.control{display:block;margin:7px 0 9px;font-size:10.8px}label.control .value{float:right;color:#9fe9ff;font-weight:800}
+input[type=range]{width:100%;accent-color:#52c9ff;margin-top:4px}
+.buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:7px}
+button{border:1px solid #355a73;background:#122332;color:#eef8ff;border-radius:9px;padding:7px 6px;font-size:10.5px;font-weight:800;cursor:pointer}
+button:hover{filter:brightness(1.12)}button.primary{border-color:#54d692;background:linear-gradient(180deg,#1f5d3e,#153c2a)}
+.checkrow{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:10.4px;color:#cfe2ee}.checkrow input{accent-color:#55cfff}
+.modeling{margin-top:9px;padding:8px 9px;border-radius:10px;background:rgba(21,28,38,.72);border-left:3px solid #d8a447;font-size:10px;line-height:1.42;color:#c8d4dd}
+#graph{width:100%;height:145px;background:#071019;border-radius:9px;margin-top:8px;border:1px solid rgba(104,186,225,.14)}
+#formula{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:28;padding:8px 14px;border-radius:999px;background:rgba(6,16,25,.66);border:1px solid rgba(102,209,255,.2);color:#dff8ff;font-size:15px;font-weight:900;backdrop-filter:blur(9px);box-shadow:0 10px 28px #0004}
+#hud{position:fixed;right:16px;top:16px;z-index:20;width:320px;padding:10px 11px;border-radius:13px;background:rgba(6,14,22,.68);border:1px solid rgba(116,193,234,.18);backdrop-filter:blur(9px);font-size:11px;line-height:1.55}
+#hud b{color:var(--gold)}
+#probar{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:35;display:flex;gap:5px;flex-wrap:wrap;justify-content:center;padding:5px;border-radius:12px;background:rgba(6,14,22,.54);border:1px solid rgba(115,195,235,.16);backdrop-filter:blur(10px)}
+#probar button{padding:6px 8px;font-size:10.3px;border-radius:8px}
+#credit{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:18;color:#ffe075;font-size:14px;font-weight:900}
+#note{position:fixed;left:282px;bottom:16px;z-index:18;color:#a9bfce;font-size:10px;background:rgba(6,14,22,.5);border:1px solid rgba(116,193,234,.11);border-radius:9px;padding:6px 8px}
+#recStatus{position:fixed;right:18px;bottom:84px;z-index:30;display:none;padding:7px 10px;border-radius:10px;background:rgba(125,0,0,.72);border:1px solid rgba(255,120,120,.45);font-size:11px;font-weight:900}
+.status{display:inline-block;padding:3px 7px;border-radius:999px;background:#17374b;color:#a9e7ff;font-weight:800;font-size:9.5px}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="formula">d = vΔt/2</div>
+
+<div id="probar">
+<button id="fullscreenBtn">⛶</button><button id="panelBtn">☰</button>
+<button id="bgBtn">🌗</button><button id="lightBtn">💡</button>
+<button id="camBtn">🎥</button><button id="autoCamBtn">↻ Cam</button>
+<button id="recordBtn">🔴 Quay</button><button id="stopRecordBtn">⏹</button>
+</div>
+
+<div id="panel">
+<h1>PHYSICS 11 LAB · 3D PRO</h1>
+<div class="sub">047 · PHẢN XẠ ÂM – TIẾNG VANG</div>
+<div class="desc">
+Một xung âm phát từ người quan sát, truyền tới vách rồi phản xạ trở lại. Khoảng thời gian từ lúc phát đến lúc nhận tiếng vang là <b>Δt</b>, từ đó suy ra khoảng cách:
+<b>d = vΔt/2</b>.
+</div>
+
+<div class="section">ĐIỀU KHIỂN</div>
+<label class="control">Tốc độ mô phỏng <span id="speedVal" class="value">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
+<label class="control">Biên độ A <span id="ampVal" class="value">0.80</span><input id="amp" type="range" min=".2" max="1.2" step=".05" value=".8"></label>
+<label class="control">Tần số f <span id="freqVal" class="value">400 Hz</span><input id="freq" type="range" min="100" max="1000" step="10" value="400"></label>
+<label class="control">Vận tốc âm v <span id="vVal" class="value">343 m/s</span><input id="waveV" type="range" min="300" max="360" step="1" value="343"></label>
+<label class="control">Khoảng cách đến vách d <span id="dVal" class="value">30 m</span><input id="distance" type="range" min="5" max="80" step="1" value="30"></label>
+
+<div class="section">NÚT NHANH</div>
+<div class="buttons">
+<button id="start" class="primary">▶ Phát xung</button><button id="pause">⏸ Tạm dừng</button>
+<button id="reset">↻ Đặt lại</button><button id="fit">⛶ Fit</button>
+</div>
+<div class="buttons">
+<button id="nearWall">Vách 10 m</button><button id="farWall">Vách 50 m</button>
+<button id="slowSound">v = 330 m/s</button><button id="stdSound">v = 343 m/s</button>
+</div>
+
+<div class="section">HIỂN THỊ</div>
+<label class="checkrow"><input id="showIncident" type="checkbox" checked> Hiện xung tới</label>
+<label class="checkrow"><input id="showReflected" type="checkbox" checked> Hiện xung phản xạ</label>
+<label class="checkrow"><input id="showPath" type="checkbox" checked> Hiện đường truyền</label>
+<label class="checkrow"><input id="showGraph" type="checkbox" checked> Hiện đồ thị thu</label>
+<label class="checkrow"><input id="showGrid" type="checkbox" checked> Hiện lưới</label>
+
+<canvas id="graph" width="238" height="145"></canvas>
+
+<div class="modeling"><b>Mô hình hóa:</b> xung âm được biểu diễn bằng các mặt cầu mỏng. Pha của xung phản xạ tại vách được đảo theo đúng yêu cầu của bộ prompt. Vật chất môi trường không bị “mang đi” theo xung. Đồ thị thu hiển thị xung phát và xung vọng sau thời gian \(\Delta t=2d/v\).</div>
+</div>
+
+<div id="hud">
+<span class="status">TIẾNG VANG · ĐO KHOẢNG CÁCH BẰNG THỜI GIAN BAY</span><br>
+t = <b id="tOut">0.000 s</b><br>
+f = <b id="fOut">400 Hz</b> · λ = <b id="lamOut">0.858 m</b><br>
+v = <b id="vOut">343 m/s</b> · d = <b id="dOut">30 m</b><br>
+Δt = 2d/v = <b id="dtOut">0.175 s</b><br>
+d tính lại = <b id="dCalcOut">30.0 m</b><br>
+Trạng thái = <b id="runOut">SẴN SÀNG</b>
+</div>
+
+<div id="note">cyan: xung tới · cam: xung phản xạ · đường trắng: quãng đường khứ hồi</div>
+<div id="credit">Thầy Hùng vật lí</div>
+<div id="recStatus">● ĐANG QUAY 00:00</div>
+<canvas id="recordCanvas" width="1920" height="1080" style="display:none"></canvas>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const state={running:false,paused:false,time:0,speed:1,A:.8,f:400,v:343,d:30,phase:'ready',backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false};
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('app').appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x06131e);
+const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,200);camera.position.set(8,5.7,11);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=4.5;controls.maxDistance=28;controls.minPolarAngle=.18;controls.maxPolarAngle=1.5;controls.target.set(1,.65,0);
+
+const hemi=new THREE.HemisphereLight(0xe3f7ff,0x10202d,1.7);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,1.8);key.position.set(7,10,8);scene.add(key);
+const rim=new THREE.PointLight(0x56d8ff,1.1,30,2);rim.position.set(-5,5,-5);scene.add(rim);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(38,28),new THREE.MeshStandardMaterial({color:0x101c27,roughness:.92}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.25;scene.add(floor);
+const grid=new THREE.GridHelper(38,38,0x2e5b72,0x173241);grid.position.y=-2.24;grid.material.transparent=true;grid.material.opacity=.15;scene.add(grid);
+
+const model=new THREE.Group();scene.add(model);
+const apparatus=new THREE.Group(),waveGroup=new THREE.Group(),pathGroup=new THREE.Group();
+model.add(apparatus,waveGroup,pathGroup);
+
+const sourceX=-4.2;
+function wallX(){return 4.2}
+function visualScale(){return 8.4/state.d}
+function lambda(){return state.v/state.f}
+function echoDelay(){return 2*state.d/state.v}
+
+function clearGroup(g){while(g.children.length){const o=g.children.pop();o.traverse?.(q=>{q.geometry?.dispose?.();q.material?.dispose?.()})}}
+
+function buildApparatus(){
+ clearGroup(apparatus);
+ // observer
+ const body=new THREE.Mesh(new THREE.CylinderGeometry(.32,.42,1.45,24),new THREE.MeshStandardMaterial({color:0x6e8798,roughness:.62}));
+ body.position.set(sourceX,.1,0);apparatus.add(body);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.32,24,18),new THREE.MeshStandardMaterial({color:0xe7b894,roughness:.55}));
+ head.position.set(sourceX,1.02,0);apparatus.add(head);
+ // speaker
+ const speaker=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.32,32),new THREE.MeshStandardMaterial({color:0x202a32,metalness:.45,roughness:.5}));
+ speaker.rotation.z=Math.PI/2;speaker.position.set(sourceX+.55,.7,0);apparatus.add(speaker);
+ const cone=new THREE.Mesh(new THREE.ConeGeometry(.28,.26,32),new THREE.MeshStandardMaterial({color:0x4a5560,metalness:.15,roughness:.52}));
+ cone.rotation.z=-Math.PI/2;cone.position.set(sourceX+.75,.7,0);apparatus.add(cone);
+ // wall
+ const wall=new THREE.Mesh(new THREE.BoxGeometry(.35,6.5,7.0),new THREE.MeshStandardMaterial({color:0x69747d,roughness:.88,metalness:.05}));
+ wall.position.set(wallX(),.65,0);apparatus.add(wall);
+ const wallEdge=new THREE.Mesh(new THREE.BoxGeometry(.07,6.7,7.15),new THREE.MeshBasicMaterial({color:0xc6d3da,transparent:true,opacity:.35}));
+ wallEdge.position.set(wallX()-.2,.65,0);apparatus.add(wallEdge);
+}
+function pulseSphere(x,r,color,opacity){
+ const geo=new THREE.SphereGeometry(Math.max(.08,r),48,24,0,Math.PI*2,0,Math.PI);
+ const mat=new THREE.MeshBasicMaterial({color,wireframe:true,transparent:true,opacity,depthWrite:false});
+ const m=new THREE.Mesh(geo,mat);m.scale.set(1,.58,.58);m.position.set(x,.7,0);return m;
+}
+function buildWaves(){
+ clearGroup(waveGroup);
+ const total=echoDelay();
+ if(!state.running && state.phase==='ready')return;
+ const oneWay=state.d/state.v;
+ const t=state.time;
+ const progress=t/oneWay;
+ if(progress<=1 && $('showIncident').checked){
+   const x=sourceX+(wallX()-sourceX)*THREE.MathUtils.clamp(progress,0,1);
+   const r=.38+Math.abs(x-sourceX)*.18;
+   waveGroup.add(pulseSphere(x,r,0x65e5ff,.78*state.A));
+ }
+ if(progress>1 && $('showReflected').checked){
+   const p=THREE.MathUtils.clamp(progress-1,0,1);
+   const x=wallX()-(wallX()-sourceX)*p;
+   const r=.38+Math.abs(wallX()-x)*.18;
+   const shell=pulseSphere(x,r,0xff9a62,.78*state.A);
+   shell.rotation.z=Math.PI; // visual phase inversion
+   waveGroup.add(shell);
+ }
+}
+function buildPath(){
+ clearGroup(pathGroup);
+ if(!$('showPath').checked)return;
+ const pts=[new THREE.Vector3(sourceX,.72,0),new THREE.Vector3(wallX(),.72,0)];
+ const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineDashedMaterial({color:0xffffff,dashSize:.22,gapSize:.12,transparent:true,opacity:.5}));
+ line.computeLineDistances();pathGroup.add(line);
+}
+function updatePhysics(dt){
+ if(!state.running||state.paused)return;
+ state.time+=dt*state.speed;
+ if(state.time>=echoDelay()){
+   state.time=echoDelay();
+   state.running=false;state.paused=false;state.phase='echo';
+ }
+}
+function updateVisuals(){
+ buildWaves();grid.visible=$('showGrid').checked;pathGroup.visible=$('showPath').checked;
+}
+function drawGraph(){
+ const c=$('graph'),g=c.getContext('2d'),w=c.width,h=c.height;g.clearRect(0,0,w,h);g.fillStyle='#071019';g.fillRect(0,0,w,h);
+ if(!$('showGraph').checked)return;
+ const L=34,T=12,B=24,R=8,pw=w-L-R,ph=h-T-B;
+ g.strokeStyle='rgba(190,225,240,.28)';g.beginPath();g.moveTo(L,T);g.lineTo(L,T+ph);g.lineTo(L+pw,T+ph);g.stroke();
+ const dt=echoDelay(),tmax=Math.max(.25,dt*1.25);
+ function gauss(t,t0,s,a){const x=(t-t0)/s;return a*Math.exp(-x*x)}
+ g.strokeStyle='#65e5ff';g.lineWidth=2;g.beginPath();
+ for(let i=0;i<=180;i++){const t=i/180*tmax;const y=gauss(t,.02,.008,state.A);const x=L+i/180*pw,yy=T+ph/2-y*ph*.32;i?g.lineTo(x,yy):g.moveTo(x,yy)}g.stroke();
+ g.strokeStyle='#ff9a62';g.beginPath();
+ for(let i=0;i<=180;i++){const t=i/180*tmax;const y=-gauss(t,dt,.012,state.A*.78);const x=L+i/180*pw,yy=T+ph/2-y*ph*.32;i?g.lineTo(x,yy):g.moveTo(x,yy)}g.stroke();
+ const tx=L+THREE.MathUtils.clamp(state.time/tmax,0,1)*pw;g.strokeStyle='#ffe06c';g.beginPath();g.moveTo(tx,T);g.lineTo(tx,T+ph);g.stroke();
+ g.fillStyle='#91aabb';g.font='9px Segoe UI';g.fillText('A',8,15);g.fillText('t(s)',w-26,h-6);
+}
+function updateUI(){
+ const dt=echoDelay(),dc=state.v*dt/2;
+ $('speedVal').textContent=`${state.speed.toFixed(2)}×`;$('ampVal').textContent=state.A.toFixed(2);$('freqVal').textContent=`${state.f.toFixed(0)} Hz`;$('vVal').textContent=`${state.v.toFixed(0)} m/s`;$('dVal').textContent=`${state.d.toFixed(0)} m`;
+ $('tOut').textContent=`${state.time.toFixed(3)} s`;$('fOut').textContent=`${state.f.toFixed(0)} Hz`;$('lamOut').textContent=`${lambda().toFixed(3)} m`;$('vOut').textContent=`${state.v.toFixed(0)} m/s`;$('dOut').textContent=`${state.d.toFixed(0)} m`;$('dtOut').textContent=`${dt.toFixed(3)} s`;$('dCalcOut').textContent=`${dc.toFixed(1)} m`;
+ $('runOut').textContent=state.running&&!state.paused?'XUNG ĐANG TRUYỀN':state.paused?'TẠM DỪNG':state.phase==='echo'?'ĐÃ NHẬN TIẾNG VANG':'SẴN SÀNG';
+ drawGraph();
+}
+
+const bgModes=[{b:0x06131e,f:0x101c27},{b:0xeaf2f6,f:0xd6e1e6},{b:0x06162a,f:0x0b2039}];
+function applyBackground(){const m=bgModes[state.backgroundIndex];scene.background.setHex(m.b);floor.material.color.setHex(m.f)}
+function applyLighting(){if(state.lightMode===0){hemi.intensity=1.7;key.intensity=1.8;rim.intensity=1.1}else if(state.lightMode===1){hemi.intensity=2.2;key.intensity=2.3;rim.intensity=.5}else{hemi.intensity=1.05;key.intensity=1.15;rim.intensity=1.9}}
+function setCamera(m){state.cameraMode=m%4;state.autoCamera=false;if(m===0){camera.position.set(0,3.2,12);controls.target.set(0,.65,0)}else if(m===1){camera.position.set(8,5.7,11);controls.target.set(0,.65,0)}else if(m===2){camera.position.set(0,11,.1);controls.target.set(0,.65,0)}else{camera.position.set(4,3.1,5);controls.target.set(0,.65,0)}camera.lookAt(controls.target);controls.update()}
+function updateAutoCam(){if(!state.autoCamera)return;const a=(state.time+1)*.18,r=10;camera.position.set(Math.cos(a)*r,5.1,Math.sin(a)*r);camera.lookAt(controls.target)}
+async function toggleFullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}}
+function resetPulse(){state.time=0;state.phase='ready';state.running=false;state.paused=false;buildWaves();drawGraph()}
+
+$('speed').oninput=e=>state.speed=+e.target.value;
+$('amp').oninput=e=>state.A=+e.target.value;
+$('freq').oninput=e=>state.f=+e.target.value;
+$('waveV').oninput=e=>{state.v=+e.target.value;resetPulse()};
+$('distance').oninput=e=>{state.d=+e.target.value;resetPulse()};
+$('showPath').onchange=buildPath;
+$('start').onclick=()=>{state.time=0;state.phase='running';state.running=true;state.paused=false};
+$('pause').onclick=()=>state.paused=!state.paused;
+$('reset').onclick=()=>{Object.assign(state,{running:false,paused:false,time:0,speed:1,A:.8,f:400,v:343,d:30,phase:'ready',backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false});$('speed').value=1;$('amp').value=.8;$('freq').value=400;$('waveV').value=343;$('distance').value=30;applyBackground();applyLighting();buildApparatus();buildPath();setCamera(1);drawGraph()};
+$('fit').onclick=()=>setCamera(1);
+$('nearWall').onclick=()=>{state.d=10;$('distance').value=10;resetPulse()};
+$('farWall').onclick=()=>{state.d=50;$('distance').value=50;resetPulse()};
+$('slowSound').onclick=()=>{state.v=330;$('waveV').value=330;resetPulse()};
+$('stdSound').onclick=()=>{state.v=343;$('waveV').value=343;resetPulse()};
+$('fullscreenBtn').onclick=toggleFullscreen;$('panelBtn').onclick=()=>$('panel').classList.toggle('hide');
+$('bgBtn').onclick=()=>{state.backgroundIndex=(state.backgroundIndex+1)%3;applyBackground()};
+$('lightBtn').onclick=()=>{state.lightMode=(state.lightMode+1)%3;applyLighting()};
+$('camBtn').onclick=()=>setCamera((state.cameraMode+1)%4);$('autoCamBtn').onclick=()=>state.autoCamera=!state.autoCamera;
+
+// recording
+const rc=$('recordCanvas'),rctx=rc.getContext('2d');let rec=null,chunks=[],mime='',recStart=0,recTimer=null;
+function bestMime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function drawRec(){const sw=renderer.domElement.width,sh=renderer.domElement.height,dw=rc.width,dh=rc.height,s=Math.max(dw/sw,dh/sh),rw=sw*s,rh=sh*s;rctx.fillStyle='#06131e';rctx.fillRect(0,0,dw,dh);rctx.drawImage(renderer.domElement,(dw-rw)/2,(dh-rh)/2,rw,rh);rctx.fillStyle='rgba(4,12,20,.72)';rctx.fillRect(34,34,980,115);rctx.fillStyle='#fff';rctx.font='800 30px Segoe UI';rctx.fillText('047 · PHẢN XẠ ÂM – TIẾNG VANG',58,76);rctx.fillStyle='#ffe075';rctx.font='700 23px Segoe UI';rctx.fillText(`d=${state.d.toFixed(0)} m · v=${state.v.toFixed(0)} m/s · Δt=${echoDelay().toFixed(3)} s`,58,118);rctx.textAlign='center';rctx.font='800 27px Segoe UI';rctx.fillText('Thầy Hùng vật lí',dw/2,dh-34);rctx.textAlign='left'}
+function startRec(){if(rec&&rec.state==='recording')return;mime=bestMime();if(!mime){alert('Trình duyệt chưa hỗ trợ ghi video.');return}chunks=[];const stream=rc.captureStream(60);rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12000000});rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{const ext=mime.includes('mp4')?'mp4':'webm',a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:mime}));a.download=`047_Phan_xa_am_Tieng_vang.${ext}`;a.click();$('recStatus').style.display='none';clearInterval(recTimer)};rec.start(1000);recStart=performance.now();$('recStatus').style.display='block';recTimer=setInterval(()=>{$('recStatus').textContent=`● ĐANG QUAY ${Math.floor((performance.now()-recStart)/1000)} s`},500)}
+$('recordBtn').onclick=startRec;$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=THREE.MathUtils.clamp((now-last)/1000,0,.033);last=now;updatePhysics(dt);updateVisuals();updateUI();updateAutoCam();controls.update();renderer.render(scene,camera);if(rec&&rec.state==='recording')drawRec()}
+applyBackground();applyLighting();buildApparatus();buildPath();setCamera(1);drawGraph();requestAnimationFrame(animate);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>

@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Vật Lí Pro 5.0 - Tactical Air Defense - GV Nguyễn Huy Hùng</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#07111b,#0b1520);color:#f8fafc;font-family:Arial,Helvetica,sans-serif}
+.wrap{max-width:1500px;margin:auto;padding:16px}
+h1{margin:0;text-align:center;color:#ffd166;font-size:34px}
+.subtitle{text-align:center;color:#cbd5e1;margin:6px 0}
+.teacher{text-align:center;color:#7dd3fc;font-weight:700;margin:7px 0 15px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:14px}
+.panel{background:#111827;border:1px solid #334155;border-radius:18px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+canvas{display:block;width:100%;height:auto;border-radius:14px;background:#07111b;cursor:crosshair}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+button{min-height:42px;border:1px solid #475569;border-radius:10px;background:#1f2937;color:#fff;padding:10px 14px;font-size:14px;cursor:pointer}
+button.primary{background:#f8fafc;color:#111827;font-weight:700}
+button.missile{background:#7c3aed;border-color:#8b5cf6;font-weight:700}
+button.next{background:#059669;border-color:#10b981;font-weight:700}
+button:disabled{opacity:.42;cursor:not-allowed}
+.status{min-height:20px;margin-top:9px;color:#d9e1eb;font-size:14px}
+h3{margin:0 0 10px;color:#ffd166;font-size:18px}
+.row{margin:12px 0}
+.row label{display:flex;justify-content:space-between;margin-bottom:6px}
+input[type=range]{width:100%}
+.fast-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:#0f172a;border:1px solid #334155;border-radius:11px;padding:9px;text-align:center}
+.stat small{display:block;color:#94a3b8;margin-bottom:4px}
+.level-card{background:#0f172a;border:1px solid #334155;border-radius:13px;padding:11px;margin-bottom:12px}
+.level-name{font-weight:700;color:#bae6fd;font-size:16px}
+.level-desc{font-size:12.8px;color:#aab8c7;line-height:1.55;margin-top:5px}.mission-box{margin-top:9px;padding:8px 9px;border:1px solid #334155;border-radius:10px;background:#0a1320;font-size:12.5px;line-height:1.5;color:#cbd5e1}.mission-box b{color:#fde68a}.star-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}.stars{letter-spacing:2px;color:#fbbf24;font-size:18px}.save-note{font-size:11px;color:#64748b}
+.progress{height:11px;border:1px solid #334155;border-radius:999px;overflow:hidden;background:#151f2e;margin-top:8px}
+.progress>div{height:100%;background:linear-gradient(90deg,#22c55e,#38bdf8);width:0}
+.bunkers{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.bunker{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:8px}
+.bunker-line{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.hp{height:8px;background:#172033;border-radius:99px;overflow:hidden}
+.hp>div{height:100%;background:#22c55e;width:100%}
+.rules{margin-top:12px;color:#9fb0c0;font-size:12.8px;line-height:1.58}
+.levels{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:10px}
+.level-pill{padding:6px 4px;text-align:center;border:1px solid #334155;border-radius:8px;font-size:11px;color:#94a3b8;cursor:pointer;user-select:none}.level-pill.locked{opacity:.42;cursor:not-allowed}
+.level-pill.done{border-color:#22c55e;color:#bbf7d0}
+.level-pill.current{border-color:#38bdf8;color:#bae6fd;background:#0c2235}
+
+.upgrade-box{margin-top:13px;padding:11px;border:1px solid #475569;border-radius:13px;background:#0a1320}
+.upgrade-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.upgrade-head b{color:#fde68a}.upgrade-options{display:grid;gap:7px}
+.upgrade-options button{text-align:left;min-height:48px;padding:8px 10px}
+.upgrade-options button strong{display:block;color:#e2e8f0}.upgrade-options button small{display:block;color:#94a3b8;margin-top:3px;line-height:1.35}
+.combat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.meter{height:9px;background:#172033;border-radius:999px;overflow:hidden;border:1px solid #334155;margin-top:5px}
+.meter>div{height:100%;width:0;background:linear-gradient(90deg,#38bdf8,#f59e0b,#ef4444);transition:width .15s}
+.emergency{margin-top:10px;padding:8px;border:1px solid #7c2d12;border-radius:10px;background:#2a140d;color:#fed7aa;font-size:12.5px;line-height:1.45}
+.mode-btn{background:#233047;border-color:#64748b}
+.special-btn{background:#7c2d12;border-color:#c2410c}
+.sound-btn{background:#123026;border-color:#16a34a}
+
+
+.rank-box{margin-top:10px;padding:9px 10px;border:1px solid #334155;border-radius:11px;background:#091321}
+.rank-line{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.rank-title{font-weight:700;color:#c4b5fd}.rank-xp{font-size:12px;color:#94a3b8}
+.rankbar{height:8px;margin-top:6px;border-radius:999px;background:#172033;overflow:hidden}
+.rankbar>div{height:100%;width:0;background:linear-gradient(90deg,#8b5cf6,#38bdf8)}
+.tactical-note{margin-top:8px;font-size:11.5px;color:#93c5fd;line-height:1.45}
+.replay-btn{background:#15324a;border-color:#38bdf8}
+.challenge-btn{background:#39234f;border-color:#a78bfa}
+
+@media(max-width:980px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GAME VẬT LÍ</h1>
+  <div class="subtitle">PRO 5.0 — Tactical Air Defense • Đội hình chiến thuật • ECM • Tiếp tế • Cứu hộ • Điểm yếu Boss • Physics Replay • Commander Rank</div>
+  <div class="teacher">GV Nguyễn Huy Hùng</div>
+
+  <div class="layout">
+    <section class="panel">
+      <canvas id="game" width="1280" height="760"></canvas>
+      <div class="toolbar">
+        <button id="startBtn" class="primary">Bắt đầu Level</button>
+        <button id="pauseBtn">Tạm dừng</button>
+        <button id="fireBtn" class="primary">🎯 BẮN PHÁO</button>
+        <button id="ammoModeBtn" class="special-btn">💥 Đạn: THƯỜNG</button>
+        <button id="missileModeBtn" class="mode-btn" disabled>🎯 TL: INTERCEPT</button>
+        <button id="missileBtn" class="missile" disabled>🚀 PHÓNG TÊN LỬA</button>
+        <button id="soundBtn" class="sound-btn">🔊 Âm thanh: Bật</button>
+        <button id="replayBtn" class="replay-btn" disabled>📐 PHYSICS REPLAY</button>
+        <button id="challengeBtn" class="challenge-btn">🏅 Challenge: Tắt</button>
+        <button id="nextBtn" class="next" disabled>Level tiếp theo</button>
+        <button id="retryBtn">Chơi lại Level</button>
+      </div>
+      <div id="status" class="status">Level 1: nhấn “Bắt đầu Level” để chơi.</div>
+    </section>
+
+    <aside class="panel">
+      <div class="level-card">
+        <div class="level-name" id="levelName">LEVEL 1 — Huấn luyện</div>
+        <div class="level-desc" id="levelDesc"></div>
+        <div class="mission-box"><b>Nhiệm vụ phụ:</b> <span id="missionText"></span></div>
+        <div class="star-row"><span class="stars" id="starPreview">☆ ☆ ☆</span><span class="save-note">Tự lưu tiến trình</span></div>
+        <div class="progress"><div id="levelProgress"></div></div>
+        <div class="levels" id="levelMap"></div>
+      </div>
+
+      <h3>Điều khiển đại bác</h3>
+      <div class="row">
+        <label><span>Góc bắn α</span><b><span id="angleVal">48</span>°</b></label>
+        <input id="angle" type="range" min="20" max="80" value="48" step="1">
+        <div class="fast-grid">
+          <button id="minus5">−5°</button><button id="plus5">+5°</button>
+          <button id="minus1">−1°</button><button id="plus1">+1°</button>
+        </div>
+      </div>
+      <div class="row">
+        <label><span>Vận tốc đầu v₀</span><b><span id="speedVal">54</span> m/s</b></label>
+        <input id="speed" type="range" min="30" max="75" value="54" step="1">
+      </div>
+
+      <div class="stats">
+        <div class="stat"><small>Hạ trong Level</small><b id="killsVal">0/20</b></div>
+        <div class="stat"><small>Điểm</small><b id="scoreVal">0</b></div>
+        <div class="stat"><small>Chặn bom</small><b id="interceptVal">0</b></div>
+        <div class="stat"><small>Đồng minh bắn nhầm</small><b id="allyVal">0/5</b></div>
+        <div class="stat"><small>Tên lửa mình</small><b id="ammoVal">Khóa</b></div>
+        <div class="stat"><small>Địch có tên lửa</small><b id="enemyMissileVal">Chưa</b></div>
+        <div class="stat"><small>Gió</small><b id="windVal">0 m/s</b></div>
+        <div class="stat"><small>Khóa mục tiêu</small><b id="lockVal">—</b></div>
+        <div class="stat"><small>Kill Streak</small><b id="streakVal">x0</b></div>
+        <div class="stat"><small>Đạn đặc biệt</small><b id="specialVal">A:3 • AP:3</b></div>
+        <div class="stat"><small>Phi công cứu hộ</small><b id="rescueVal">0</b></div>
+        <div class="stat"><small>Tiếp tế nhận</small><b id="supplyVal">0</b></div>
+      </div>
+
+
+
+      <div class="rank-box">
+        <div class="rank-line"><span class="rank-title" id="rankTitle">HỌC VIÊN</span><span class="rank-xp" id="rankXP">0 XP</span></div>
+        <div class="rankbar"><div id="rankFill"></div></div>
+        <div class="tactical-note">P: Tactical Pause • Q: đổi đạn • V: đổi chế độ tên lửa • M: khóa/phóng tên lửa</div>
+      </div>
+
+      <div class="combat-row">
+        <div class="stat"><small>Trạng thái đại bác</small><b id="heatVal">0%</b><div class="meter"><div id="heatFill"></div></div></div>
+        <div class="stat"><small>Điểm công nghệ</small><b id="techVal">0</b></div>
+      </div>
+      <div id="emergencyBox" class="emergency" style="display:none"></div>
+
+      <div id="upgradeBox" class="upgrade-box" style="display:none">
+        <div class="upgrade-head"><b>⚙ NÂNG CẤP SAU LEVEL</b><span id="upgradeTech">0 điểm</span></div>
+        <div class="upgrade-options">
+          <button id="upgrade1"></button>
+          <button id="upgrade2"></button>
+          <button id="upgrade3"></button>
+        </div>
+      </div>
+
+      <h3 style="margin-top:15px">Lô cốt</h3>
+      <div class="bunkers">
+        <div class="bunker"><div class="bunker-line"><span>Lô cốt 1</span><b id="bt1">3/3</b></div><div class="hp"><div id="bf1"></div></div></div>
+        <div class="bunker"><div class="bunker-line"><span>Lô cốt 2</span><b id="bt2">3/3</b></div><div class="hp"><div id="bf2"></div></div></div>
+        <div class="bunker"><div class="bunker-line"><span>Lô cốt 3</span><b id="bt3">3/3</b></div><div class="hp"><div id="bf3"></div></div></div>
+        <div class="bunker"><div class="bunker-line"><span>Lô cốt 4</span><b id="bt4">3/3</b></div><div class="hp"><div id="bf4"></div></div></div>
+      </div>
+
+      <div class="rules">
+        <b>Luật chung:</b><br>
+        • Bảo vệ 4 lô cốt. Mỗi lô cốt chịu tối đa 3 lần trúng bom.<br>
+        • Máy bay đồng minh màu xanh chỉ xuất hiện hiếm; bắn nhầm 5 chiếc → Game Over.<br>
+        • Đạn pháo có thể bắn chặn bom và tên lửa địch.<br>
+        • Từ Level 6, bạn mở khóa <b>súng phóng tên lửa dẫn đường</b> riêng.<br>
+        • Tên lửa cần <b>khóa mục tiêu khoảng 0,7 giây</b> rồi mới phóng.<br>
+        • Từ Level 4 có <b>gió ngang</b> làm lệch quỹ đạo đạn pháo; tên lửa dẫn đường không bị ảnh hưởng.<br>
+        • Mỗi Level có nhiệm vụ phụ và xếp hạng <b>1–3 sao</b>. Tiến trình được lưu trên trình duyệt.<br>
+        • Có thể <b>giữ nút BẮN hoặc giữ phím Space</b> để đại bác bắn liên tục.<br>
+        • Có đạn <b>AIRBURST</b> và <b>AP xuyên giáp</b> giới hạn mỗi Level.<br>
+        • Sau mỗi Level nhận điểm công nghệ để nâng cấp. Hoàn thành Level 10 mở <b>ENDLESS MODE</b>.<br>
+        • Từ Level cao xuất hiện máy bay <b>ECM gây nhiễu</b>, máy bay <b>tiếp tế đồng minh</b> và nhiệm vụ <b>cứu hộ phi công</b>.<br>
+        • Boss có <b>điểm yếu ở động cơ</b>; bắn trúng gây sát thương lớn.<br>
+        • <b>Physics Replay</b> xem lại quỹ đạo phát bắn thành công với vectơ vận tốc.
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height, groundY = 665;
+  const gPx = 84, meterToPx = 7.7;
+  const cannon = {x:105,y:groundY-4};
+  const launcher = {x:245,y:groundY-4};
+
+  const $ = id => document.getElementById(id);
+  const startBtn=$('startBtn'), pauseBtn=$('pauseBtn'), fireBtn=$('fireBtn'), ammoModeBtn=$('ammoModeBtn'),
+        missileModeBtn=$('missileModeBtn'), missileBtn=$('missileBtn'), soundBtn=$('soundBtn'), replayBtn=$('replayBtn'), challengeBtn=$('challengeBtn'), nextBtn=$('nextBtn'), retryBtn=$('retryBtn');
+  const angleEl=$('angle'), speedEl=$('speed');
+  const angleVal=$('angleVal'), speedVal=$('speedVal'), killsVal=$('killsVal'),
+        scoreVal=$('scoreVal'), interceptVal=$('interceptVal'), allyVal=$('allyVal'),
+        ammoVal=$('ammoVal'), enemyMissileVal=$('enemyMissileVal'),
+        levelName=$('levelName'), levelDesc=$('levelDesc'), levelProgress=$('levelProgress'),
+        levelMap=$('levelMap'), statusEl=$('status'), missionText=$('missionText'), starPreview=$('starPreview'),
+        windVal=$('windVal'), lockVal=$('lockVal'), streakVal=$('streakVal'), specialVal=$('specialVal'),
+        heatVal=$('heatVal'), heatFill=$('heatFill'), techVal=$('techVal'), emergencyBox=$('emergencyBox'),
+        upgradeBox=$('upgradeBox'), upgradeTech=$('upgradeTech'), upgrade1=$('upgrade1'), upgrade2=$('upgrade2'), upgrade3=$('upgrade3'),
+        rescueVal=$('rescueVal'), supplyVal=$('supplyVal'), rankTitle=$('rankTitle'), rankXP=$('rankXP'), rankFill=$('rankFill');
+  const bunkerTexts=[$('bt1'),$('bt2'),$('bt3'),$('bt4')];
+  const bunkerFills=[$('bf1'),$('bf2'),$('bf3'),$('bf4')];
+
+  const LEVELS = [
+    {n:1,name:'Huấn luyện',target:15,active:2,speed:0.72,bombChance:0.42,bombDelay:4.4,armored:0,fast:0.08,bomber:0.08,enemyMissile:false,missileRate:0,missileStyle:'none',boss:false,radarJam:false,windMax:0,bonus:'accuracy',bonusText:'Độ chính xác pháo đạt ít nhất 35%.',desc:'Màn làm quen. Máy bay chậm, ít bom, không có gió và chưa có tên lửa.'},
+    {n:2,name:'Tăng tốc',target:15,active:3,speed:0.88,bombChance:0.50,bombDelay:3.8,armored:0.04,fast:0.22,bomber:0.10,enemyMissile:false,missileRate:0,missileStyle:'none',boss:false,radarJam:false,windMax:0,bonus:'fortress',bonusText:'Giữ nguyên cả 4 lô cốt đến cuối màn.',desc:'Máy bay nhanh hơn, xuất hiện theo đội hình và đổi độ cao thường xuyên hơn.'},
+    {n:3,name:'Đánh chặn bom',target:15,active:3,speed:0.98,bombChance:0.68,bombDelay:3.0,armored:0.08,fast:0.22,bomber:0.28,enemyMissile:false,missileRate:0,missileStyle:'none',boss:false,radarJam:false,windMax:0,bonus:'intercept3',bonusText:'Bắn chặn ít nhất 3 quả bom trên không.',desc:'Nhiều máy bay ném bom. Mục tiêu chính vẫn là 15 máy bay nhưng bạn phải ưu tiên phòng thủ.'},
+    {n:4,name:'Gió ngang & Giáp dày',target:15,active:4,speed:1.05,bombChance:0.60,bombDelay:3.0,armored:0.32,fast:0.18,bomber:0.18,enemyMissile:false,missileRate:0,missileStyle:'none',boss:false,radarJam:false,windMax:3.5,bonus:'armor4',bonusText:'Hạ ít nhất 4 máy bay bọc thép.',desc:'Gió ngang bắt đầu ảnh hưởng quỹ đạo đạn pháo. Địch có nhiều máy bay cần trúng 2 phát.'},
+    {n:5,name:'Boss cơ động',target:15,active:4,speed:1.08,bombChance:0.64,bombDelay:2.8,armored:0.18,fast:0.24,bomber:0.24,enemyMissile:false,missileRate:0,missileStyle:'none',boss:true,radarJam:false,windMax:4.0,bonus:'boss',bonusText:'Tiêu diệt Boss cơ động.',desc:'Boss xuất hiện giữa màn, liên tục đổi độ cao và tăng tốc khi HP còn một nửa.'},
+    {n:6,name:'Chiến tranh tên lửa',target:15,active:4,speed:1.12,bombChance:0.62,bombDelay:2.8,armored:0.18,fast:0.26,bomber:0.26,enemyMissile:true,missileRate:5.4,missileStyle:'normal',boss:false,radarJam:false,windMax:4.5,bonus:'enemyMissile2',bonusText:'Đánh chặn ít nhất 2 tên lửa của địch.',desc:'Mở khóa bệ phóng tên lửa. Tên lửa cần khóa mục tiêu 0,7 giây trước khi phóng.'},
+    {n:7,name:'Tên lửa dẫn đường',target:15,active:5,speed:1.18,bombChance:0.68,bombDelay:2.6,armored:0.20,fast:0.28,bomber:0.28,enemyMissile:true,missileRate:4.2,missileStyle:'guided',boss:true,radarJam:false,windMax:5.0,bonus:'playerMissile3',bonusText:'Hạ ít nhất 3 máy bay bằng tên lửa của mình.',desc:'Tên lửa địch bám mục tiêu tốt hơn. Boss có thể phóng tên lửa, buộc bạn phối hợp hai loại vũ khí.'},
+    {n:8,name:'Nhiễu radar',target:15,active:5,speed:1.23,bombChance:0.70,bombDelay:2.5,armored:0.22,fast:0.30,bomber:0.30,enemyMissile:true,missileRate:3.8,missileStyle:'fast',boss:false,radarJam:true,windMax:5.5,bonus:'intercept4',bonusText:'Đánh chặn tổng cộng ít nhất 4 bom/tên lửa khi radar có thể bị nhiễu.',desc:'Radar thỉnh thoảng mất tín hiệu. Tên lửa địch nhanh hơn, người chơi phải quan sát trực tiếp.'},
+    {n:9,name:'Tên lửa né tránh',target:15,active:6,speed:1.30,bombChance:0.74,bombDelay:2.3,armored:0.28,fast:0.30,bomber:0.30,enemyMissile:true,missileRate:3.2,missileStyle:'evasive',boss:true,radarJam:true,windMax:6.0,bonus:'bossDefense',bonusText:'Hạ Boss và giữ ít nhất 3 lô cốt.',desc:'Tên lửa địch bay lượn né đánh chặn, radar nhiễu và Boss mạnh bước vào giai đoạn 2 khi mất nửa HP.'},
+    {n:10,name:'Tổng công kích',target:15,active:7,speed:1.38,bombChance:0.80,bombDelay:2.1,armored:0.34,fast:0.32,bomber:0.32,enemyMissile:true,missileRate:2.7,missileStyle:'mixed',boss:true,radarJam:true,windMax:7.0,bonus:'final',bonusText:'Hạ Boss cuối và giữ ít nhất 2 lô cốt.',desc:'Màn cuối: gió mạnh, địch tốc độ cao, tên lửa hỗn hợp, radar nhiễu và Boss cuối nhiều HP.'}
+  ];
+
+  let levelIndex=0, config=LEVELS[0];
+  let running=false, started=false, levelCleared=false, gameOver=false, paused=false;
+  let last=performance.now(), score=0, levelKills=0, totalKills=0, intercepts=0, allyHits=0;
+  let planes=[], shells=[], bombs=[], enemyMissiles=[], playerMissiles=[], particles=[], pilots=[];
+  let bunkers=[], clouds=[];
+  let spawnTimer=0, enemyMissileTimer=0, bossSpawned=false, radarJamTimer=0, radarJamLeft=0;
+  let missileAmmo=0, missileCooldown=0, dragging=false, bannerTimer=0, bannerText='';
+  let windMps=0, shotsFired=0, shotsHit=0, armoredKills=0, bossKills=0,
+      enemyMissilesIntercepted=0, playerMissileKills=0, levelTime=0, lastStars=0;
+  let lockActive=false, lockTarget=null, lockKind='', lockProgress=0, lockNeed=.7;
+  let progressData={unlocked:1,stars:{},tech:0,upgrades:{cooling:0,shell:0,lock:0,missile:0,fortress:0},endlessBest:0,xp:0};
+  let upgrades={cooling:0,shell:0,lock:0,missile:0,fortress:0};
+  let heat=0, overheated=false, streak=0, bestStreak=0, streakTimer=0;
+  let ammoMode='normal', specialAmmo={airburst:3,ap:3};
+  let missileMode='intercept', soundOn=true, audioCtx=null;
+  let upgradeChoices=[], upgradeChosen=false;
+  let emergency={active:false,done:false,failed:false,type:'',text:'',timer:0,startKills:0,startIntercepts:0,startAllies:0};
+  let emergencyStartTimer=14;
+  let finalPushShown=false, perfectDefense=false;
+  let screenShake=0, cinematicTimer=0;
+  let decoys=[];
+  let endless=false;
+  let commanderXP=0, rescues=0, suppliesCollected=0;
+  let supplyTimer=22, rescueTimer=28, supplies=[], ecmPulse=0;
+  let lastReplay=null, replayActive=false, replayIndex=0, replayAccumulator=0, preReplayRunning=false;
+  let challengeMode='off';
+  let tacticalPause=false;
+  let cannonAutoHold=false, cannonHoldTimer=0;
+  const RANKS=[
+    {name:'HỌC VIÊN',xp:0},{name:'XẠ THỦ',xp:250},{name:'TRUNG SĨ',xp:650},
+    {name:'TRUNG ÚY',xp:1200},{name:'ĐẠI ÚY',xp:2000},{name:'CHỈ HUY PHÒNG KHÔNG',xp:3200}
+  ];
+
+
+  function loadProgress(){
+    try{
+      const raw=localStorage.getItem('gameVatLiCampaignV3');
+      if(raw){
+        const d=JSON.parse(raw);
+        if(d && typeof d.unlocked==='number' && d.stars){
+          progressData.unlocked=clamp(Math.floor(d.unlocked),1,10);
+          progressData.stars=d.stars;
+          progressData.tech=Number(d.tech||0);
+          progressData.upgrades=Object.assign({cooling:0,shell:0,lock:0,missile:0,fortress:0},d.upgrades||{});
+          progressData.endlessBest=Number(d.endlessBest||0);
+          progressData.xp=Number(d.xp||0);
+          commanderXP=progressData.xp;
+          upgrades={...progressData.upgrades};
+        }
+      }
+    }catch(e){}
+  }
+
+  function saveProgress(){
+    try{ localStorage.setItem('gameVatLiCampaignV3',JSON.stringify(progressData)); }catch(e){}
+  }
+
+  function secondaryObjectiveDone(){
+    const alive=bunkers.filter(b=>!b.burning).length;
+    const acc=shotsFired?shotsHit/shotsFired:0;
+    switch(config.bonus){
+      case 'accuracy': return acc>=.35;
+      case 'fortress': return alive===4;
+      case 'intercept3': return intercepts>=3;
+      case 'armor4': return armoredKills>=4;
+      case 'boss': return bossKills>=1;
+      case 'enemyMissile2': return enemyMissilesIntercepted>=2;
+      case 'playerMissile3': return playerMissileKills>=3;
+      case 'intercept4': return intercepts>=4;
+      case 'bossDefense': return bossKills>=1 && alive>=3;
+      case 'final': return bossKills>=1 && alive>=2;
+      default: return true;
+    }
+  }
+
+  function calculateStars(){
+    if(!levelCleared) return 0;
+    let s=1;
+    const alive=bunkers.filter(b=>!b.burning).length;
+    if(alive>=3) s++;
+    if(allyHits===0 && secondaryObjectiveDone()) s++;
+    return Math.min(3,s);
+  }
+
+  function starString(n){ return '★'.repeat(n)+'☆'.repeat(3-n); }
+
+
+
+  function currentRank(){
+    let idx=0;
+    for(let i=0;i<RANKS.length;i++) if(commanderXP>=RANKS[i].xp) idx=i;
+    const cur=RANKS[idx], next=RANKS[Math.min(idx+1,RANKS.length-1)];
+    return {idx,cur,next};
+  }
+  function addXP(amount){
+    commanderXP+=amount;
+    progressData.xp=commanderXP;
+    saveProgress();
+  }
+
+  function saveReplay(shell,label='Mục tiêu'){
+    if(!shell || !shell.trail || shell.trail.length<4)return;
+    const pts=shell.trail.map(p=>({x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0}));
+    pts.push({x:shell.x,y:shell.y,vx:shell.vx||0,vy:shell.vy||0});
+    lastReplay={points:pts,label,wind:windMps,angle:Number(angleEl.value),speed:Number(speedEl.value)};
+    replayBtn.disabled=false;
+  }
+
+  function startReplay(){
+    if(!lastReplay)return;
+    preReplayRunning=running;
+    running=false;
+    replayActive=true;
+    replayIndex=0;
+    replayAccumulator=0;
+    showBanner('📐 PHYSICS REPLAY',1.2);
+  }
+
+  function cycleChallenge(){
+    if(running){setStatus('Chỉ đổi Challenge trước khi bắt đầu Level.');return}
+    const modes=['off','artillery','noRadar','highWind'];
+    challengeMode=modes[(modes.indexOf(challengeMode)+1)%modes.length];
+    const labels={off:'Tắt',artillery:'CHỈ PHÁO',noRadar:'KHÔNG RADAR',highWind:'GIÓ MẠNH'};
+    challengeBtn.textContent='🏅 Challenge: '+labels[challengeMode];
+    if(challengeMode==='highWind' && config.windMax>0){
+      windMps=(Math.random()<.5?-1:1)*Math.max(8,config.windMax+2);
+    }
+    setStatus('Challenge Mode: '+labels[challengeMode]+'.');
+    updateLevelUI();
+  }
+
+  function ensureAudio(){
+    if(!soundOn) return null;
+    if(!audioCtx){
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(AC) audioCtx=new AC();
+    }
+    if(audioCtx && audioCtx.state==='suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  function beep(freq=440,dur=.08,type='sine',gain=.035){
+    const ac=ensureAudio(); if(!ac)return;
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(gain,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+dur);
+    o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+dur);
+  }
+
+  const UPGRADE_POOL=[
+    {key:'cooling',name:'Tản nhiệt pháo',desc:'Giảm nhiệt mỗi phát và làm nguội nhanh hơn.'},
+    {key:'shell',name:'Đạn pháo chính xác',desc:'Tăng bán kính va chạm của đạn pháo.'},
+    {key:'lock',name:'Máy tính khóa mục tiêu',desc:'Rút ngắn thời gian khóa tên lửa.'},
+    {key:'missile',name:'Kho tên lửa',desc:'Tăng sức chứa tên lửa mỗi Level.'},
+    {key:'fortress',name:'Gia cố lô cốt',desc:'Mỗi cấp tăng thêm 1 HP tối đa cho lô cốt.'}
+  ];
+
+  function generateUpgradeChoices(){
+    const pool=[...UPGRADE_POOL].sort(()=>Math.random()-.5);
+    upgradeChoices=pool.slice(0,3);
+    [upgrade1,upgrade2,upgrade3].forEach((btn,i)=>{
+      const u=upgradeChoices[i],lv=upgrades[u.key]||0;
+      btn.innerHTML='<strong>'+u.name+'  Lv.'+lv+' → '+(lv+1)+'</strong><small>'+u.desc+' • Giá: 1 điểm công nghệ</small>';
+      btn.disabled=progressData.tech<1;
+    });
+    upgradeBox.style.display='block';
+    upgradeTech.textContent=progressData.tech+' điểm';
+  }
+
+  function buyUpgrade(index){
+    if(progressData.tech<1 || !upgradeChoices[index]) return;
+    const u=upgradeChoices[index];
+    upgrades[u.key]=(upgrades[u.key]||0)+1;
+    progressData.upgrades={...upgrades};
+    progressData.tech--;
+    upgradeChosen=true;
+    saveProgress();
+    upgradeBox.style.display='none';
+    nextBtn.disabled=false;
+    showBanner('⚙ NÂNG CẤP: '+u.name.toUpperCase(),1.8);
+    setStatus('Đã nâng cấp '+u.name+' lên Lv.'+upgrades[u.key]+'.');
+    updateLevelUI();
+  }
+
+  function setAmmoMode(){
+    const modes=['normal','airburst','ap'];
+    let idx=(modes.indexOf(ammoMode)+1)%modes.length;
+    let next=modes[idx];
+    if(next==='airburst' && specialAmmo.airburst<=0) next='ap';
+    if(next==='ap' && specialAmmo.ap<=0) next='normal';
+    ammoMode=next;
+    updateLevelUI();
+  }
+
+  function addStreak(){
+    streak++;bestStreak=Math.max(bestStreak,streak);streakTimer=4;
+    if(streak===3){score+=75;showBanner('🎯 SHARPSHOOTER x3',1.2);beep(760,.1,'square',.035)}
+    if(streak===5){score+=150;showBanner('✈ ACE x5',1.3);beep(900,.12,'square',.04)}
+    if(streak===8){score+=300;showBanner('🏆 AIR DEFENSE MASTER x8',1.5);beep(1040,.14,'square',.045)}
+  }
+  function breakStreak(){streak=0;streakTimer=0}
+
+  function beginEmergency(){
+    if(emergency.active||emergency.done||levelCleared||gameOver||endless) return;
+    const arr=[
+      {type:'kills',text:'KHẨN CẤP: Hạ 3 máy bay trong 20 giây!',time:20},
+      {type:'intercepts',text:'KHẨN CẤP: Chặn 2 bom/tên lửa trong 18 giây!',time:18},
+      {type:'safe',text:'KHẨN CẤP: Không bắn nhầm đồng minh trong 18 giây!',time:18}
+    ];
+    const e=arr[Math.floor(Math.random()*arr.length)];
+    emergency={active:true,done:false,failed:false,type:e.type,text:e.text,timer:e.time,startKills:levelKills,startIntercepts:intercepts,startAllies:allyHits};
+    showBanner('⚠ NHIỆM VỤ KHẨN CẤP',1.6);beep(320,.18,'sawtooth',.05);
+  }
+  function updateEmergency(dt){
+    if(!emergency.active)return;
+    emergency.timer-=dt;
+    let success=false;
+    if(emergency.type==='kills')success=levelKills-emergency.startKills>=3;
+    if(emergency.type==='intercepts')success=intercepts-emergency.startIntercepts>=2;
+    if(emergency.type==='safe')success=emergency.timer<=0 && allyHits===emergency.startAllies;
+    if(success){
+      emergency.active=false;emergency.done=true;score+=300;progressData.tech++;saveProgress();
+      showBanner('✅ KHẨN CẤP HOÀN THÀNH +1 TECH',1.8);beep(880,.15,'sine',.05);
+    }else if(emergency.timer<=0){
+      emergency.active=false;emergency.failed=true;showBanner('NHIỆM VỤ KHẨN CẤP THẤT BẠI',1.4);
+    }
+  }
+
+  function startEndless(){
+    endless=true;levelIndex=9;
+    config={...LEVELS[9],n:11,name:'ENDLESS',target:999999,active:7,speed:1.42,boss:true,radarJam:true,windMax:7.5};
+    running=false;started=false;levelCleared=false;gameOver=false;
+    levelKills=0;allyHits=0;intercepts=0;shotsFired=0;shotsHit=0;armoredKills=0;bossKills=0;enemyMissilesIntercepted=0;playerMissileKills=0;levelTime=0;
+    planes=[];shells=[];bombs=[];enemyMissiles=[];playerMissiles=[];particles=[];pilots=[];decoys=[];
+    heat=0;overheated=false;streak=0;specialAmmo={airburst:5,ap:5};missileAmmo=5+upgrades.missile;
+    rescues=0;suppliesCollected=0;supplyTimer=18;rescueTimer=24;supplies=[];lastReplay=null;replayActive=false;
+    bossSpawned=false;spawnTimer=.3;radarJamTimer=5;radarJamLeft=0;windMps=(Math.random()<.5?-1:1)*6.5;
+    initBunkers();initClouds();startBtn.disabled=false;startBtn.textContent='Bắt đầu Endless';nextBtn.disabled=true;upgradeBox.style.display='none';
+    setStatus('ENDLESS MODE: sống sót càng lâu càng tốt. Độ khó tăng dần theo số máy bay hạ.');
+    updateLevelUI();
+  }
+
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+  function arad(){return Number(angleEl.value)*Math.PI/180}
+
+  function initBunkers(){
+    bunkers=[
+      {id:1,x:450,hp:3+upgrades.fortress,maxHp:3+upgrades.fortress,burning:false},
+      {id:2,x:650,hp:3+upgrades.fortress,maxHp:3+upgrades.fortress,burning:false},
+      {id:3,x:850,hp:3+upgrades.fortress,maxHp:3+upgrades.fortress,burning:false},
+      {id:4,x:1050,hp:3+upgrades.fortress,maxHp:3+upgrades.fortress,burning:false}
+    ];
+  }
+  function initClouds(){
+    clouds=[];
+    for(let i=0;i<8;i++) clouds.push({x:i*180+Math.random()*60,y:95+Math.random()*180,s:35+Math.random()*35,v:7+Math.random()*11,a:.12+Math.random()*.08});
+  }
+
+  function showBanner(t,secs=2){bannerText=t;bannerTimer=secs}
+  function setStatus(t){statusEl.textContent=t}
+
+  function updateLevelUI(){
+    if(!endless) config=LEVELS[levelIndex];
+    levelName.textContent=endless?'ENDLESS MODE — AIR DEFENSE':('LEVEL '+config.n+' — '+config.name);
+    levelDesc.textContent=config.desc;
+    killsVal.textContent=endless?(levelKills+' hạ'):levelKills+'/'+config.target;
+    scoreVal.textContent=score;
+    interceptVal.textContent=intercepts;
+    allyVal.textContent=allyHits+'/5';
+    enemyMissileVal.textContent=config.enemyMissile?'Có':'Chưa';
+    missionText.textContent=config.bonusText;
+    const savedStars=Number(progressData.stars[String(config.n)]||0);
+    starPreview.textContent=starString(levelCleared?lastStars:savedStars);
+    const arrow=windMps>0?'→':windMps<0?'←':'•';
+    windVal.textContent=arrow+' '+Math.abs(windMps).toFixed(1)+' m/s';
+    lockVal.textContent=lockActive?Math.round(lockProgress/lockNeed*100)+'%':'—';
+    missileBtn.disabled=config.n<6 || challengeMode==='artillery' || !running || missileAmmo<=0 || missileCooldown>0 || lockActive;
+    missileModeBtn.disabled=config.n<6 || challengeMode==='artillery';
+    missileModeBtn.textContent='🎯 TL: '+missileMode.toUpperCase();
+    missileBtn.textContent=config.n<6?'🚀 TÊN LỬA (KHÓA)':lockActive?'🔒 ĐANG KHÓA '+Math.min(100,Math.round(lockProgress/lockNeed*100))+'%':'🚀 KHÓA & PHÓNG TÊN LỬA';
+    const missileCap=5+upgrades.missile;
+    ammoVal.textContent=config.n<6?'Khóa':missileAmmo+'/'+missileCap;
+    streakVal.textContent='x'+streak;
+    rescueVal.textContent=rescues;
+    supplyVal.textContent=suppliesCollected;
+    const rr=currentRank();rankTitle.textContent=rr.cur.name;rankXP.textContent=commanderXP+' XP';
+    const span=Math.max(1,rr.next.xp-rr.cur.xp),pct=rr.idx===RANKS.length-1?100:clamp((commanderXP-rr.cur.xp)/span*100,0,100);rankFill.style.width=pct+'%';
+    specialVal.textContent='A:'+specialAmmo.airburst+' • AP:'+specialAmmo.ap;
+    heatVal.textContent='Sẵn sàng';
+    heatFill.style.width='0%';
+    techVal.textContent=progressData.tech;
+    ammoModeBtn.textContent=ammoMode==='normal'?'💥 Đạn: THƯỜNG':ammoMode==='airburst'?'💥 Đạn: AIRBURST ('+specialAmmo.airburst+')':'🛡 Đạn: AP ('+specialAmmo.ap+')';
+    emergencyBox.style.display=emergency.active?'block':'none';
+    if(emergency.active) emergencyBox.textContent=emergency.text+' Còn '+Math.ceil(emergency.timer)+'s';
+    angleVal.textContent=angleEl.value;
+    speedVal.textContent=speedEl.value;
+    levelProgress.style.width=endless?'100%':Math.min(100,levelKills/config.target*100)+'%';
+
+    bunkers.forEach((b,i)=>{
+      bunkerTexts[i].textContent=b.burning?'Cháy':b.hp+'/'+b.maxHp;
+      const pct=b.hp/b.maxHp*100;
+      bunkerFills[i].style.width=pct+'%';
+      bunkerFills[i].style.background=b.burning?'#ef4444':pct>66?'#22c55e':pct>33?'#f59e0b':'#ef4444';
+    });
+
+    levelMap.innerHTML='';
+    LEVELS.forEach((lv,i)=>{
+      const unlocked=(i+1)<=progressData.unlocked;
+      const st=Number(progressData.stars[String(i+1)]||0);
+      const d=document.createElement('div');
+      d.className='level-pill '+(!unlocked?'locked':i===levelIndex?'current':st>0?'done':'');
+      d.textContent=unlocked?('L'+lv.n+(st?' '+('★'.repeat(st)):'')):('L'+lv.n+' 🔒');
+      d.title=unlocked?(lv.name+' — '+starString(st)):'Chưa mở khóa';
+      if(unlocked){
+        d.addEventListener('click',()=>{
+          if(running) return;
+          levelIndex=i;
+          score=0;
+          prepareLevel(false);
+        });
+      }
+      levelMap.appendChild(d);
+    });
+  }
+
+  function prepareLevel(resetCampaignScore=false){
+    endless=false;config=LEVELS[levelIndex];
+    running=false;started=false;levelCleared=false;gameOver=false;paused=false;
+    levelKills=0;allyHits=0;intercepts=0;shotsFired=0;shotsHit=0;armoredKills=0;bossKills=0;enemyMissilesIntercepted=0;playerMissileKills=0;levelTime=0;lastStars=0;
+    lockActive=false;lockTarget=null;lockKind='';lockProgress=0;
+    heat=0;overheated=false;streak=0;bestStreak=0;streakTimer=0;ammoMode='normal';specialAmmo={airburst:3,ap:3};
+    emergency={active:false,done:false,failed:false,type:'',text:'',timer:0,startKills:0,startIntercepts:0,startAllies:0};emergencyStartTimer=14+Math.random()*8;
+    finalPushShown=false;perfectDefense=false;screenShake=0;cinematicTimer=0;decoys=[];upgradeChosen=false;
+    rescues=0;suppliesCollected=0;supplyTimer=18+Math.random()*12;rescueTimer=24+Math.random()*14;supplies=[];ecmPulse=0;
+    lastReplay=null;replayActive=false;replayIndex=0;replayAccumulator=0;tacticalPause=false;
+    if(config.windMax>0){const sign=Math.random()<.5?-1:1;windMps=sign*(config.windMax*.55+Math.random()*config.windMax*.45)}else windMps=0;
+    if(challengeMode==='highWind' && config.windMax>0)windMps=(Math.random()<.5?-1:1)*Math.max(8,config.windMax+2);
+    if(resetCampaignScore) score=0;
+    planes=[];shells=[];bombs=[];enemyMissiles=[];playerMissiles=[];particles=[];pilots=[];
+    spawnTimer=.4; enemyMissileTimer=config.missileRate||999;
+    bossSpawned=false;radarJamTimer=6+Math.random()*5;radarJamLeft=0;
+    missileAmmo=config.n>=6?(5+upgrades.missile):0;missileCooldown=0;
+    lockNeed=Math.max(.32,.7-upgrades.lock*.08);
+    upgradeBox.style.display='none';
+    initBunkers();initClouds();
+    startBtn.disabled=false;startBtn.textContent='Bắt đầu Level';
+    nextBtn.disabled=true;
+    pauseBtn.textContent='Tạm dừng';
+    setStatus('Level '+config.n+': nhấn “Bắt đầu Level” để chơi.');
+    updateLevelUI();
+  }
+
+  function startLevel(){
+    if(levelCleared||gameOver) return;
+    started=true;running=true;paused=false;
+    startBtn.disabled=true;
+    showBanner('LEVEL '+config.n+' — '+config.name,2.2);
+    setStatus('Bắt đầu Level '+config.n+'. '+config.desc);
+    spawnGroup();
+    updateLevelUI();
+  }
+
+  function makeEnemyType(){
+    if(config.n>=7 && Math.random()<.11) return {type:'ecm',hp:1,label:'ECM',color:'#c084fc',size:1.03,base:138,score:220};
+    const r=Math.random();
+    if(r<config.armored) return {type:'armored',hp:2,label:'Bọc thép',color:'#cbd5e1',size:1.12,base:130,score:180};
+    if(r<config.armored+config.fast) return {type:'fast',hp:1,label:'Nhanh',color:'#e0f2fe',size:.86,base:185,score:140};
+    if(r<config.armored+config.fast+config.bomber) return {type:'bomber',hp:1,label:'Ném bom',color:'#ded7ca',size:1.08,base:115,score:160};
+    return {type:'normal',hp:1,label:'Thường',color:'#dbe3ea',size:1,base:145,score:100};
+  }
+
+  function spawnPlane(enemy=true){
+    const ally=!enemy;
+    const kind=ally?{type:'ally',hp:1,label:'Đồng minh',color:'#38bdf8',size:.96,base:150,score:0}:makeEnemyType();
+    const dir=Math.random()<.5?1:-1;
+    const y=120+Math.random()*215;
+    planes.push({
+      ...kind,ally,x:dir>0?-100:W+100,y,baseY:y,
+      vx:dir*kind.base*config.speed*(endless?(1+Math.min(.85,levelKills/45)):1)*(.9+Math.random()*.2),vy:0,hpLeft:kind.hp,
+      alive:true,bob:Math.random()*6.28,bobAmp:12+Math.random()*18,tilt:0,
+      bombTimer:2+Math.random()*config.bombDelay,bombsLeft:2,missileTimer:2+Math.random()*3,smoke:[]
+    });
+  }
+
+  function spawnGroup(){
+    const alive=planes.filter(p=>p.alive&&!p.ally).length;
+    const need=Math.max(0,config.active-alive);
+    const count=Math.min(need,1+Math.floor(Math.random()*3));
+    if(count>0){
+      const formation=Math.random()<.5?'V':'LINE';
+      const dir=Math.random()<.5?1:-1;
+      const baseY=125+Math.random()*165;
+      for(let i=0;i<count;i++){
+        const before=planes.length;
+        spawnPlane(true);
+        const p=planes[planes.length-1];
+        p.vx=Math.abs(p.vx)*dir;
+        p.x=dir>0?(-95-i*88):(W+95+i*88);
+        if(formation==='V')p.baseY=clamp(baseY+Math.abs(i-(count-1)/2)*36,110,340);
+        else p.baseY=clamp(baseY+(i-(count-1)/2)*28,110,340);
+        p.y=p.baseY;
+        p.formation=formation;
+      }
+    }
+    // Đồng minh thường rất hiếm.
+    if(Math.random()<.012 && !planes.some(p=>p.alive&&p.ally)) spawnPlane(false);
+
+    if(config.boss && !bossSpawned && levelKills>=Math.floor(config.target*.5))spawnBoss();
+  }
+
+  function spawnSupplyPlane(){
+    if(planes.some(p=>p.alive&&p.supply))return;
+    const dir=Math.random()<.5?1:-1;
+    planes.push({
+      type:'supply',hp:1,label:'TIẾP TẾ',color:'#34d399',size:1.06,base:142,score:0,ally:true,supply:true,
+      x:dir>0?-120:W+120,y:215,baseY:215,vx:dir*(128+config.n*4),vy:0,hpLeft:1,alive:true,
+      bob:0,bobAmp:8,tilt:0,bombTimer:999,bombsLeft:0,missileTimer:999,smoke:[],supplyDropped:false
+    });
+    showBanner('📦 MÁY BAY TIẾP TẾ ĐỒNG MINH',1.4);beep(680,.08,'sine',.03);
+  }
+
+  function spawnRescuePilot(){
+    pilots.push({x:W*.62+(-100+Math.random()*200),y:130,vx:-12+Math.random()*24,vy:8,age:1,chute:true,cut:false,dead:false,landed:false,ally:true,rescue:true,rewarded:false});
+    showBanner('🪂 BẢO VỆ PHI CÔNG ĐỒNG MINH',1.3);
+  }
+
+  function spawnBoss(){
+    if(bossSpawned) return;
+    bossSpawned=true;
+    const hp=config.n===10?9:5+Math.floor(config.n/3);
+    const dir=Math.random()<.5?1:-1;
+    planes.push({
+      type:'boss',hp,label:'BOSS',color:'#f59e0b',size:1.65,base:100,score:650,ally:false,
+      x:dir>0?-160:W+160,y:175,baseY:175,vx:dir*100*config.speed,vy:0,hpLeft:hp,
+      alive:true,bob:0,bobAmp:24,tilt:0,bombTimer:1.5,bombsLeft:2,missileTimer:1.7,decoyTimer:4.5,phase2:false,phase3:false,weakL:true,weakR:true,smoke:[]
+    });
+    showBanner('⚠ BOSS XUẤT HIỆN',2.6);beep(110,.45,'sawtooth',.06);
+  }
+
+  function fireShell(){
+    if(!running || replayActive) return;
+    shotsFired++;
+    const a=arad(),v=Number(speedEl.value)*meterToPx;
+
+    // Đạn thường hoạt động như các bản trước: bắn ngay, quỹ đạo ném xiên liên tục.
+    let mode=ammoMode;
+    if(mode==='airburst' && specialAmmo.airburst<=0) mode='normal';
+    if(mode==='ap' && specialAmmo.ap<=0) mode='normal';
+
+    if(mode==='airburst') specialAmmo.airburst--;
+    if(mode==='ap') specialAmmo.ap--;
+
+    shells.push({
+      x:cannon.x+48*Math.cos(a),
+      y:cannon.y-48*Math.sin(a),
+      vx:v*Math.cos(a),
+      vy:-v*Math.sin(a),
+      trail:[],
+      dead:false,
+      hit:false,
+      mode
+    });
+
+    beep(mode==='normal'?180:mode==='airburst'?240:135,.05,'square',.035);
+
+    if((ammoMode==='airburst'&&specialAmmo.airburst<=0)||(ammoMode==='ap'&&specialAmmo.ap<=0)){
+      ammoMode='normal';
+    }
+    updateLevelUI();
+  }
+
+  function firePlayerMissile(){
+    if(!running||config.n<6||missileAmmo<=0||missileCooldown>0||lockActive) return;
+    let candidates=[];
+    if(missileMode==='intercept'){
+      candidates=enemyMissiles.filter(m=>!m.dead).map(m=>({obj:m,kind:'missile',d:(m.x-launcher.x)**2+(m.y-launcher.y)**2}));
+    }else{
+      candidates=planes.filter(p=>p.alive&&!p.ally).map(p=>({obj:p,kind:'plane',d:(p.x-launcher.x)**2+(p.y-launcher.y)**2}));
+      if(config.n>=9 && decoys.some(d=>!d.dead) && Math.random()<.42){
+        candidates.push(...decoys.filter(d=>!d.dead).map(d=>({obj:d,kind:'decoy',d:(d.x-launcher.x)**2+(d.y-launcher.y)**2*.9})));
+      }
+    }
+    if(!candidates.length){setStatus('Chưa có mục tiêu để khóa tên lửa.');return}
+    candidates.sort((a,b)=>a.d-b.d);
+    lockTarget=candidates[0].obj;
+    lockKind=candidates[0].kind;
+    lockProgress=0;
+    lockActive=true;
+    showBanner('ĐANG KHÓA MỤC TIÊU...',1.0);beep(520,.07,'sine',.03);
+    updateLevelUI();
+  }
+
+  function completeMissileLock(){
+    if(!lockActive||!lockTarget)return;
+    missileAmmo--;missileCooldown=1.4;
+    playerMissiles.push({x:launcher.x,y:launcher.y-15,vx:40,vy:-170,target:lockTarget,targetKind:lockKind,dead:false,trail:[]});
+    lockActive=false;lockTarget=null;lockKind='';lockProgress=0;
+    showBanner('🚀 LOCK — PHÓNG!',1.0);beep(980,.08,'square',.04);
+    updateLevelUI();
+  }
+
+  function dropBomb(p){
+    if(p.ally||p.bombsLeft<=0)return;
+    const targets=bunkers.filter(b=>!b.burning);
+    if(!targets.length)return;
+    const t=targets[Math.floor(Math.random()*targets.length)];
+    const sx=p.x,sy=p.y+10,dy=groundY-sy;
+    const flight=Math.max(1.2,Math.sqrt(2*dy/gPx));
+    bombs.push({x:sx,y:sy,vx:clamp((t.x-sx)/flight,-210,210),vy:20,targetId:t.id,dead:false});
+    p.bombsLeft--;
+  }
+
+  function launchEnemyMissile(p){
+    if(!config.enemyMissile||p.ally||!p.alive)return;
+    const targets=bunkers.filter(b=>!b.burning);
+    if(!targets.length)return;
+    const t=targets[Math.floor(Math.random()*targets.length)];
+    let style=config.missileStyle;
+    if(style==='mixed'){
+      const arr=['guided','fast','evasive'];style=arr[Math.floor(Math.random()*arr.length)];
+    }
+    const speed=(style==='fast'?175:style==='evasive'?150:125)+config.n*8;
+    enemyMissiles.push({x:p.x,y:p.y+8,vx:0,vy:0,target:t,dead:false,trail:[],speed,style,phase:Math.random()*6.28,hp:style==='evasive'?1:1});
+  }
+
+  function spawnPilot(p){
+    pilots.push({x:p.x,y:p.y,vx:p.vx*.22,vy:8,age:0,chute:false,cut:false,dead:false,landed:false});
+  }
+
+  function explode(x,y,color='#ffd166',count=52){
+    for(let i=0;i<count;i++){
+      const a=Math.random()*Math.PI*2,s=30+Math.random()*110;
+      particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,age:0,life:.6+Math.random()*.8,color,size:2+Math.random()*2});
+    }
+  }
+
+  function hitEnemyPlane(p,source='shell',damage=1){
+    p.hpLeft-=damage;
+    explode(p.x,p.y,'#ffe2a8',18);
+    if(p.hpLeft>0){setStatus((p.type==='boss'?'Boss':'Máy bay bọc thép')+' còn '+p.hpLeft+' HP.');return}
+    p.alive=false;p.vy=0;levelKills++;totalKills++;score+=p.score;
+    if(p.type==='armored') armoredKills++;
+    if(p.type==='boss') bossKills++;
+    if(source==='missile') playerMissileKills++;
+    addStreak();addXP(p.type==='boss'?80:p.type==='ecm'?30:12);
+    explode(p.x,p.y,p.type==='boss'?'#f59e0b':'#ffd166',p.type==='boss'?130:70);
+    beep(p.type==='boss'?95:260,p.type==='boss'?.28:.08,'sawtooth',p.type==='boss'?.07:.04);
+    if(p.type==='boss'){screenShake=.8;cinematicTimer=.7;showBanner('💥 BOSS DESTROYED',1.8)}
+    spawnPilot(p);
+    if(!endless && levelKills>=config.target) completeLevel();
+  }
+
+  function hitAlly(p){
+    p.alive=false;p.vy=0;allyHits++;score=Math.max(0,score-150);breakStreak();
+    explode(p.x,p.y,'#38bdf8',55);
+    showBanner('BẮN NHẦM ĐỒNG MINH '+allyHits+'/5',1.8);
+    if(allyHits>=5) endGame('Bạn đã bắn nhầm 5 máy bay đồng minh.');
+  }
+
+  function damageBunker(id,amount=1){
+    const b=bunkers.find(x=>x.id===id);
+    if(!b||b.burning)return;
+    b.hp-=amount;
+    if(b.hp<=0){b.hp=0;b.burning=true;showBanner('LÔ CỐT '+id+' BỊ PHÁ HỦY',1.4)}
+    if(bunkers.every(x=>x.burning)) endGame('Cả 4 lô cốt đã bị phá hủy.');
+  }
+
+  function completeLevel(){
+    if(levelCleared)return;
+    running=false;levelCleared=true;
+    lockActive=false;lockTarget=null;
+    lastStars=calculateStars();
+    const alive=bunkers.filter(b=>!b.burning).length;
+    perfectDefense=(lastStars===3 && alive===4 && allyHits===0);
+    const reward=lastStars+(perfectDefense?1:0);
+    progressData.tech+=reward;addXP(80+lastStars*35+(perfectDefense?60:0));
+    const key=String(config.n);
+    progressData.stars[key]=Math.max(Number(progressData.stars[key]||0),lastStars);
+    progressData.unlocked=Math.max(progressData.unlocked,Math.min(10,config.n+1));
+    saveProgress();
+
+    startBtn.disabled=true;
+    if(levelIndex===9){
+      nextBtn.disabled=false;
+      nextBtn.textContent='♾ ENDLESS MODE';
+    }else{
+      nextBtn.disabled=true;
+      nextBtn.textContent='Level tiếp theo';
+    }
+    showBanner(perfectDefense?'🏆 PERFECT DEFENSE!':levelIndex===9?'🏆 HOÀN THÀNH CHIẾN DỊCH':'✅ LEVEL '+config.n+' HOÀN THÀNH',3);
+    if(levelIndex===9)setStatus('Chiến thắng chiến dịch! Bạn đã mở khóa ENDLESS MODE.');
+    else setStatus('Level '+config.n+' hoàn thành. Nhận '+reward+' điểm công nghệ — hãy chọn 1 nâng cấp.');
+    generateUpgradeChoices();
+    if(progressData.tech<1){upgradeChosen=true;upgradeBox.style.display='none';nextBtn.disabled=false}
+    updateLevelUI();
+  }
+
+  function endGame(reason){
+    running=false;gameOver=true;startBtn.disabled=true;nextBtn.disabled=true;
+    showBanner('GAME OVER',3);
+    setStatus('Game Over — '+reason+' Nhấn “Chơi lại Level”.');
+  }
+
+  function nextLevel(){
+    if(!levelCleared)return;
+    if(levelIndex>=9){startEndless();return}
+    if(!upgradeChosen && progressData.tech>0){setStatus('Hãy chọn 1 nâng cấp trước khi sang Level tiếp theo.');return}
+    levelIndex++;
+    prepareLevel(false);
+  }
+
+  function update(dt){
+    if(!running)return;
+
+    levelTime+=dt;
+    if(screenShake>0)screenShake=Math.max(0,screenShake-dt);
+    if(streakTimer>0){streakTimer-=dt;if(streakTimer<=0)breakStreak()}
+    heat=0;overheated=false;
+    emergencyStartTimer-=dt;if(emergencyStartTimer<=0&&!emergency.active&&!emergency.done&&!emergency.failed)beginEmergency();
+    if(config.n>=4&&!endless){supplyTimer-=dt;if(supplyTimer<=0){spawnSupplyPlane();supplyTimer=28+Math.random()*16}}
+    if(config.n>=5&&!endless){rescueTimer-=dt;if(rescueTimer<=0){spawnRescuePilot();rescueTimer=34+Math.random()*18}}
+    updateEmergency(dt);
+    if(cannonAutoHold){
+      cannonHoldTimer-=dt;
+      if(cannonHoldTimer<=0){
+        fireShell();
+        cannonHoldTimer=0.145;
+      }
+    }
+    if(!finalPushShown&&!endless&&levelKills>=config.target-3){finalPushShown=true;showBanner('🔥 FINAL PUSH — CÒN 3 MỤC TIÊU',1.8);planes.forEach(p=>{if(p.alive&&!p.ally)p.vx*=1.10});beep(600,.14,'square',.045)}
+    clouds.forEach(c=>{c.x+=c.v*dt;if(c.x>W+100)c.x=-120});
+    if(bannerTimer>0)bannerTimer-=dt;
+    if(lockActive){
+      const valid=lockKind==='plane'?(lockTarget&&lockTarget.alive&&!lockTarget.ally):(lockTarget&&!lockTarget.dead);
+      if(!valid){lockActive=false;lockTarget=null;lockProgress=0;setStatus('Mất khóa mục tiêu.');}
+      else{const effectiveLock=lockNeed+(planes.some(p=>p.alive&&p.type==='ecm')?.35:0);lockProgress+=dt;if(lockProgress>=effectiveLock)completeMissileLock();}
+    }
+
+    if(missileCooldown>0)missileCooldown-=dt;
+    if(config.n>=6 && missileAmmo<5 && missileCooldown<=0){
+      missileCooldown=-5.0;
+    }else if(config.n>=6 && missileCooldown<0){
+      missileCooldown+=dt;
+      if(missileCooldown>=0){missileAmmo=Math.min(5,missileAmmo+1);missileCooldown=0}
+    }
+
+    spawnTimer-=dt;
+    if(spawnTimer<=0){spawnGroup();spawnTimer=Math.max(.65,2.1-config.n*.11)}
+
+    const ecmAlive=planes.some(p=>p.alive&&p.type==='ecm');
+    ecmPulse=ecmAlive?1:0;
+    if(config.radarJam || ecmAlive || challengeMode==='noRadar'){
+      radarJamTimer-=dt;
+      if(radarJamLeft>0)radarJamLeft-=dt;
+      if(challengeMode==='noRadar'){radarJamLeft=999}
+      else if(ecmAlive){radarJamLeft=Math.max(radarJamLeft,.25)}
+      else if(radarJamTimer<=0&&radarJamLeft<=0){radarJamLeft=4;radarJamTimer=10+Math.random()*8;showBanner('⚠ RADAR BỊ NHIỄU',1.6)}
+    }
+
+    planes.forEach(p=>{
+      if(p.alive){
+        p.bob+=dt*(1+Math.abs(p.vx)/170);
+        p.x+=p.vx*dt;
+        p.y=p.baseY+Math.sin(p.bob)*p.bobAmp;
+        p.tilt=(p.vx>0?1:-1)*.14+Math.sin(p.bob)*.04;
+        if(p.supply && !p.supplyDropped && ((p.vx>0&&p.x>W*.45)||(p.vx<0&&p.x<W*.55))){
+          p.supplyDropped=true;supplies.push({x:p.x,y:p.y+12,vy:18,age:0,landed:false,collected:false});
+          showBanner('📦 THÙNG TIẾP TẾ ĐANG HẠ',1.1);
+        }
+        if(p.type==='boss' && p.hpLeft<=Math.ceil(p.hp/2) && !p.phase2){p.phase2=true;p.vx*=1.28;p.bobAmp*=1.35;showBanner('⚠ BOSS GIAI ĐOẠN 2',1.5)}
+        if(p.type==='boss' && config.n>=9){
+          p.decoyTimer-=dt;
+          if(p.decoyTimer<=0){
+            p.decoyTimer=4.5+Math.random()*2.5;
+            for(let di=0;di<3;di++)decoys.push({x:p.x+(-28+di*28),y:p.y+20+di*6,vx:p.vx*.7,vy:18+di*4,age:0,life:4.2,dead:false});
+            showBanner('✨ BOSS THẢ MỒI NHIỆT',1.1);
+          }
+          if(p.hpLeft<=Math.ceil(p.hp/3) && !p.phase3){p.phase3=true;p.vx*=1.20;p.bobAmp*=1.18;showBanner('⚠ BOSS GIAI ĐOẠN 3',1.3)}
+        }
+        if(p.x>W-50){p.x=W-50;p.vx=-Math.abs(p.vx);p.baseY=clamp(p.baseY+(-30+Math.random()*60),110,340)}
+        if(p.x<50){p.x=50;p.vx=Math.abs(p.vx);p.baseY=clamp(p.baseY+(-30+Math.random()*60),110,340)}
+
+        p.bombTimer-=dt;
+        if(!p.supply && p.type!=='ecm' && p.bombTimer<=0&&p.bombsLeft>0&&Math.random()<config.bombChance){
+          dropBomb(p);p.bombTimer=config.bombDelay*.75+Math.random()*config.bombDelay*.5;
+        }
+        if(config.enemyMissile && !p.supply && p.type!=='ecm'){
+          p.missileTimer-=dt;
+          if(p.missileTimer<=0){launchEnemyMissile(p);p.missileTimer=config.missileRate*.75+Math.random()*config.missileRate*.5}
+        }
+      }else{
+        p.vy+=gPx*dt;p.y+=p.vy*dt;p.x+=p.vx*.3*dt;p.tilt+=(p.vx>0?1:-1)*1.2*dt;
+        p.smoke.push({x:p.x,y:p.y,age:0});if(p.smoke.length>22)p.smoke.shift();p.smoke.forEach(s=>s.age+=dt);
+      }
+    });
+
+    decoys.forEach(d=>{d.age+=dt;d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy+=9*dt;if(d.age>d.life)d.dead=true});
+    decoys=decoys.filter(d=>!d.dead);
+
+    shells.forEach(s=>{
+      s.trail.push({x:s.x,y:s.y,vx:s.vx,vy:s.vy});if(s.trail.length>42)s.trail.shift();
+      s.vx+=windMps*5.2*dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=gPx*dt;
+      if(s.x>W+30||s.y>H+30||s.x<-30){s.dead=true;if(!s.hit)breakStreak()}
+    });
+
+    bombs.forEach(b=>{
+      b.x+=b.vx*dt;b.y+=b.vy*dt;b.vy+=gPx*.92*dt;
+      if(b.y>=groundY-25){b.dead=true;damageBunker(b.targetId,1);explode(b.x,b.y,'#fb8500',40)}
+    });
+
+    supplies.forEach(s=>{
+      s.age+=dt;
+      if(!s.landed){s.vy+=12*dt;s.y+=s.vy*dt;if(s.y>=groundY-18){s.y=groundY-18;s.landed=true}}
+      if(s.landed&&!s.collected){
+        s.collected=true;suppliesCollected++;
+        missileAmmo=Math.min(5+upgrades.missile,missileAmmo+1);
+        specialAmmo.airburst++;specialAmmo.ap++;
+        const damaged=bunkers.filter(b=>!b.burning&&b.hp<b.maxHp).sort((a,b)=>a.hp-b.hp)[0];
+        if(damaged)damaged.hp=Math.min(damaged.maxHp,damaged.hp+1);
+        score+=200;addXP(25);showBanner('📦 TIẾP TẾ: +ĐẠN +SỬA CHỮA',1.5);beep(800,.11,'sine',.04);
+      }
+    });
+    supplies=supplies.filter(s=>!s.collected || s.age<1.5);
+
+    enemyMissiles.forEach(m=>{
+      if(m.dead||m.target.burning){m.dead=true;return}
+      const tx=m.target.x,ty=groundY-28;
+      const dx=tx-m.x,dy=ty-m.y,d=Math.hypot(dx,dy)||1;
+      let nx=dx/d,ny=dy/d;
+      if(m.style==='evasive'){
+        m.phase+=dt*5.2;
+        const sway=Math.sin(m.phase)*.48;
+        const px=-ny,py=nx;
+        nx+=px*sway;ny+=py*sway;
+        const nd=Math.hypot(nx,ny)||1;nx/=nd;ny/=nd;
+      }
+      m.vx=nx*m.speed;m.vy=ny*m.speed;
+      m.trail.push({x:m.x,y:m.y});if(m.trail.length>28)m.trail.shift();
+      m.x+=m.vx*dt;m.y+=m.vy*dt;
+      if(d<18){m.dead=true;damageBunker(m.target.id,2);explode(m.x,m.y,'#ef4444',65)}
+    });
+
+    playerMissiles.forEach(m=>{
+      if(m.dead)return;
+      let target=m.target;
+      if(m.targetKind==='plane' && (!target.alive||target.ally)){
+        target=planes.find(p=>p.alive&&!p.ally);
+        if(target){m.target=target;m.targetKind='plane'}else{m.dead=true;return}
+      }
+      if(m.targetKind==='decoy' && target.dead){m.dead=true;return}
+      if(m.targetKind==='missile' && target.dead){
+        target=enemyMissiles.find(e=>!e.dead);
+        if(target){m.target=target;m.targetKind='missile'}
+        else{
+          const p=planes.find(p=>p.alive&&!p.ally);
+          if(p){m.target=p;m.targetKind='plane'}else{m.dead=true;return}
+        }
+      }
+      const dx=target.x-m.x,dy=target.y-m.y,d=Math.hypot(dx,dy)||1;
+      const sp=260;
+      m.vx=dx/d*sp;m.vy=dy/d*sp;
+      m.trail.push({x:m.x,y:m.y});if(m.trail.length>34)m.trail.shift();
+      m.x+=m.vx*dt;m.y+=m.vy*dt;
+      if(d<24){
+        m.dead=true;
+        explode(m.x,m.y,'#a78bfa',65);
+        if(m.targetKind==='missile'){target.dead=true;intercepts++;enemyMissilesIntercepted++;score+=50}
+        else if(m.targetKind==='decoy'){target.dead=true;showBanner('MỒI NHIỆT ĐÁNH LỪA TÊN LỬA',1.0);beep(210,.1,'square',.03)}
+        else hitEnemyPlane(target,'missile');
+      }
+    });
+
+    pilots.forEach(p=>{
+      p.age+=dt;
+      if(!p.chute&&!p.cut&&p.age>.48)p.chute=true;
+      if(!p.landed&&!p.dead){
+        if(p.chute&&!p.cut){p.vy=Math.min(55,p.vy+18*dt);p.x+=p.vx*dt}
+        else{p.vy+=gPx*1.15*dt;p.x+=p.vx*dt}
+        p.y+=p.vy*dt;
+        if(p.y>=groundY-8){p.y=groundY-8;p.landed=true;if(p.cut)p.dead=true;else if(p.rescue&&!p.rewarded){p.rewarded=true;rescues++;score+=250;addXP(35);showBanner('🪂 CỨU HỘ THÀNH CÔNG +250',1.4);beep(900,.12,'sine',.04)}}
+      }
+    });
+
+    particles.forEach(p=>{p.age+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=36*dt});
+    particles=particles.filter(p=>p.age<p.life);
+
+    for(const s of shells){
+      if(s.dead)continue;
+      for(const b of bombs){
+        if(b.dead)continue;
+        if((s.x-b.x)**2+(s.y-b.y)**2<20**2){s.dead=true;s.hit=true;saveReplay(s,'Bom trên không');b.dead=true;intercepts++;shotsHit++;score+=25;explode(b.x,b.y,'#fde047',42);break}
+      }
+    }
+    for(const s of shells){
+      if(s.dead)continue;
+      for(const m of enemyMissiles){
+        if(m.dead)continue;
+        if((s.x-m.x)**2+(s.y-m.y)**2<22**2){s.dead=true;s.hit=true;saveReplay(s,'Tên lửa địch');m.dead=true;intercepts++;enemyMissilesIntercepted++;shotsHit++;score+=40;explode(m.x,m.y,'#ef4444',50);break}
+      }
+    }
+    for(const s of shells){
+      if(s.dead)continue;
+      for(const p of pilots){
+        if(p.dead||p.landed)continue;
+        const rr=p.chute&&!p.cut?22:12;
+        if((s.x-p.x)**2+(s.y-p.y)**2<rr**2){s.dead=true;s.hit=true;shotsHit++;p.cut=true;p.chute=false;if(p.ally){allyHits++;breakStreak();showBanner('⚠ BẮN NHẦM PHI CÔNG ĐỒNG MINH',1.4);if(allyHits>=5)endGame('Bạn đã bắn nhầm 5 mục tiêu đồng minh.');}p.vy=Math.max(p.vy,42);break}
+      }
+    }
+    for(const s of shells){
+      if(s.dead)continue;
+      for(const p of planes){
+        if(!p.alive)continue;
+        const rr=30*p.size;
+        if((s.x-p.x)**2+(s.y-p.y)**2<rr**2){
+          s.dead=true;s.hit=true;shotsHit++;saveReplay(s,p.ally?'Đồng minh':p.label);
+          if(p.ally)hitAlly(p);else hitEnemyPlane(p,'shell',s.mode==='ap'?2:1);
+          break;
+        }
+      }
+    }
+
+    shells=shells.filter(x=>!x.dead);
+    bombs=bombs.filter(x=>!x.dead);
+    enemyMissiles=enemyMissiles.filter(x=>!x.dead);
+    playerMissiles=playerMissiles.filter(x=>!x.dead);
+    planes=planes.filter(p=>p.y<H+150);
+    updateLevelUI();
+  }
+
+  function drawCloud(c){
+    ctx.save();ctx.globalAlpha=c.a;ctx.fillStyle='#fff';
+    ctx.beginPath();ctx.arc(c.x,c.y,c.s*.3,0,6.28);ctx.arc(c.x+c.s*.28,c.y-8,c.s*.28,0,6.28);ctx.arc(c.x+c.s*.58,c.y,c.s*.36,0,6.28);ctx.fill();ctx.restore();
+  }
+
+  function drawBackground(){
+    const palettes=[
+      ['#7bb7df','#c6ddec','#365e45'],['#6da3d1','#b8d3e5','#34583f'],['#5d91bf','#d1b17a','#36563d'],
+      ['#5b789d','#d29b72','#344f3b'],['#604f7c','#d78367','#324a39'],['#344b71','#775f7b','#273f35'],
+      ['#273753','#4f4965','#22392f'],['#1c2942','#34425d','#1e342c'],['#101c31','#263650','#193028'],['#071326','#10223b','#17331f']
+    ];
+    const pal=palettes[levelIndex];
+    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,pal[0]);g.addColorStop(.58,pal[1]);g.addColorStop(1,pal[2]);
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    if(levelIndex>=6){
+      ctx.fillStyle='rgba(255,255,255,.4)';
+      for(let i=0;i<50;i++){const x=(i*97)%W,y=18+((i*53)%180);ctx.beginPath();ctx.arc(x,y,1+(i%2),0,6.28);ctx.fill()}
+    }
+    clouds.forEach(drawCloud);
+    ctx.fillStyle='#17331f';ctx.fillRect(0,groundY,W,H-groundY);
+    ctx.fillStyle='#1d2530';
+    for(let i=0;i<22;i++){const bw=36+(i%4)*15,bh=42+(i%6)*17,bx=i*62-8;ctx.fillRect(bx,groundY-bh,bw,bh)}
+  }
+
+  function roundRect(x,y,w,h,r,fill,stroke){
+    ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();if(fill)ctx.fill();if(stroke)ctx.stroke();
+  }
+
+  function drawHUD(){
+    ctx.fillStyle='rgba(5,10,18,.62)';roundRect(18,16,335,94,15,true,false);
+    ctx.fillStyle='#ffd166';ctx.font='bold 23px Arial';ctx.fillText('LEVEL '+config.n+' — '+config.name.toUpperCase(),34,45);
+    ctx.fillStyle='#7dd3fc';ctx.font='bold 15px Arial';ctx.fillText('GV Nguyễn Huy Hùng',34,68);
+    ctx.fillStyle='#fff';ctx.font='13px Arial';ctx.fillText('Mục tiêu: '+levelKills+'/'+config.target+' máy bay',34,92);
+
+    ctx.fillStyle='rgba(5,10,18,.62)';roundRect(W-315,16,297,94,15,true,false);
+    ctx.fillStyle='#fff';ctx.font='bold 14px Arial';
+    ctx.fillText('Điểm: '+score,W-295,42);ctx.fillText('Chặn: '+intercepts,W-295,64);
+    ctx.fillText('Đồng minh: '+allyHits+'/5',W-295,86);
+    if(config.n>=6){ctx.fillStyle='#c4b5fd';ctx.fillText('Tên lửa: '+missileAmmo+'/5',W-165,42);ctx.fillText('Enemy missile: ON',W-165,64)}
+    ctx.fillStyle='#e2e8f0';ctx.font='12px Arial';ctx.fillText('Gió '+(windMps>0?'→':windMps<0?'←':'•')+' '+Math.abs(windMps).toFixed(1)+' m/s',W-165,86);
+    ctx.fillStyle='#bae6fd';ctx.fillText('Pháo: SẴN SÀNG  •  Streak x'+streak,W-295,106);
+  }
+
+  function drawRadar(){
+    const x=W-200,y=125,w=178,h=120;
+    ctx.fillStyle='rgba(4,14,23,.66)';roundRect(x,y,w,h,15,true,false);
+    ctx.strokeStyle='#7dd3fc';ctx.lineWidth=1;roundRect(x,y,w,h,15,false,true);
+    ctx.fillStyle='#bae6fd';ctx.font='bold 11px Arial';ctx.fillText('RADAR',x+12,y+17);
+    if(radarJamLeft>0 || challengeMode==='noRadar'){
+      ctx.fillStyle='#fca5a5';ctx.font='bold 20px Arial';ctx.textAlign='center';ctx.fillText('NHIỄU',x+w/2,y+70);ctx.textAlign='start';return
+    }
+    const mx=v=>x+10+clamp(v/W,0,1)*(w-20), my=v=>y+24+clamp(v/groundY,0,1)*(h-34);
+    planes.forEach(p=>{if(!p.alive)return;ctx.fillStyle=p.ally?(p.supply?'#34d399':'#38bdf8'):p.type==='boss'?'#f59e0b':p.type==='ecm'?'#c084fc':'#ef4444';ctx.beginPath();ctx.arc(mx(p.x),my(p.y),p.type==='boss'?4:2.6,0,6.28);ctx.fill()});
+    bombs.forEach(b=>{ctx.fillStyle='#fde047';ctx.beginPath();ctx.arc(mx(b.x),my(b.y),2,0,6.28);ctx.fill()});
+    supplies.forEach(s=>{
+      s.age+=dt;
+      if(!s.landed){s.vy+=12*dt;s.y+=s.vy*dt;if(s.y>=groundY-18){s.y=groundY-18;s.landed=true}}
+      if(s.landed&&!s.collected){
+        s.collected=true;suppliesCollected++;
+        missileAmmo=Math.min(5+upgrades.missile,missileAmmo+1);
+        specialAmmo.airburst++;specialAmmo.ap++;
+        const damaged=bunkers.filter(b=>!b.burning&&b.hp<b.maxHp).sort((a,b)=>a.hp-b.hp)[0];
+        if(damaged)damaged.hp=Math.min(damaged.maxHp,damaged.hp+1);
+        score+=200;addXP(25);showBanner('📦 TIẾP TẾ: +ĐẠN +SỬA CHỮA',1.5);beep(800,.11,'sine',.04);
+      }
+    });
+    supplies=supplies.filter(s=>!s.collected || s.age<1.5);
+
+    enemyMissiles.forEach(m=>{ctx.fillStyle='#f43f5e';ctx.beginPath();ctx.arc(mx(m.x),my(m.y),2.5,0,6.28);ctx.fill()});
+  }
+
+  function drawBunker(b){
+    const top=groundY-65,left=b.x-58;
+    ctx.fillStyle=b.burning?'#63392e':'#475569';ctx.fillRect(left,top,116,55);
+    ctx.fillStyle='#1f2937';ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left+16,top-11);ctx.lineTo(left+100,top-11);ctx.lineTo(left+116,top);ctx.fill();
+    ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font='bold 12px Arial';ctx.fillText('LÔ CỐT '+b.id,b.x,top+27);ctx.textAlign='start';
+    if(b.burning){
+      for(let i=0;i<7;i++){const fx=left+12+i*14,fy=top-5+Math.sin(Date.now()/130+i)*8;ctx.fillStyle=i%2?'#ffb703':'#fb8500';ctx.beginPath();ctx.moveTo(fx,top+8);ctx.quadraticCurveTo(fx+6,fy-18,fx+12,top+8);ctx.fill()}
+    }
+  }
+
+  function drawPlane(p){
+    ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.tilt);if(p.vx<0)ctx.scale(-1,1);ctx.scale(p.size,p.size);
+    ctx.fillStyle=p.color;ctx.beginPath();ctx.moveTo(-36,-4);ctx.lineTo(18,-4);ctx.quadraticCurveTo(42,-3,48,3);ctx.quadraticCurveTo(36,9,18,9);ctx.lineTo(-36,9);ctx.quadraticCurveTo(-43,7,-43,2);ctx.quadraticCurveTo(-40,-2,-36,-4);ctx.fill();
+    ctx.fillStyle=p.ally?'#e0f2fe':'#8fc0df';ctx.fillRect(-12,-1,18,4);
+    ctx.fillStyle=p.ally?'#0ea5e9':'#d83a3a';ctx.beginPath();ctx.moveTo(-6,-4);ctx.lineTo(12,-22);ctx.lineTo(18,-22);ctx.lineTo(9,-4);ctx.fill();ctx.beginPath();ctx.moveTo(-2,9);ctx.lineTo(16,24);ctx.lineTo(8,24);ctx.lineTo(-12,9);ctx.fill();
+    if(p.ally){ctx.fillStyle='#fff';ctx.font='bold 15px Arial';ctx.fillText(p.supply?'✚':'★',-4,5)}
+    if(p.type==='ecm'){
+      ctx.strokeStyle='rgba(192,132,252,.75)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(0,2,30+5*Math.sin(Date.now()/140),0,6.28);ctx.stroke();
+      ctx.fillStyle='#e9d5ff';ctx.font='bold 10px Arial';ctx.fillText('ECM',-10,-17);
+    }
+    if(p.type==='boss'){
+      ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(-38,-34,76,7);ctx.fillStyle='#ef4444';ctx.fillRect(-38,-34,76*p.hpLeft/p.hp,7);
+      ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='bold 11px Arial';ctx.fillText('BOSS',0,-39);ctx.textAlign='start';
+    } else if(p.hp>1){
+      ctx.fillStyle='#ffd166';for(let i=0;i<p.hpLeft;i++)ctx.fillRect(-16+i*10,-15,7,4);
+    }
+    if(p.type==='boss'){
+      const dir=p.vx>=0?1:-1;
+      if(p.weakL){ctx.fillStyle='#fb7185';ctx.beginPath();ctx.arc(-25*dir,2,5,0,6.28);ctx.fill()}
+      if(p.weakR){ctx.fillStyle='#fb7185';ctx.beginPath();ctx.arc(19*dir,2,5,0,6.28);ctx.fill()}
+    }
+    ctx.restore();
+    if(!p.alive)p.smoke.forEach(s=>{ctx.save();ctx.globalAlpha=Math.max(0,1-s.age/1.3)*.4;ctx.fillStyle='#cbd5e1';ctx.beginPath();ctx.arc(s.x,s.y,6+9*s.age,0,6.28);ctx.fill();ctx.restore()});
+  }
+
+  function drawBomb(b){
+    const g=ctx.createRadialGradient(b.x,b.y,2,b.x,b.y,22);g.addColorStop(0,'#fffac2');g.addColorStop(.35,'#fbbf24');g.addColorStop(1,'rgba(251,191,36,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(b.x,b.y,22,0,6.28);ctx.fill();ctx.fillStyle='#111827';ctx.beginPath();ctx.arc(b.x,b.y,6,0,6.28);ctx.fill();
+  }
+
+  function drawEnemyMissile(m){
+    if(m.trail.length>1){ctx.strokeStyle='rgba(244,63,94,.55)';ctx.lineWidth=2;ctx.beginPath();m.trail.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke()}
+    const g=ctx.createRadialGradient(m.x,m.y,2,m.x,m.y,18);g.addColorStop(0,'#fff');g.addColorStop(.3,'#fb7185');g.addColorStop(1,'rgba(244,63,94,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(m.x,m.y,18,0,6.28);ctx.fill();
+    ctx.fillStyle='#ef4444';ctx.beginPath();ctx.arc(m.x,m.y,5,0,6.28);ctx.fill();
+  }
+
+
+  function drawTargetLock(){
+    if(!lockActive||!lockTarget)return;
+    const x=lockTarget.x,y=lockTarget.y;
+    const pct=clamp(lockProgress/lockNeed,0,1);
+    ctx.save();
+    ctx.strokeStyle=pct>=.95?'#86efac':'#fbbf24';
+    ctx.lineWidth=2.5;
+    ctx.setLineDash([7,5]);
+    ctx.beginPath();ctx.arc(x,y,32+8*Math.sin(Date.now()/120),0,Math.PI*2*pct);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeRect(x-24,y-24,48,48);
+    ctx.fillStyle='#fff7cc';ctx.font='bold 12px Arial';ctx.textAlign='center';
+    ctx.fillText('LOCK '+Math.round(pct*100)+'%',x,y-34);
+    ctx.textAlign='start';ctx.restore();
+  }
+
+
+
+  function drawSupplies(){
+    supplies.forEach(s=>{
+      ctx.save();ctx.translate(s.x,s.y);
+      if(!s.landed){
+        ctx.fillStyle='#34d399';ctx.beginPath();ctx.arc(0,-22,15,Math.PI,0);ctx.fill();
+        ctx.strokeStyle='#d1fae5';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-13,-20);ctx.lineTo(-7,-5);ctx.moveTo(13,-20);ctx.lineTo(7,-5);ctx.stroke();
+      }
+      ctx.fillStyle='#92400e';ctx.fillRect(-10,-7,20,15);ctx.strokeStyle='#fde68a';ctx.strokeRect(-10,-7,20,15);
+      ctx.fillStyle='#fde68a';ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.fillText('+',0,4);ctx.textAlign='start';ctx.restore();
+    });
+  }
+
+  function drawDecoys(){
+    decoys.forEach(d=>{
+      ctx.save();ctx.globalAlpha=Math.max(.15,1-d.age/d.life);
+      const g=ctx.createRadialGradient(d.x,d.y,1,d.x,d.y,16);g.addColorStop(0,'#fff');g.addColorStop(.28,'#fde047');g.addColorStop(1,'rgba(253,224,71,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(d.x,d.y,16,0,6.28);ctx.fill();ctx.restore();
+    });
+  }
+
+  function drawPlayerMissile(m){
+    if(m.trail.length>1){ctx.strokeStyle='rgba(167,139,250,.6)';ctx.lineWidth=2.2;ctx.beginPath();m.trail.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke()}
+    ctx.fillStyle='#c4b5fd';ctx.beginPath();ctx.arc(m.x,m.y,6,0,6.28);ctx.fill();
+  }
+
+  function drawPilot(p){
+    ctx.save();ctx.translate(p.x,p.y);
+    if(p.chute&&!p.cut&&!p.landed){ctx.fillStyle='#ef4444';ctx.beginPath();ctx.arc(0,-23,17,Math.PI,0);ctx.fill();ctx.strokeStyle='#fff';ctx.beginPath();ctx.moveTo(-15,-21);ctx.lineTo(-4,-4);ctx.moveTo(15,-21);ctx.lineTo(4,-4);ctx.stroke()}
+    ctx.fillStyle='#d9e7d0';ctx.beginPath();ctx.arc(0,0,4,0,6.28);ctx.fill();ctx.strokeStyle='#94a37f';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,4);ctx.lineTo(0,17);ctx.stroke();ctx.restore();
+  }
+
+
+  function drawTrajectoryGuide(){
+    if(!running)return;
+    const a=arad(),v=Number(speedEl.value)*meterToPx;
+    ctx.save();ctx.setLineDash([6,7]);ctx.strokeStyle='rgba(255,255,255,.23)';ctx.lineWidth=1.4;ctx.beginPath();
+    let x=cannon.x,y=cannon.y,vx=v*Math.cos(a),vy=-v*Math.sin(a);
+    const step=.045;
+    for(let i=0;i<90;i++){
+      vx+=windMps*5.2*step;x+=vx*step;y+=vy*step;vy+=gPx*step;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      if(x>W||x<0||y>groundY)break;
+    }
+    ctx.stroke();ctx.restore();
+  }
+
+  function drawCannon(){
+    const a=arad();ctx.save();ctx.translate(cannon.x,cannon.y);ctx.strokeStyle='#d5d8dd';ctx.lineWidth=15;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(65*Math.cos(a),-65*Math.sin(a));ctx.stroke();ctx.fillStyle='#8d9aa6';ctx.beginPath();ctx.arc(0,0,22,0,6.28);ctx.fill();ctx.fillStyle='#5b6470';ctx.fillRect(-38,10,78,14);ctx.restore();
+    ctx.fillStyle='#fff';ctx.font='13px Arial';ctx.fillText('PHÁO',75,groundY+38);
+  }
+
+  function drawLauncher(){
+    ctx.save();ctx.translate(launcher.x,launcher.y);
+    ctx.fillStyle=config.n>=6?'#7c3aed':'#4b5563';ctx.fillRect(-30,5,62,17);ctx.rotate(-.7);ctx.fillRect(0,-7,54,14);ctx.restore();
+    ctx.fillStyle=config.n>=6?'#ddd6fe':'#9ca3af';ctx.font='12px Arial';ctx.fillText(config.n>=6?'TÊN LỬA':'KHÓA',210,groundY+38);
+  }
+
+  function drawShell(s){
+    if(s.trail.length>1){ctx.strokeStyle='rgba(255,209,102,.55)';ctx.lineWidth=2;ctx.beginPath();s.trail.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke()}
+    ctx.fillStyle=s.mode==='airburst'?'#93c5fd':s.mode==='ap'?'#fca5a5':'#ffd166';ctx.beginPath();ctx.arc(s.x,s.y,s.mode==='airburst'?7:6,0,6.28);ctx.fill();
+  }
+
+  function drawParticles(){
+    particles.forEach(p=>{ctx.save();ctx.globalAlpha=Math.max(0,1-p.age/p.life);ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=8;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fill();ctx.restore()});
+  }
+
+  function drawBanner(){
+    if(bannerTimer<=0)return;
+    ctx.fillStyle='rgba(0,0,0,.45)';roundRect(W/2-265,122,530,72,17,true,false);
+    ctx.strokeStyle='#fde68a';ctx.lineWidth=2;roundRect(W/2-265,122,530,72,17,false,true);
+    ctx.fillStyle='#fff7cc';ctx.textAlign='center';ctx.font='bold 28px Arial';ctx.fillText(bannerText,W/2,167);ctx.textAlign='start';
+  }
+
+  function drawCampaignRoute(){
+    const sx=245, sy=420, gap=88;
+    ctx.save();
+    ctx.strokeStyle='rgba(148,163,184,.42)';ctx.lineWidth=3;ctx.beginPath();
+    for(let i=0;i<10;i++){
+      const row=i<5?0:1;
+      const col=row===0?i:9-i;
+      const x=sx+col*gap,y=sy+row*90;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    LEVELS.forEach((lv,i)=>{
+      const row=i<5?0:1,col=row===0?i:9-i,x=sx+col*gap,y=sy+row*90;
+      const unlocked=(i+1)<=progressData.unlocked;
+      const st=Number(progressData.stars[String(i+1)]||0);
+      ctx.fillStyle=i===levelIndex?'#38bdf8':unlocked?'#334155':'#172033';
+      ctx.beginPath();ctx.arc(x,y,23,0,6.28);ctx.fill();
+      ctx.strokeStyle=i===levelIndex?'#bae6fd':st?'#fbbf24':'#64748b';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle=unlocked?'#fff':'#64748b';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.fillText('L'+(i+1),x,y+4);
+      ctx.fillStyle='#fbbf24';ctx.font='10px Arial';ctx.fillText(st?'★'.repeat(st):unlocked?'':'🔒',x,y+39);
+    });
+    ctx.textAlign='start';ctx.restore();
+  }
+
+
+  function drawPhysicsReplay(){
+    if(!replayActive||!lastReplay)return;
+    const pts=lastReplay.points;
+    replayAccumulator+=1;
+    if(replayAccumulator%2===0)replayIndex=Math.min(pts.length-1,replayIndex+1);
+
+    ctx.save();
+    ctx.fillStyle='rgba(0,0,0,.72)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#0f172a';roundRect(115,75,W-230,H-150,22,true,false);
+    ctx.strokeStyle='#38bdf8';ctx.lineWidth=2;roundRect(115,75,W-230,H-150,22,false,true);
+
+    ctx.fillStyle='#e0f2fe';ctx.font='bold 26px Arial';ctx.fillText('PHYSICS REPLAY — '+lastReplay.label,145,115);
+    ctx.font='15px Arial';ctx.fillStyle='#cbd5e1';
+    ctx.fillText('α = '+lastReplay.angle+'°    v₀ = '+lastReplay.speed+' m/s    gió = '+(lastReplay.wind>0?'→ ':'← ')+Math.abs(lastReplay.wind).toFixed(1)+' m/s',145,145);
+
+    ctx.strokeStyle='#fde68a';ctx.lineWidth=3;ctx.beginPath();
+    for(let i=0;i<=replayIndex;i++){const p=pts[i];if(i===0)ctx.moveTo(p.x,p.y);else ctx.lineTo(p.x,p.y)}
+    ctx.stroke();
+
+    const p=pts[replayIndex];
+    if(p){
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p.x,p.y,7,0,6.28);ctx.fill();
+      const scale=.14;
+      ctx.strokeStyle='#38bdf8';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+p.vx*scale,p.y);ctx.stroke();
+      ctx.strokeStyle='#f472b6';ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x,p.y+p.vy*scale);ctx.stroke();
+      ctx.strokeStyle='#a7f3d0';ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+p.vx*scale,p.y+p.vy*scale);ctx.stroke();
+
+      ctx.fillStyle='#bae6fd';ctx.font='13px Arial';ctx.fillText('vₓ',p.x+p.vx*scale+5,p.y-5);
+      ctx.fillStyle='#fbcfe8';ctx.fillText('vᵧ',p.x+5,p.y+p.vy*scale);
+      ctx.fillStyle='#d1fae5';ctx.fillText('v',p.x+p.vx*scale+5,p.y+p.vy*scale+2);
+    }
+    ctx.fillStyle='#94a3b8';ctx.font='13px Arial';ctx.fillText('Nhấn PHYSICS REPLAY lần nữa hoặc phím Esc để đóng.',145,H-100);
+    ctx.restore();
+
+    if(replayIndex>=pts.length-1){
+      // giữ frame cuối
+    }
+  }
+
+  function closeReplay(){
+    if(!replayActive)return;
+    replayActive=false;replayIndex=0;replayAccumulator=0;
+    if(preReplayRunning&&!gameOver&&!levelCleared){running=true}
+  }
+
+  function drawOverlay(){
+    if(!started&&!levelCleared&&!gameOver){
+      ctx.fillStyle='rgba(0,0,0,.40)';ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='bold 34px Arial';
+      ctx.fillText('AIR DEFENSE COMMAND — 10 LEVEL',W/2,300);
+      ctx.font='bold 22px Arial';ctx.fillStyle='#bae6fd';ctx.fillText('LEVEL '+config.n+' — '+config.name.toUpperCase(),W/2,338);
+      ctx.font='16px Arial';ctx.fillStyle='#e2e8f0';ctx.fillText('Mỗi Level: 15 máy bay • '+config.bonusText,W/2,368);
+      drawCampaignRoute();
+      ctx.fillStyle='#cbd5e1';ctx.font='14px Arial';ctx.fillText('Các Level đã mở khóa và số sao được lưu tự động trên trình duyệt.',W/2,570);
+      ctx.textAlign='start';
+    }
+    if(levelCleared){
+      const alive=bunkers.filter(b=>!b.burning).length;
+      const acc=shotsFired?Math.round(shotsHit/shotsFired*100):0;
+      const sec=secondaryObjectiveDone();
+      ctx.fillStyle='rgba(0,0,0,.60)';ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#0f172a';roundRect(W/2-310,205,620,350,22,true,false);
+      ctx.strokeStyle='#475569';ctx.lineWidth=2;roundRect(W/2-310,205,620,350,22,false,true);
+      ctx.textAlign='center';ctx.fillStyle='#bbf7d0';ctx.font='bold 36px Arial';
+      ctx.fillText(levelIndex===9?'HOÀN THÀNH CHIẾN DỊCH!':'LEVEL '+config.n+' HOÀN THÀNH',W/2,255);
+      ctx.fillStyle='#fbbf24';ctx.font='bold 38px Arial';ctx.fillText(starString(lastStars),W/2,305);
+      ctx.fillStyle='#fff';ctx.font='16px Arial';
+      ctx.fillText('15/15 máy bay   •   Điểm: '+score+'   •   Thời gian: '+Math.floor(levelTime/60)+':'+String(Math.floor(levelTime%60)).padStart(2,'0'),W/2,350);
+      ctx.fillText('Độ chính xác: '+acc+'%   •   Đánh chặn: '+intercepts+'   •   Lô cốt còn: '+alive+'/4',W/2,382);
+      ctx.fillText('Kill Streak cao nhất: x'+bestStreak+'   •   Điểm công nghệ: '+progressData.tech+'   •   '+currentRank().cur.name,W/2,408);
+      ctx.fillText('Bắn nhầm đồng minh: '+allyHits+'/5   •   Hạ bằng tên lửa: '+playerMissileKills,W/2,438);
+      ctx.fillStyle=sec?'#86efac':'#fca5a5';ctx.font='bold 15px Arial';
+      ctx.fillText((sec?'✓ ':'✗ ')+config.bonusText,W/2,472);
+      ctx.fillStyle='#cbd5e1';ctx.font='14px Arial';
+      ctx.fillText(perfectDefense?'🏆 PERFECT DEFENSE — thưởng thêm 1 điểm công nghệ':'★ Hoàn thành   ★ Giữ ≥3 lô cốt   ★ Không bắn nhầm + nhiệm vụ phụ',W/2,508);
+      ctx.fillStyle='#bae6fd';ctx.fillText(levelIndex<9?'Chọn 1 nâng cấp rồi sang Level tiếp theo.':'ENDLESS MODE đã được mở khóa.',W/2,535);
+      ctx.textAlign='start';
+    }
+    if(tacticalPause&&!gameOver&&!levelCleared){
+      ctx.fillStyle='rgba(0,0,0,.46)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';
+      ctx.fillStyle='#bae6fd';ctx.font='bold 34px Arial';ctx.fillText('TACTICAL PAUSE',W/2,275);
+      ctx.fillStyle='#e2e8f0';ctx.font='16px Arial';ctx.fillText('Quan sát radar, hướng tên lửa, gió và chọn vũ khí. Nhấn P để tiếp tục.',W/2,312);
+      ctx.textAlign='start';
+    }
+    if(gameOver){
+      ctx.fillStyle='rgba(0,0,0,.58)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';
+      ctx.fillStyle='#fecaca';ctx.font='bold 44px Arial';ctx.fillText('GAME OVER',W/2,H/2-14);
+      ctx.fillStyle='#fff';ctx.font='18px Arial';ctx.fillText(statusEl.textContent,W/2,H/2+25);ctx.textAlign='start';
+    }
+  }
+
+  function draw(){
+    ctx.save();
+    if(screenShake>0)ctx.translate((Math.random()-.5)*10*screenShake,(Math.random()-.5)*7*screenShake);
+    drawBackground();drawHUD();drawRadar();drawTrajectoryGuide();
+    bunkers.forEach(drawBunker);planes.forEach(drawPlane);drawSupplies();drawDecoys();bombs.forEach(drawBomb);
+    enemyMissiles.forEach(drawEnemyMissile);drawTargetLock();playerMissiles.forEach(drawPlayerMissile);
+    pilots.forEach(drawPilot);shells.forEach(drawShell);drawParticles();drawCannon();drawLauncher();drawBanner();
+    ctx.restore();
+    drawOverlay();
+    drawPhysicsReplay();
+  }
+
+  function setAngleFromPointer(cx,cy){
+    const r=canvas.getBoundingClientRect(),x=(cx-r.left)*canvas.width/r.width,y=(cy-r.top)*canvas.height/r.height;
+    const dx=x-cannon.x,dy=cannon.y-y;if(dx<5)return;
+    angleEl.value=clamp(Math.round(Math.atan2(dy,dx)*180/Math.PI),20,80);updateLevelUI();
+  }
+
+  angleEl.addEventListener('input',updateLevelUI);speedEl.addEventListener('input',updateLevelUI);
+  $('minus5').onclick=()=>{angleEl.value=clamp(+angleEl.value-5,20,80);updateLevelUI()};
+  $('plus5').onclick=()=>{angleEl.value=clamp(+angleEl.value+5,20,80);updateLevelUI()};
+  $('minus1').onclick=()=>{angleEl.value=clamp(+angleEl.value-1,20,80);updateLevelUI()};
+  $('plus1').onclick=()=>{angleEl.value=clamp(+angleEl.value+1,20,80);updateLevelUI()};
+  startBtn.onclick=()=>{ensureAudio();startLevel()};
+  fireBtn.onclick=fireShell;
+  fireBtn.addEventListener('mousedown',()=>{cannonAutoHold=true;cannonHoldTimer=0;});
+  fireBtn.addEventListener('mouseup',()=>{cannonAutoHold=false;});
+  fireBtn.addEventListener('mouseleave',()=>{cannonAutoHold=false;});
+  fireBtn.addEventListener('touchstart',()=>{cannonAutoHold=true;cannonHoldTimer=0;},{passive:true});
+  fireBtn.addEventListener('touchend',()=>{cannonAutoHold=false;},{passive:true});
+  ammoModeBtn.onclick=setAmmoMode;
+  missileModeBtn.onclick=()=>{missileMode=missileMode==='intercept'?'air':'intercept';updateLevelUI()};
+  missileBtn.onclick=firePlayerMissile;
+  replayBtn.onclick=()=>{if(replayActive)closeReplay();else startReplay()};
+  challengeBtn.onclick=cycleChallenge;
+  soundBtn.onclick=()=>{soundOn=!soundOn;soundBtn.textContent=soundOn?'🔊 Âm thanh: Bật':'🔇 Âm thanh: Tắt';if(soundOn)beep(660,.06,'sine',.025)};
+  upgrade1.onclick=()=>buyUpgrade(0);upgrade2.onclick=()=>buyUpgrade(1);upgrade3.onclick=()=>buyUpgrade(2);
+  nextBtn.onclick=nextLevel; retryBtn.onclick=()=>{if(endless){startEndless()}else prepareLevel(false)};
+  pauseBtn.onclick=()=>{if(!started||levelCleared||gameOver)return;running=!running;paused=!running;pauseBtn.textContent=running?'Tạm dừng':'Tiếp tục';setStatus(running?'Đã tiếp tục.':'Đã tạm dừng.')};
+
+  canvas.addEventListener('mousedown',e=>{const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*canvas.width/r.width;if(x<300){dragging=true;setAngleFromPointer(e.clientX,e.clientY)}});
+  canvas.addEventListener('mousemove',e=>{if(dragging)setAngleFromPointer(e.clientX,e.clientY)});
+  window.addEventListener('mouseup',()=>dragging=false);
+
+  window.addEventListener('keydown',e=>{
+    if(e.code==='Space'){
+      e.preventDefault();
+      if(!cannonAutoHold){
+        cannonAutoHold=true;
+        cannonHoldTimer=0;
+      }
+    }
+    if(e.code==='KeyM'){firePlayerMissile()}
+    if(e.code==='KeyV'){missileMode=missileMode==='intercept'?'air':'intercept';updateLevelUI()}
+    if(e.code==='KeyQ'){setAmmoMode()}
+    if(e.code==='KeyP' && started && !levelCleared && !gameOver){
+      tacticalPause=!tacticalPause;
+      running=!tacticalPause;
+      pauseBtn.textContent=running?'Tạm dừng':'Tiếp tục';
+      setStatus(tacticalPause?'Tactical Pause — phân tích chiến trường.':'Đã tiếp tục.');
+    }
+    if(e.code==='Escape' && replayActive)closeReplay()
+    if(e.code==='ArrowUp'){e.preventDefault();angleEl.value=clamp(+angleEl.value+1,20,80);updateLevelUI()}
+    if(e.code==='ArrowDown'){e.preventDefault();angleEl.value=clamp(+angleEl.value-1,20,80);updateLevelUI()}
+    if(e.code==='ArrowLeft'){e.preventDefault();angleEl.value=clamp(+angleEl.value-5,20,80);updateLevelUI()}
+    if(e.code==='ArrowRight'){e.preventDefault();angleEl.value=clamp(+angleEl.value+5,20,80);updateLevelUI()}
+  });
+
+  window.addEventListener('keyup',e=>{
+    if(e.code==='Space')cannonAutoHold=false;
+  });
+
+  function frame(now){
+    const realDt=Math.min(.035,(now-last)/1000);last=now;
+    if(cinematicTimer>0)cinematicTimer=Math.max(0,cinematicTimer-realDt);
+    const dt=realDt*(cinematicTimer>0?.42:1);update(dt);draw();requestAnimationFrame(frame);
+  }
+
+  loadProgress();
+  commanderXP=Number(progressData.xp||0);
+  upgrades={...progressData.upgrades};
+  levelIndex=Math.min(progressData.unlocked-1,9);
+  prepareLevel(true);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

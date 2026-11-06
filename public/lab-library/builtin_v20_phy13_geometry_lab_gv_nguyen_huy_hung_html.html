@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Geometry Lab - GV Nguyễn Huy Hùng</title>
+<style>
+:root{
+  --bg:#050607;
+  --panel:#0d1014;
+  --panel2:#12161c;
+  --line:#242a32;
+  --text:#f4f7fb;
+  --muted:#919aa6;
+  --pink:#ff3ba7;
+  --cyan:#30e6ff;
+  --yellow:#ffd84a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020304;color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+body{background:
+  radial-gradient(circle at 25% 20%,rgba(48,230,255,.06),transparent 28%),
+  radial-gradient(circle at 75% 80%,rgba(255,59,167,.06),transparent 30%),
+  #020304}
+#app{
+  width:100vw;height:100vh;padding:12px;
+  display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px
+}
+.stage{
+  position:relative;min-width:0;border-radius:24px;overflow:hidden;
+  border:1px solid #161a20;background:#000;box-shadow:0 24px 70px rgba(0,0,0,.45)
+}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+.topbar{
+  position:absolute;left:18px;right:18px;top:16px;display:flex;align-items:center;justify-content:space-between;pointer-events:none
+}
+.brand{font-weight:800;letter-spacing:.12em;font-size:13px;color:#dfe5ec}
+.modeLabel{
+  padding:8px 12px;border:1px solid rgba(255,255,255,.1);border-radius:999px;
+  background:rgba(0,0,0,.38);backdrop-filter:blur(8px);font-size:13px;color:#d9dfe7
+}
+.footerEq{
+  position:absolute;left:50%;bottom:20px;transform:translateX(-50%);
+  padding:10px 18px;border-radius:15px;background:rgba(0,0,0,.52);
+  border:1px solid rgba(255,255,255,.14);font-family:"Times New Roman",serif;
+  font-size:clamp(22px,2.1vw,34px);white-space:nowrap
+}
+.panel{
+  border:1px solid #171c22;border-radius:24px;background:rgba(12,15,19,.94);
+  padding:16px;display:flex;flex-direction:column;gap:14px;min-height:0
+}
+h1{margin:0;font-size:21px}
+.sub{margin:2px 0 0;color:var(--muted);font-size:13px}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.tab{
+  padding:11px 8px;border-radius:12px;border:1px solid #303640;background:#15191f;color:#d8dee6;
+  cursor:pointer;font-weight:700;font-size:13px
+}
+.tab.active{background:linear-gradient(135deg,#1b222b,#262d37);border-color:#56616f;color:white;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
+.group{border:1px solid #242a32;border-radius:18px;padding:13px;background:rgba(255,255,255,.02)}
+.control{margin:10px 0 12px}
+.labelrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-size:13px;color:#d9dfe7}
+.value{color:#fff;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--pink)}
+select{
+  width:100%;padding:10px;border-radius:11px;border:1px solid #303640;background:#0c0f13;color:#fff;font-size:14px
+}
+.switch{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin:8px 0}
+.switch input{width:18px;height:18px;accent-color:var(--cyan)}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+button{
+  cursor:pointer;padding:12px;border-radius:13px;border:1px solid #303640;background:#171b21;color:#fff;font-weight:800
+}
+button:hover{background:#20252c}
+button.primary{background:linear-gradient(135deg,#ff3ba7,#c51d73);border-color:#ff3ba7}
+button.cyan{background:linear-gradient(135deg,#1db7c9,#137bd7);border-color:#24cfe1}
+.note{margin-top:auto;font-size:12px;color:#737c87;line-height:1.45}
+.hide{display:none!important}
+@media(max-width:900px){
+  #app{grid-template-columns:1fr;padding:7px}
+  .panel{position:absolute;z-index:20;right:11px;top:11px;width:min(320px,calc(100vw - 22px));max-height:calc(100vh - 22px);overflow:auto}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <section class="stage" id="stage">
+    <canvas id="canvas"></canvas>
+    <div class="topbar">
+      <div class="brand">GEOMETRY LAB</div>
+      <div class="modeLabel" id="modeLabel">LISSAJOUS</div>
+    </div>
+    <div class="footerEq" id="equation">x = A sin(at + δ), &nbsp; y = B sin(bt)</div>
+  </section>
+
+  <aside class="panel">
+    <div>
+      <h1>Phòng thí nghiệm hình học động</h1>
+      <p class="sub">Ít chữ • trực quan • trình chiếu toàn màn hình</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-mode="lissajous">Lissajous</button>
+      <button class="tab" data-mode="spiro">Spirograph</button>
+      <button class="tab" data-mode="symmetry">Đối xứng</button>
+    </div>
+
+    <div id="lissajousControls">
+      <div class="group">
+        <div class="control">
+          <div class="labelrow"><span>Tỉ số a</span><span class="value" id="laVal">3</span></div>
+          <input id="la" type="range" min="1" max="8" step="1" value="3">
+        </div>
+        <div class="control">
+          <div class="labelrow"><span>Tỉ số b</span><span class="value" id="lbVal">2</span></div>
+          <input id="lb" type="range" min="1" max="8" step="1" value="2">
+        </div>
+        <div class="control">
+          <div class="labelrow"><span>Độ lệch pha δ</span><span class="value" id="ldVal">0°</span></div>
+          <input id="ld" type="range" min="0" max="180" step="5" value="0">
+        </div>
+      </div>
+    </div>
+
+    <div id="spiroControls" class="hide">
+      <div class="group">
+        <div class="control">
+          <div class="labelrow"><span>Bán kính ngoài R</span><span class="value" id="sRVal">160</span></div>
+          <input id="sR" type="range" min="100" max="220" step="5" value="160">
+        </div>
+        <div class="control">
+          <div class="labelrow"><span>Bánh trong r</span><span class="value" id="srVal">65</span></div>
+          <input id="sr" type="range" min="25" max="110" step="5" value="65">
+        </div>
+        <div class="control">
+          <div class="labelrow"><span>Điểm vẽ d</span><span class="value" id="sdVal">80</span></div>
+          <input id="sd" type="range" min="10" max="130" step="5" value="80">
+        </div>
+      </div>
+    </div>
+
+    <div id="symmetryControls" class="hide">
+      <div class="group">
+        <div class="control">
+          <div class="labelrow"><span>Số trục đối xứng</span><span class="value" id="snVal">8</span></div>
+          <input id="sn" type="range" min="3" max="18" step="1" value="8">
+        </div>
+        <div class="control">
+          <div class="labelrow"><span>Độ xoắn</span><span class="value" id="stwVal">35</span></div>
+          <input id="stw" type="range" min="0" max="100" step="1" value="35">
+        </div>
+        <div class="control">
+          <div class="labelrow"><span>Số lớp</span><span class="value" id="slVal">5</span></div>
+          <input id="sl" type="range" min="2" max="9" step="1" value="5">
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="control">
+        <div class="labelrow"><span>Tốc độ</span><span class="value" id="speedVal">1.0×</span></div>
+        <input id="speed" type="range" min="0.2" max="3" step="0.1" value="1">
+      </div>
+      <div class="switch"><span>Hiện lưới</span><input id="grid" type="checkbox" checked></div>
+      <div class="switch"><span>Hiện điểm chuyển động</span><input id="dot" type="checkbox" checked></div>
+      <div class="switch"><span>Hiệu ứng phát sáng</span><input id="glow" type="checkbox" checked></div>
+    </div>
+
+    <div class="buttons">
+      <button class="primary" id="pause">Tạm dừng</button>
+      <button id="reset">Vẽ lại</button>
+      <button class="cyan" id="random">Khám phá</button>
+      <button id="full">Toàn màn hình</button>
+    </div>
+
+    <div class="note">GV: Nguyễn Huy Hùng<br>Space: chạy/dừng • R: vẽ lại • F: toàn màn hình</div>
+  </aside>
+</div>
+
+<script>
+const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d'),stage=document.getElementById('stage');
+let W=0,H=0,DPR=1,cx=0,cy=0,t=0,running=true,last=performance.now(),mode='lissajous',trail=[];
+
+const $=id=>document.getElementById(id);
+const la=$('la'),lb=$('lb'),ld=$('ld'),sR=$('sR'),sr=$('sr'),sd=$('sd'),sn=$('sn'),stw=$('stw'),sl=$('sl'),speed=$('speed');
+const grid=$('grid'),dot=$('dot'),glow=$('glow'),eq=$('equation'),modeLabel=$('modeLabel');
+
+function resize(){
+  const r=stage.getBoundingClientRect();DPR=Math.min(devicePixelRatio||1,2);
+  W=Math.floor(r.width);H=Math.floor(r.height);
+  canvas.width=W*DPR;canvas.height=H*DPR;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);cx=W/2;cy=H/2;
+}
+addEventListener('resize',resize);
+
+function updateValues(){
+  $('laVal').textContent=la.value;$('lbVal').textContent=lb.value;$('ldVal').textContent=ld.value+'°';
+  $('sRVal').textContent=sR.value;$('srVal').textContent=sr.value;$('sdVal').textContent=sd.value;
+  $('snVal').textContent=sn.value;$('stwVal').textContent=stw.value;$('slVal').textContent=sl.value;
+  $('speedVal').textContent=parseFloat(speed.value).toFixed(1)+'×';
+}
+document.querySelectorAll('input[type=range]').forEach(x=>x.oninput=()=>{updateValues(); if(x!==speed) reset();});
+
+function reset(){t=0;trail=[];last=performance.now();}
+function setMode(m){
+  mode=m;reset();
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+  $('lissajousControls').classList.toggle('hide',m!=='lissajous');
+  $('spiroControls').classList.toggle('hide',m!=='spiro');
+  $('symmetryControls').classList.toggle('hide',m!=='symmetry');
+  if(m==='lissajous'){modeLabel.textContent='LISSAJOUS';eq.innerHTML='x = A sin(at + δ), &nbsp; y = B sin(bt)'}
+  if(m==='spiro'){modeLabel.textContent='SPIROGRAPH';eq.innerHTML='x = (R-r)cos t + d cos((R-r)t/r)'}
+  if(m==='symmetry'){modeLabel.textContent='ROTATIONAL SYMMETRY';eq.innerHTML='θₖ = θ + 2πk/n'}
+}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+
+function drawGrid(){
+  if(!grid.checked)return;
+  ctx.save();ctx.strokeStyle='rgba(180,195,210,.12)';ctx.lineWidth=1;
+  if(mode==='lissajous'){
+    ctx.beginPath();ctx.moveTo(cx,40);ctx.lineTo(cx,H-40);ctx.moveTo(40,cy);ctx.lineTo(W-40,cy);ctx.stroke();
+    for(let i=1;i<5;i++){
+      const rr=Math.min(W,H)*.09*i;
+      ctx.beginPath();ctx.arc(cx,cy,rr,0,Math.PI*2);ctx.stroke();
+    }
+  }else{
+    const R=Math.min(W,H)*.36;
+    for(let i=1;i<=5;i++){ctx.beginPath();ctx.arc(cx,cy,R*i/5,0,Math.PI*2);ctx.stroke();}
+    for(let i=0;i<16;i++){let a=i*Math.PI/8;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+R*Math.cos(a),cy+R*Math.sin(a));ctx.stroke();}
+  }
+  ctx.restore();
+}
+
+function pushTrail(p){
+  trail.push(p); if(trail.length>4500)trail.shift();
+}
+function drawTrail(color){
+  if(trail.length<2)return;
+  ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=color;ctx.lineWidth=2.1;
+  if(glow.checked){ctx.shadowColor=color;ctx.shadowBlur=15}
+  ctx.beginPath();ctx.moveTo(trail[0].x,trail[0].y);
+  for(let i=1;i<trail.length;i++)ctx.lineTo(trail[i].x,trail[i].y);
+  ctx.stroke();ctx.restore();
+}
+function drawDot(p,color){
+  if(!dot.checked)return;
+  ctx.save();ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=20;
+  ctx.beginPath();ctx.arc(p.x,p.y,5.5,0,Math.PI*2);ctx.fill();ctx.restore();
+}
+
+function lissajousPoint(tt){
+  const A=Math.min(W,H)*.31,B=A,a=+la.value,b=+lb.value,d=+ld.value*Math.PI/180;
+  return {x:cx+A*Math.sin(a*tt+d),y:cy-B*Math.sin(b*tt)};
+}
+function spiroPoint(tt){
+  const scale=Math.min(W,H)/520;
+  const R=+sR.value*scale,r=+sr.value*scale,d=+sd.value*scale;
+  const k=(R-r)/r;
+  return {x:cx+(R-r)*Math.cos(tt)+d*Math.cos(k*tt),y:cy+(R-r)*Math.sin(tt)-d*Math.sin(k*tt)};
+}
+function symmetryPoint(tt){
+  const R=Math.min(W,H)*.34,n=+sn.value,tw=+stw.value/100,layers=+sl.value;
+  const baseR=R*(.22+.68*(0.5+0.5*Math.sin(layers*tt)));
+  const ang=tt+tw*Math.sin(3*tt);
+  return {x:cx+baseR*Math.cos(ang),y:cy+baseR*Math.sin(ang)};
+}
+
+function drawSymmetry(tt){
+  const n=+sn.value, p=symmetryPoint(tt), base=Math.atan2(p.y-cy,p.x-cx),rad=Math.hypot(p.x-cx,p.y-cy);
+  ctx.save();ctx.strokeStyle='rgba(48,230,255,.15)';
+  for(let k=0;k<n;k++){
+    const a=base+2*Math.PI*k/n;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+rad*Math.cos(a),cy+rad*Math.sin(a));ctx.stroke();
+  }
+  ctx.restore();
+
+  for(let k=0;k<n;k++){
+    const a=2*Math.PI*k/n, ca=Math.cos(a),sa=Math.sin(a);
+    const transformed=trail.map(pt=>{
+      const x=pt.x-cx,y=pt.y-cy;
+      return {x:cx+x*ca-y*sa,y:cy+x*sa+y*ca};
+    });
+    if(transformed.length>1){
+      ctx.save();ctx.strokeStyle=k%2===0?'#30e6ff':'#ff3ba7';ctx.lineWidth=1.6;
+      if(glow.checked){ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=11}
+      ctx.beginPath();ctx.moveTo(transformed[0].x,transformed[0].y);
+      for(let i=1;i<transformed.length;i++)ctx.lineTo(transformed[i].x,transformed[i].y);
+      ctx.stroke();ctx.restore();
+    }
+  }
+  if(dot.checked){
+    for(let k=0;k<n;k++){
+      const a=base+2*Math.PI*k/n;drawDot({x:cx+rad*Math.cos(a),y:cy+rad*Math.sin(a)},k%2===0?'#30e6ff':'#ff3ba7');
+    }
+  }
+}
+
+function animate(now){
+  const dt=Math.min((now-last)/1000,.04);last=now;
+  if(running){
+    t+=dt*1.25*parseFloat(speed.value);
+    if(mode==='lissajous')pushTrail(lissajousPoint(t));
+    if(mode==='spiro')pushTrail(spiroPoint(t));
+    if(mode==='symmetry')pushTrail(symmetryPoint(t));
+    if(t>Math.PI*24){t=0;trail=[];}
+  }
+
+  ctx.clearRect(0,0,W,H);
+  drawGrid();
+
+  if(mode==='lissajous'){
+    drawTrail('#ff3ba7');drawDot(lissajousPoint(t),'#ffd84a');
+  }else if(mode==='spiro'){
+    drawTrail('#30e6ff');
+    const p=spiroPoint(t);
+    drawDot(p,'#ff3ba7');
+
+    const scale=Math.min(W,H)/520,R=+sR.value*scale,r=+sr.value*scale;
+    const bx=cx+(R-r)*Math.cos(t),by=cy+(R-r)*Math.sin(t);
+    ctx.save();
+    ctx.strokeStyle='rgba(255,216,74,.36)';ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.arc(bx,by,r,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(p.x,p.y);ctx.stroke();
+    ctx.restore();
+  }else{
+    drawSymmetry(t);
+  }
+  requestAnimationFrame(animate);
+}
+
+$('pause').onclick=()=>{running=!running;$('pause').textContent=running?'Tạm dừng':'Tiếp tục';last=performance.now()};
+$('reset').onclick=reset;
+$('random').onclick=()=>{
+  if(mode==='lissajous'){
+    la.value=1+Math.floor(Math.random()*7);lb.value=1+Math.floor(Math.random()*7);ld.value=5*Math.floor(Math.random()*37);
+  }else if(mode==='spiro'){
+    sR.value=120+5*Math.floor(Math.random()*21);sr.value=30+5*Math.floor(Math.random()*15);sd.value=20+5*Math.floor(Math.random()*21);
+  }else{
+    sn.value=4+Math.floor(Math.random()*11);stw.value=Math.floor(Math.random()*90);sl.value=3+Math.floor(Math.random()*6);
+  }
+  updateValues();reset();
+};
+$('full').onclick=()=>{if(!document.fullscreenElement)stage.requestFullscreen?.();else document.exitFullscreen?.()};
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();$('pause').click()}
+  if(e.key.toLowerCase()==='r')reset();
+  if(e.key.toLowerCase()==='f')$('full').click();
+});
+
+resize();updateValues();setMode('lissajous');requestAnimationFrame(animate);
+</script>
+</body>
+</html>

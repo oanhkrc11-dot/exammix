@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PHYSICS 10 LAB · 69–72 Moment – Đòn bẩy – Ngẫu lực</title>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#132937;--panel:#173445;--panel2:#112736;--line:#436679;--text:#f4fbff;
+  --muted:#b7cdd8;--cyan:#71defd;--yellow:#ffe27b;--green:#8ef2c4;--red:#ff9f9f;--orange:#ffb071
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{width:290px;min-width:270px;max-width:300px;height:100%;overflow:auto;padding:10px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-right:1px solid var(--line)}
+#view{position:relative;flex:1;min-width:0;height:100%;overflow:hidden}
+.title{font-size:12.5px;font-weight:900}.kicker{font-size:9px;color:var(--muted);margin-top:2px}
+.simTitle{font-size:14px;font-weight:900;color:var(--cyan);margin:8px 0 5px;text-transform:uppercase}
+.section{margin-top:7px;padding:8px;border:1px solid var(--line);border-radius:10px;background:rgba(10,31,43,.35)}
+.section h3{margin:0 0 6px;font-size:9.5px;color:var(--cyan);text-transform:uppercase}
+.row{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px}
+.row span{font-size:10px;font-weight:700}.val{font-size:10px;color:var(--yellow);font-weight:800;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:#18a0c8}
+select,button{width:100%;height:31px;border-radius:7px;border:1px solid var(--line);background:#244b60;color:#fff;font-size:10px;font-weight:800}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+#playAll{background:#219265}#resetBtn{background:#6a4252}#recBtn{background:#a92e40}
+#badge,#info,#canvasWrap,#recHud{position:absolute;z-index:5;background:rgba(10,29,41,.86);border:1px solid #446879;border-radius:10px;backdrop-filter:blur(5px)}
+#badge{left:14px;top:12px;padding:8px 10px;font-size:11px;font-weight:900}
+#recHud{left:14px;top:50px;padding:5px 8px;font-size:10px;font-weight:900;display:none}
+#info{right:12px;top:12px;width:330px;padding:8px 10px;font-size:10px}
+#info .head{font-size:9px;color:var(--cyan);font-weight:900;margin-bottom:4px;text-transform:uppercase}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 8px}
+#canvasWrap{left:14px;bottom:40px;width:min(44%,590px);height:200px;padding:7px}
+#diagram{width:100%;height:100%;display:block}
+#credit{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:15px;font-weight:900;color:var(--yellow)}
+.lab{padding:3px 5px;border-radius:7px;background:#102d3e;border:1px solid #496b7c;color:#fff;font-size:10px;font-weight:800;white-space:nowrap}
+.smallTip{font-size:9px;color:var(--muted);line-height:1.35}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+  <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+  <div class="kicker">TRÌNH DIỄN KIỂU PPT · MOMENT · ĐÒN BẨY · NGẪU LỰC</div>
+  <div class="simTitle">69–72. MOMENT LỰC</div>
+
+  <div class="section">
+    <h3>Chế độ</h3>
+    <select id="mode">
+      <option value="moment">69. Moment lực đối với trục quay</option>
+      <option value="balance">70. Cân bằng vật có trục quay cố định</option>
+      <option value="lever">71. Đòn bẩy</option>
+      <option value="couple">72. Ngẫu lực</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <h3>Thông số</h3>
+
+    <div id="singleForceControls">
+      <div class="row"><span>Lực F</span><span class="val" id="forceText">10.0 N</span></div>
+      <input id="force" type="range" min="1" max="30" step="0.5" value="10">
+      <div class="row"><span>Khoảng cách r</span><span class="val" id="rText">2.0 m</span></div>
+      <input id="r" type="range" min="0.5" max="4" step="0.1" value="2">
+      <div class="row"><span>Góc α giữa r và F</span><span class="val" id="alphaText">90°</span></div>
+      <input id="alpha" type="range" min="10" max="90" step="1" value="90">
+    </div>
+
+    <div id="twoForceControls" style="display:none">
+      <div class="row"><span>F₁</span><span class="val" id="f1Text">8.0 N</span></div>
+      <input id="f1" type="range" min="1" max="25" step="0.5" value="8">
+      <div class="row"><span>d₁</span><span class="val" id="d1Text">2.0 m</span></div>
+      <input id="d1" type="range" min="0.5" max="4" step="0.1" value="2">
+      <div class="row"><span>F₂</span><span class="val" id="f2Text">4.0 N</span></div>
+      <input id="f2" type="range" min="1" max="25" step="0.5" value="4">
+      <div class="row"><span>d₂</span><span class="val" id="d2Text">4.0 m</span></div>
+      <input id="d2" type="range" min="0.5" max="4" step="0.1" value="4">
+    </div>
+
+    <div id="coupleControls" style="display:none">
+      <div class="row"><span>Độ lớn mỗi lực F</span><span class="val" id="cfText">8.0 N</span></div>
+      <input id="cf" type="range" min="1" max="25" step="0.5" value="8">
+      <div class="row"><span>Khoảng cách hai giá lực d</span><span class="val" id="cdText">2.0 m</span></div>
+      <input id="cd" type="range" min="0.5" max="4" step="0.1" value="2">
+    </div>
+
+    <div class="smallTip" style="margin-top:6px">
+      Các yếu tố hình học như cánh tay đòn, đường vuông góc và chiều quay chỉ xuất hiện khi tới đúng bước trình diễn.
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Trình diễn từng bước</h3>
+    <div class="grid3">
+      <button id="step1Btn">B1</button>
+      <button id="step2Btn">B2</button>
+      <button id="step3Btn">B3</button>
+    </div>
+    <div class="grid2" style="margin-top:5px">
+      <button id="step4Btn">B4</button>
+      <button id="playAll">▶ Tự chạy</button>
+    </div>
+    <div class="grid2" style="margin-top:5px">
+      <button id="prevBtn">◀ Lùi bước</button>
+      <button id="resetBtn">↻ Làm lại</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Góc nhìn</h3>
+    <select id="cameraMode">
+      <option value="all">Toàn cảnh</option>
+      <option value="top">Nhìn từ trên</option>
+      <option value="side">Nhìn ngang</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <h3>Quay thí nghiệm</h3>
+    <div class="grid2">
+      <button id="recBtn">🎥 Bắt đầu quay</button>
+      <button id="stopRecBtn">⏹ Dừng quay</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <span>Thời gian quay</span><span class="val" id="recText">00:00</span>
+    </div>
+  </div>
+</aside>
+
+<main id="view">
+  <div id="badge">Trục quay → lực F → cánh tay đòn d → moment M</div>
+  <div id="recHud">● REC 00:00</div>
+
+  <div id="info">
+    <div class="head">Số liệu</div>
+    <div class="infoGrid">
+      <span>Moment M₁</span><b id="m1Info">20.00 N·m</b>
+      <span>Moment M₂</span><b id="m2Info">—</b>
+      <span>Tổng moment</span><b id="sumInfo">20.00 N·m</b>
+      <span>Cánh tay đòn d</span><b id="armInfo">2.00 m</b>
+      <span>Bước hiện tại</span><b id="stepInfo">0</b>
+      <span>Trạng thái</span><b id="statusInfo">Bắt đầu từ trục quay</b>
+    </div>
+  </div>
+
+  <div id="canvasWrap"><canvas id="diagram"></canvas></div>
+  <div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {CSS2DRenderer,CSS2DObject} from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $=id=>document.getElementById(id);
+const view=$('view');
+const rad=d=>d*Math.PI/180;
+
+const S={
+  mode:'moment',
+  F:10,r:2,alpha:90,
+  F1:8,d1:2,F2:4,d2:4,
+  cF:8,cD:2,
+  step:0,
+  anim:{pivot:0,force1:0,force2:0,arm1:0,arm2:0,moment1:0,moment2:0,coupleDist:0},
+  playTimer:null,
+  last:performance.now(),
+  recording:false,recordStart:0
+};
+
+function singleData(){
+  const d=S.r*Math.sin(rad(S.alpha));
+  const M=S.F*d;
+  return {d,M};
+}
+function balanceData(){
+  const M1=S.F1*S.d1;
+  const M2=S.F2*S.d2;
+  return {M1,M2,sum:M1-M2};
+}
+function coupleData(){
+  return {M:S.cF*S.cD};
+}
+function maxStep(){
+  return 4;
+}
+function targets(){
+  const t={pivot:0,force1:0,force2:0,arm1:0,arm2:0,moment1:0,moment2:0,coupleDist:0};
+
+  if(S.mode==='moment'){
+    if(S.step>=1)t.pivot=1;
+    if(S.step>=2)t.force1=1;
+    if(S.step>=3)t.arm1=1;
+    if(S.step>=4)t.moment1=1;
+  }else if(S.mode==='balance'){
+    if(S.step>=1){t.pivot=1;t.force1=1;}
+    if(S.step>=2){t.force2=1;}
+    if(S.step>=3){t.arm1=1;t.arm2=1;}
+    if(S.step>=4){t.moment1=1;t.moment2=1;}
+  }else if(S.mode==='lever'){
+    if(S.step>=1)t.pivot=1;
+    if(S.step>=2)t.force1=1;
+    if(S.step>=3)t.force2=1;
+    if(S.step>=4){t.arm1=1;t.arm2=1;t.moment1=1;t.moment2=1;}
+  }else{
+    if(S.step>=1)t.force1=1;
+    if(S.step>=2)t.force2=1;
+    if(S.step>=3)t.coupleDist=1;
+    if(S.step>=4)t.moment1=1;
+  }
+  return t;
+}
+
+/* scene */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x132937);
+scene.fog=new THREE.Fog(0x132937,30,90);
+
+const camera=new THREE.PerspectiveCamera(45,view.clientWidth/view.clientHeight,.1,140);
+camera.position.set(10,8,12);
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+view.prepend(renderer.domElement);
+
+const lr=new CSS2DRenderer();
+lr.setSize(view.clientWidth,view.clientHeight);
+lr.domElement.style.position='absolute';
+lr.domElement.style.inset='0';
+lr.domElement.style.pointerEvents='none';
+view.appendChild(lr.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.07;
+controls.target.set(0,0,0);
+controls.maxPolarAngle=Math.PI*.49;
+
+scene.add(new THREE.HemisphereLight(0xe8f7ff,0x4e6874,2.2));
+const sun=new THREE.DirectionalLight(0xffffff,1.8);
+sun.position.set(8,12,10);scene.add(sun);
+
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(24,18),new THREE.MeshPhongMaterial({color:0x304a58}));
+floor.rotation.x=-Math.PI/2;scene.add(floor);
+const grid=new THREE.GridHelper(18,18,0x6b8ea0,0x3d5966);grid.position.y=.01;scene.add(grid);
+
+/* beam */
+const beam=new THREE.Mesh(new THREE.BoxGeometry(10,.28,.55),new THREE.MeshPhongMaterial({color:0x7e9099,shininess:40}));
+beam.position.y=.32;scene.add(beam);
+
+const pivot=new THREE.Mesh(new THREE.CylinderGeometry(.32,.32,.7,28),new THREE.MeshPhongMaterial({color:0xffe176,shininess:70}));
+pivot.rotation.x=Math.PI/2;
+pivot.position.set(0,.35,0);
+scene.add(pivot);
+
+function makeLabel(txt){
+  const d=document.createElement('div');d.className='lab';d.textContent=txt;
+  return new CSS2DObject(d);
+}
+const pivotLabel=makeLabel('O');pivotLabel.position.set(0,1.1,0);scene.add(pivotLabel);
+
+function makeArrow(color,labelText){
+  const a=new THREE.ArrowHelper(new THREE.Vector3(0,-1,0),new THREE.Vector3(),1,color,.28,.16);
+  const l=makeLabel(labelText);scene.add(a,l);return {a,l};
+}
+const force1=makeArrow(0x73ddff,'F₁');
+const force2=makeArrow(0xffad76,'F₂');
+
+function makeLine(color,dashed=false){
+  const mat=dashed?new THREE.LineDashedMaterial({color,dashSize:.2,gapSize:.1}):new THREE.LineBasicMaterial({color});
+  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(.01,0,0)]),mat);
+  scene.add(line);return line;
+}
+const armLine1=makeLine(0x8ef2c4,true);
+const armLine2=makeLine(0xff8f8f,true);
+const coupleLine=makeLine(0xffe176,true);
+
+function updateLine(line,p1,p2,progress){
+  if(progress<=.01){line.visible=false;return}
+  line.visible=true;
+  const pe=p1.clone().lerp(p2,progress);
+  line.geometry.setFromPoints([p1,pe]);
+  if(line.computeLineDistances)line.computeLineDistances();
+}
+
+function makeMomentArc(color){
+  const line=makeLine(color,false);
+  line.material.linewidth=2;
+  return line;
+}
+const momentArc1=makeMomentArc(0x8ef2c4);
+const momentArc2=makeMomentArc(0xff8f8f);
+
+function arcPoints(radius,start,end,segments=40){
+  const pts=[];
+  for(let i=0;i<=segments;i++){
+    const a=start+(end-start)*i/segments;
+    pts.push(new THREE.Vector3(radius*Math.cos(a),.12,-radius*Math.sin(a)));
+  }
+  return pts;
+}
+function updateArc(line,r,start,end,progress){
+  if(progress<=.01){line.visible=false;return}
+  line.visible=true;
+  const e=start+(end-start)*progress;
+  line.geometry.setFromPoints(arcPoints(r,start,e,30));
+}
+
+function setForce(obj,x,dirY,mag,progress,label){
+  if(progress<=.01){obj.a.visible=false;obj.l.visible=false;return}
+  obj.a.visible=true;obj.l.visible=true;
+  obj.a.position.set(x,.55,0);
+  obj.a.setDirection(new THREE.Vector3(0,dirY,0));
+  obj.a.setLength(Math.max(.001,mag*.16*progress),.28,.16);
+  obj.l.element.textContent=label;
+  obj.l.position.set(x,dirY>0?2.2:-1.8,0);
+}
+
+function updateScene(){
+  const sd=singleData(),bd=balanceData(),cd=coupleData();
+
+  beam.visible=S.mode!=='couple';
+  pivot.visible=S.mode!=='couple' && S.anim.pivot>.01;
+  pivotLabel.visible=pivot.visible;
+
+  force1.a.visible=force1.l.visible=false;
+  force2.a.visible=force2.l.visible=false;
+  armLine1.visible=armLine2.visible=coupleLine.visible=false;
+  momentArc1.visible=momentArc2.visible=false;
+
+  if(S.mode==='moment'){
+    const x=S.r;
+    setForce(force1,x,-1,S.F,S.anim.force1,'F');
+    const foot=new THREE.Vector3(x,0.15,0);
+    const pivotP=new THREE.Vector3(0,0.15,0);
+    updateLine(armLine1,pivotP,foot,S.anim.arm1);
+    updateArc(momentArc1,1.25,0,Math.PI*1.5,S.anim.moment1);
+  }
+
+  if(S.mode==='balance'||S.mode==='lever'){
+    setForce(force1,-S.d1,-1,S.F1,S.anim.force1,'F₁');
+    setForce(force2,S.d2,-1,S.F2,S.anim.force2,'F₂');
+    updateLine(armLine1,new THREE.Vector3(0,.15,0),new THREE.Vector3(-S.d1,.15,0),S.anim.arm1);
+    updateLine(armLine2,new THREE.Vector3(0,.15,0),new THREE.Vector3(S.d2,.15,0),S.anim.arm2);
+    updateArc(momentArc1,1.15,Math.PI,Math.PI*2.5,S.anim.moment1);
+    updateArc(momentArc2,1.55,0,-Math.PI*1.5,S.anim.moment2);
+  }
+
+  if(S.mode==='couple'){
+    const d=S.cD/2;
+    setForce(force1,-d,1,S.cF,S.anim.force1,'F');
+    setForce(force2,d,-1,S.cF,S.anim.force2,'F');
+    updateLine(coupleLine,new THREE.Vector3(-d,.15,0),new THREE.Vector3(d,.15,0),S.anim.coupleDist);
+    updateArc(momentArc1,1.4,0,Math.PI*1.5,S.anim.moment1);
+  }
+}
+
+/* diagram */
+const canvas=$('diagram'),ctx=canvas.getContext('2d');
+
+function resizeCanvas(){
+  const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio,2);
+  canvas.width=Math.max(10,Math.floor(r.width*d));canvas.height=Math.max(10,Math.floor(r.height*d));
+  ctx.setTransform(d,0,0,d,0,0);
+}
+
+function arrow2d(x1,y1,x2,y2,color,label){
+  ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  const a=Math.atan2(y2-y1,x2-x1),L=10;
+  ctx.beginPath();ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-L*Math.cos(a-.45),y2-L*Math.sin(a-.45));
+  ctx.lineTo(x2-L*Math.cos(a+.45),y2-L*Math.sin(a+.45));
+  ctx.closePath();ctx.fill();
+  ctx.font='11px Arial';ctx.fillText(label,x2+5,y2-5);
+}
+function dashed2d(x1,y1,x2,y2,progress,color='#d8edf6'){
+  if(progress<=.01)return;
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.setLineDash([7,5]);
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x1+(x2-x1)*progress,y1+(y2-y1)*progress);ctx.stroke();ctx.restore();
+}
+function drawDiagram(){
+  const W=canvas.clientWidth,H=canvas.clientHeight;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#173444';ctx.fillRect(0,0,W,H);
+  const cx=W*.5,cy=H*.58,sc=28;
+
+  if(S.mode!=='couple'){
+    ctx.strokeStyle='#93a9b4';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(cx-5*sc,cy);ctx.lineTo(cx+5*sc,cy);ctx.stroke();
+  }
+  if(S.anim.pivot>.01&&S.mode!=='couple'){
+    ctx.fillStyle='#ffe176';ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);ctx.fill();ctx.fillText('O',cx+9,cy-8);
+  }
+
+  if(S.mode==='moment'){
+    if(S.anim.force1>.01)arrow2d(cx+S.r*sc,cy,cx+S.r*sc,cy-70*S.anim.force1,'#73ddff','F');
+    dashed2d(cx,cy,cx+S.r*sc,cy,S.anim.arm1,'#8ef2c4');
+    if(S.anim.arm1>.01){ctx.fillStyle='#8ef2c4';ctx.fillText('d',cx+S.r*sc/2,cy-8);}
+    if(S.anim.moment1>.01){ctx.fillStyle='#8ef2c4';ctx.font='bold 13px Arial';ctx.fillText('M = Fd',cx-25,30);}
+  }
+
+  if(S.mode==='balance'||S.mode==='lever'){
+    if(S.anim.force1>.01)arrow2d(cx-S.d1*sc,cy,cx-S.d1*sc,cy-65*S.anim.force1,'#73ddff','F1');
+    if(S.anim.force2>.01)arrow2d(cx+S.d2*sc,cy,cx+S.d2*sc,cy-65*S.anim.force2,'#ffad76','F2');
+    dashed2d(cx,cy,cx-S.d1*sc,cy,S.anim.arm1,'#8ef2c4');
+    dashed2d(cx,cy,cx+S.d2*sc,cy,S.anim.arm2,'#ff8f8f');
+    if(S.anim.moment1>.01||S.anim.moment2>.01){
+      ctx.font='bold 12px Arial';
+      ctx.fillStyle='#8ef2c4';ctx.fillText('M1 = F1d1',20,24);
+      ctx.fillStyle='#ff8f8f';ctx.fillText('M2 = F2d2',20,42);
+    }
+  }
+
+  if(S.mode==='couple'){
+    const d=S.cD*sc;
+    if(S.anim.force1>.01)arrow2d(cx-d/2,cy+45,cx-d/2,cy-35*S.anim.force1,'#73ddff','F');
+    if(S.anim.force2>.01)arrow2d(cx+d/2,cy-45,cx+d/2,cy+35*S.anim.force2,'#ffad76','F');
+    dashed2d(cx-d/2,cy,cx+d/2,cy,S.anim.coupleDist,'#ffe176');
+    if(S.anim.coupleDist>.01){ctx.fillStyle='#ffe176';ctx.fillText('d',cx-3,cy-8);}
+    if(S.anim.moment1>.01){ctx.fillStyle='#8ef2c4';ctx.font='bold 13px Arial';ctx.fillText('Mngẫu lực = Fd',cx-55,28);}
+  }
+}
+
+/* UI */
+function updateUI(){
+  const sd=singleData(),bd=balanceData(),cd=coupleData();
+
+  $('forceText').textContent=S.F.toFixed(1)+' N';
+  $('rText').textContent=S.r.toFixed(1)+' m';
+  $('alphaText').textContent=S.alpha.toFixed(0)+'°';
+  $('f1Text').textContent=S.F1.toFixed(1)+' N';
+  $('d1Text').textContent=S.d1.toFixed(1)+' m';
+  $('f2Text').textContent=S.F2.toFixed(1)+' N';
+  $('d2Text').textContent=S.d2.toFixed(1)+' m';
+  $('cfText').textContent=S.cF.toFixed(1)+' N';
+  $('cdText').textContent=S.cD.toFixed(1)+' m';
+
+  $('singleForceControls').style.display=S.mode==='moment'?'block':'none';
+  $('twoForceControls').style.display=(S.mode==='balance'||S.mode==='lever')?'block':'none';
+  $('coupleControls').style.display=S.mode==='couple'?'block':'none';
+
+  $('stepInfo').textContent=String(S.step);
+
+  if(S.mode==='moment'){
+    $('m1Info').textContent=sd.M.toFixed(2)+' N·m';
+    $('m2Info').textContent='—';
+    $('sumInfo').textContent=sd.M.toFixed(2)+' N·m';
+    $('armInfo').textContent=sd.d.toFixed(2)+' m';
+    $('badge').textContent='Trục quay → lực F → cánh tay đòn d → moment M';
+    if(S.step===0)$('statusInfo').textContent='Bắt đầu từ trục quay';
+    if(S.step===1)$('statusInfo').textContent='Đã xác định trục quay O';
+    if(S.step===2)$('statusInfo').textContent='Đã đặt lực F';
+    if(S.step===3)$('statusInfo').textContent='Đã xác định cánh tay đòn d';
+    if(S.step>=4)$('statusInfo').textContent='M = Fd = Fr sinα';
+  }else if(S.mode==='balance'){
+    $('m1Info').textContent=bd.M1.toFixed(2)+' N·m';
+    $('m2Info').textContent=bd.M2.toFixed(2)+' N·m';
+    $('sumInfo').textContent=bd.sum.toFixed(2)+' N·m';
+    $('armInfo').textContent='d₁, d₂';
+    $('badge').textContent='F₁ → F₂ → d₁,d₂ → so sánh moment';
+    if(S.step===0)$('statusInfo').textContent='Bắt đầu với trục quay';
+    if(S.step===1)$('statusInfo').textContent='Đã có lực F₁';
+    if(S.step===2)$('statusInfo').textContent='Đã có hai lực';
+    if(S.step===3)$('statusInfo').textContent='Xác định cánh tay đòn';
+    if(S.step>=4)$('statusInfo').textContent=Math.abs(bd.sum)<0.05?'Cân bằng: tổng moment = 0':'Chưa cân bằng: tổng moment ≠ 0';
+  }else if(S.mode==='lever'){
+    $('m1Info').textContent=bd.M1.toFixed(2)+' N·m';
+    $('m2Info').textContent=bd.M2.toFixed(2)+' N·m';
+    $('sumInfo').textContent=bd.sum.toFixed(2)+' N·m';
+    $('armInfo').textContent='d₁, d₂';
+    $('badge').textContent='Điểm tựa → F₁ → F₂ → điều kiện đòn bẩy';
+    if(S.step===0)$('statusInfo').textContent='Bắt đầu với điểm tựa';
+    if(S.step===1)$('statusInfo').textContent='Đã xác định điểm tựa O';
+    if(S.step===2)$('statusInfo').textContent='Đặt lực F₁';
+    if(S.step===3)$('statusInfo').textContent='Đặt lực F₂';
+    if(S.step>=4)$('statusInfo').textContent=Math.abs(bd.sum)<0.05?'Đòn bẩy cân bằng: F₁d₁ = F₂d₂':'Đòn bẩy chưa cân bằng';
+  }else{
+    $('m1Info').textContent=cd.M.toFixed(2)+' N·m';
+    $('m2Info').textContent='—';
+    $('sumInfo').textContent=cd.M.toFixed(2)+' N·m';
+    $('armInfo').textContent=S.cD.toFixed(2)+' m';
+    $('badge').textContent='Hai lực song song, ngược chiều → khoảng cách d → moment ngẫu lực';
+    if(S.step===0)$('statusInfo').textContent='Bắt đầu với lực thứ nhất';
+    if(S.step===1)$('statusInfo').textContent='Đã có lực thứ nhất';
+    if(S.step===2)$('statusInfo').textContent='Đã có cặp lực song song, ngược chiều';
+    if(S.step===3)$('statusInfo').textContent='Đã xác định khoảng cách hai giá lực d';
+    if(S.step>=4)$('statusInfo').textContent='Moment ngẫu lực M = Fd';
+  }
+}
+function stopAuto(){
+  if(S.playTimer){clearInterval(S.playTimer);S.playTimer=null;$('playAll').textContent='▶ Tự chạy';}
+}
+function setStep(n){S.step=Math.max(0,Math.min(maxStep(),n));updateUI();}
+function resetSteps(){stopAuto();S.step=0;updateUI();}
+function playAll(){
+  if(S.playTimer){stopAuto();return}
+  S.step=0;updateUI();$('playAll').textContent='■ Dừng';
+  S.playTimer=setInterval(()=>{if(S.step<maxStep())setStep(S.step+1);else stopAuto()},1100);
+}
+
+/* recording */
+const recCanvas=document.createElement('canvas');recCanvas.width=1280;recCanvas.height=720;
+const rctx=recCanvas.getContext('2d');let mediaRecorder=null,chunks=[],mime='';
+
+function chooseMime(){
+  for(const m of ['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']){
+    if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;
+  }
+  return '';
+}
+function startRecording(){
+  if(S.recording||!window.MediaRecorder||!recCanvas.captureStream)return;
+  mime=chooseMime();
+  const stream=recCanvas.captureStream(30);
+  try{mediaRecorder=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:6000000}:{videoBitsPerSecond:6000000})}
+  catch(e){mediaRecorder=new MediaRecorder(stream);mime=mediaRecorder.mimeType||'video/webm'}
+  chunks=[];
+  mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size>0)chunks.push(e.data)};
+  mediaRecorder.onstop=()=>{
+    const mt=mediaRecorder.mimeType||mime||'video/webm',ext=mt.includes('mp4')?'mp4':'webm';
+    const url=URL.createObjectURL(new Blob(chunks,{type:mt}));
+    const a=document.createElement('a');a.href=url;a.download='Physics10_69_72_Moment_Don_bay_Ngau_luc_PPT.'+ext;
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  };
+  mediaRecorder.start(250);S.recording=true;S.recordStart=performance.now();$('recBtn').textContent='● Đang quay';$('recHud').style.display='block';
+}
+function stopRecording(){
+  if(!S.recording)return;S.recording=false;$('recBtn').textContent='🎥 Bắt đầu quay';$('recHud').style.display='none';
+  if(mediaRecorder&&mediaRecorder.state!=='inactive')mediaRecorder.stop();
+}
+function drawRec(now){
+  rctx.fillStyle='#132937';rctx.fillRect(0,0,1280,720);rctx.drawImage(renderer.domElement,0,0,1280,720);
+  rctx.fillStyle='rgba(8,23,32,.68)';rctx.fillRect(0,0,1280,52);rctx.fillStyle='#fff';rctx.font='bold 22px Arial';
+  rctx.fillText('PHYSICS 10 LAB · MOMENT – ĐÒN BẨY – NGẪU LỰC',22,33);
+  rctx.fillStyle='rgba(8,23,32,.78)';rctx.fillRect(925,74,330,170);rctx.fillStyle='#fff';rctx.font='bold 17px Arial';
+  rctx.fillText('Bước: '+S.step,945,104);rctx.fillText('M1: '+$('m1Info').textContent,945,134);rctx.fillText('M2: '+$('m2Info').textContent,945,164);rctx.fillText('ΣM: '+$('sumInfo').textContent,945,194);
+  rctx.fillStyle='rgba(8,23,32,.78)';rctx.fillRect(18,510,520,190);rctx.drawImage(canvas,26,518,504,174);
+  const sec=Math.floor((now-S.recordStart)/1000),mm=String(Math.floor(sec/60)).padStart(2,'0'),ss=String(sec%60).padStart(2,'0');
+  $('recText').textContent=mm+':'+ss;$('recHud').textContent='● REC '+mm+':'+ss;
+  rctx.fillStyle='#ffe27b';rctx.font='bold 18px Arial';rctx.fillText('Thầy Hùng vật lí',1080,696);
+}
+
+/* events */
+$('mode').onchange=e=>{S.mode=e.target.value;resetSteps()};
+$('force').oninput=e=>{S.F=+e.target.value;updateUI()};
+$('r').oninput=e=>{S.r=+e.target.value;updateUI()};
+$('alpha').oninput=e=>{S.alpha=+e.target.value;updateUI()};
+$('f1').oninput=e=>{S.F1=+e.target.value;updateUI()};
+$('d1').oninput=e=>{S.d1=+e.target.value;updateUI()};
+$('f2').oninput=e=>{S.F2=+e.target.value;updateUI()};
+$('d2').oninput=e=>{S.d2=+e.target.value;updateUI()};
+$('cf').oninput=e=>{S.cF=+e.target.value;updateUI()};
+$('cd').oninput=e=>{S.cD=+e.target.value;updateUI()};
+
+$('step1Btn').onclick=()=>setStep(1);
+$('step2Btn').onclick=()=>setStep(2);
+$('step3Btn').onclick=()=>setStep(3);
+$('step4Btn').onclick=()=>setStep(4);
+$('prevBtn').onclick=()=>setStep(S.step-1);
+$('resetBtn').onclick=()=>{
+  S.F=10;S.r=2;S.alpha=90;S.F1=8;S.d1=2;S.F2=4;S.d2=4;S.cF=8;S.cD=2;
+  $('force').value=10;$('r').value=2;$('alpha').value=90;$('f1').value=8;$('d1').value=2;$('f2').value=4;$('d2').value=4;$('cf').value=8;$('cd').value=2;
+  resetSteps();
+};
+$('playAll').onclick=playAll;
+
+$('cameraMode').onchange=e=>{
+  const m=e.target.value;
+  if(m==='all'){camera.position.set(10,8,12);controls.target.set(0,0,0)}
+  if(m==='top'){camera.position.set(0,13,.01);controls.target.set(0,0,0)}
+  if(m==='side'){camera.position.set(0,5,14);controls.target.set(0,0,0)}
+  controls.update();
+};
+
+$('recBtn').onclick=startRecording;
+$('stopRecBtn').onclick=stopRecording;
+
+function resize(){
+  camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();
+  renderer.setSize(view.clientWidth,view.clientHeight);lr.setSize(view.clientWidth,view.clientHeight);resizeCanvas();
+}
+window.addEventListener('resize',resize);
+
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt=Math.min(Math.max((now-S.last)/1000,0),.03);S.last=now;
+  const tg=targets();
+  for(const k in S.anim){
+    S.anim[k]+=(tg[k]-S.anim[k])*Math.min(1,dt*8);
+    if(Math.abs(S.anim[k]-tg[k])<.001)S.anim[k]=tg[k];
+  }
+
+  updateScene();
+  drawDiagram();
+  controls.update();
+  renderer.render(scene,camera);
+  lr.render(scene,camera);
+
+  if(S.recording)drawRec(now);
+}
+
+resetSteps();
+resize();
+loop(performance.now());
+</script>
+</body>
+</html>

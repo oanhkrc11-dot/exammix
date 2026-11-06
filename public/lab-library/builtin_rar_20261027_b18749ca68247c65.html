@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giao thoa sóng mặt nước hai nguồn</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#eef6ff;color:#0f172a}
+.app{width:min(1240px,96vw);margin:18px auto;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #dbe5f2;box-shadow:0 14px 36px rgba(15,23,42,.16)}
+header{background:#0b3b78;color:#fff;padding:18px 24px}
+header h1{margin:0 0 6px;font-size:32px}
+header p{margin:0;font-size:16px;opacity:.95}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid #e5e7eb}
+button{border:0;border-radius:12px;padding:11px 16px;font-size:15px;font-weight:700;color:white;cursor:pointer}
+#startBtn{background:#16a34a}
+#pauseBtn{background:#f59e0b;color:#111827}
+#resetBtn{background:#2563eb}
+#source1Btn{background:#0ea5e9}
+#source2Btn{background:#7c3aed}
+.box{display:flex;align-items:center;gap:9px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;font-size:14px}
+input[type=range]{width:135px;accent-color:#2563eb}
+.main{display:grid;grid-template-columns:1.5fr .8fr;gap:16px;padding:18px}
+.card{border:1px solid #dbe5f2;border-radius:16px;overflow:hidden;background:#fff}
+canvas{display:block;width:100%;height:auto;background:#fff}
+.info{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:0 18px 18px}
+.note{border:1px solid #e2e8f0;border-radius:14px;padding:14px;background:#f8fafc;line-height:1.5;font-size:15px}
+.note b{color:#0b3b78}
+@media(max-width:920px){.main{grid-template-columns:1fr}.info{grid-template-columns:1fr}header h1{font-size:25px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>Giao thoa sóng mặt nước – hai nguồn</h1>
+  <p>Quan sát các vòng sóng tròn lan truyền từ hai nguồn kết hợp và hình thành các vùng cực đại – cực tiểu giao thoa.</p>
+</header>
+
+<div class="controls">
+  <button id="startBtn">▶ Bắt đầu</button>
+  <button id="pauseBtn">⏸ Tạm dừng</button>
+  <button id="resetBtn">↻ Đặt lại</button>
+  <button id="source1Btn">Nguồn S1: BẬT</button>
+  <button id="source2Btn">Nguồn S2: BẬT</button>
+
+  <label class="box">Tần số:
+    <input id="freqSlider" type="range" min="0.5" max="4" step="0.1" value="1.5">
+    <b><span id="freqValue">1.5</span> Hz</b>
+  </label>
+
+  <label class="box">Biên độ:
+    <input id="ampSlider" type="range" min="0.2" max="1" step="0.05" value="0.75">
+    <b><span id="ampValue">0.75</span></b>
+  </label>
+
+  <label class="box">Tốc độ truyền:
+    <input id="speedSlider" type="range" min="60" max="180" step="10" value="110">
+    <b><span id="speedValue">110</span> px/s</b>
+  </label>
+
+  <label class="box">Khoảng cách S1S2:
+    <input id="distSlider" type="range" min="80" max="280" step="10" value="180">
+    <b><span id="distValue">180</span> px</b>
+  </label>
+
+  <label class="box">
+    <input id="showLines" type="checkbox" checked>
+    Hiện đường cực đại/cực tiểu
+  </label>
+</div>
+
+<div class="main">
+  <div class="card"><canvas id="waterCanvas" width="860" height="560"></canvas></div>
+  <div class="card"><canvas id="infoCanvas" width="430" height="560"></canvas></div>
+</div>
+
+<div class="info">
+  <div class="note"><b>Cực đại giao thoa:</b> hai sóng đến cùng pha, biên độ tổng hợp lớn.</div>
+  <div class="note"><b>Cực tiểu giao thoa:</b> hai sóng đến ngược pha, biên độ tổng hợp nhỏ.</div>
+  <div class="note"><b>Hai nguồn kết hợp:</b> có cùng tần số và độ lệch pha không đổi theo thời gian.</div>
+</div>
+</div>
+
+<script>
+const waterCanvas=document.getElementById('waterCanvas');
+const ctx=waterCanvas.getContext('2d');
+const infoCanvas=document.getElementById('infoCanvas');
+const ictx=infoCanvas.getContext('2d');
+
+const startBtn=document.getElementById('startBtn');
+const pauseBtn=document.getElementById('pauseBtn');
+const resetBtn=document.getElementById('resetBtn');
+const source1Btn=document.getElementById('source1Btn');
+const source2Btn=document.getElementById('source2Btn');
+
+const freqSlider=document.getElementById('freqSlider');
+const ampSlider=document.getElementById('ampSlider');
+const speedSlider=document.getElementById('speedSlider');
+const distSlider=document.getElementById('distSlider');
+const showLines=document.getElementById('showLines');
+
+const freqValue=document.getElementById('freqValue');
+const ampValue=document.getElementById('ampValue');
+const speedValue=document.getElementById('speedValue');
+const distValue=document.getElementById('distValue');
+
+const W=waterCanvas.width,H=waterCanvas.height;
+let f=1.5,A=0.75,v=110,d=180;
+let running=false;
+let t=0,lastTs=null;
+let source1On=true,source2On=true;
+
+function updateParams(){
+  f=Number(freqSlider.value);
+  A=Number(ampSlider.value);
+  v=Number(speedSlider.value);
+  d=Number(distSlider.value);
+  freqValue.textContent=f.toFixed(1);
+  ampValue.textContent=A.toFixed(2);
+  speedValue.textContent=v;
+  distValue.textContent=d;
+}
+
+function sourcePositions(){
+  const cy=H/2+5;
+  const cx=W/2;
+  return {
+    s1:{x:cx-d/2,y:cy},
+    s2:{x:cx+d/2,y:cy}
+  };
+}
+
+function waveAt(x,y,t,s){
+  const dx=x-s.x,dy=y-s.y;
+  const r=Math.hypot(dx,dy);
+  const lambda=v/f;
+  const k=2*Math.PI/lambda;
+  const omega=2*Math.PI*f;
+  const front=v*t;
+  if(r>front) return 0;
+  const fade=Math.max(0.18,1-r/(W*1.2));
+  return A*fade*Math.sin(k*r-omega*t);
+}
+
+function drawWaterField(){
+  const img=ctx.createImageData(W,H);
+  const data=img.data;
+  const {s1,s2}=sourcePositions();
+
+  for(let y=0;y<H;y+=2){
+    for(let x=0;x<W;x+=2){
+      let u=0;
+      if(source1On)u+=waveAt(x,y,t,s1);
+      if(source2On)u+=waveAt(x,y,t,s2);
+
+      const q=Math.max(-1.5,Math.min(1.5,u));
+      let r=238,g=247,b=255;
+      if(q>0){
+        r-=30*q; g-=18*q; b-=5*q;
+      }else{
+        r+=3*q; g+=12*q; b+=28*q;
+      }
+      r=Math.max(0,Math.min(255,Math.round(r)));
+      g=Math.max(0,Math.min(255,Math.round(g)));
+      b=Math.max(0,Math.min(255,Math.round(b)));
+
+      for(let yy=0;yy<2;yy++){
+        for(let xx=0;xx<2;xx++){
+          const px=x+xx,py=y+yy;
+          if(px>=W||py>=H)continue;
+          const idx=(py*W+px)*4;
+          data[idx]=r;
+          data[idx+1]=g;
+          data[idx+2]=b;
+          data[idx+3]=255;
+        }
+      }
+    }
+  }
+  ctx.putImageData(img,0,0);
+}
+
+function drawSources(){
+  const {s1,s2}=sourcePositions();
+  [s1,s2].forEach((s,i)=>{
+    const on=i===0?source1On:source2On;
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,10,0,Math.PI*2);
+    ctx.fillStyle=on?(i===0?'#0ea5e9':'#7c3aed'):'#94a3b8';
+    ctx.fill();
+    ctx.lineWidth=3;
+    ctx.strokeStyle='#fff';
+    ctx.stroke();
+    ctx.fillStyle='#0f172a';
+    ctx.font='bold 18px Arial';
+    ctx.textAlign='center';
+    ctx.fillText(i===0?'S1':'S2',s.x,s.y-20);
+  });
+}
+
+function drawInterferenceLines(){
+  if(!showLines.checked || !(source1On&&source2On))return;
+  const {s1,s2}=sourcePositions();
+  const lambda=v/f;
+
+  // Construct approximate loci by sampling points and checking path difference.
+  for(let type=0;type<2;type++){
+    ctx.fillStyle=type===0?'rgba(22,163,74,.55)':'rgba(220,38,38,.5)';
+    const maxOrder=5;
+    for(let y=35;y<H-35;y+=5){
+      for(let x=35;x<W-35;x+=5){
+        const r1=Math.hypot(x-s1.x,y-s1.y);
+        const r2=Math.hypot(x-s2.x,y-s2.y);
+        const delta=Math.abs(r2-r1);
+        let targetDist=Infinity;
+        for(let m=0;m<=maxOrder;m++){
+          const target = type===0 ? m*lambda : (m+0.5)*lambda;
+          targetDist=Math.min(targetDist,Math.abs(delta-target));
+        }
+        if(targetDist<1.6){
+          ctx.fillRect(x,y,2.2,2.2);
+        }
+      }
+    }
+  }
+
+  ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.strokeStyle='#cbd5e1';
+  ctx.lineWidth=1;
+  ctx.fillRect(18,18,220,58);
+  ctx.strokeRect(18,18,220,58);
+  ctx.fillStyle='#15803d';
+  ctx.font='bold 14px Arial';
+  ctx.textAlign='left';
+  ctx.fillText('● Cực đại: Δd = kλ',32,42);
+  ctx.fillStyle='#b91c1c';
+  ctx.fillText('● Cực tiểu: Δd = (k + 1/2)λ',32,64);
+}
+
+function drawTitle(){
+  ctx.fillStyle='rgba(255,255,255,.88)';
+  ctx.fillRect(W/2-180,12,360,42);
+  ctx.fillStyle='#0b3b78';
+  ctx.font='bold 24px Arial';
+  ctx.textAlign='center';
+  ctx.fillText('Mặt nước nhìn từ trên xuống',W/2,41);
+}
+
+function drawScene(){
+  drawWaterField();
+  drawInterferenceLines();
+  drawSources();
+  drawTitle();
+}
+
+function box(x,y,w,h,fill,stroke){
+  ictx.fillStyle=fill;
+  ictx.strokeStyle=stroke;
+  ictx.lineWidth=2;
+  ictx.beginPath();
+  ictx.roundRect(x,y,w,h,14);
+  ictx.fill();
+  ictx.stroke();
+}
+
+function drawInfo(){
+  ictx.clearRect(0,0,430,560);
+  ictx.fillStyle='#fff';
+  ictx.fillRect(0,0,430,560);
+
+  ictx.fillStyle='#0b3b78';
+  ictx.font='bold 28px Arial';
+  ictx.textAlign='center';
+  ictx.fillText('Thông tin giao thoa',215,42);
+
+  const lambda=v/f;
+
+  box(18,72,394,118,'#f8fafc','#dbe5f2');
+  ictx.fillStyle='#111827';
+  ictx.font='bold 19px Arial';
+  ictx.textAlign='left';
+  ictx.fillText('Thông số',36,104);
+  ictx.font='16px Arial';
+  ictx.fillText(`f = ${f.toFixed(1)} Hz`,36,134);
+  ictx.fillText(`v = ${v.toFixed(0)} px/s`,160,134);
+  ictx.fillText(`λ = v/f ≈ ${lambda.toFixed(1)} px`,36,162);
+  ictx.fillText(`S1S2 = ${d.toFixed(0)} px`,220,162);
+
+  box(18,212,394,118,'#f0fdf4','#bbf7d0');
+  ictx.fillStyle='#15803d';
+  ictx.font='bold 19px Arial';
+  ictx.fillText('Cực đại giao thoa',36,246);
+  ictx.fillStyle='#111827';
+  ictx.font='16px Arial';
+  ictx.fillText('Hai sóng gặp nhau cùng pha.',36,276);
+  ictx.fillText('Điều kiện: Δd = kλ',36,304);
+
+  box(18,352,394,118,'#fff1f2','#fecdd3');
+  ictx.fillStyle='#b91c1c';
+  ictx.font='bold 19px Arial';
+  ictx.fillText('Cực tiểu giao thoa',36,386);
+  ictx.fillStyle='#111827';
+  ictx.font='16px Arial';
+  ictx.fillText('Hai sóng gặp nhau ngược pha.',36,416);
+  ictx.fillText('Điều kiện: Δd = (k + 1/2)λ',36,444);
+
+  ictx.fillStyle='#0f172a';
+  ictx.font='bold 16px Arial';
+  ictx.fillText(`t = ${t.toFixed(2)} s`,36,508);
+
+  ictx.font='15px Arial';
+  ictx.fillStyle='#475569';
+  ictx.fillText('Thử thay đổi f hoặc khoảng cách hai nguồn',36,536);
+  ictx.fillText('để quan sát hệ vân thay đổi.',36,554);
+}
+
+function animate(ts){
+  updateParams();
+  if(lastTs===null)lastTs=ts;
+  let dt=Math.min((ts-lastTs)/1000,.04);
+  lastTs=ts;
+  if(running)t+=dt;
+  drawScene();
+  drawInfo();
+  requestAnimationFrame(animate);
+}
+
+startBtn.addEventListener('click',()=>{
+  running=true;
+  lastTs=null;
+});
+pauseBtn.addEventListener('click',()=>{running=false;});
+resetBtn.addEventListener('click',()=>{
+  running=false;
+  t=0;
+  lastTs=null;
+});
+source1Btn.addEventListener('click',()=>{
+  source1On=!source1On;
+  source1Btn.textContent=`Nguồn S1: ${source1On?'BẬT':'TẮT'}`;
+});
+source2Btn.addEventListener('click',()=>{
+  source2On=!source2On;
+  source2Btn.textContent=`Nguồn S2: ${source2On?'BẬT':'TẮT'}`;
+});
+[freqSlider,ampSlider,speedSlider,distSlider].forEach(el=>el.addEventListener('input',updateParams));
+
+updateParams();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

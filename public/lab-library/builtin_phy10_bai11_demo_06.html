@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mô phỏng bài toán ném xiên – v0 = 4 m/s, góc 45°</title>
+  <style>
+    :root{
+      --bg1:#f5efe1;
+      --bg2:#eaf4ff;
+      --panel:#fffdf8;
+      --panel2:#f7fbff;
+      --line:#d9dfd1;
+      --text:#213547;
+      --muted:#5f6f7d;
+      --green:#4d8b55;
+      --green2:#88c07d;
+      --sky:#bfe4ff;
+      --accent:#2f7fd1;
+      --accent2:#f59e0b;
+      --red:#e45757;
+      --shadow:0 14px 34px rgba(32, 47, 61, .12);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,.88), rgba(255,255,255,0) 34%),
+        linear-gradient(180deg, #f5f0e5 0%, #eef7ff 45%, #edf5e7 100%);
+    }
+    .wrap{max-width:1400px;margin:auto;padding:18px}
+    .hero{
+      background:linear-gradient(135deg, rgba(255,253,248,.94), rgba(240,248,255,.96));
+      border:1px solid rgba(160,180,170,.35);
+      border-radius:24px;
+      padding:18px 22px;
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(4px);
+    }
+    .hero h1{margin:0 0 8px;font-size:clamp(24px, 4vw, 40px);color:#24496c}
+    .hero p{margin:0;color:#4f6476;line-height:1.6}
+    .grid{display:grid;grid-template-columns:360px minmax(0,1fr);gap:16px;margin-top:16px}
+    .panel{
+      background:linear-gradient(180deg, rgba(255,253,248,.98), rgba(246,251,255,.98));
+      border:1px solid rgba(170,188,170,.35);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .panelBody{padding:16px}
+    .title{font-size:18px;font-weight:800;color:#2b4f71;margin:0 0 10px}
+    .problem{
+      background:linear-gradient(180deg,#fffef9,#fff7e7);
+      border:1px solid #eadfbe;border-radius:16px;padding:12px 14px;
+      line-height:1.55;color:#594f3b
+    }
+    .kv{display:grid;grid-template-columns:1fr auto;gap:8px;padding:7px 0;border-bottom:1px dashed #dde3d7;font-size:14px}
+    .kv:last-child{border-bottom:0}
+    .kv b{color:#1f4463}
+    .tag{display:inline-block;padding:6px 10px;background:#eef7e9;border:1px solid #d7e8d0;border-radius:999px;color:#3d6d45;font-weight:700;font-size:13px;margin:4px 6px 0 0}
+    .cards{display:grid;gap:10px;margin-top:12px}
+    .card{background:linear-gradient(180deg,#ffffff,#f6fbff);border:1px solid #dde7ef;border-radius:16px;padding:12px}
+    .card h3{margin:0 0 8px;font-size:15px;color:#29577a}
+    .card p{margin:0;line-height:1.55;font-size:14px;color:#536879}
+    .scenePanel{padding:14px}
+    .toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+    button{
+      border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:pointer;
+      box-shadow:0 6px 16px rgba(55,95,140,.16);transition:.2s transform,.2s opacity;
+    }
+    button:hover{transform:translateY(-1px)}
+    .btnPrimary{background:#2f7fd1;color:#fff}
+    .btnGold{background:#f3b23d;color:#3b2b09}
+    .btnSoft{background:#e8f2fb;color:#2d587d}
+    .btnRose{background:#fce4e4;color:#973838}
+    .stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:12px 0}
+    .stat{background:linear-gradient(180deg,#fff,#f5fbff);border:1px solid #dce7ef;border-radius:16px;padding:10px;text-align:center}
+    .stat small{display:block;color:#718596;font-size:12px;margin-bottom:5px}
+    .stat strong{font-size:16px;color:#234968}
+    .canvasWrap{
+      border-radius:22px;overflow:hidden;border:1px solid #d5e3db;background:#d8efff;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.42);
+    }
+    canvas{display:block;width:100%;height:auto;background:linear-gradient(180deg,#c9ebff 0%,#eef9ff 56%,#b3e08f 56%,#7db75f 72%,#659b4f 100%)}
+    .explain{margin-top:12px;padding:12px 14px;background:linear-gradient(180deg,#fffefc,#f5fbf4);border-left:5px solid #72aa60;border-radius:14px;color:#546a61;line-height:1.6}
+    .miniGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
+    .table{width:100%;border-collapse:collapse;font-size:14px}
+    .table th,.table td{padding:8px 6px;border-bottom:1px solid #e1e8e0;text-align:center}
+    .table th{background:#f6fbff;color:#2c5678}
+    .foot{margin-top:8px;color:#7c8b96;font-size:13px}
+    @media(max-width:1120px){
+      .grid{grid-template-columns:1fr}
+      .stats{grid-template-columns:repeat(3,1fr)}
+    }
+    @media(max-width:720px){
+      .stats{grid-template-columns:repeat(2,1fr)}
+      .miniGrid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Mô phỏng HTML bài toán ném xiên</h1>
+      <p>Bài toán gốc: bắn một viên bi với <b>v₀ = 4 m/s</b>, góc <b>45°</b> so với phương ngang, bỏ qua sức cản không khí. Mô phỏng dưới đây vừa trình diễn chuyển động trên nền <b>cánh đồng sáng dịu</b>, vừa hiển thị các kết quả cần khai thác khi dạy học.</p>
+    </section>
+
+    <section class="grid">
+      <aside class="panel">
+        <div class="panelBody">
+          <h2 class="title">Đề bài & dữ kiện</h2>
+          <div class="problem">
+            Người ta bắn một viên bi với vận tốc ban đầu <b>4 m/s</b> hướng lên theo phương xiên <b>45°</b> so với phương nằm ngang. Coi sức cản của không khí là không đáng kể.
+          </div>
+
+          <div style="margin-top:10px">
+            <span class="tag">g = 10 m/s²</span>
+            <span class="tag">v₀x = v₀cos45°</span>
+            <span class="tag">v₀y = v₀sin45°</span>
+          </div>
+
+          <div class="cards">
+            <div class="card">
+              <h3>Dữ kiện tính nhanh</h3>
+              <div class="kv"><span>v₀x = v₀y</span><b id="vx0Txt">2.83 m/s</b></div>
+              <div class="kv"><span>Thời gian đạt đỉnh</span><b id="tPeakTxt">0.283 s</b></div>
+              <div class="kv"><span>Độ cao cực đại H</span><b id="hMaxTxt">0.400 m</b></div>
+              <div class="kv"><span>Thời gian chạm đất</span><b id="tFlightTxt">0.566 s</b></div>
+              <div class="kv"><span>Tầm xa L</span><b id="rangeTxt">1.600 m</b></div>
+            </div>
+
+            <div class="card">
+              <h3>Vận tốc tại các thời điểm</h3>
+              <table class="table">
+                <thead>
+                  <tr><th>t (s)</th><th>vₓ (m/s)</th><th>vᵧ (m/s)</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>0.0</td><td id="t0vx">2.83</td><td id="t0vy">2.83</td></tr>
+                  <tr><td>0.1</td><td id="t1vx">2.83</td><td id="t1vy">1.83</td></tr>
+                  <tr><td>0.2</td><td id="t2vx">2.83</td><td id="t2vy">0.83</td></tr>
+                </tbody>
+              </table>
+              <div class="foot">Phương ngang không đổi, phương đứng giảm đều theo thời gian.</div>
+            </div>
+
+            <div class="card">
+              <h3>Kết luận quan trọng</h3>
+              <p>Vận tốc có độ lớn cực tiểu khi viên bi ở <b>đỉnh quỹ đạo</b>, vì khi đó <b>vᵧ = 0</b> và tốc độ chỉ còn bằng <b>vₓ</b>.</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="panel scenePanel">
+        <div class="toolbar">
+          <button id="playBtn" class="btnPrimary">▶ Chạy</button>
+          <button id="resetBtn" class="btnSoft">↺ Đặt lại</button>
+          <button id="stepBtn" class="btnGold">+0,05 s</button>
+          <button id="traceBtn" class="btnSoft">Quỹ đạo: BẬT</button>
+          <button id="solutionBtn" class="btnRose">Hiện/ẩn lời giải nhanh</button>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><small>t hiện tại</small><strong id="timeNow">0.000 s</strong></div>
+          <div class="stat"><small>x</small><strong id="xNow">0.000 m</strong></div>
+          <div class="stat"><small>y</small><strong id="yNow">0.000 m</strong></div>
+          <div class="stat"><small>vₓ</small><strong id="vxNow">2.83 m/s</strong></div>
+          <div class="stat"><small>vᵧ</small><strong id="vyNow">2.83 m/s</strong></div>
+          <div class="stat"><small>|v|</small><strong id="vNow">4.00 m/s</strong></div>
+        </div>
+
+        <div class="canvasWrap">
+          <canvas id="cv" width="980" height="560"></canvas>
+        </div>
+
+        <div class="explain" id="quickSolution" style="display:none">
+          <b>Tóm tắt lời giải nhanh:</b><br>
+          - v₀x = 4cos45° = 2,83 m/s; v₀y = 4sin45° = 2,83 m/s.<br>
+          - vᵧ(t) = 2,83 − 10t.<br>
+          - Lúc đạt độ cao cực đại: vᵧ = 0 ⇒ t = 0,283 s.<br>
+          - H = v₀y²/(2g) = 0,4 m.<br>
+          - a tại mọi điểm luôn hướng thẳng đứng xuống dưới, độ lớn bằng g = 10 m/s².<br>
+          - Thời gian bay: T = 2v₀y/g = 0,566 s.<br>
+          - Tầm xa: L = v₀x·T = 1,6 m.<br>
+          - Khi chạm đất: vₓ = 2,83 m/s; vᵧ = −2,83 m/s; |v| = 4,0 m/s.
+        </div>
+
+        <div class="miniGrid">
+          <div class="card">
+            <h3>Câu 3a, 3b</h3>
+            <p>Vận tốc cực tiểu tại <b>đỉnh quỹ đạo</b>. Thời điểm tương ứng là <b id="peakMomentLabel">0.283 s</b>. Khi ấy <b>v = vₓ = 2,83 m/s</b>.</p>
+          </div>
+          <div class="card">
+            <h3>Câu 4a, 4b, 4c</h3>
+            <p>Viên bi chạm đất ở <b id="touchMomentLabel">0.566 s</b>. Khi chạm đất, vector vận tốc đối xứng với lúc bắn qua trục ngang: <b>(2,83 ; -2,83) m/s</b>, tầm xa <b>1,60 m</b>.</p>
+          </div>
+        </div>
+      </main>
+    </section>
+  </div>
+
+<script>
+(() => {
+  const g = 10;
+  const v0 = 4;
+  const angleDeg = 45;
+  const angle = angleDeg * Math.PI / 180;
+  const vx0 = v0 * Math.cos(angle);
+  const vy0 = v0 * Math.sin(angle);
+  const tPeak = vy0 / g;
+  const hMax = vy0 * vy0 / (2 * g);
+  const tFlight = 2 * vy0 / g;
+  const range = vx0 * tFlight;
+
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const playBtn = document.getElementById('playBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const stepBtn = document.getElementById('stepBtn');
+  const traceBtn = document.getElementById('traceBtn');
+  const solutionBtn = document.getElementById('solutionBtn');
+  const quickSolution = document.getElementById('quickSolution');
+
+  const fields = {
+    vx0Txt: document.getElementById('vx0Txt'),
+    tPeakTxt: document.getElementById('tPeakTxt'),
+    hMaxTxt: document.getElementById('hMaxTxt'),
+    tFlightTxt: document.getElementById('tFlightTxt'),
+    rangeTxt: document.getElementById('rangeTxt'),
+    t0vx: document.getElementById('t0vx'), t0vy: document.getElementById('t0vy'),
+    t1vx: document.getElementById('t1vx'), t1vy: document.getElementById('t1vy'),
+    t2vx: document.getElementById('t2vx'), t2vy: document.getElementById('t2vy'),
+    timeNow: document.getElementById('timeNow'),
+    xNow: document.getElementById('xNow'),
+    yNow: document.getElementById('yNow'),
+    vxNow: document.getElementById('vxNow'),
+    vyNow: document.getElementById('vyNow'),
+    vNow: document.getElementById('vNow'),
+    peakMomentLabel: document.getElementById('peakMomentLabel'),
+    touchMomentLabel: document.getElementById('touchMomentLabel')
+  };
+
+  function f2(n){ return n.toFixed(2); }
+  function f3(n){ return n.toFixed(3); }
+  function setupText(){
+    fields.vx0Txt.textContent = `${f2(vx0)} m/s`;
+    fields.tPeakTxt.textContent = `${f3(tPeak)} s`;
+    fields.hMaxTxt.textContent = `${f3(hMax)} m`;
+    fields.tFlightTxt.textContent = `${f3(tFlight)} s`;
+    fields.rangeTxt.textContent = `${f3(range)} m`;
+    fields.peakMomentLabel.textContent = `${f3(tPeak)} s`;
+    fields.touchMomentLabel.textContent = `${f3(tFlight)} s`;
+    fields.t0vx.textContent = f2(vx0);
+    fields.t1vx.textContent = f2(vx0);
+    fields.t2vx.textContent = f2(vx0);
+    fields.t0vy.textContent = f2(vy0 - g * 0.0);
+    fields.t1vy.textContent = f2(vy0 - g * 0.1);
+    fields.t2vy.textContent = f2(vy0 - g * 0.2);
+  }
+
+  let t = 0;
+  let running = false;
+  let showTrace = true;
+  let last = performance.now();
+  const trace = [];
+
+  function stateAt(tt){
+    const x = vx0 * tt;
+    const y = Math.max(0, vy0 * tt - 0.5 * g * tt * tt);
+    const vy = vy0 - g * tt;
+    const speed = Math.sqrt(vx0*vx0 + vy*vy);
+    return {x,y,vy,speed};
+  }
+
+  function updateStats(){
+    const s = stateAt(t);
+    fields.timeNow.textContent = `${f3(t)} s`;
+    fields.xNow.textContent = `${f3(s.x)} m`;
+    fields.yNow.textContent = `${f3(s.y)} m`;
+    fields.vxNow.textContent = `${f2(vx0)} m/s`;
+    fields.vyNow.textContent = `${f2(s.vy)} m/s`;
+    fields.vNow.textContent = `${f2(s.speed)} m/s`;
+  }
+
+  function drawBackground(){
+    const W = cv.width, H = cv.height;
+    // sun
+    const sun = ctx.createRadialGradient(825, 95, 10, 825, 95, 70);
+    sun.addColorStop(0, 'rgba(255, 243, 171, .95)');
+    sun.addColorStop(.7, 'rgba(255, 243, 171, .35)');
+    sun.addColorStop(1, 'rgba(255, 243, 171, 0)');
+    ctx.fillStyle = sun;
+    ctx.beginPath(); ctx.arc(825, 95, 70, 0, Math.PI*2); ctx.fill();
+
+    // clouds
+    function cloud(x,y,s){
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,.88)';
+      ctx.beginPath();
+      ctx.arc(x, y, 18*s, 0, Math.PI*2);
+      ctx.arc(x+16*s, y-10*s, 22*s, 0, Math.PI*2);
+      ctx.arc(x+38*s, y, 19*s, 0, Math.PI*2);
+      ctx.arc(x+18*s, y+8*s, 20*s, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+    cloud(115, 90, 1.2); cloud(520, 70, 1); cloud(690, 125, .9);
+
+    // distant hills
+    ctx.fillStyle = '#92bd7e';
+    ctx.beginPath();
+    ctx.moveTo(0, 330); ctx.quadraticCurveTo(130, 260, 250, 320);
+    ctx.quadraticCurveTo(360, 250, 510, 325);
+    ctx.quadraticCurveTo(640, 260, 785, 318);
+    ctx.quadraticCurveTo(880, 285, 980, 330);
+    ctx.lineTo(980, 560); ctx.lineTo(0, 560); ctx.closePath(); ctx.fill();
+
+    // grass texture lines
+    ctx.strokeStyle = 'rgba(70,120,55,.15)';
+    for(let i=0;i<25;i++){
+      ctx.beginPath();
+      ctx.moveTo(i*42, 365 + (i%4)*6);
+      ctx.lineTo(i*42 + 20, 560);
+      ctx.stroke();
+    }
+  }
+
+  function drawCannon(originX, originY){
+    ctx.save();
+    // base
+    ctx.fillStyle = '#6a4a31';
+    ctx.fillRect(originX-22, originY+16, 56, 12);
+    ctx.fillStyle = '#513727';
+    ctx.beginPath(); ctx.arc(originX-8, originY+34, 15, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(originX+30, originY+34, 15, 0, Math.PI*2); ctx.fill();
+
+    // cannon barrel
+    ctx.translate(originX, originY);
+    ctx.rotate(-angle);
+    ctx.fillStyle = '#2d4a62';
+    ctx.fillRect(0, -10, 85, 20);
+    ctx.fillStyle = '#1d3344';
+    ctx.fillRect(72, -12, 14, 24);
+    ctx.fillStyle = '#4d7ba0';
+    ctx.fillRect(8, -6, 46, 4);
+    ctx.restore();
+  }
+
+  function drawAxes(left, ground, sx, sy){
+    ctx.save();
+    ctx.strokeStyle = 'rgba(32,67,88,.45)';
+    ctx.fillStyle = 'rgba(32,67,88,.8)';
+    ctx.lineWidth = 1.2;
+
+    // Ox
+    ctx.beginPath(); ctx.moveTo(left, ground); ctx.lineTo(left + 1.9*range*sx, ground); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(left + 1.9*range*sx, ground); ctx.lineTo(left + 1.9*range*sx - 10, ground - 4); ctx.lineTo(left + 1.9*range*sx - 10, ground + 4); ctx.closePath(); ctx.fill();
+
+    // Oy
+    ctx.beginPath(); ctx.moveTo(left, ground); ctx.lineTo(left, ground - 1.8*(hMax+0.2)*sy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(left, ground - 1.8*(hMax+0.2)*sy); ctx.lineTo(left - 4, ground - 1.8*(hMax+0.2)*sy + 10); ctx.lineTo(left + 4, ground - 1.8*(hMax+0.2)*sy + 10); ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = '#274b66';
+    ctx.font = '700 15px Segoe UI';
+    ctx.fillText('Ox', left + 1.9*range*sx + 10, ground + 5);
+    ctx.fillText('Oy', left - 8, ground - 1.8*(hMax+0.2)*sy - 10);
+    ctx.restore();
+  }
+
+  function draw(){
+    const W = cv.width, H = cv.height;
+    ctx.clearRect(0, 0, W, H);
+    drawBackground();
+
+    const ground = 420;
+    const left = 105;
+    const sx = 390 / Math.max(range, 0.1);
+    const sy = 250 / Math.max(hMax + 0.2, 0.1);
+    drawAxes(left, ground, sx, sy);
+    drawCannon(left - 5, ground - 10);
+
+    // landing marker
+    ctx.save();
+    ctx.strokeStyle = 'rgba(36,74,104,.4)';
+    ctx.setLineDash([6,6]);
+    ctx.beginPath(); ctx.moveTo(left + range*sx, ground); ctx.lineTo(left + range*sx, ground - 220); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = '#2b5879';
+    ctx.font = '700 14px Segoe UI';
+    ctx.fillText('L = 1,60 m', left + range*sx - 26, ground + 26);
+
+    // full trajectory ghost
+    ctx.save();
+    ctx.strokeStyle = 'rgba(47,127,209,.25)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8,7]);
+    ctx.beginPath();
+    for(let i=0;i<=100;i++){
+      const tt = tFlight * i / 100;
+      const x = vx0 * tt;
+      const y = vy0 * tt - 0.5 * g * tt * tt;
+      const X = left + x * sx;
+      const Y = ground - y * sy;
+      if(i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    if(showTrace && trace.length > 1){
+      ctx.save();
+      ctx.strokeStyle = '#2f7fd1';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      trace.forEach((p, i) => {
+        if(i===0) ctx.moveTo(p.X,p.Y); else ctx.lineTo(p.X,p.Y);
+      });
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    const s = stateAt(t);
+    const X = left + s.x * sx;
+    const Y = ground - s.y * sy;
+
+    // peak marker
+    const peakX = left + vx0 * tPeak * sx;
+    const peakY = ground - hMax * sy;
+    ctx.save();
+    ctx.fillStyle = '#f3b23d';
+    ctx.beginPath(); ctx.arc(peakX, peakY, 5, 0, Math.PI*2); ctx.fill();
+    ctx.font = '700 14px Segoe UI';
+    ctx.fillText('Hmax = 0,40 m', peakX - 34, peakY - 14);
+    ctx.restore();
+
+    // helper lines
+    ctx.save();
+    ctx.strokeStyle = 'rgba(245,158,11,.55)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(X, ground); ctx.lineTo(X, Y); ctx.stroke();
+    ctx.strokeStyle = 'rgba(228,87,87,.5)';
+    ctx.beginPath(); ctx.moveTo(left, Y); ctx.lineTo(X, Y); ctx.stroke();
+    ctx.restore();
+
+    // projectile
+    ctx.save();
+    ctx.fillStyle = '#d9534f';
+    ctx.shadowColor = 'rgba(217,83,79,.5)';
+    ctx.shadowBlur = 12;
+    ctx.beginPath(); ctx.arc(X, Y, 9, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    // velocity vectors
+    const vecScale = 16;
+    const vxLen = vx0 * vecScale;
+    const vyLen = s.vy * vecScale;
+    arrow(X, Y, X + vxLen, Y, '#2f7fd1', 'vₓ');
+    arrow(X, Y, X, Y - vyLen, '#f59e0b', 'vᵧ');
+    arrow(X, Y, X + vxLen, Y - vyLen, '#2f9d63', 'v');
+
+    // labels
+    ctx.fillStyle = '#234968';
+    ctx.font = '700 16px Segoe UI';
+    ctx.fillText('Khẩu súng bắn viên bi', 30, 470);
+    ctx.fillText(`v₀ = 4 m/s`, 34, 494);
+    ctx.fillText(`θ = 45°`, 34, 516);
+
+    ctx.fillStyle = '#31566e';
+    ctx.font = '700 18px Segoe UI';
+    ctx.fillText('MÔ PHỎNG CHUYỂN ĐỘNG NÉM XIÊN', 280, 38);
+  }
+
+  function arrow(x1,y1,x2,y2,color,label){
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    const a = Math.atan2(y2-y1, x2-x1);
+    const s = 9;
+    ctx.beginPath();
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(x2 - s*Math.cos(a - .45), y2 - s*Math.sin(a - .45));
+    ctx.lineTo(x2 - s*Math.cos(a + .45), y2 - s*Math.sin(a + .45));
+    ctx.closePath(); ctx.fill();
+    ctx.font = '700 14px Segoe UI';
+    ctx.fillText(label, x2 + 8, y2 - 6);
+    ctx.restore();
+  }
+
+  function pushTrace(){
+    const s = stateAt(t);
+    const ground = 420;
+    const left = 105;
+    const sx = 390 / Math.max(range, 0.1);
+    const sy = 250 / Math.max(hMax + 0.2, 0.1);
+    trace.push({ X: left + s.x * sx, Y: ground - s.y * sy });
+  }
+
+  function reset(){
+    t = 0;
+    running = false;
+    trace.length = 0;
+    pushTrace();
+    playBtn.textContent = '▶ Chạy';
+    updateStats();
+    draw();
+  }
+
+  function animate(now){
+    const dt = Math.min(0.03, (now - last)/1000);
+    last = now;
+    if(running){
+      t += dt;
+      if(t >= tFlight){
+        t = tFlight;
+        running = false;
+        playBtn.textContent = '▶ Chạy lại';
+      }
+      pushTrace();
+      updateStats();
+      draw();
+    }
+    requestAnimationFrame(animate);
+  }
+
+  playBtn.addEventListener('click', () => {
+    if(t >= tFlight && !running){
+      reset();
+    }
+    running = !running;
+    playBtn.textContent = running ? '⏸ Tạm dừng' : (t >= tFlight ? '▶ Chạy lại' : '▶ Chạy');
+    last = performance.now();
+  });
+
+  resetBtn.addEventListener('click', reset);
+  stepBtn.addEventListener('click', () => {
+    running = false;
+    playBtn.textContent = '▶ Chạy';
+    t = Math.min(tFlight, t + 0.05);
+    pushTrace();
+    updateStats();
+    draw();
+  });
+
+  traceBtn.addEventListener('click', () => {
+    showTrace = !showTrace;
+    traceBtn.textContent = `Quỹ đạo: ${showTrace ? 'BẬT' : 'TẮT'}`;
+    draw();
+  });
+
+  solutionBtn.addEventListener('click', () => {
+    quickSolution.style.display = quickSolution.style.display === 'none' ? 'block' : 'none';
+  });
+
+  setupText();
+  reset();
+  requestAnimationFrame(animate);
+})();
+<\/script>
+</body>
+</html>

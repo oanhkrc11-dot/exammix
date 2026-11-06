@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>068 - Ảnh hưởng diện tích bản tụ</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07131e;color:#eef9ff;font-family:Inter,Segoe UI,system-ui,sans-serif}
+#app{position:fixed;inset:0}
+#panel{position:fixed;left:12px;top:12px;bottom:12px;width:362px;z-index:40;overflow:auto;padding:11px;border-radius:16px;background:rgba(8,18,28,.97);border:1px solid rgba(111,193,235,.22);box-shadow:0 18px 52px rgba(0,0,0,.42)}
+#panel.hide{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none}
+h1{font-size:14px;margin:0 0 3px}.sub{font-size:10.5px;color:#7bdcff;font-weight:800}
+.desc{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(12,28,41,.72);font-size:10.3px;line-height:1.45;color:#cce1ee}
+.section{margin:10px 0 6px;color:#75d8ff;font-weight:900;font-size:10.5px}
+label.control{display:block;margin:7px 0 9px;font-size:10.8px}label.control .value{float:right;color:#9fe9ff;font-weight:800}
+input[type=range]{width:100%;accent-color:#52c9ff;margin-top:4px}
+.buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:7px}
+button{border:1px solid #355a73;background:#122332;color:#eef8ff;border-radius:9px;padding:7px 6px;font-size:10.4px;font-weight:800;cursor:pointer}
+button.primary{border-color:#54d692;background:#1b5136}button.active{border-color:#6ad9ff;background:#123c56}
+.checkrow{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:10.4px;color:#cfe2ee}
+.modeling{margin-top:9px;padding:8px 9px;border-radius:10px;background:rgba(21,28,38,.72);border-left:3px solid #d8a447;font-size:10px;line-height:1.42;color:#c8d4dd}
+#graph{width:100%;height:180px;background:#071019;border-radius:9px;margin-top:8px;border:1px solid rgba(104,186,225,.14)}
+#formula{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:28;padding:8px 14px;border-radius:999px;background:rgba(6,16,25,.68);border:1px solid rgba(102,209,255,.2);font-size:14px;font-weight:900}
+#hud{position:fixed;right:16px;top:16px;z-index:20;width:448px;padding:10px 11px;border-radius:13px;background:rgba(6,14,22,.70);border:1px solid rgba(116,193,234,.18);font-size:11px;line-height:1.55}
+#hud b{color:#ffd972}
+#probar{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:35;display:flex;gap:5px;padding:5px;border-radius:12px;background:rgba(6,14,22,.54);border:1px solid rgba(115,195,235,.16)}
+#credit{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:18;color:#ffe075;font-size:14px;font-weight:900}
+#legend{position:fixed;right:18px;bottom:18px;z-index:20;width:310px;padding:8px 10px;border-radius:10px;background:rgba(6,14,22,.66);border:1px solid rgba(116,193,234,.16);font-size:10px;line-height:1.5}
+#recStatus{position:fixed;right:18px;bottom:148px;z-index:30;display:none;padding:7px 10px;border-radius:10px;background:rgba(125,0,0,.72);font-size:11px;font-weight:900}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"}}</script>
+</head>
+<body>
+
+<div id="app"></div>
+<div id="formula">C = ε₀εᵣS<sub>chồng</sub>/d &nbsp; · &nbsp; S<sub>chồng</sub> thay đổi khi hai bản trượt lệch nhau</div>
+
+<div id="probar">
+<button id="fullscreenBtn">⛶</button><button id="panelBtn">☰</button>
+<button id="bgBtn">🌗</button><button id="lightBtn">💡</button>
+<button id="camBtn">🎥</button><button id="autoCamBtn">↻ Cam</button>
+<button id="recordBtn">🔴 Quay</button><button id="stopRecordBtn">⏹</button>
+</div>
+
+<div id="panel">
+<h1>PHYSICS 11 LAB · 3D CINEMATIC</h1>
+<div class="sub">068 · ẢNH HƯỞNG DIỆN TÍCH BẢN TỤ</div>
+
+<div class="desc">
+Trượt một bản tụ theo phương ngang để thay đổi <b>diện tích chồng lấn</b> giữa hai bản. Điện dung của tụ phẳng lý tưởng tỉ lệ thuận với diện tích chồng lấn: <b>C = εS/d</b>.
+</div>
+
+<div class="section">CHẾ ĐỘ VẬT LÍ</div>
+<div class="buttons">
+<button id="connectedBtn" class="active">🔌 Nối nguồn · U không đổi</button>
+<button id="isolatedBtn">🔒 Ngắt nguồn · Q không đổi</button>
+</div>
+
+<div class="section">ĐIỀU KHIỂN</div>
+<label class="control">Tốc độ mô phỏng <span id="speedVal" class="value">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
+<label class="control">Độ lệch bản trên <span id="shiftVal" class="value">0%</span><input id="shift" type="range" min="0" max="100" step="1" value="0"></label>
+<label class="control">Diện tích toàn bản S₀ <span id="baseAreaVal" class="value">240 cm²</span><input id="baseArea" type="range" min="100" max="600" step="10" value="240"></label>
+<label class="control">Khoảng cách d <span id="dVal" class="value">10 mm</span><input id="distance" type="range" min="3" max="25" step=".5" value="10"></label>
+<label class="control">Hằng số điện môi εᵣ <span id="erVal" class="value">1.00</span><input id="er" type="range" min="1" max="8" step=".1" value="1"></label>
+<label class="control">Nguồn U₀ <span id="u0Val" class="value">100 V</span><input id="u0" type="range" min="10" max="300" step="5" value="100"></label>
+<label class="control">Tốc độ trượt bản <span id="motionVal" class="value">1.0×</span><input id="motion" type="range" min=".3" max="2" step=".1" value="1"></label>
+
+<div class="section">NÚT NHANH</div>
+<div class="buttons">
+<button id="start" class="primary">▶ Bắt đầu</button><button id="pause">⏸ Tạm dừng</button>
+<button id="reset">↻ Đặt lại</button><button id="fit">⛶ Fit</button>
+<button id="slideOutBtn">→ Trượt ra</button><button id="slideInBtn">← Trượt vào</button>
+<button id="halfAreaBtn">S chồng = ½S₀</button><button id="fullAreaBtn">S chồng = S₀</button>
+<button id="lockQBtn">Chốt Q hiện tại</button><button id="zeroAreaBtn">S chồng ≈ 0</button>
+</div>
+
+<div class="section">HIỂN THỊ</div>
+<label class="checkrow"><input id="showField" type="checkbox" checked> Điện trường vùng chồng lấn</label>
+<label class="checkrow"><input id="showCharges" type="checkbox" checked> Điện tích trên vùng chồng lấn</label>
+<label class="checkrow"><input id="showOverlap" type="checkbox" checked> Tô sáng diện tích chồng lấn</label>
+<label class="checkrow"><input id="showDimension" type="checkbox" checked> Vạch biểu diễn S chồng</label>
+<label class="checkrow"><input id="showGrid" type="checkbox" checked> Lưới</label>
+
+<canvas id="graph" width="320" height="180"></canvas>
+
+<div class="modeling">
+<b>Mô hình hóa:</b> hai bản phẳng cùng kích thước, song song, cách nhau d không đổi. Chỉ phần <b>diện tích chồng lấn</b> được tính vào điện dung; bỏ qua điện trường mép. Khi diện tích chồng lấn bằng 0, mô hình tụ phẳng lý tưởng không còn áp dụng và mô phỏng cho \(C\to0\).
+</div>
+</div>
+
+<div id="hud">
+<b>ẢNH HƯỞNG DIỆN TÍCH CHỒNG LẤN</b><br>
+Chế độ = <b id="modeOut"></b><br>
+S₀ = <b id="baseAreaOut"></b> · S<sub>chồng</sub> = <b id="overlapOut"></b><br>
+Tỉ lệ chồng lấn = <b id="ratioOut"></b><br>
+C = <b id="cOut"></b><br>
+U = <b id="uOut"></b><br>
+Q = <b id="qOut"></b><br>
+E ≈ U/d = <b id="eOut"></b><br>
+W = <b id="wOut"></b><br>
+Kết luận = <b id="conclusionOut"></b>
+</div>
+
+<div id="legend">
+<b>Nhìn vào vùng phát sáng ở giữa hai bản</b><br>
+• Trượt lệch → vùng chồng lấn giảm → \(C\) giảm.<br>
+• 🔌 Nối nguồn: U không đổi → Q và W giảm theo S.<br>
+• 🔒 Ngắt nguồn: Q không đổi → U và W tăng khi S giảm.<br>
+• Nếu vùng chồng lấn gần 0, điện dung lý tưởng tiến gần 0.
+</div>
+
+<div id="credit">Thầy Hùng vật lí</div>
+<div id="recStatus">● ĐANG QUAY</div>
+<canvas id="recordCanvas" width="1920" height="1080" style="display:none"></canvas>
+
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id), EPS0=8.8541878128e-12;
+
+const s={
+ running:false,paused:false,time:0,speed:1,
+ mode:'connected',
+ shiftPct:0,baseAreaCm2:240,dMm:10,er:1,u0:100,
+ qLocked:0,
+ motion:1,motionDir:0,
+ bg:0,light:0,cam:1,autoCam:false
+};
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+$('app').appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x06131e);
+const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,200);camera.position.set(9,6.5,11);
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.minDistance=4.5;controls.maxDistance=28;controls.minPolarAngle=.18;controls.maxPolarAngle=1.5;controls.target.set(0,.2,0);
+
+const hemi=new THREE.HemisphereLight(0xe3f7ff,0x10202d,1.7);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,1.8);key.position.set(7,10,8);scene.add(key);
+const rim=new THREE.PointLight(0x56d8ff,1.2,30,2);rim.position.set(-5,5,-5);scene.add(rim);
+
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(38,28),new THREE.MeshStandardMaterial({color:0x101c27,roughness:.92}));
+floor.rotation.x=-Math.PI/2;floor.position.y=-3.1;scene.add(floor);
+const grid=new THREE.GridHelper(38,38,0x2e5b72,0x173241);grid.position.y=-3.09;grid.material.transparent=true;grid.material.opacity=.14;scene.add(grid);
+
+const root=new THREE.Group();scene.add(root);
+const plateG=new THREE.Group(),fieldG=new THREE.Group(),chargeG=new THREE.Group(),overlapG=new THREE.Group(),measureG=new THREE.Group();
+root.add(plateG,fieldG,chargeG,overlapG,measureG);
+
+let leftPlate,rightPlate;
+
+const baseArea=()=>s.baseAreaCm2*1e-4;
+const overlapRatio=()=>THREE.MathUtils.clamp(1-s.shiftPct/100,0,1);
+const overlapArea=()=>baseArea()*overlapRatio();
+const d=()=>s.dMm*1e-3;
+const C=()=>EPS0*s.er*overlapArea()/d();
+const U=()=>{
+ if(s.mode==='connected') return s.u0;
+ if(C()<1e-18) return Infinity;
+ return s.qLocked/C();
+};
+const Q=()=>s.mode==='connected'?C()*s.u0:s.qLocked;
+const E=()=>Number.isFinite(U())?U()/d():Infinity;
+const W=()=>{
+ if(s.mode==='connected') return .5*C()*s.u0*s.u0;
+ if(C()<1e-18) return Infinity;
+ return s.qLocked*s.qLocked/(2*C());
+};
+
+function fmtSI(v,u){
+ if(!Number.isFinite(v)) return '→ ∞';
+ const a=Math.abs(v);
+ if(u==='F'){if(a<1e-12)return `${(v*1e15).toFixed(2)} fF`;if(a<1e-9)return `${(v*1e12).toFixed(2)} pF`;if(a<1e-6)return `${(v*1e9).toFixed(2)} nF`;return `${(v*1e6).toFixed(2)} µF`}
+ if(u==='C'){if(a<1e-12)return `${(v*1e15).toFixed(2)} fC`;if(a<1e-9)return `${(v*1e12).toFixed(2)} pC`;if(a<1e-6)return `${(v*1e9).toFixed(2)} nC`;return `${(v*1e6).toFixed(2)} µC`}
+ if(u==='J'){if(a<1e-9)return `${(v*1e12).toFixed(2)} pJ`;if(a<1e-6)return `${(v*1e9).toFixed(2)} nJ`;if(a<1e-3)return `${(v*1e6).toFixed(2)} µJ`;return `${(v*1e3).toFixed(2)} mJ`}
+ return String(v);
+}
+function clearGroup(g){while(g.children.length){const o=g.children.pop();o.traverse?.(x=>{x.geometry?.dispose?.();x.material?.dispose?.()})}}
+
+function dims(){
+ const A=baseArea(),aspect=1.45;
+ const widthReal=Math.sqrt(A*aspect),heightReal=A/widthReal;
+ const scale=24;
+ return {
+  w:widthReal*scale,
+  h:heightReal*scale,
+  gap:THREE.MathUtils.clamp(s.dMm*.12,.36,3.0)
+ };
+}
+
+function shiftVisual(){
+ const dm=dims();
+ return dm.w*(s.shiftPct/100);
+}
+
+function overlapWidth(){
+ const dm=dims();
+ return Math.max(0,dm.w-shiftVisual());
+}
+
+function buildPlates(){
+ clearGroup(plateG);
+ const dm=dims(),shift=shiftVisual();
+
+ const matP=new THREE.MeshStandardMaterial({color:0xaeb8c1,metalness:.72,roughness:.25,emissive:0xff6045,emissiveIntensity:.12});
+ const matN=new THREE.MeshStandardMaterial({color:0xaeb8c1,metalness:.72,roughness:.25,emissive:0x3562ff,emissiveIntensity:.12});
+
+ leftPlate=new THREE.Mesh(new THREE.BoxGeometry(.15,dm.h,dm.w),matP);
+ rightPlate=new THREE.Mesh(new THREE.BoxGeometry(.15,dm.h,dm.w),matN);
+
+ leftPlate.position.set(-dm.gap/2,0,0);
+ rightPlate.position.set(dm.gap/2,0,shift);
+
+ plateG.add(leftPlate,rightPlate);
+}
+
+function buildOverlap(){
+ clearGroup(overlapG);
+ if(!$('showOverlap').checked)return;
+ const dm=dims(),ow=overlapWidth();
+ if(ow<=.01)return;
+
+ const centerZ=shiftVisual()/2;
+ const glow=new THREE.Mesh(
+   new THREE.BoxGeometry(Math.max(.08,dm.gap-.22),dm.h*.86,ow*.92),
+   new THREE.MeshPhysicalMaterial({
+    color:0xffd45f,emissive:0xffa61f,emissiveIntensity:.65,
+    transparent:true,opacity:.10,roughness:.2,side:THREE.DoubleSide,depthWrite:false
+   })
+ );
+ glow.position.z=centerZ;
+ overlapG.add(glow);
+}
+
+function buildField(){
+ clearGroup(fieldG);
+ if(!$('showField').checked||overlapWidth()<=.02||!Number.isFinite(E())||Math.abs(U())<1e-12)return;
+ const dm=dims(),ow=overlapWidth(),centerZ=shiftVisual()/2;
+ const dir=new THREE.Vector3(Math.sign(U())||1,0,0);
+ const startX=U()>=0?leftPlate.position.x+.09:rightPlate.position.x-.09;
+
+ const ny=5,nz=5;
+ for(let iy=0;iy<ny;iy++)for(let iz=0;iz<nz;iz++){
+  const y=-dm.h*.36+iy*(dm.h*.72/(ny-1));
+  const z=centerZ-ow*.36+iz*(ow*.72/(nz-1));
+  fieldG.add(new THREE.ArrowHelper(dir,new THREE.Vector3(startX,y,z),Math.max(.12,dm.gap-.18),0x63dcff,.11,.065));
+ }
+}
+
+function buildCharges(){
+ clearGroup(chargeG);
+ if(!$('showCharges').checked||overlapWidth()<=.02||Math.abs(Q())<1e-20)return;
+ const dm=dims(),ow=overlapWidth(),centerZ=shiftVisual()/2;
+ const count=Math.min(140,Math.max(12,Math.round(Math.abs(Q())*1e11)));
+ const geom=new THREE.SphereGeometry(.043,8,6);
+ const pm=new THREE.MeshBasicMaterial({color:0xff9d86});
+ const nm=new THREE.MeshBasicMaterial({color:0x92b2ff});
+
+ for(let i=0;i<count;i++){
+  const uy=(i%12)/11,uz=(Math.floor(i/12)%12)/11;
+  const y=-dm.h*.40+uy*dm.h*.80;
+  const z=centerZ-ow*.40+uz*ow*.80;
+
+  const p=new THREE.Mesh(geom,pm);p.position.set(leftPlate.position.x+.095,y,z);chargeG.add(p);
+  const n=new THREE.Mesh(geom,nm);n.position.set(rightPlate.position.x-.095,y,z);chargeG.add(n);
+ }
+}
+
+function buildMeasure(){
+ clearGroup(measureG);
+ if(!$('showDimension').checked)return;
+ const dm=dims(),ow=overlapWidth(),centerZ=shiftVisual()/2;
+ const y=-dm.h/2-.55;
+ if(ow>.02){
+  const z1=centerZ-ow/2,z2=centerZ+ow/2;
+  measureG.add(new THREE.Line(
+   new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,y,z1),new THREE.Vector3(0,y,z2)]),
+   new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.75})
+  ));
+  measureG.add(new THREE.ArrowHelper(new THREE.Vector3(0,0,1),new THREE.Vector3(0,y,z1),ow*.45,0xffffff,.12,.06));
+  measureG.add(new THREE.ArrowHelper(new THREE.Vector3(0,0,-1),new THREE.Vector3(0,y,z2),ow*.45,0xffffff,.12,.06));
+ }
+}
+
+function drawGraph(){
+ const c=$('graph'),g=c.getContext('2d'),w=c.width,h=c.height;
+ g.fillStyle='#071019';g.fillRect(0,0,w,h);
+ const L=42,T=12,B=26,R=10,pw=w-L-R,ph=h-T-B;
+ g.strokeStyle='rgba(190,225,240,.28)';g.beginPath();g.moveTo(L,T);g.lineTo(L,T+ph);g.lineTo(L+pw,T+ph);g.stroke();
+
+ const maxC=EPS0*s.er*baseArea()/d();
+ if(s.mode==='connected'){
+  g.strokeStyle='#72e7ff';g.lineWidth=2;g.beginPath();
+  for(let i=0;i<=180;i++){
+   const ratio=i/180,cc=maxC*ratio;
+   const x=L+ratio*pw,y=T+ph*(1-cc/Math.max(1e-30,maxC));
+   i?g.lineTo(x,y):g.moveTo(x,y);
+  }
+  g.stroke();
+  const ratio=overlapRatio(),gx=L+ratio*pw,gy=T+ph*(1-C()/Math.max(1e-30,maxC));
+  g.fillStyle='#ffd65f';g.beginPath();g.arc(gx,gy,4,0,Math.PI*2);g.fill();
+  g.fillStyle='#91aabb';g.font='9px Segoe UI';g.fillText('C',10,12);g.fillText('S chồng / S₀',w-70,h-6);
+ }else{
+  const minRatio=.04;
+  const maxW=s.qLocked*s.qLocked/(2*Math.max(1e-30,maxC*minRatio));
+  g.strokeStyle='#ffd65f';g.lineWidth=2;g.beginPath();
+  for(let i=0;i<=180;i++){
+   const ratio=minRatio+(1-minRatio)*i/180;
+   const cc=maxC*ratio,ww=s.qLocked*s.qLocked/(2*Math.max(1e-30,cc));
+   const x=L+(ratio-minRatio)/(1-minRatio)*pw,y=T+ph*(1-ww/maxW);
+   i?g.lineTo(x,y):g.moveTo(x,y);
+  }
+  g.stroke();
+  const ratio=Math.max(minRatio,overlapRatio()),ww=s.qLocked*s.qLocked/(2*Math.max(1e-30,maxC*ratio));
+  const gx=L+(ratio-minRatio)/(1-minRatio)*pw,gy=T+ph*(1-ww/maxW);
+  g.fillStyle='#72e7ff';g.beginPath();g.arc(gx,gy,4,0,Math.PI*2);g.fill();
+  g.fillStyle='#91aabb';g.font='9px Segoe UI';g.fillText('W',10,12);g.fillText('S chồng / S₀',w-70,h-6);
+ }
+}
+
+function updatePhysics(dt){
+ if(!s.running||s.paused)return;
+ s.time+=dt*s.speed;
+ if(s.motionDir!==0){
+  s.shiftPct += s.motionDir*22*dt*s.speed*s.motion;
+  if(s.shiftPct>=99.5){s.shiftPct=99.5;s.motionDir=0}
+  if(s.shiftPct<=0){s.shiftPct=0;s.motionDir=0}
+  $('shift').value=s.shiftPct;
+  rebuildDynamic();
+ }
+}
+
+function updateVisuals(){
+ grid.visible=$('showGrid').checked;
+ if(s.autoCam){
+  const a=s.time*.13;
+  camera.position.set(Math.cos(a)*10,5.8,Math.sin(a)*10);
+  camera.lookAt(controls.target);
+ }
+}
+
+function conclusion(){
+ if(s.mode==='connected') return 'S chồng↓ → C,Q,W↓; U không đổi';
+ return 'S chồng↓ → C↓; U,W↑; Q không đổi';
+}
+
+function updateUI(){
+ $('speedVal').textContent=`${s.speed.toFixed(2)}×`;
+ $('shiftVal').textContent=`${s.shiftPct.toFixed(0)}%`;
+ $('baseAreaVal').textContent=`${s.baseAreaCm2.toFixed(0)} cm²`;
+ $('dVal').textContent=`${s.dMm.toFixed(1)} mm`;
+ $('erVal').textContent=s.er.toFixed(2);
+ $('u0Val').textContent=`${s.u0.toFixed(0)} V`;
+ $('motionVal').textContent=`${s.motion.toFixed(1)}×`;
+
+ $('modeOut').textContent=s.mode==='connected'?'NỐI NGUỒN · U không đổi':'NGẮT NGUỒN · Q không đổi';
+ $('baseAreaOut').textContent=`${s.baseAreaCm2.toFixed(0)} cm²`;
+ $('overlapOut').textContent=`${(overlapArea()*1e4).toFixed(1)} cm²`;
+ $('ratioOut').textContent=`${(overlapRatio()*100).toFixed(1)}%`;
+ $('cOut').textContent=fmtSI(C(),'F');
+ $('uOut').textContent=Number.isFinite(U())?`${U().toFixed(2)} V`:'→ ∞';
+ $('qOut').textContent=fmtSI(Q(),'C');
+ $('eOut').textContent=Number.isFinite(E())?`${E().toFixed(1)} V/m`:'→ ∞';
+ $('wOut').textContent=fmtSI(W(),'J');
+ $('conclusionOut').textContent=conclusion();
+ drawGraph();
+}
+
+function rebuildDynamic(){buildPlates();buildOverlap();buildField();buildCharges();buildMeasure();updateUI()}
+
+const bgs=[{b:0x06131e,f:0x101c27},{b:0xeaf2f6,f:0xd6e1e6},{b:0x06162a,f:0x0b2039}];
+function applyBg(){const m=bgs[s.bg];scene.background.setHex(m.b);floor.material.color.setHex(m.f)}
+function applyLight(){if(s.light===0){hemi.intensity=1.7;key.intensity=1.8;rim.intensity=1.2}else if(s.light===1){hemi.intensity=2.2;key.intensity=2.3;rim.intensity=.5}else{hemi.intensity=1.05;key.intensity=1.15;rim.intensity=2}}
+function setCam(m){s.cam=m%4;s.autoCam=false;if(m===0)camera.position.set(0,10,.01);else if(m===1)camera.position.set(9,6.5,11);else if(m===2)camera.position.set(0,4,13);else camera.position.set(5,3.6,6);controls.target.set(0,.2,0);camera.lookAt(controls.target);controls.update()}
+async function fs(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}}
+
+$('connectedBtn').onclick=()=>{
+ s.mode='connected';s.motionDir=0;
+ $('connectedBtn').classList.add('active');$('isolatedBtn').classList.remove('active');
+ rebuildDynamic();
+};
+$('isolatedBtn').onclick=()=>{
+ s.qLocked=C()*s.u0;s.mode='isolated';s.motionDir=0;
+ $('isolatedBtn').classList.add('active');$('connectedBtn').classList.remove('active');
+ rebuildDynamic();
+};
+$('lockQBtn').onclick=()=>{
+ s.qLocked=Q();s.mode='isolated';
+ $('isolatedBtn').classList.add('active');$('connectedBtn').classList.remove('active');
+ rebuildDynamic();
+};
+
+$('speed').oninput=e=>s.speed=+e.target.value;
+$('shift').oninput=e=>{s.shiftPct=+e.target.value;s.motionDir=0;rebuildDynamic()};
+$('baseArea').oninput=e=>{
+ if(s.mode==='isolated')s.qLocked=Q();
+ s.baseAreaCm2=+e.target.value;rebuildDynamic()
+};
+$('distance').oninput=e=>{
+ if(s.mode==='isolated')s.qLocked=Q();
+ s.dMm=+e.target.value;rebuildDynamic()
+};
+$('er').oninput=e=>{
+ if(s.mode==='isolated')s.qLocked=Q();
+ s.er=+e.target.value;rebuildDynamic()
+};
+$('u0').oninput=e=>{s.u0=+e.target.value;if(s.mode==='connected')rebuildDynamic();else updateUI()};
+$('motion').oninput=e=>{s.motion=+e.target.value;updateUI()};
+
+$('showField').onchange=buildField;
+$('showCharges').onchange=buildCharges;
+$('showOverlap').onchange=buildOverlap;
+$('showDimension').onchange=buildMeasure;
+
+$('start').onclick=()=>{s.running=true;s.paused=false};
+$('pause').onclick=()=>s.paused=!s.paused;
+$('fit').onclick=()=>setCam(1);
+$('slideOutBtn').onclick=()=>{s.running=true;s.paused=false;s.motionDir=1};
+$('slideInBtn').onclick=()=>{s.running=true;s.paused=false;s.motionDir=-1};
+$('halfAreaBtn').onclick=()=>{s.shiftPct=50;s.motionDir=0;$('shift').value=50;rebuildDynamic()};
+$('fullAreaBtn').onclick=()=>{s.shiftPct=0;s.motionDir=0;$('shift').value=0;rebuildDynamic()};
+$('zeroAreaBtn').onclick=()=>{s.shiftPct=99.5;s.motionDir=0;$('shift').value=99.5;rebuildDynamic()};
+
+$('reset').onclick=()=>{
+ Object.assign(s,{running:false,paused:false,time:0,speed:1,mode:'connected',shiftPct:0,baseAreaCm2:240,dMm:10,er:1,u0:100,qLocked:0,motion:1,motionDir:0,bg:0,light:0,cam:1,autoCam:false});
+ $('speed').value=1;$('shift').value=0;$('baseArea').value=240;$('distance').value=10;$('er').value=1;$('u0').value=100;$('motion').value=1;
+ $('connectedBtn').classList.add('active');$('isolatedBtn').classList.remove('active');
+ applyBg();applyLight();setCam(1);rebuildDynamic();
+};
+
+$('fullscreenBtn').onclick=fs;
+$('panelBtn').onclick=()=>$('panel').classList.toggle('hide');
+$('bgBtn').onclick=()=>{s.bg=(s.bg+1)%3;applyBg()};
+$('lightBtn').onclick=()=>{s.light=(s.light+1)%3;applyLight()};
+$('camBtn').onclick=()=>setCam((s.cam+1)%4);
+$('autoCamBtn').onclick=()=>s.autoCam=!s.autoCam;
+
+// Recording
+const rc=$('recordCanvas'),ctx=rc.getContext('2d');let rec=null,chunks=[],mime='',rt=null;
+function bestMime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function drawRec(){
+ const sw=renderer.domElement.width,sh=renderer.domElement.height,dw=rc.width,dh=rc.height,k=Math.max(dw/sw,dh/sh),rw=sw*k,rh=sh*k;
+ ctx.fillStyle='#06131e';ctx.fillRect(0,0,dw,dh);ctx.drawImage(renderer.domElement,(dw-rw)/2,(dh-rh)/2,rw,rh);
+ ctx.fillStyle='rgba(4,12,20,.72)';ctx.fillRect(34,34,1570,115);
+ ctx.fillStyle='#fff';ctx.font='800 30px Segoe UI';ctx.fillText('068 · ẢNH HƯỞNG DIỆN TÍCH BẢN TỤ',58,76);
+ ctx.fillStyle='#ffe075';ctx.font='700 22px Segoe UI';
+ ctx.fillText(`${s.mode==='connected'?'U không đổi':'Q không đổi'} · S chồng=${(overlapArea()*1e4).toFixed(1)} cm² · C=${fmtSI(C(),'F')} · U=${Number.isFinite(U())?U().toFixed(2):'∞'} V`,58,108);
+}
+function startRec(){
+ if(rec&&rec.state==='recording')return;
+ mime=bestMime();if(!mime){alert('Trình duyệt chưa hỗ trợ ghi video.');return}
+ chunks=[];rec=new MediaRecorder(rc.captureStream(60),{mimeType:mime,videoBitsPerSecond:12000000});
+ rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ rec.onstop=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:mime}));a.download=`068_Anh_huong_dien_tich_ban_tu.${mime.includes('mp4')?'mp4':'webm'}`;a.click();$('recStatus').style.display='none';clearInterval(rt);rt=null};
+ rec.start(100);$('recStatus').style.display='block';drawRec();rt=setInterval(drawRec,1000/60);
+}
+$('recordBtn').onclick=startRec;
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);
+ const dt=THREE.MathUtils.clamp((now-last)/1000,0,.033);last=now;
+ updatePhysics(dt);updateVisuals();updateUI();controls.update();renderer.render(scene,camera);
+ if(rec&&rec.state==='recording')drawRec();
+}
+
+applyBg();applyLight();rebuildDynamic();setCam(1);requestAnimationFrame(animate);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>

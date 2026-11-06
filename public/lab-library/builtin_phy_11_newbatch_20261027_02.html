@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phản xạ toàn phần trong sợi quang - GV Nguyễn Huy Hùng</title>
+<style>
+:root{--bg:#030507;--panel:#10151c;--text:#f6f8fb;--muted:#95a0ae;--line:#27303a;--pink:#ff3ea8;--cyan:#39e7ff;--yellow:#ffd84d;--green:#57f294}
+*{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020304;color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+#app{width:100vw;height:100vh;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px}
+.stage{position:relative;overflow:hidden;border-radius:24px;border:1px solid #151b22;background:#000}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+.overlay{position:absolute;left:18px;right:18px;top:16px;display:flex;justify-content:space-between;pointer-events:none}
+.badge,.label{padding:8px 12px;border-radius:999px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.12);font-size:13px}
+.eq{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);padding:10px 18px;border-radius:15px;background:rgba(0,0,0,.52);border:1px solid rgba(255,255,255,.12);font-size:clamp(20px,2vw,31px);font-family:"Times New Roman",serif}
+.panel{border:1px solid #171d24;border-radius:24px;background:rgba(12,16,21,.96);padding:16px;display:flex;flex-direction:column;gap:14px}
+h1{margin:0;font-size:21px}.sub{margin:3px 0 0;color:var(--muted);font-size:13px}
+.group{padding:13px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
+.control{margin:10px 0 13px}.labelrow{display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px}.value{font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--pink)}
+.switch{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin:8px 0}.switch input{width:18px;height:18px;accent-color:var(--cyan)}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+button{cursor:pointer;padding:12px 10px;border-radius:13px;border:1px solid #303844;background:#171d25;color:#fff;font-weight:800}
+button:hover{background:#202731}.primary{background:linear-gradient(135deg,#ff3ea8,#c51d74);border-color:#ff3ea8}.cyan{background:linear-gradient(135deg,#19bdd1,#167fe1);border-color:#2ad0e1}
+.note{margin-top:auto;font-size:12px;color:#74808f;line-height:1.45}
+@media(max-width:900px){#app{grid-template-columns:1fr;padding:7px}.panel{position:absolute;right:10px;top:10px;width:min(320px,calc(100vw - 20px));max-height:calc(100vh - 20px);overflow:auto;z-index:20}}
+</style>
+</head>
+<body>
+<div id="app">
+<section class="stage" id="stage">
+  <canvas id="canvas"></canvas>
+  <div class="overlay">
+    <div class="badge">OPTICAL FIBER LAB</div>
+    <div class="label" id="status">Trạng thái</div>
+  </div>
+  <div class="eq">sin θ<sub>gh</sub> = n₂ / n₁ &nbsp;&nbsp; (n₁ &gt; n₂)</div>
+</section>
+<aside class="panel">
+  <div><h1>Phản xạ toàn phần trong sợi quang</h1><div class="sub">Tia sáng truyền trong lõi và phản xạ liên tiếp</div></div>
+
+  <div class="group">
+    <div class="control"><div class="labelrow"><span>Chiết suất lõi n₁</span><span class="value" id="n1V">1.50</span></div><input id="n1" type="range" min="1.35" max="1.75" step="0.01" value="1.50"></div>
+    <div class="control"><div class="labelrow"><span>Chiết suất vỏ n₂</span><span class="value" id="n2V">1.40</span></div><input id="n2" type="range" min="1.00" max="1.60" step="0.01" value="1.40"></div>
+    <div class="control"><div class="labelrow"><span>Góc tia trong lõi (so với trục)</span><span class="value" id="angV">18°</span></div><input id="ang" type="range" min="2" max="42" step="1" value="18"></div>
+    <div class="control"><div class="labelrow"><span>Tốc độ hoạt ảnh</span><span class="value" id="speedV">1.0×</span></div><input id="speed" type="range" min="0.4" max="2.5" step="0.1" value="1"></div>
+  </div>
+
+  <div class="group">
+    <div class="switch"><span>Hiện pháp tuyến</span><input id="normal" type="checkbox" checked></div>
+    <div class="switch"><span>Hiện tia rò khi không TIR</span><input id="leak" type="checkbox" checked></div>
+    <div class="switch"><span>Hiệu ứng phát sáng</span><input id="glow" type="checkbox" checked></div>
+  </div>
+
+  <div class="buttons">
+    <button class="primary" id="play">Tạm dừng</button>
+    <button id="reset">Chạy lại</button>
+    <button class="cyan" id="preset">Thử nhanh</button>
+    <button id="full">Toàn màn hình</button>
+  </div>
+
+  <div class="note">Nếu góc tới ở biên lớn hơn hoặc bằng góc giới hạn, tia bị giữ trong lõi. Nếu không, tia ló ra ngoài vỏ.<br><br>GV: Nguyễn Huy Hùng</div>
+</aside>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const canvas=$('canvas'),ctx=canvas.getContext('2d'),stage=$('stage');
+let W=0,H=0,DPR=1,last=performance.now(),running=true,progress=0,segments=[],totLen=1,statusText='';
+function resize(){const r=stage.getBoundingClientRect();DPR=Math.min(devicePixelRatio||1,2);W=Math.floor(r.width);H=Math.floor(r.height);canvas.width=W*DPR;canvas.height=H*DPR;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);buildRay();}
+addEventListener('resize',resize);
+
+function updateLabels(){
+  $('n1V').textContent=(+$('n1').value).toFixed(2);
+  $('n2V').textContent=(+$('n2').value).toFixed(2);
+  $('angV').textContent=$('ang').value+'°';
+  $('speedV').textContent=(+$('speed').value).toFixed(1)+'×';
+  buildRay();
+}
+document.querySelectorAll('input[type=range]').forEach(x=>x.oninput=updateLabels);
+document.querySelectorAll('input[type=checkbox]').forEach(x=>x.onchange=()=>{});
+
+function lineSeg(x1,y1,x2,y2,type='core'){ return {x1,y1,x2,y2,type,len:Math.hypot(x2-x1,y2-y1)}; }
+
+function buildRay(){
+  const n1=+$('n1').value, n2=+$('n2').value;
+  const ang=+$('ang').value*Math.PI/180;
+  const crit = n1>n2 ? Math.asin(Math.min(1,n2/n1)) : Math.PI/2;
+  const incidence = Math.PI/2 - ang;
+  const isTIR = n1>n2 && incidence >= crit;
+
+  const x0=W*0.11, y0=H*0.5;
+  const fiberX1=W*0.18, fiberX2=W*0.92;
+  const coreY1=H*0.39, coreY2=H*0.61;
+  const entryY=y0;
+
+  segments = [];
+  segments.push(lineSeg(x0,y0,fiberX1,entryY,'air'));
+  let x=fiberX1, y=entryY;
+  let dx=Math.cos(ang), dy=-Math.sin(ang);
+  if(isTIR){
+    while(x<fiberX2){
+      const targetY = dy<0 ? coreY1 : coreY2;
+      const s=(targetY-y)/dy;
+      let nx=x+dx*s, ny=targetY;
+      if(nx>fiberX2){
+        const s2=(fiberX2-x)/dx;
+        segments.push(lineSeg(x,y,fiberX2,y+dy*s2,'core'));
+        x=fiberX2; y=y+dy*s2; break;
+      }
+      segments.push(lineSeg(x,y,nx,ny,'core'));
+      x=nx; y=ny; dy*=-1;
+    }
+    statusText='Có phản xạ toàn phần';
+  }else{
+    const targetY = dy<0 ? coreY1 : coreY2;
+    const s=(targetY-y)/dy;
+    const nx=x+dx*s, ny=targetY;
+    segments.push(lineSeg(x,y,nx,ny,'core'));
+    if($('leak').checked){
+      const outAng = Math.asin(Math.min(1, n1*Math.sin(incidence)/Math.max(n2,1e-6)));
+      const dirY = dy<0 ? -1 : 1;
+      const refAng = Math.PI/2 - outAng;
+      const ox = nx + Math.cos(refAng)*W*0.18;
+      const oy = ny + dirY*Math.sin(refAng)*W*0.18;
+      segments.push(lineSeg(nx,ny,ox,oy,'leak'));
+    }
+    statusText='Không đủ điều kiện TIR';
+  }
+  totLen = segments.reduce((a,s)=>a+s.len,0) || 1;
+  const critDeg = (crit*180/Math.PI).toFixed(1);
+  $('status').textContent = statusText + ' • θgh = ' + critDeg + '°';
+  progress=0;
+}
+
+function drawFiber(){
+  const x1=W*0.18, x2=W*0.92, y1=H*0.30, y2=H*0.70, c1=H*0.39, c2=H*0.61;
+  ctx.fillStyle='rgba(140,170,255,.12)'; ctx.fillRect(x1,y1,x2-x1,y2-y1);
+  ctx.fillStyle='rgba(57,231,255,.16)'; ctx.fillRect(x1,c1,x2-x1,c2-c1);
+  ctx.strokeStyle='rgba(170,190,255,.35)'; ctx.lineWidth=2; ctx.strokeRect(x1,y1,x2-x1,y2-y1);
+  ctx.strokeStyle='rgba(57,231,255,.45)'; ctx.strokeRect(x1,c1,x2-x1,c2-c1);
+  ctx.fillStyle='white'; ctx.font='14px Segoe UI';
+  ctx.fillText('Vỏ quang',x1+10,y1-8); ctx.fillText('Lõi quang',x1+10,c1-8);
+}
+function drawNormals(){
+  if(!$('normal').checked) return;
+  const c1=H*0.39, c2=H*0.61;
+  ctx.save(); ctx.strokeStyle='rgba(255,255,255,.16)'; ctx.setLineDash([6,6]);
+  for(const s of segments){
+    if(s.type!=='core') continue;
+    if(Math.abs(s.y2-c1)<0.6 || Math.abs(s.y2-c2)<0.6){
+      ctx.beginPath(); ctx.moveTo(s.x2,s.y2-40); ctx.lineTo(s.x2,s.y2+40); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+function drawSegments(showHead=true){
+  ctx.save(); ctx.lineWidth=3;
+  segments.forEach(seg=>{
+    if(seg.type==='air') ctx.strokeStyle='#ffd84d';
+    if(seg.type==='core') ctx.strokeStyle='#39e7ff';
+    if(seg.type==='leak') ctx.strokeStyle='#ff3ea8';
+    if($('glow').checked){ctx.shadowColor=ctx.strokeStyle; ctx.shadowBlur=13;}
+    ctx.beginPath(); ctx.moveTo(seg.x1,seg.y1); ctx.lineTo(seg.x2,seg.y2); ctx.stroke();
+  });
+  ctx.restore();
+
+  let d = progress*totLen;
+  for(const seg of segments){
+    if(d<=seg.len){
+      const r=d/seg.len;
+      const hx=seg.x1+(seg.x2-seg.x1)*r, hy=seg.y1+(seg.y2-seg.y1)*r;
+      ctx.save(); ctx.fillStyle='#fff'; ctx.shadowColor='#fff'; ctx.shadowBlur=18;
+      ctx.beginPath(); ctx.arc(hx,hy,5,0,Math.PI*2); ctx.fill(); ctx.restore();
+      break;
+    } else d -= seg.len;
+  }
+}
+function loop(now){
+  const dt=Math.min((now-last)/1000,.04); last=now;
+  if(running){ progress += dt*0.22*(+$('speed').value); if(progress>1) progress=0; }
+  ctx.clearRect(0,0,W,H);
+  drawFiber();
+  drawNormals();
+  drawSegments();
+  requestAnimationFrame(loop);
+}
+$('play').onclick=()=>{running=!running;$('play').textContent=running?'Tạm dừng':'Tiếp tục';last=performance.now();}
+$('reset').onclick=()=>buildRay();
+$('preset').onclick=()=>{
+  const p=[[1.50,1.40,18],[1.52,1.30,28],[1.46,1.42,35],[1.50,1.48,22]][Math.floor(Math.random()*4)];
+  $('n1').value=p[0]; $('n2').value=p[1]; $('ang').value=p[2]; updateLabels();
+}
+$('full').onclick=()=>{if(!document.fullscreenElement)stage.requestFullscreen?.(); else document.exitFullscreen?.();}
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();$('play').click()} if(e.key.toLowerCase()==='f')$('full').click();});
+resize(); updateLabels(); requestAnimationFrame(loop);
+</script>
+</body></html>

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-23 Truyền sóng từ nguồn dao động điều hòa - Stable</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#030b14;color:#eef8fb}
+#app{display:grid;grid-template-columns:245px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800;letter-spacing:1px}h1{font-size:17px;margin:4px 0 6px}
+.desc{font-size:10.5px;color:#aac3cd;line-height:1.35;margin:0 0 8px}
+.ctl{display:grid;grid-template-columns:64px 1fr 58px;gap:5px;align-items:center;margin:5px 0}
+.ctl label{font-size:9.8px}.ctl output{font-size:9.4px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}
+.check,.btn{font-size:9.5px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}
+.btn{font-weight:800;cursor:pointer}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 50% 35%,#123d58 0%,#0a263b 42%,#061725 75%,#030b13 100%)}
+#sim{position:absolute;inset:0;width:100%;height:100%}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(245,250,252,.95);color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 10px;font-size:10.4px;z-index:3}
+#hud{position:absolute;right:12px;bottom:12px;display:flex;gap:10px;background:rgba(7,20,28,.88);border:1px solid #316376;border-radius:10px;padding:7px 9px;z-index:3}
+.hud span{display:block;font-size:8px;color:#98bac8}.hud b{font-size:10.4px}
+#note{position:absolute;left:12px;bottom:12px;width:330px;background:rgba(7,20,28,.88);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.3px;color:#d8edf6;z-index:3}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);font-size:10px;font-weight:700;z-index:3}
+.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="ey">PHYSICS 11 LAB · STABLE</div>
+<h1>23 · Truyền sóng từ nguồn ĐĐĐH</h1>
+<p class="desc">Bản ổn định dùng Canvas: nguồn O tạo sóng lan truyền, M và N thể hiện rõ độ trễ pha theo vị trí.</p>
+<div class="ctl"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>A</label><input id="amp" type="range" min=".15" max="1.1" step=".05" value=".65"><output id="ampOut"></output></div>
+<div class="ctl"><label>f</label><input id="freq" type="range" min=".2" max="1.5" step=".05" value=".6"><output id="freqOut"></output></div>
+<div class="ctl"><label>v</label><input id="waveV" type="range" min=".5" max="5" step=".1" value="2.4"><output id="waveVOut"></output></div>
+<div class="ctl"><label>φ nguồn</label><input id="phase" type="range" min="-180" max="180" step="5" value="0"><output id="phaseOut"></output></div>
+<div class="ctl"><label>xM</label><input id="xM" type="range" min=".5" max="8" step=".1" value="3"><output id="xMOut"></output></div>
+<div class="ctl"><label>xN</label><input id="xN" type="range" min="3" max="11.5" step=".1" value="8"><output id="xNOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showParticles" type="checkbox" checked> Phần tử dây</label>
+<label class="check"><input id="showGuide" type="checkbox" checked> Trễ pha</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị M,N</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="clearBtn" class="btn">Xóa đồ thị</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+<div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view">
+<canvas id="sim"></canvas>
+<div id="formula">u(x,t)=Acos(ωt−kx+φ) · λ=v/f · Δφ=2πΔx/λ</div>
+<div id="hud">
+<div class="hud"><span>λ</span><b id="lambdaHud"></b></div>
+<div class="hud"><span>Δx</span><b id="dxHud"></b></div>
+<div class="hud"><span>Δφ</span><b id="dphiHud"></b></div>
+<div class="hud"><span>Δt</span><b id="dtHud"></b></div>
+</div>
+<div id="note">Nguồn O màu vàng dao động trước. M đỏ và N xanh dao động trễ nhau theo khoảng cách. Các chấm chỉ dao động lên–xuống, không trôi theo sóng.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const canvas=$('sim'),ctx=canvas.getContext('2d');
+const view=$('view');
+const state={running:true,t:0,speed:1,A:.65,f:.6,v:2.4,phase:0,xM:3,xN:8,last:performance.now()};
+let data=[];
+const WINDOW=12;
+function resize(){const r=view.getBoundingClientRect();canvas.width=Math.max(1,Math.floor(r.width*devicePixelRatio));canvas.height=Math.max(1,Math.floor(r.height*devicePixelRatio));canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+window.addEventListener('resize',resize);resize();
+
+function lam(){return state.v/state.f}
+function omg(){return 2*Math.PI*state.f}
+function kk(){return 2*Math.PI/lam()}
+function u(x,t=state.t){return state.A*Math.cos(omg()*t-kk()*x+state.phase*Math.PI/180)}
+function dx(){return Math.abs(state.xN-state.xM)}
+function dphi(){return 2*Math.PI*dx()/lam()}
+function delay(){return dx()/state.v}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('ampOut').value=state.A.toFixed(2)+' m';$('freqOut').value=state.f.toFixed(2)+' Hz';
+ $('waveVOut').value=state.v.toFixed(2)+' m/s';$('phaseOut').value=state.phase.toFixed(0)+'°';$('xMOut').value=state.xM.toFixed(1)+' m';$('xNOut').value=state.xN.toFixed(1)+' m';
+ $('lambdaHud').textContent=lam().toFixed(2)+' m';$('dxHud').textContent=dx().toFixed(2)+' m';$('dphiHud').textContent=(dphi()*180/Math.PI).toFixed(1)+'°';$('dtHud').textContent=delay().toFixed(2)+' s'
+}
+function sync(){state.speed=+$('speed').value;state.A=+$('amp').value;state.f=+$('freq').value;state.v=+$('waveV').value;state.phase=+$('phase').value;state.xM=+$('xM').value;state.xN=+$('xN').value;if(state.xN<=state.xM){state.xN=Math.min(11.5,state.xM+.5);$('xN').value=state.xN}state.t=0;data=[];updateUI()}
+['amp','freq','waveV','phase','xM','xN'].forEach(id=>$(id).addEventListener('input',sync));$('speed').addEventListener('input',()=>{state.speed=+$('speed').value;updateUI()});
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;$('clearBtn').onclick=()=>data=[];
+$('resetBtn').onclick=()=>{Object.assign(state,{running:true,t:0,speed:1,A:.65,f:.6,v:2.4,phase:0,xM:3,xN:8});for(const [id,val] of [['speed',1],['amp',.65],['freq',.6],['waveV',2.4],['phase',0],['xM',3],['xN',8]])$(id).value=val;data=[];updateUI()};
+$('fullscreenBtn').onclick=async()=>{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()};
+
+function line(x1,y1,x2,y2,color,width=1,dash=[]){ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore()}
+function circle(x,y,r,fill,stroke=null){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke()}}
+function text(t,x,y,size=12,color='#fff',align='left',weight='normal'){ctx.font=`${weight} ${size}px Segoe UI`;ctx.fillStyle=color;ctx.textAlign=align;ctx.fillText(t,x,y)}
+
+function draw(){
+ const W=view.clientWidth,H=view.clientHeight;
+ ctx.clearRect(0,0,W,H);
+ // grid
+ if($('showGrid').checked){
+   ctx.strokeStyle='rgba(60,120,145,.17)';ctx.lineWidth=1;
+   for(let x=0;x<W;x+=40)line(x,0,x,H,'rgba(60,120,145,.17)');
+   for(let y=0;y<H;y+=40)line(0,y,W,y,'rgba(60,120,145,.17)');
+ }
+ const left=70,right=W*0.66,midY=H*0.42,ampPix=Math.min(95,H*.13);
+ // source
+ ctx.fillStyle='#48616d';ctx.fillRect(left-45,midY-70,32,140);
+ circle(left-8,midY+u(0)/state.A*ampPix,10,'#ffd166','#fff4b6');
+ text('Nguồn O',left-28,midY-92,12,'#ffd166','center','bold');
+ // propagation arrow
+ line(left+30,midY-120,left+170,midY-120,'#ffd166',4);
+ ctx.fillStyle='#ffd166';ctx.beginPath();ctx.moveTo(left+170,midY-120);ctx.lineTo(left+150,midY-130);ctx.lineTo(left+150,midY-110);ctx.closePath();ctx.fill();
+ text('chiều truyền sóng',left+100,midY-135,11,'#ffd166','center','bold');
+
+ const mapX=x=>left+(right-left)*x/12;
+ // equilibrium
+ line(left,midY,right,midY,'rgba(180,225,240,.35)',1.5,[6,6]);
+ // wave
+ ctx.strokeStyle='#63dcff';ctx.lineWidth=4;ctx.shadowColor='#63dcff';ctx.shadowBlur=9;ctx.beginPath();
+ for(let i=0;i<=360;i++){const xx=12*i/360,X=mapX(xx),Y=midY-(u(xx)/state.A)*ampPix;if(i===0)ctx.moveTo(X,Y);else ctx.lineTo(X,Y)}ctx.stroke();ctx.shadowBlur=0;
+ // particles
+ if($('showParticles').checked){for(let i=0;i<=40;i++){const xx=12*i/40;circle(mapX(xx),midY-(u(xx)/state.A)*ampPix,3.2,'#b5f1ff')}}
+ // markers
+ const Xm=mapX(state.xM),Ym=midY-(u(state.xM)/state.A)*ampPix,Xn=mapX(state.xN),Yn=midY-(u(state.xN)/state.A)*ampPix;
+ circle(Xm,Ym,8,'#ff6b6b','#fff');circle(Xn,Yn,8,'#69e3a6','#fff');
+ text('M',Xm,Ym-18,12,'#ffaaaa','center','bold');text('N',Xn,Yn-18,12,'#a8ffd0','center','bold');
+ if($('showGuide').checked){line(Xm,midY+115,Xn,midY+115,'rgba(255,255,255,.65)',2,[7,6]);line(Xm,midY+105,Xm,midY+125,'#fff',2);line(Xn,midY+105,Xn,midY+125,'#fff',2);text(`Δx = ${dx().toFixed(2)} m · Δφ = ${(dphi()*180/Math.PI).toFixed(1)}°`,(Xm+Xn)/2,midY+145,11,'#fff','center','bold')}
+
+ // graph
+ if($('showGraph').checked){
+   const gx=W*.69,gy=H*.18,gw=W*.28,gh=H*.48;
+   ctx.fillStyle='rgba(245,250,252,.97)';ctx.fillRect(gx,gy,gw,gh);
+   ctx.strokeStyle='#d4dee2';ctx.lineWidth=1;
+   for(let i=0;i<=8;i++)line(gx+gw*i/8,gy,gx+gw*i/8,gy+gh,'#d4dee2');
+   for(let j=0;j<=6;j++)line(gx,gy+gh*j/6,gx+gw,gy+gh*j/6,'#d4dee2');
+   line(gx,gy+gh/2,gx+gw,gy+gh/2,'#435761',2);
+   text('DAO ĐỘNG TẠI M VÀ N',gx+gw/2,gy+24,16,'#23353d','center','bold');
+   const tmax=data.length?data[data.length-1].t:WINDOW,tmin=Math.max(0,tmax-WINDOW);
+   const TX=t=>gx+10+(gw-20)*(t-tmin)/WINDOW,TY=y=>gy+gh/2-y/state.A*(gh*.36);
+   for(const [key,col] of [['m','#ff5e5e'],['n','#37b976']]){
+     ctx.strokeStyle=col;ctx.lineWidth=3;ctx.beginPath();let first=true;
+     for(const p of data){if(p.t<tmin)continue;const X=TX(p.t),Y=TY(p[key]);if(first){ctx.moveTo(X,Y);first=false}else ctx.lineTo(X,Y)}ctx.stroke();
+   }
+   text('M: đỏ   ·   N: xanh',gx+gw/2,gy+gh-14,11,'#4d636d','center','bold');
+ }
+}
+function tick(now){
+ requestAnimationFrame(tick);
+ let dt=Math.min(.033,(now-state.last)/1000);state.last=now;
+ if(state.running){state.t+=dt*state.speed;data.push({t:state.t,m:u(state.xM),n:u(state.xN)});const t0=state.t-WINDOW;while(data.length&&data[0].t<t0)data.shift()}
+ draw();updateUI()
+}
+updateUI();requestAnimationFrame(tick);
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;
+function pickMime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!canvas.captureStream||!window.MediaRecorder)return;const mime=pickMime();rec=new MediaRecorder(canvas.captureStream(30),mime?{mimeType:mime,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||mime||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`023_Truyen_song_STABLE.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+</script>
+</body>
+</html>

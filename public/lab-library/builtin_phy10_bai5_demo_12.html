@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Mô phỏng hai ô tô - vận tốc có dấu V6</title>
+<style>
+body{font-family:Arial;background:#eef6ff;margin:0;color:#172033}
+.wrap{max-width:1250px;margin:auto;padding:18px}
+.grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.card{background:white;border-radius:18px;padding:16px;box-shadow:0 6px 20px #0002}
+canvas{width:100%;background:linear-gradient(#bfe9ff,#fff);border-radius:14px}
+input{padding:6px;border-radius:8px}
+input[type=range]{width:300px}
+button{padding:8px;border-radius:8px;font-weight:bold;margin:3px}
+.info{background:#fff8df;padding:12px;border-radius:12px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Mô phỏng hai ô tô - vận tốc có dấu (V6)</h1>
+<div class="grid">
+<div class="card">
+<canvas id="cv" width="900" height="430"></canvas><br>
+
+Xe 1: x₁₀=<input id="x1" value="0"> km<br>
+Vận tốc xe 1: <b id="tv1">60</b> km/h
+<input id="v1r" type="range" min="-100" max="100" value="60"><br>
+
+Xe 2: x₂₀=<input id="x2" value="40"> km<br>
+Vận tốc xe 2: <b id="tv2">-40</b> km/h
+<input id="v2r" type="range" min="-100" max="100" value="-40"><br>
+
+Tốc độ mô phỏng:
+<input id="rate" type="range" min="1" max="5" value="1"><br>
+
+<button onclick="run()">▶ Chạy</button>
+<button onclick="pause()">⏸ Dừng</button>
+<button onclick="reset()">↺ Lại</button>
+</div>
+
+<div class="card">
+<h2>Dữ liệu</h2>
+<div class="info" id="out"></div>
+<h2>Phân tích</h2>
+<div class="info" id="ana"></div>
+</div>
+</div>
+</div>
+
+<script>
+let c=document.getElementById("cv"),ctx=c.getContext("2d"),t=0,timer=null;
+function n(id){return Number(document.getElementById(id).value)||0}
+function car(x,y,color,flip){
+ctx.save();ctx.translate(x,y);if(flip)ctx.scale(-1,1);
+ctx.fillStyle=color;ctx.fillRect(-30,-10,60,25);
+ctx.fillStyle="#d9f1ff";ctx.fillRect(-10,-25,22,15);
+ctx.fillStyle="#111";ctx.beginPath();ctx.arc(-18,18,7,0,7);ctx.arc(18,18,7,0,7);ctx.fill();
+ctx.restore();
+}
+function draw(){
+let x10=n("x1"),x20=n("x2"),v1=n("v1r"),v2=n("v2r");
+let x1=x10+v1*t,x2=x20+v2*t,d=Math.abs(x2-x1);
+ctx.clearRect(0,0,900,430);
+ctx.fillStyle="#666";ctx.fillRect(70,230,760,70);
+ctx.strokeStyle="white";ctx.setLineDash([25,20]);ctx.beginPath();ctx.moveTo(70,265);ctx.lineTo(830,265);ctx.stroke();ctx.setLineDash([]);
+let min=Math.min(x1,x2,x10,x20)-20,max=Math.max(x1,x2,x10,x20)+20;
+let scale=700/(max-min),px=x=>100+(x-min)*scale;
+car(px(x1),210,"#2563eb",v1<0);car(px(x2),330,"#ef4444",v2<0);
+ctx.fillStyle="#111";ctx.font="18px Arial";
+ctx.fillText("x₁="+x1.toFixed(2)+" km",px(x1)-40,150);
+ctx.fillText("x₂="+x2.toFixed(2)+" km",px(x2)-40,380);
+
+document.getElementById("tv1").innerHTML=v1;
+document.getElementById("tv2").innerHTML=v2;
+out.innerHTML=`t=${t.toFixed(2)} h<br>Xe 1: x₁=${x1.toFixed(2)} km<br>Xe 2: x₂=${x2.toFixed(2)} km<br>Khoảng cách d=${d.toFixed(2)} km`;
+ana.innerHTML=`x₁=${x10}+${v1}t<br>x₂=${x20}+${v2}t<br>Vận tốc tương đối v₂₁=${v2-v1} km/h`;
+}
+function run(){pause();timer=setInterval(()=>{t+=0.002*n("rate");draw()},30)}
+function pause(){clearInterval(timer)}
+function reset(){pause();t=0;draw()}
+["v1r","v2r","x1","x2"].forEach(i=>document.getElementById(i).oninput=draw);
+draw();
+</script>
+</body>
+</html>

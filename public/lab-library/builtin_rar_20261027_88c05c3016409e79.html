@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-108 Tụ điện trong đèn flash máy ảnh 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#06111b;color:#eef8fb}
+#app{display:grid;grid-template-columns:285px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#57dcff;font-weight:800}.desc{font-size:10px;color:#abc4cf;line-height:1.4}h1{font-size:17px;margin:4px 0 7px;line-height:1.08}
+.model{font-size:9px;background:#0b2230;border:1px solid #21495a;border-radius:9px;padding:7px;color:#d9edf5;line-height:1.35}
+.ctrl{display:grid;grid-template-columns:92px 1fr 74px;gap:5px;align-items:center;margin:5px 0}.ctrl label,.ctrl output{font-size:9px}.ctrl output{color:#75ebff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9px;padding:7px 5px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800;cursor:pointer}.primary{background:#0f7da7}.flash{background:#b98617}.warn{background:#a13b3b}
+#view{position:relative;background:radial-gradient(circle at 52% 28%,#173f58 0,#0a263b 40%,#061725 72%,#030b13 100%)}#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label{position:absolute;transform:translate(-50%,-50%);background:#f4fafcf0;color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9px;white-space:nowrap}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10px;font-weight:700}
+#hud{position:absolute;right:12px;top:12px;z-index:7;background:#07141ce8;border:1px solid #316376;border-radius:10px;padding:8px 10px;min-width:245px}.hrow{display:flex;justify-content:space-between;gap:14px;font-size:9px;margin:3px 0}.hrow span{color:#9fc0cd}
+#note{position:absolute;left:12px;bottom:50px;z-index:7;width:675px;background:#07141ce8;border:1px solid #316376;border-radius:9px;padding:7px;font-size:9px;line-height:1.35;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700;color:#ffe082}
+#meter{position:absolute;left:12px;bottom:12px;z-index:7;display:flex;align-items:center;gap:8px;background:#07141ce8;border:1px solid #316376;border-radius:9px;padding:7px 10px;font-size:9px}.bar{width:180px;height:10px;background:#102935;border:1px solid #356579;border-radius:999px;overflow:hidden}.fill{height:100%;width:0%;background:linear-gradient(90deg,#4dd0e1,#ffd166,#ff9f43)}
+#flashOverlay{position:absolute;inset:0;z-index:6;pointer-events:none;background:white;opacity:0;transition:opacity .03s linear}
+.rec{font-size:9px;color:#bcd2db;margin-top:6px}
+</style></head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D CINEMATIC</div>
+<h1>108 · Tụ điện trong đèn flash máy ảnh</h1>
+<p class="desc">Tụ điện được nạp qua điện trở trong một khoảng thời gian tương đối dài, sau đó phóng năng lượng rất nhanh qua đèn flash để tạo chớp sáng mạnh.</p>
+<div class="model"><b>Mô hình hóa:</b> mạch nạp/phóng RC lý tưởng. Khi nạp: \(U_C=U_s(1-e^{-t/RC})\). Khi phóng: \(U_C=U_0e^{-t/R_fC}\). Bỏ qua mạch nâng áp, nội trở nguồn, đặc tuyến phi tuyến của đèn và tổn hao quang.</div>
+
+<div class="ctrl"><label>Tốc độ mô phỏng</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctrl"><label>Điện dung C</label><input id="C" type="range" min="200" max="1800" step="50" value="900"><output id="COut"></output></div>
+<div class="ctrl"><label>Điện áp nguồn Uₛ</label><input id="Vs" type="range" min="150" max="350" step="10" value="300"><output id="VsOut"></output></div>
+<div class="ctrl"><label>R nạp</label><input id="Rc" type="range" min="800" max="6000" step="100" value="2500"><output id="RcOut"></output></div>
+<div class="ctrl"><label>R flash</label><input id="Rf" type="range" min="1" max="25" step="1" value="6"><output id="RfOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showCharge" type="checkbox" checked> Điện tích</label>
+<label class="check"><input id="showCurrent" type="checkbox" checked> Dòng điện</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị U(t)</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Nạp tụ</button><button id="pauseBtn" class="btn">⏸ Tạm dừng</button>
+<button id="flashBtn" class="btn flash">⚡ PHÁT FLASH</button><button id="resetBtn" class="btn">↻ Đặt lại</button>
+<button id="demoBtn" class="btn">Chu trình tự động</button><button id="clearGraphBtn" class="btn">Xóa đồ thị</button>
+<button id="cameraBtn" class="btn">🎬 Camera tự động</button><button id="fitBtn" class="btn">⛶ Fit toàn cảnh</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn warn">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+<div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view">
+<div id="three"></div><div id="labels"></div><div id="flashOverlay"></div>
+<div id="formula">W = ½CU² &nbsp; · &nbsp; U<sub>nạp</sub>=Uₛ(1−e<sup>−t/RC</sup>) &nbsp; · &nbsp; U<sub>phóng</sub>=U₀e<sup>−t/RfC</sup></div>
+<div id="hud">
+<div class="hrow"><span>Điện áp tụ U<sub>C</sub></span><b id="uHud"></b></div>
+<div class="hrow"><span>Điện tích Q</span><b id="qHud"></b></div>
+<div class="hrow"><span>Năng lượng W</span><b id="wHud"></b></div>
+<div class="hrow"><span>Dòng điện tức thời</span><b id="iHud"></b></div>
+<div class="hrow"><span>τ nạp = R<sub>c</sub>C</span><b id="tauCHud"></b></div>
+<div class="hrow"><span>τ phóng = R<sub>f</sub>C</span><b id="tauFHud"></b></div>
+<div class="hrow"><span>Trạng thái</span><b id="statusHud"></b></div>
+</div>
+<div id="note">Nạp tụ diễn ra chậm vì \(R_c\) lớn. Khi nhấn <b>PHÁT FLASH</b>, đường phóng có \(R_f\) rất nhỏ nên năng lượng \(W=½CU^2\) được giải phóng trong thời gian ngắn. Hiệu ứng ánh sáng được kéo dài trực quan; các đại lượng điện vẫn tính theo mô hình RC.</div>
+<div id="meter"><b>Mức nạp:</b><div class="bar"><div id="chargeFill" class="fill"></div></div><span id="chargeText">0%</span></div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';import{OrbitControls}from'three/addons/controls/OrbitControls.js';
+const $=id=>document.getElementById(id),view=$('view');
+const s={mode:'charging',running:true,t:0,speed:1,C:900e-6,Vs:300,Rc:2500,Rf:6,U:0,U0:0,hist:[],flashVis:0,autoCycle:false,cameraAuto:false,cameraT:0,record:{rec:null,chunks:[],timer:null,start:0}};
+const tauC=()=>s.Rc*s.C,tauF=()=>s.Rf*s.C,Q=()=>s.C*s.U,W=()=>.5*s.C*s.U*s.U;
+function current(){if(s.mode==='charging')return (s.Vs-s.U)/s.Rc;if(s.mode==='discharging')return -s.U/s.Rf;return 0}
+
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,100),renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=8;controls.maxDistance=28;controls.addEventListener('start',()=>{if(s.cameraAuto)setCameraAuto(false)});
+scene.add(new THREE.HemisphereLight(0xffffff,0x172832,4.4));const dl=new THREE.DirectionalLight(0xffffff,4.2);dl.position.set(7,10,8);scene.add(dl);
+const lab=new THREE.Group();lab.position.y=-.35;scene.add(lab);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(17,12),new THREE.MeshStandardMaterial({color:0x102530,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.9;lab.add(floor);
+const grid=new THREE.GridHelper(17,28,0x2e586a,0x123345);grid.position.y=-2.89;lab.add(grid);
+
+/* camera body */
+const bodyMat=new THREE.MeshStandardMaterial({color:0x333b42,metalness:.35,roughness:.42});
+const camBody=new THREE.Mesh(new THREE.BoxGeometry(5.2,3.2,2.6),bodyMat);camBody.position.set(-1.2,-.2,0);lab.add(camBody);
+const lens=new THREE.Mesh(new THREE.CylinderGeometry(1,1.15,1.1,40),new THREE.MeshStandardMaterial({color:0x17232c,metalness:.6,roughness:.18}));lens.rotation.z=Math.PI/2;lens.position.set(-3.75,-.25,0);lab.add(lens);
+const lensGlass=new THREE.Mesh(new THREE.CylinderGeometry(.78,.78,.08,40),new THREE.MeshPhysicalMaterial({color:0x4cc9f0,transparent:true,opacity:.5,metalness:.1,roughness:.05}));lensGlass.rotation.z=Math.PI/2;lensGlass.position.set(-4.32,-.25,0);lab.add(lensGlass);
+
+/* flash head */
+const flashHousing=new THREE.Mesh(new THREE.BoxGeometry(1.7,.85,1.2),new THREE.MeshStandardMaterial({color:0x677a84,metalness:.5,roughness:.3}));flashHousing.position.set(.65,1.85,0);lab.add(flashHousing);
+const flashLamp=new THREE.Mesh(new THREE.BoxGeometry(1.35,.45,.82),new THREE.MeshStandardMaterial({color:0xf7f5dc,emissive:0xffed9c,emissiveIntensity:.25}));flashLamp.position.set(.65,1.78,-.62);lab.add(flashLamp);
+const flashLight=new THREE.PointLight(0xffffff,0,12,2);flashLight.position.set(.65,1.7,-1.3);lab.add(flashLight);
+
+/* capacitor */
+const capG=new THREE.Group();lab.add(capG);capG.position.set(1.45,-.35,.2);
+const capBody=new THREE.Mesh(new THREE.CylinderGeometry(.65,.65,1.9,32),new THREE.MeshStandardMaterial({color:0x285b73,metalness:.25,roughness:.35}));capBody.rotation.z=Math.PI/2;capG.add(capBody);
+const capEnd1=new THREE.Mesh(new THREE.CylinderGeometry(.66,.66,.08,32),new THREE.MeshStandardMaterial({color:0xc5d7de,metalness:.7,roughness:.2}));capEnd1.rotation.z=Math.PI/2;capEnd1.position.x=-.98;capG.add(capEnd1);
+const capEnd2=capEnd1.clone();capEnd2.position.x=.98;capG.add(capEnd2);
+
+/* charge particles */
+const charges=new THREE.Group();lab.add(charges);const chargeDots=[];
+for(let i=0;i<34;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),new THREE.MeshBasicMaterial({color:i%2?0x5ad7ff:0xffb45a}));charges.add(m);chargeDots.push(m)}
+
+/* wire loop */
+function line(points,color){return new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color}))}
+const wire1=line([new THREE.Vector3(2.45,-.35,.2),new THREE.Vector3(3.2,-.35,.2),new THREE.Vector3(3.2,1.78,-.62),new THREE.Vector3(1.5,1.78,-.62)],0xffc05a);lab.add(wire1);
+const wire2=line([new THREE.Vector3(.45,-.35,.2),new THREE.Vector3(-.1,-.35,.2),new THREE.Vector3(-.1,1.78,-.62),new THREE.Vector3(-.2,1.78,-.62)],0x5ad7ff);lab.add(wire2);
+
+/* graph */
+const gc=document.createElement('canvas');gc.width=820;gc.height=350;const gctx=gc.getContext('2d'),gtex=new THREE.CanvasTexture(gc);
+const graphFrame=new THREE.Mesh(new THREE.BoxGeometry(5.3,2.5,.12),new THREE.MeshStandardMaterial({color:0xeaf3f6}));graphFrame.position.set(4.5,2.5,-3);lab.add(graphFrame);
+const graphPlane=new THREE.Mesh(new THREE.PlaneGeometry(5.05,2.27),new THREE.MeshBasicMaterial({map:gtex,side:THREE.DoubleSide}));graphPlane.position.set(4.5,2.5,-2.92);lab.add(graphPlane);
+function drawGraph(){
+ gctx.fillStyle='#f8fafb';gctx.fillRect(0,0,820,350);gctx.fillStyle='#263b45';gctx.font='bold 24px Segoe UI';gctx.fillText('ĐIỆN ÁP TỤ Uc(t)',300,30);
+ gctx.strokeStyle='#687b84';gctx.lineWidth=2;gctx.beginPath();gctx.moveTo(55,300);gctx.lineTo(755,300);gctx.moveTo(55,45);gctx.lineTo(55,300);gctx.stroke();
+ const tmin=Math.max(0,s.t-12);if(s.hist.length>1){gctx.strokeStyle='#1677c8';gctx.lineWidth=4;gctx.beginPath();let first=true;for(const p of s.hist){if(p.t<tmin)continue;const X=55+700*(p.t-tmin)/12,Y=300-240*p.U/Math.max(1,s.Vs);if(first){gctx.moveTo(X,Y);first=false}else gctx.lineTo(X,Y)}gctx.stroke()}
+ gctx.fillStyle='#50656f';gctx.font='17px Segoe UI';gctx.fillText('t (s)',715,330);gctx.fillText('U (V)',8,60);gtex.needsUpdate=true;
+}
+
+/* labels */
+const labels=$('labels');function mk(t){const e=document.createElement('div');e.className='label';e.textContent=t;labels.appendChild(e);return e}
+const lCap=mk('Tụ điện'),lFlash=mk('Đèn flash'),lLens=mk('Ống kính'),lWire=mk('Mạch nạp / phóng');
+function project(el,p){const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=(q.z>1||!$('showLabels').checked)?'none':'block'}
+
+/* physics */
+function updatePhysics(dt){
+ if(!s.running)return;
+ const h=dt*s.speed;s.t+=h;
+ if(s.mode==='charging'){
+   s.U += ((s.Vs-s.U)/tauC())*h;
+   if(s.U>s.Vs)s.U=s.Vs;
+   if(s.autoCycle && s.U>0.98*s.Vs)startFlash();
+ }else if(s.mode==='discharging'){
+   s.U += (-s.U/tauF())*h;
+   if(s.U<.015*s.Vs){s.U=0;s.mode=s.autoCycle?'charging':'idle';if(s.autoCycle)s.running=true}
+ }
+ s.hist.push({t:s.t,U:s.U});while(s.hist.length&&s.hist[0].t<s.t-12.5)s.hist.shift();
+ if(s.flashVis>0)s.flashVis=Math.max(0,s.flashVis-dt*2.8);
+}
+function startFlash(){
+ if(s.U<.05*s.Vs)return;
+ s.U0=s.U;s.mode='discharging';s.running=true;s.flashVis=1;
+}
+function updateVisuals(){
+ const pct=s.U/Math.max(1,s.Vs);
+ chargeDots.forEach((m,i)=>{const a=i/chargeDots.length*Math.PI*2;const r=.28+.27*((i%5)/5);m.position.set(1.45+.75*(pct)*Math.cos(a),-.35+.75*(pct)*Math.sin(a),.2+.12*Math.sin(i));m.visible=$('showCharge').checked&&i<Math.floor(pct*chargeDots.length)});
+ const I=Math.abs(current()),flow=Math.min(1,I/.8),dir=current()>=0?1:-1;
+ wire1.material.opacity=wire2.material.opacity=.4+.6*flow;wire1.material.transparent=wire2.material.transparent=true;
+ const glow=s.flashVis;flashLamp.material.emissiveIntensity=.25+8*glow;flashLight.intensity=45*glow;$('flashOverlay').style.opacity=(.8*glow).toFixed(2);
+ grid.visible=$('showGrid').checked;graphFrame.visible=graphPlane.visible=$('showGraph').checked;drawGraph();
+}
+
+/* auto camera */
+const shots=[{p:new THREE.Vector3(10,5.5,13),t:new THREE.Vector3(0,-.2,0),d:4.5},{p:new THREE.Vector3(-8,3.2,9),t:new THREE.Vector3(-1,-.1,0),d:4},{p:new THREE.Vector3(5,2.8,6),t:new THREE.Vector3(1,.2,0),d:3.8},{p:new THREE.Vector3(0,7,11),t:new THREE.Vector3(0,.2,0),d:4.2}];
+function ease(u){return u*u*(3-2*u)}function camSample(T){let total=shots.reduce((a,b)=>a+b.d,0),tt=T%total;for(let i=0;i<shots.length;i++){const a=shots[i],b=shots[(i+1)%shots.length];if(tt<=a.d){const u=ease(tt/a.d);return{p:new THREE.Vector3().lerpVectors(a.p,b.p,u),t:new THREE.Vector3().lerpVectors(a.t,b.t,u)}}tt-=a.d}return{p:shots[0].p.clone(),t:shots[0].t.clone()}}
+function setCameraAuto(on){s.cameraAuto=on;controls.enabled=!on;$('cameraBtn').textContent=on?'🎬 Dừng camera tự động':'🎬 Camera tự động';$('cameraBtn').classList.toggle('primary',on);if(on)s.cameraT=0;else fit()}
+function updateCamera(dt){if(!s.cameraAuto)return;s.cameraT+=dt*.9;const q=camSample(s.cameraT);camera.position.copy(q.p);controls.target.copy(q.t);camera.lookAt(q.t)}
+
+/* UI */
+function updateUI(){
+ $('speedOut').value=s.speed.toFixed(2)+'×';$('COut').value=(s.C*1e6).toFixed(0)+' µF';$('VsOut').value=s.Vs.toFixed(0)+' V';$('RcOut').value=s.Rc.toFixed(0)+' Ω';$('RfOut').value=s.Rf.toFixed(0)+' Ω';
+ $('uHud').textContent=s.U.toFixed(1)+' V';$('qHud').textContent=(Q()*1000).toFixed(1)+' mC';$('wHud').textContent=W().toFixed(2)+' J';$('iHud').textContent=current().toFixed(2)+' A';$('tauCHud').textContent=tauC().toFixed(2)+' s';$('tauFHud').textContent=(tauF()*1000).toFixed(1)+' ms';$('statusHud').textContent=s.mode==='charging'?'Đang nạp':s.mode==='discharging'?'Đang phát flash':s.mode==='idle'?'Đã phóng':'Tạm dừng';
+ const p=100*s.U/Math.max(1,s.Vs);$('chargeFill').style.width=Math.min(100,p).toFixed(1)+'%';$('chargeText').textContent=Math.round(p)+'%'
+}
+function sync(reset=true){s.speed=+$('speed').value;s.C=+$('C').value*1e-6;s.Vs=+$('Vs').value;s.Rc=+$('Rc').value;s.Rf=+$('Rf').value;if(reset){s.t=0;s.U=0;s.U0=0;s.hist=[];s.mode='charging';s.flashVis=0;s.running=true}updateUI()}
+['C','Vs','Rc','Rf'].forEach(id=>$(id).addEventListener('input',()=>sync(true)));$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>{s.mode='charging';s.running=true};$('pauseBtn').onclick=()=>s.running=false;$('flashBtn').onclick=startFlash;$('demoBtn').onclick=()=>{s.autoCycle=!s.autoCycle;$('demoBtn').textContent=s.autoCycle?'Dừng chu trình tự động':'Chu trình tự động';if(s.autoCycle){s.mode='charging';s.running=true}};
+$('clearGraphBtn').onclick=()=>s.hist=[];$('cameraBtn').onclick=()=>setCameraAuto(!s.cameraAuto);
+$('resetBtn').onclick=()=>{setCameraAuto(false);Object.assign(s,{mode:'charging',running:true,t:0,speed:1,C:900e-6,Vs:300,Rc:2500,Rf:6,U:0,U0:0,hist:[],flashVis:0,autoCycle:false});for(const [id,v] of [['speed',1],['C',900],['Vs',300],['Rc',2500],['Rf',6]])$(id).value=v;$('demoBtn').textContent='Chu trình tự động';updateUI();fit()};
+$('fitBtn').onclick=fit;$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fit()},80));
+
+/* recording */
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function recClock(){const z=Math.floor((performance.now()-s.record.start)/1000);$('recTime').textContent=String(Math.floor(z/60)).padStart(2,'0')+':'+String(z%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!renderer.domElement.captureStream||!window.MediaRecorder)return;const m=mime(),stream=renderer.domElement.captureStream(30);s.record.chunks=[];s.record.rec=new MediaRecorder(stream,m?{mimeType:m,videoBitsPerSecond:8500000}:{videoBitsPerSecond:8500000});s.record.rec.ondataavailable=e=>{if(e.data.size)s.record.chunks.push(e.data)};s.record.rec.onstop=()=>{clearInterval(s.record.timer);const real=s.record.rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(s.record.chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`108_Tu_dien_den_flash_may_anh.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true;$('recLabel').textContent='Đã xuất video'};s.record.rec.start(1000);s.record.start=performance.now();s.record.timer=setInterval(recClock,250);$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false;$('recLabel').textContent='Đang quay'};
+$('stopRecordBtn').onclick=()=>{if(s.record.rec&&s.record.rec.state==='recording')s.record.rec.stop()};
+
+function fit(){controls.target.set(.2,-.2,0);camera.position.set(10,5.5,13);camera.lookAt(controls.target);controls.update()}
+function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}window.addEventListener('resize',resize);
+
+resize();fit();updateUI();let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=Math.min(.033,(now-last)/1000);last=now;updatePhysics(dt);updateVisuals();updateCamera(dt);updateUI();project(lCap,new THREE.Vector3(1.45,.75,.2));project(lFlash,new THREE.Vector3(.65,2.55,-.62));project(lLens,new THREE.Vector3(-4.2,.8,0));project(lWire,new THREE.Vector3(2.7,.7,.2));if(controls.enabled)controls.update();renderer.render(scene,camera)}
+requestAnimationFrame(animate);
+</script></body></html>

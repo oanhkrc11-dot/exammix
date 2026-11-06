@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>102 - Chim đậu trên một dây điện cao thế</title>
+<style>
+:root{--text:#eef9ff;--gold:#ffd972}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 65% 34%,#14334b 0%,#07131e 48%,#02070b 100%);color:var(--text);font-family:Inter,Segoe UI,system-ui,sans-serif}
+#app{position:fixed;inset:0}
+#panel{position:fixed;left:12px;top:12px;bottom:12px;width:270px;z-index:40;overflow:auto;padding:11px;border-radius:16px;background:linear-gradient(180deg,rgba(8,18,28,.96),rgba(5,12,20,.94));border:1px solid rgba(111,193,235,.22);box-shadow:0 18px 52px rgba(0,0,0,.42);backdrop-filter:blur(14px);transition:.25s}
+#panel.hide{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none}
+#panel::-webkit-scrollbar{width:6px}#panel::-webkit-scrollbar-thumb{background:#31536a;border-radius:8px}
+h1{font-size:14px;margin:0 0 3px;font-weight:900}.sub{font-size:10.5px;color:#7bdcff;font-weight:800}
+.desc{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(12,28,41,.72);border:1px solid rgba(94,171,211,.14);font-size:10.3px;line-height:1.45;color:#cce1ee}
+.warn{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(84,33,16,.58);border:1px solid rgba(255,158,77,.22);font-size:10.2px;line-height:1.42;color:#ffd8b3}
+.section{margin:10px 0 6px;color:#75d8ff;font-weight:900;font-size:10.5px;letter-spacing:.6px}
+label.control{display:block;margin:7px 0 9px;font-size:10.8px}label.control .value{float:right;color:#9fe9ff;font-weight:800}
+input[type=range]{width:100%;accent-color:#52c9ff;margin-top:4px}
+.buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:7px}
+button{border:1px solid #355a73;background:#122332;color:#eef8ff;border-radius:9px;padding:7px 6px;font-size:10.5px;font-weight:800;cursor:pointer}
+button:hover{filter:brightness(1.12)}button.primary{border-color:#54d692;background:linear-gradient(180deg,#1f5d3e,#153c2a)}
+button.danger{border-color:#b85b3d;background:linear-gradient(180deg,#632a1d,#3b1b14)}
+.checkrow{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:10.4px;color:#cfe2ee}.checkrow input{accent-color:#55cfff}
+.modeling{margin-top:9px;padding:8px 9px;border-radius:10px;background:rgba(21,28,38,.72);border-left:3px solid #d8a447;font-size:10px;line-height:1.42;color:#c8d4dd}
+#graph{width:100%;height:150px;background:#071019;border-radius:9px;margin-top:8px;border:1px solid rgba(104,186,225,.14)}
+#formula{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:28;padding:8px 14px;border-radius:999px;background:rgba(6,16,25,.66);border:1px solid rgba(102,209,255,.2);color:#dff8ff;font-size:14.5px;font-weight:900;backdrop-filter:blur(9px);box-shadow:0 10px 28px #0004}
+#hud{position:fixed;right:16px;top:16px;z-index:20;width:328px;padding:10px 11px;border-radius:13px;background:rgba(6,14,22,.68);border:1px solid rgba(116,193,234,.18);backdrop-filter:blur(9px);font-size:11px;line-height:1.55}
+#hud b{color:var(--gold)}
+#probar{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:35;display:flex;gap:5px;flex-wrap:wrap;justify-content:center;padding:5px;border-radius:12px;background:rgba(6,14,22,.54);border:1px solid rgba(115,195,235,.16);backdrop-filter:blur(10px)}
+#probar button{padding:6px 8px;font-size:10.3px;border-radius:8px}
+#credit{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:18;color:#ffe075;font-size:14px;font-weight:900}
+#note{position:fixed;left:290px;bottom:16px;z-index:18;color:#a9bfce;font-size:10px;background:rgba(6,14,22,.5);border:1px solid rgba(116,193,234,.11);border-radius:9px;padding:6px 8px}
+#recStatus{position:fixed;right:18px;bottom:84px;z-index:30;display:none;padding:7px 10px;border-radius:10px;background:rgba(125,0,0,.72);border:1px solid rgba(255,120,120,.45);font-size:11px;font-weight:900}
+.status{display:inline-block;padding:3px 7px;border-radius:999px;background:#17374b;color:#a9e7ff;font-weight:800;font-size:9.5px}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="formula">ΔV<sub>chân</sub> = I<sub>dây</sub>·r′·s &nbsp; · &nbsp; I<sub>chim</sub> = ΔV/R<sub>chim</sub></div>
+<div id="probar">
+<button id="fullscreenBtn">⛶</button><button id="panelBtn">☰</button>
+<button id="bgBtn">🌗</button><button id="lightBtn">💡</button>
+<button id="camBtn">🎥</button><button id="autoCamBtn">↻ Cam</button>
+<button id="recordBtn">🔴 Quay</button><button id="stopRecordBtn">⏹</button>
+</div>
+
+<div id="panel">
+<h1>PHYSICS 11 LAB · 3D PRO</h1>
+<div class="sub">102 · CHIM ĐẬU TRÊN MỘT DÂY ĐIỆN CAO THẾ</div>
+<div class="desc">
+Hai chân chim cùng tiếp xúc trên <b>một dây dẫn</b> và cách nhau rất ngắn. Điện thế tuyệt đối của dây so với đất có thể rất lớn, nhưng <b>chênh lệch điện thế giữa hai chân</b> thường rất nhỏ nên dòng qua cơ thể chim rất nhỏ trong mô hình lý tưởng.
+</div>
+<div class="warn"><b>Quan trọng:</b> điều này không có nghĩa dây cao thế “an toàn”. Nếu chim đồng thời chạm một vật dẫn có điện thế khác (dây khác, cột/đất...) thì có thể xuất hiện dòng rất lớn qua cơ thể.</div>
+
+<div class="section">ĐIỀU KHIỂN VẬT LÍ</div>
+<label class="control">Tốc độ mô phỏng <span id="speedVal" class="value">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
+<label class="control">Điện thế dây so với đất U <span id="UVal" class="value">110 kV</span><input id="lineVoltage" type="range" min="10" max="500" step="10" value="110"></label>
+<label class="control">Dòng điện trên dây I <span id="ILineVal" class="value">300 A</span><input id="lineCurrent" type="range" min="0" max="1000" step="10" value="300"></label>
+<label class="control">Điện trở dây trên mét r′ <span id="rPrimeVal" class="value">0.00030 Ω/m</span><input id="rPrime" type="range" min=".00005" max=".002" step=".00005" value=".0003"></label>
+<label class="control">Khoảng cách hai chân s <span id="footVal" class="value">0.12 m</span><input id="footSep" type="range" min=".04" max=".30" step=".01" value=".12"></label>
+<label class="control">Điện trở cơ thể chim R <span id="bodyRVal" class="value">20 kΩ</span><input id="bodyR" type="range" min="5" max="100" step="1" value="20"></label>
+
+<div class="section">TÌNH HUỐNG</div>
+<div class="buttons">
+<button id="safeMode" class="primary">🕊 Cùng một dây</button><button id="groundMode" class="danger">⚠ Chạm đất/cột</button>
+<button id="start">▶ Bắt đầu</button><button id="pause">⏸ Tạm dừng</button>
+<button id="reset">↻ Đặt lại</button><button id="fit">⛶ Fit</button>
+</div>
+
+<div class="section">HIỂN THỊ</div>
+<label class="checkrow"><input id="showPotential" type="checkbox" checked> Hiện điện thế tại hai chân</label>
+<label class="checkrow"><input id="showCurrent" type="checkbox" checked> Hiện dòng qua chim</label>
+<label class="checkrow"><input id="showDrop" type="checkbox" checked> Hiện sụt áp dọc dây</label>
+<label class="checkrow"><input id="showGrid" type="checkbox" checked> Hiện lưới</label>
+
+<canvas id="graph" width="246" height="150"></canvas>
+
+<div class="modeling"><b>Mô hình hóa:</b> đoạn dây gần chim được coi là dây dẫn thuần trở với điện trở tuyến tính r′. Bỏ qua hồ quang, cảm ứng, điện dung với đất và sinh lý điện giật thực tế. Chế độ “chạm đất/cột” chỉ là tình huống so sánh định tính–định lượng đơn giản.</div>
+</div>
+
+<div id="hud">
+<span class="status">CHIM TRÊN MỘT DÂY · HAI CHÂN GẦN CÙNG ĐIỆN THẾ</span><br>
+U dây–đất = <b id="UOut">110 kV</b><br>
+I dây = <b id="ILineOut">300 A</b> · r′ = <b id="rPrimeOut">0.00030 Ω/m</b><br>
+V chân trái = <b id="VL">110000.000 V</b><br>
+V chân phải = <b id="VR">109999.989 V</b><br>
+ΔV hai chân = <b id="dVOut">0.0108 V</b><br>
+I qua chim = <b id="IBirdOut">0.54 μA</b><br>
+Đánh giá = <b id="statusOut">RẤT NHỎ trong mô hình lý tưởng</b>
+</div>
+
+<div id="note">điện thế tuyệt đối rất lớn ≠ chênh lệch điện thế giữa hai chân lớn</div>
+<div id="credit">Thầy Hùng vật lí</div>
+<div id="recStatus">● ĐANG QUAY 00:00</div>
+<canvas id="recordCanvas" width="1920" height="1080" style="display:none"></canvas>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const state={running:false,paused:false,time:0,speed:1,U:110e3,ILine:300,rp:.0003,footSep:.12,Rbody:20000,mode:'wire',backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false,pulse:0};
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('app').appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x06131e);
+const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,200);camera.position.set(8,5.4,10);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=4;controls.maxDistance=28;controls.minPolarAngle=.2;controls.maxPolarAngle=1.48;controls.target.set(0,1.0,0);
+
+const hemi=new THREE.HemisphereLight(0xe4f7ff,0x10202d,1.7);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,1.9);key.position.set(7,10,8);scene.add(key);
+const rim=new THREE.PointLight(0x56d8ff,1.1,30,2);rim.position.set(-5,5,-5);scene.add(rim);
+
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(38,28),new THREE.MeshStandardMaterial({color:0x101c27,roughness:.94}));
+floor.rotation.x=-Math.PI/2;floor.position.y=-2.3;scene.add(floor);
+const grid=new THREE.GridHelper(38,38,0x2e5b72,0x173241);grid.position.y=-2.29;grid.material.transparent=true;grid.material.opacity=.13;scene.add(grid);
+
+const model=new THREE.Group();scene.add(model);
+const wireGroup=new THREE.Group(),birdGroup=new THREE.Group(),indicatorGroup=new THREE.Group(),dangerGroup=new THREE.Group();
+model.add(wireGroup,birdGroup,indicatorGroup,dangerGroup);
+
+const wireY=.25;
+function dVFeet(){return state.mode==='wire'?Math.abs(state.ILine*state.rp*state.footSep):state.U}
+function birdCurrent(){return state.Rbody>0?dVFeet()/state.Rbody:Infinity}
+function vLeft(){return state.U}
+function vRight(){return state.mode==='wire'?state.U-state.ILine*state.rp*state.footSep:0}
+
+function clearGroup(g){while(g.children.length){const o=g.children.pop();o.traverse?.(q=>{q.geometry?.dispose?.();q.material?.dispose?.()})}}
+
+function addRod(group,a,b,r,color,metal=.65){
+ const mid=a.clone().add(b).multiplyScalar(.5),len=a.distanceTo(b);
+ const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,18),new THREE.MeshStandardMaterial({color,metalness:metal,roughness:.3}));
+ mesh.position.copy(mid);mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());group.add(mesh);
+ return mesh;
+}
+function buildWire(){
+ clearGroup(wireGroup);
+ // high-voltage conductor
+ const cable=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,13.5,28),new THREE.MeshStandardMaterial({color:0xb7c0c9,metalness:.88,roughness:.22}));
+ cable.rotation.z=Math.PI/2;cable.position.set(0,wireY,0);wireGroup.add(cable);
+ // twisted highlights
+ for(let k=0;k<3;k++){
+   const pts=[];
+   for(let i=0;i<=180;i++){
+     const x=-6.7+i/180*13.4,a=i/180*Math.PI*18+k*2*Math.PI/3;
+     pts.push(new THREE.Vector3(x,wireY+.128*Math.cos(a),.128*Math.sin(a)));
+   }
+   wireGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xdce4ea,transparent:true,opacity:.45})));
+ }
+ // poles / insulators
+ const poleMat=new THREE.MeshStandardMaterial({color:0x4b5862,metalness:.35,roughness:.68});
+ for(const x of [-6.1,6.1]){
+   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,5.2,16),poleMat);pole.position.set(x,-.65,0);wireGroup.add(pole);
+   const cross=new THREE.Mesh(new THREE.BoxGeometry(1.8,.14,.18),poleMat);cross.position.set(x,1.15,0);wireGroup.add(cross);
+   for(let j=0;j<4;j++){
+     const disk=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.12,24),new THREE.MeshStandardMaterial({color:0xd9e3e8,roughness:.35}));
+     disk.rotation.z=Math.PI/2;disk.position.set(x+(j-1.5)*.18,.72,0);wireGroup.add(disk);
+   }
+ }
+}
+
+function buildBird(){
+ clearGroup(birdGroup);
+ const feather=new THREE.MeshStandardMaterial({color:0xb99168,roughness:.72});
+ const dark=new THREE.MeshStandardMaterial({color:0x3a2b25,roughness:.75});
+ const light=new THREE.MeshStandardMaterial({color:0xe4d6bb,roughness:.78});
+ const orange=new THREE.MeshStandardMaterial({color:0xd97a3b,roughness:.62});
+ // body
+ const body=new THREE.Mesh(new THREE.SphereGeometry(.62,28,20),feather);body.scale.set(1.05,1.15,.78);body.position.set(0,1.28,0);birdGroup.add(body);
+ const chest=new THREE.Mesh(new THREE.SphereGeometry(.48,24,18),light);chest.scale.set(.72,1.05,.72);chest.position.set(.28,1.2,.15);birdGroup.add(chest);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.34,24,18),dark);head.position.set(.42,1.96,0);birdGroup.add(head);
+ const eye=new THREE.Mesh(new THREE.SphereGeometry(.045,12,10),new THREE.MeshBasicMaterial({color:0xffffff}));eye.position.set(.64,2.02,.20);birdGroup.add(eye);
+ const pupil=new THREE.Mesh(new THREE.SphereGeometry(.024,10,8),new THREE.MeshBasicMaterial({color:0x050505}));pupil.position.set(.675,2.02,.218);birdGroup.add(pupil);
+ const beak=new THREE.Mesh(new THREE.ConeGeometry(.10,.30,18),orange);beak.rotation.z=-Math.PI/2;beak.position.set(.82,1.95,0);birdGroup.add(beak);
+ // wings
+ const wing1=new THREE.Mesh(new THREE.SphereGeometry(.42,20,14),dark);wing1.scale.set(1.2,.42,.55);wing1.position.set(-.15,1.35,.48);wing1.rotation.z=-.35;birdGroup.add(wing1);
+ const wing2=wing1.clone();wing2.position.z=-.48;birdGroup.add(wing2);
+ // tail
+ for(let z of [-.18,0,.18]){
+   const tail=new THREE.Mesh(new THREE.ConeGeometry(.10,.9,10),dark);tail.rotation.z=Math.PI/2.7;tail.position.set(-.8,1.15,z);birdGroup.add(tail);
+ }
+ // legs/feet
+ const half=state.footSep/2*6.0; // visual scaling
+ for(const x of [-half,half]){
+   addRod(birdGroup,new THREE.Vector3(x,.94,0),new THREE.Vector3(x,.38,0),.035,0xc97842,.1);
+   addRod(birdGroup,new THREE.Vector3(x,.38,-.05),new THREE.Vector3(x+.13,.25,.18),.025,0xc97842,.1);
+   addRod(birdGroup,new THREE.Vector3(x,.38,.05),new THREE.Vector3(x-.10,.25,-.18),.025,0xc97842,.1);
+ }
+ birdGroup.position.set(0,0,0);
+}
+
+function makeTextSprite(text,bg='rgba(8,20,30,.85)',fg='#fff'){
+ const c=document.createElement('canvas');c.width=360;c.height=110;const x=c.getContext('2d');
+ x.fillStyle=bg;x.fillRect(4,4,352,102);x.strokeStyle='rgba(255,255,255,.18)';x.lineWidth=3;x.strokeRect(4,4,352,102);
+ x.fillStyle=fg;x.font='800 30px Segoe UI';x.textAlign='center';x.textBaseline='middle';x.fillText(text,180,57);
+ const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(2.2,.67,1);return s;
+}
+function buildIndicators(){
+ clearGroup(indicatorGroup);clearGroup(dangerGroup);
+ const half=state.footSep/2*6.0;
+ if($('showPotential').checked){
+   const l=makeTextSprite(`V₁ = ${(vLeft()/1000).toFixed(3)} kV`,'rgba(20,74,100,.86)','#bcefff');l.position.set(-half,2.95,0);indicatorGroup.add(l);
+   const r=makeTextSprite(`V₂ = ${(vRight()/1000).toFixed(3)} kV`,'rgba(20,74,100,.86)','#bcefff');r.position.set(half,2.55,0);indicatorGroup.add(r);
+ }
+ if($('showCurrent').checked){
+   const I=birdCurrent();
+   const col=state.mode==='wire'?0x72f3a4:0xff694f;
+   const len=THREE.MathUtils.clamp(.7+Math.log10(1+I*1e6)*.25,.7,2.5);
+   const a=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(-half,.72,.48),Math.max(.25,len),col,.14,.08);
+   indicatorGroup.add(a);
+ }
+ if($('showDrop').checked && state.mode==='wire'){
+   const grad=state.ILine*state.rp;
+   for(let i=-5;i<=5;i++){
+     const x=i*1.05;
+     const h=.16+.28*(i+5)/10;
+     const m=new THREE.Mesh(new THREE.BoxGeometry(.08,h,.08),new THREE.MeshBasicMaterial({color:0x5adfff,transparent:true,opacity:.55}));
+     m.position.set(x,wireY+.35+h/2,-.45);indicatorGroup.add(m);
+   }
+ }
+ if(state.mode==='ground'){
+   // grounded pole contact rod touching bird
+   const rod=addRod(dangerGroup,new THREE.Vector3(.55,1.75,-.1),new THREE.Vector3(3.8,-1.2,-.1),.07,0xff6b4d,.45);
+   const ground=new THREE.ArrowHelper(new THREE.Vector3(0,-1,0),new THREE.Vector3(3.8,-1.2,-.1),1.0,0xff6b4d,.18,.1);dangerGroup.add(ground);
+   const tag=makeTextSprite('CHẠM VẬT DẪN GẦN ĐẤT','rgba(110,28,18,.9)','#ffd0c6');tag.position.set(2.7,1.4,0);dangerGroup.add(tag);
+ }
+}
+
+function updatePhysics(dt){
+ if(!state.running||state.paused)return;
+ state.time+=dt*state.speed;state.pulse+=dt*state.speed*2.2;
+}
+function updateVisuals(){
+ const bob=.018*Math.sin(state.pulse*1.4);birdGroup.position.y=bob;
+ buildIndicators();
+ grid.visible=$('showGrid').checked;
+}
+function drawGraph(){
+ const c=$('graph'),g=c.getContext('2d'),w=c.width,h=c.height;g.fillStyle='#071019';g.fillRect(0,0,w,h);
+ const L=36,T=12,B=24,R=8,pw=w-L-R,ph=h-T-B;
+ g.strokeStyle='rgba(190,225,240,.28)';g.beginPath();g.moveTo(L,T);g.lineTo(L,T+ph);g.lineTo(L+pw,T+ph);g.stroke();
+ if(state.mode==='wire'){
+   const span=2.0, grad=state.ILine*state.rp,center=state.U;
+   const min=center-grad*span/2,max=center+grad*span/2;
+   g.strokeStyle='#67e5ff';g.lineWidth=2;g.beginPath();
+   for(let i=0;i<=120;i++){
+     const x=-span/2+i/120*span,V=center-grad*(x+span/2),gx=L+i/120*pw,gy=T+ph*(1-(V-min)/(max-min||1));
+     i?g.lineTo(gx,gy):g.moveTo(gx,gy);
+   }g.stroke();
+   const half=state.footSep/2;
+   for(const [xx,col] of [[-half,'#ffd65f'],[half,'#ff9a62']]){
+     const gx=L+(xx+span/2)/span*pw;g.strokeStyle=col;g.beginPath();g.moveTo(gx,T);g.lineTo(gx,T+ph);g.stroke();
+   }
+   g.fillStyle='#91aabb';g.font='9px Segoe UI';g.fillText('V(x)',4,12);g.fillText('dọc dây',w-42,h-6);
+ }else{
+   const I=birdCurrent(),Imax=Math.max(I,1e-6);
+   g.fillStyle='#ff7058';const bar=THREE.MathUtils.clamp(Math.log10(1+I*1e6)/6,0,1);g.fillRect(L,T+ph*(1-bar),pw*.55,ph*bar);
+   g.fillStyle='#ffd65f';g.font='10px Segoe UI';g.fillText(`I_chim ≈ ${formatCurrent(I)}`,L,T+12);
+   g.fillStyle='#91aabb';g.font='9px Segoe UI';g.fillText('thang log',4,12);
+ }
+}
+function formatCurrent(I){
+ if(!isFinite(I))return '∞';
+ if(I<1e-3)return `${(I*1e6).toFixed(2)} μA`;
+ if(I<1)return `${(I*1e3).toFixed(2)} mA`;
+ return `${I.toFixed(2)} A`;
+}
+function updateUI(){
+ const dv=dVFeet(),Ib=birdCurrent();
+ $('speedVal').textContent=`${state.speed.toFixed(2)}×`;$('UVal').textContent=`${(state.U/1000).toFixed(0)} kV`;$('ILineVal').textContent=`${state.ILine.toFixed(0)} A`;$('rPrimeVal').textContent=`${state.rp.toFixed(5)} Ω/m`;$('footVal').textContent=`${state.footSep.toFixed(2)} m`;$('bodyRVal').textContent=`${(state.Rbody/1000).toFixed(0)} kΩ`;
+ $('UOut').textContent=`${(state.U/1000).toFixed(0)} kV`;$('ILineOut').textContent=`${state.ILine.toFixed(0)} A`;$('rPrimeOut').textContent=`${state.rp.toFixed(5)} Ω/m`;$('VL').textContent=`${vLeft().toFixed(3)} V`;$('VR').textContent=`${vRight().toFixed(3)} V`;$('dVOut').textContent=`${dv.toFixed(4)} V`;$('IBirdOut').textContent=formatCurrent(Ib);
+ $('statusOut').textContent=state.mode==='wire'?'RẤT NHỎ trong mô hình lý tưởng':'NGUY HIỂM: chênh lệch điện thế rất lớn';
+ drawGraph();
+}
+
+const bgModes=[{b:0x06131e,f:0x101c27},{b:0xeaf2f6,f:0xd6e1e6},{b:0x06162a,f:0x0b2039}];
+function applyBackground(){const m=bgModes[state.backgroundIndex];scene.background.setHex(m.b);floor.material.color.setHex(m.f)}
+function applyLighting(){if(state.lightMode===0){hemi.intensity=1.7;key.intensity=1.9;rim.intensity=1.1}else if(state.lightMode===1){hemi.intensity=2.2;key.intensity=2.4;rim.intensity=.5}else{hemi.intensity=1.05;key.intensity=1.2;rim.intensity=1.9}}
+function setCamera(m){state.cameraMode=m%4;state.autoCamera=false;if(m===0){camera.position.set(0,3.1,12);controls.target.set(0,1.0,0)}else if(m===1){camera.position.set(8,5.4,10);controls.target.set(0,1.0,0)}else if(m===2){camera.position.set(0,10,.1);controls.target.set(0,1.0,0)}else{camera.position.set(4.5,3.2,5);controls.target.set(0,1.0,0)}camera.lookAt(controls.target);controls.update()}
+function updateAutoCam(){if(!state.autoCamera)return;const a=state.time*.13,r=10;camera.position.set(Math.cos(a)*r,4.8,Math.sin(a)*r);camera.lookAt(controls.target)}
+async function toggleFullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}}
+function rebuild(){buildWire();buildBird();buildIndicators();drawGraph()}
+
+$('speed').oninput=e=>state.speed=+e.target.value;
+$('lineVoltage').oninput=e=>{state.U=+e.target.value*1000;buildIndicators();drawGraph()};
+$('lineCurrent').oninput=e=>{state.ILine=+e.target.value;buildIndicators();drawGraph()};
+$('rPrime').oninput=e=>{state.rp=+e.target.value;buildIndicators();drawGraph()};
+$('footSep').oninput=e=>{state.footSep=+e.target.value;buildBird();buildIndicators();drawGraph()};
+$('bodyR').oninput=e=>{state.Rbody=+e.target.value*1000;buildIndicators();drawGraph()};
+$('showPotential').onchange=buildIndicators;$('showCurrent').onchange=buildIndicators;$('showDrop').onchange=buildIndicators;
+$('safeMode').onclick=()=>{state.mode='wire';buildIndicators();drawGraph()};
+$('groundMode').onclick=()=>{state.mode='ground';buildIndicators();drawGraph()};
+$('start').onclick=()=>{state.running=true;state.paused=false};
+$('pause').onclick=()=>state.paused=!state.paused;
+$('reset').onclick=()=>{Object.assign(state,{running:false,paused:false,time:0,speed:1,U:110e3,ILine:300,rp:.0003,footSep:.12,Rbody:20000,mode:'wire',backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false,pulse:0});$('speed').value=1;$('lineVoltage').value=110;$('lineCurrent').value=300;$('rPrime').value=.0003;$('footSep').value=.12;$('bodyR').value=20;applyBackground();applyLighting();rebuild();setCamera(1)};
+$('fit').onclick=()=>setCamera(1);
+$('fullscreenBtn').onclick=toggleFullscreen;$('panelBtn').onclick=()=>$('panel').classList.toggle('hide');
+$('bgBtn').onclick=()=>{state.backgroundIndex=(state.backgroundIndex+1)%3;applyBackground()};
+$('lightBtn').onclick=()=>{state.lightMode=(state.lightMode+1)%3;applyLighting()};
+$('camBtn').onclick=()=>setCamera((state.cameraMode+1)%4);$('autoCamBtn').onclick=()=>state.autoCamera=!state.autoCamera;
+
+// recording
+const rc=$('recordCanvas'),rctx=rc.getContext('2d');let rec=null,chunks=[],mime='',recStart=0,recTimer=null;
+function bestMime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function drawRec(){const sw=renderer.domElement.width,sh=renderer.domElement.height,dw=rc.width,dh=rc.height,s=Math.max(dw/sw,dh/sh),rw=sw*s,rh=sh*s;rctx.fillStyle='#06131e';rctx.fillRect(0,0,dw,dh);rctx.drawImage(renderer.domElement,(dw-rw)/2,(dh-rh)/2,rw,rh);rctx.fillStyle='rgba(4,12,20,.72)';rctx.fillRect(34,34,1120,115);rctx.fillStyle='#fff';rctx.font='800 30px Segoe UI';rctx.fillText('102 · CHIM ĐẬU TRÊN MỘT DÂY ĐIỆN CAO THẾ',58,76);rctx.fillStyle='#ffe075';rctx.font='700 23px Segoe UI';rctx.fillText(`U=${(state.U/1000).toFixed(0)} kV · ΔV chân=${dVFeet().toFixed(4)} V · I_chim=${formatCurrent(birdCurrent())} · ${state.mode==='wire'?'CÙNG MỘT DÂY':'CHẠM ĐẤT/CỘT'}`,58,118);rctx.textAlign='center';rctx.font='800 27px Segoe UI';rctx.fillText('Thầy Hùng vật lí',dw/2,dh-34);rctx.textAlign='left'}
+function startRec(){if(rec&&rec.state==='recording')return;mime=bestMime();if(!mime){alert('Trình duyệt chưa hỗ trợ ghi video.');return}chunks=[];const stream=rc.captureStream(60);rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12000000});rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{const ext=mime.includes('mp4')?'mp4':'webm',a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:mime}));a.download=`102_Chim_dau_tren_mot_day_dien_cao_the.${ext}`;a.click();$('recStatus').style.display='none';clearInterval(recTimer)};rec.start(1000);recStart=performance.now();$('recStatus').style.display='block';recTimer=setInterval(()=>{$('recStatus').textContent=`● ĐANG QUAY ${Math.floor((performance.now()-recStart)/1000)} s`},500)}
+$('recordBtn').onclick=startRec;$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=THREE.MathUtils.clamp((now-last)/1000,0,.033);last=now;updatePhysics(dt);updateVisuals();updateUI();updateAutoCam();controls.update();renderer.render(scene,camera);if(rec&&rec.state==='recording')drawRec()}
+applyBackground();applyLighting();rebuild();setCamera(1);requestAnimationFrame(animate);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>

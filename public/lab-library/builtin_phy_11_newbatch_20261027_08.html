@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>046 - Khúc xạ sóng mặt nước</title>
+<style>
+:root{--bg:#07131e;--text:#eef9ff;--gold:#ffd972}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 66% 34%,#10304a 0%,#07131e 48%,#02070b 100%);color:var(--text);font-family:Inter,Segoe UI,system-ui,sans-serif}
+#app{position:fixed;inset:0}
+#panel{position:fixed;left:12px;top:12px;bottom:12px;width:262px;z-index:40;overflow:auto;padding:11px;border-radius:16px;background:linear-gradient(180deg,rgba(8,18,28,.96),rgba(5,12,20,.94));border:1px solid rgba(111,193,235,.22);box-shadow:0 18px 52px rgba(0,0,0,.42);backdrop-filter:blur(14px);transition:.25s}
+#panel.hide{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none}
+#panel::-webkit-scrollbar{width:6px}#panel::-webkit-scrollbar-thumb{background:#31536a;border-radius:8px}
+h1{font-size:14px;margin:0 0 3px;font-weight:900}.sub{font-size:10.5px;color:#7bdcff;font-weight:800}
+.desc{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(12,28,41,.72);border:1px solid rgba(94,171,211,.14);font-size:10.3px;line-height:1.45;color:#cce1ee}
+.section{margin:10px 0 6px;color:#75d8ff;font-weight:900;font-size:10.5px;letter-spacing:.6px}
+label.control{display:block;margin:7px 0 9px;font-size:10.8px}label.control .value{float:right;color:#9fe9ff;font-weight:800}
+input[type=range]{width:100%;accent-color:#52c9ff;margin-top:4px}
+.buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:7px}
+button{border:1px solid #355a73;background:#122332;color:#eef8ff;border-radius:9px;padding:7px 6px;font-size:10.5px;font-weight:800;cursor:pointer}
+button:hover{filter:brightness(1.12)}button.primary{border-color:#54d692;background:linear-gradient(180deg,#1f5d3e,#153c2a)}
+.checkrow{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:10.4px;color:#cfe2ee}.checkrow input{accent-color:#55cfff}
+.modeling{margin-top:9px;padding:8px 9px;border-radius:10px;background:rgba(21,28,38,.72);border-left:3px solid #d8a447;font-size:10px;line-height:1.42;color:#c8d4dd}
+#formula{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:28;padding:8px 14px;border-radius:999px;background:rgba(6,16,25,.66);border:1px solid rgba(102,209,255,.2);color:#dff8ff;font-size:15px;font-weight:900;backdrop-filter:blur(9px);box-shadow:0 10px 28px #0004}
+#hud{position:fixed;right:16px;top:16px;z-index:20;width:320px;padding:10px 11px;border-radius:13px;background:rgba(6,14,22,.68);border:1px solid rgba(116,193,234,.18);backdrop-filter:blur(9px);font-size:11px;line-height:1.55}
+#hud b{color:var(--gold)}
+#probar{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:35;display:flex;gap:5px;flex-wrap:wrap;justify-content:center;padding:5px;border-radius:12px;background:rgba(6,14,22,.54);border:1px solid rgba(115,195,235,.16);backdrop-filter:blur(10px)}
+#probar button{padding:6px 8px;font-size:10.3px;border-radius:8px}
+#credit{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:18;color:#ffe075;font-size:14px;font-weight:900}
+#note{position:fixed;left:282px;bottom:16px;z-index:18;color:#a9bfce;font-size:10px;background:rgba(6,14,22,.5);border:1px solid rgba(116,193,234,.11);border-radius:9px;padding:6px 8px}
+#recStatus{position:fixed;right:18px;bottom:84px;z-index:30;display:none;padding:7px 10px;border-radius:10px;background:rgba(125,0,0,.72);border:1px solid rgba(255,120,120,.45);font-size:11px;font-weight:900}
+.status{display:inline-block;padding:3px 7px;border-radius:999px;background:#17374b;color:#a9e7ff;font-weight:800;font-size:9.5px}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="formula">sin i / sin r = v₁ / v₂ = λ₁ / λ₂</div>
+<div id="probar">
+<button id="fullscreenBtn">⛶</button><button id="panelBtn">☰</button>
+<button id="bgBtn">🌗</button><button id="lightBtn">💡</button>
+<button id="camBtn">🎥</button><button id="autoCamBtn">↻ Cam</button>
+<button id="recordBtn">🔴 Quay</button><button id="stopRecordBtn">⏹</button>
+</div>
+
+<div id="panel">
+<h1>PHYSICS 12 LAB · 3D PRO</h1>
+<div class="sub">046 · KHÚC XẠ SÓNG MẶT NƯỚC</div>
+<div class="desc">
+Sóng truyền từ vùng nước sâu sang vùng nước nông: <b>tần số không đổi</b>, còn vận tốc và bước sóng thay đổi. Khi \(v_2&lt;v_1\), tia khúc xạ lệch <b>gần pháp tuyến hơn</b>.
+</div>
+
+<div class="section">ĐIỀU KHIỂN</div>
+<label class="control">Tốc độ mô phỏng <span id="speedVal" class="value">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
+<label class="control">Tần số f <span id="fVal" class="value">2.0 Hz</span><input id="freq" type="range" min=".5" max="5" step=".1" value="2"></label>
+<label class="control">Vận tốc vùng 1 v₁ <span id="v1Val" class="value">2.00 m/s</span><input id="v1" type="range" min=".8" max="3.5" step=".05" value="2"></label>
+<label class="control">Vận tốc vùng 2 v₂ <span id="v2Val" class="value">1.20 m/s</span><input id="v2" type="range" min=".5" max="3.2" step=".05" value="1.2"></label>
+<label class="control">Góc tới i <span id="iVal" class="value">40°</span><input id="incidence" type="range" min="0" max="75" step="1" value="40"></label>
+<label class="control">Biên độ hiển thị <span id="ampVal" class="value">1.00×</span><input id="amp" type="range" min=".4" max="1.8" step=".05" value="1"></label>
+
+<div class="section">NÚT NHANH</div>
+<div class="buttons">
+<button id="start" class="primary">▶ Bắt đầu</button><button id="pause">⏸ Tạm dừng</button>
+<button id="reset">↻ Đặt lại</button><button id="fit">⛶ Fit</button>
+</div>
+<div class="buttons">
+<button id="deepToShallow">Sâu → nông</button><button id="shallowToDeep">Nông → sâu</button>
+<button id="normalInc">i = 0°</button><button id="angle45">i = 45°</button>
+</div>
+
+<div class="section">HIỂN THỊ</div>
+<label class="checkrow"><input id="showFronts" type="checkbox" checked> Hiện các mặt sóng</label>
+<label class="checkrow"><input id="showRays" type="checkbox" checked> Hiện tia tới/khúc xạ</label>
+<label class="checkrow"><input id="showNormal" type="checkbox" checked> Hiện pháp tuyến</label>
+<label class="checkrow"><input id="showLabels" type="checkbox" checked> Hiện nhãn vùng nước</label>
+<label class="checkrow"><input id="showGrid" type="checkbox" checked> Hiện lưới tham chiếu</label>
+
+<div class="modeling"><b>Mô hình hóa:</b> biên phân cách là đường thẳng. Tần số do nguồn quyết định nên không đổi khi qua biên; vì \(λ=v/f\), khi vận tốc giảm thì bước sóng giảm. Góc khúc xạ được tính từ định luật khúc xạ sóng.</div>
+</div>
+
+<div id="hud">
+<span class="status">KHÚC XẠ SÓNG · SÂU ↔ NÔNG</span><br>
+f = <b id="fOut">2.0 Hz</b><br>
+v₁ = <b id="v1Out">2.00 m/s</b> · λ₁ = <b id="lam1Out">1.00 m</b><br>
+v₂ = <b id="v2Out">1.20 m/s</b> · λ₂ = <b id="lam2Out">0.60 m</b><br>
+i = <b id="iOut">40.0°</b> · r = <b id="rOut">22.7°</b><br>
+f₂/f₁ = <b id="ratioFOut">1.000</b><br>
+Trạng thái = <b id="runOut">ĐỨNG YÊN</b>
+</div>
+
+<div id="note">vùng xanh đậm: nước sâu · xanh sáng: nước nông · mặt sóng đổi khoảng cách nhưng cùng tần số</div>
+<div id="credit">Thầy Hùng vật lí</div>
+<div id="recStatus">● ĐANG QUAY 00:00</div>
+<canvas id="recordCanvas" width="1920" height="1080" style="display:none"></canvas>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const state={running:false,paused:false,time:0,speed:1,f:2,v1:2,v2:1.2,iDeg:40,amp:1,phase:0,backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false};
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('app').appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x06131e);
+const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,200);camera.position.set(8,7.5,10);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=4.5;controls.maxDistance=28;controls.minPolarAngle=.18;controls.maxPolarAngle=1.5;controls.target.set(0,.15,0);
+
+const hemi=new THREE.HemisphereLight(0xe3f7ff,0x10202d,1.7);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,1.8);key.position.set(7,10,8);scene.add(key);
+const rim=new THREE.PointLight(0x56d8ff,1.1,30,2);rim.position.set(-5,5,-5);scene.add(rim);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(38,30),new THREE.MeshStandardMaterial({color:0x101c27,roughness:.92}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.2;scene.add(floor);
+const grid=new THREE.GridHelper(38,38,0x2e5b72,0x173241);grid.position.y=-2.19;grid.material.transparent=true;grid.material.opacity=.13;scene.add(grid);
+
+const model=new THREE.Group();scene.add(model);
+const waterGroup=new THREE.Group(),frontGroup=new THREE.Group(),rayGroup=new THREE.Group(),labelGroup=new THREE.Group();
+model.add(waterGroup,frontGroup,rayGroup,labelGroup);
+
+function clearGroup(g){while(g.children.length){const o=g.children.pop();o.traverse?.(q=>{q.geometry?.dispose?.();q.material?.dispose?.()})}}
+function lambda1(){return state.v1/state.f}
+function lambda2(){return state.v2/state.f}
+function rDeg(){
+ const i=THREE.MathUtils.degToRad(state.iDeg);
+ const s=(state.v2/state.v1)*Math.sin(i);
+ return THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(s,-1,1)));
+}
+function buildWater(){
+ clearGroup(waterGroup);
+ const g1=new THREE.Mesh(new THREE.BoxGeometry(9.8,.18,8.4),new THREE.MeshStandardMaterial({color:0x0b4770,transparent:true,opacity:.62,roughness:.35,metalness:.08}));
+ g1.position.set(-2.5,0,0);waterGroup.add(g1);
+ const g2=new THREE.Mesh(new THREE.BoxGeometry(9.8,.18,8.4),new THREE.MeshStandardMaterial({color:0x1382a5,transparent:true,opacity:.62,roughness:.35,metalness:.08}));
+ g2.position.set(2.5,.02,0);waterGroup.add(g2);
+ const boundary=new THREE.Mesh(new THREE.BoxGeometry(.05,.12,8.6),new THREE.MeshBasicMaterial({color:0xe4f7ff,transparent:true,opacity:.8}));
+ boundary.position.set(0,.12,0);waterGroup.add(boundary);
+}
+function lineFromPoints(points,color,opacity=.9){
+ return new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color,transparent:true,opacity}));
+}
+function buildFronts(){
+ clearGroup(frontGroup);
+ if(!$('showFronts').checked)return;
+ const i=THREE.MathUtils.degToRad(state.iDeg),r=THREE.MathUtils.degToRad(rDeg());
+ const l1=lambda1(),l2=lambda2(),phase=(state.phase%1);
+ const spacing1=THREE.MathUtils.clamp(l1*1.25,.45,2.2),spacing2=THREE.MathUtils.clamp(l2*1.25,.35,2.0);
+ // wave fronts perpendicular to propagation ray in horizontal x-z plane
+ for(let n=-7;n<=7;n++){
+   const s=(-5.8+n*spacing1+phase*spacing1);
+   if(s>=-.15)continue;
+   const center=new THREE.Vector3(s,.22,-s*Math.tan(i));
+   const tangent=new THREE.Vector3(-Math.sin(i),0,Math.cos(i));
+   const p1=center.clone().add(tangent.clone().multiplyScalar(4.0));
+   const p2=center.clone().add(tangent.clone().multiplyScalar(-4.0));
+   frontGroup.add(lineFromPoints([p1,p2],0x7de8ff,.76));
+ }
+ for(let n=-1;n<=10;n++){
+   const s=(.15+n*spacing2+phase*spacing2);
+   const center=new THREE.Vector3(s,.24,s*Math.tan(r));
+   const tangent=new THREE.Vector3(-Math.sin(r),0,Math.cos(r));
+   const p1=center.clone().add(tangent.clone().multiplyScalar(4.0));
+   const p2=center.clone().add(tangent.clone().multiplyScalar(-4.0));
+   frontGroup.add(lineFromPoints([p1,p2],0xffd36f,.82));
+ }
+}
+function buildRays(){
+ clearGroup(rayGroup);
+ if(!$('showRays').checked && !$('showNormal').checked)return;
+ const i=THREE.MathUtils.degToRad(state.iDeg),r=THREE.MathUtils.degToRad(rDeg());
+ if($('showRays').checked){
+   const pi=new THREE.Vector3(-4.6,.34,4.6*Math.tan(i));
+   const o=new THREE.Vector3(0,.34,0);
+   const pr=new THREE.Vector3(4.6,.34,4.6*Math.tan(r));
+   rayGroup.add(lineFromPoints([pi,o],0xffd76c,1));
+   rayGroup.add(lineFromPoints([o,pr],0xff8e55,1));
+   const di=o.clone().sub(pi).normalize(),dr=pr.clone().sub(o).normalize();
+   rayGroup.add(new THREE.ArrowHelper(di,pi.clone().lerp(o,.55),1.2,0xffd76c,.15,.08));
+   rayGroup.add(new THREE.ArrowHelper(dr,o.clone().lerp(pr,.3),1.2,0xff8e55,.15,.08));
+ }
+ if($('showNormal').checked){
+   rayGroup.add(lineFromPoints([new THREE.Vector3(-.01,.32,-3.7),new THREE.Vector3(.01,.32,3.7)],0xffffff,.55));
+ }
+}
+function updatePhysics(dt){
+ if(!state.running||state.paused)return;
+ state.time+=dt*state.speed;
+ state.phase+=dt*state.speed*state.f*.45;
+}
+function updateVisuals(){
+ buildFronts();
+ rayGroup.visible=$('showRays').checked||$('showNormal').checked;
+ grid.visible=$('showGrid').checked;
+}
+function updateUI(){
+ $('speedVal').textContent=`${state.speed.toFixed(2)}×`;$('fVal').textContent=`${state.f.toFixed(1)} Hz`;$('v1Val').textContent=`${state.v1.toFixed(2)} m/s`;$('v2Val').textContent=`${state.v2.toFixed(2)} m/s`;$('iVal').textContent=`${state.iDeg.toFixed(0)}°`;$('ampVal').textContent=`${state.amp.toFixed(2)}×`;
+ $('fOut').textContent=`${state.f.toFixed(1)} Hz`;$('v1Out').textContent=`${state.v1.toFixed(2)} m/s`;$('v2Out').textContent=`${state.v2.toFixed(2)} m/s`;$('lam1Out').textContent=`${lambda1().toFixed(2)} m`;$('lam2Out').textContent=`${lambda2().toFixed(2)} m`;$('iOut').textContent=`${state.iDeg.toFixed(1)}°`;$('rOut').textContent=`${rDeg().toFixed(1)}°`;$('ratioFOut').textContent='1.000';
+ $('runOut').textContent=state.running&&!state.paused?'ĐANG CHẠY':state.paused?'TẠM DỪNG':'ĐỨNG YÊN';
+}
+const bgModes=[{b:0x06131e,f:0x101c27},{b:0xeaf2f6,f:0xd6e1e6},{b:0x06162a,f:0x0b2039}];
+function applyBackground(){const m=bgModes[state.backgroundIndex];scene.background.setHex(m.b);floor.material.color.setHex(m.f)}
+function applyLighting(){if(state.lightMode===0){hemi.intensity=1.7;key.intensity=1.8;rim.intensity=1.1}else if(state.lightMode===1){hemi.intensity=2.2;key.intensity=2.3;rim.intensity=.5}else{hemi.intensity=1.05;key.intensity=1.15;rim.intensity=1.9}}
+function setCamera(m){state.cameraMode=m%4;state.autoCamera=false;if(m===0){camera.position.set(0,10,.01);controls.target.set(0,.15,0)}else if(m===1){camera.position.set(8,7.5,10);controls.target.set(0,.15,0)}else if(m===2){camera.position.set(0,3.8,12);controls.target.set(0,.15,0)}else{camera.position.set(5,4,5);controls.target.set(0,.15,0)}camera.lookAt(controls.target);controls.update()}
+function updateAutoCam(){if(!state.autoCamera)return;const a=state.time*.12,r=11;camera.position.set(Math.cos(a)*r,6.2,Math.sin(a)*r);camera.lookAt(controls.target)}
+async function toggleFullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}}
+function rebuild(){buildWater();buildFronts();buildRays()}
+
+$('speed').oninput=e=>state.speed=+e.target.value;
+$('freq').oninput=e=>{state.f=+e.target.value;buildFronts()};
+$('v1').oninput=e=>{state.v1=+e.target.value;buildFronts();buildRays()};
+$('v2').oninput=e=>{state.v2=+e.target.value;buildFronts();buildRays()};
+$('incidence').oninput=e=>{state.iDeg=+e.target.value;buildFronts();buildRays()};
+$('amp').oninput=e=>state.amp=+e.target.value;
+$('showFronts').onchange=buildFronts;$('showRays').onchange=buildRays;$('showNormal').onchange=buildRays;
+
+$('start').onclick=()=>{state.running=true;state.paused=false};
+$('pause').onclick=()=>state.paused=!state.paused;
+$('reset').onclick=()=>{Object.assign(state,{running:false,paused:false,time:0,speed:1,f:2,v1:2,v2:1.2,iDeg:40,amp:1,phase:0,backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false});$('speed').value=1;$('freq').value=2;$('v1').value=2;$('v2').value=1.2;$('incidence').value=40;$('amp').value=1;applyBackground();applyLighting();rebuild();setCamera(1)};
+$('fit').onclick=()=>setCamera(1);
+$('deepToShallow').onclick=()=>{state.v1=2.2;state.v2=1.2;$('v1').value=2.2;$('v2').value=1.2;rebuild()};
+$('shallowToDeep').onclick=()=>{state.v1=1.2;state.v2=2.2;$('v1').value=1.2;$('v2').value=2.2;rebuild()};
+$('normalInc').onclick=()=>{state.iDeg=0;$('incidence').value=0;rebuild()};
+$('angle45').onclick=()=>{state.iDeg=45;$('incidence').value=45;rebuild()};
+$('fullscreenBtn').onclick=toggleFullscreen;$('panelBtn').onclick=()=>$('panel').classList.toggle('hide');
+$('bgBtn').onclick=()=>{state.backgroundIndex=(state.backgroundIndex+1)%3;applyBackground()};
+$('lightBtn').onclick=()=>{state.lightMode=(state.lightMode+1)%3;applyLighting()};
+$('camBtn').onclick=()=>setCamera((state.cameraMode+1)%4);$('autoCamBtn').onclick=()=>state.autoCamera=!state.autoCamera;
+
+// recording
+const rc=$('recordCanvas'),rctx=rc.getContext('2d');let rec=null,chunks=[],mime='',recStart=0,recTimer=null;
+function bestMime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function drawRec(){const sw=renderer.domElement.width,sh=renderer.domElement.height,dw=rc.width,dh=rc.height,s=Math.max(dw/sw,dh/sh),rw=sw*s,rh=sh*s;rctx.fillStyle='#06131e';rctx.fillRect(0,0,dw,dh);rctx.drawImage(renderer.domElement,(dw-rw)/2,(dh-rh)/2,rw,rh);rctx.fillStyle='rgba(4,12,20,.72)';rctx.fillRect(34,34,1000,115);rctx.fillStyle='#fff';rctx.font='800 30px Segoe UI';rctx.fillText('046 · KHÚC XẠ SÓNG MẶT NƯỚC',58,76);rctx.fillStyle='#ffe075';rctx.font='700 23px Segoe UI';rctx.fillText(`f=${state.f.toFixed(1)} Hz · v₁=${state.v1.toFixed(2)} · v₂=${state.v2.toFixed(2)} m/s · i=${state.iDeg.toFixed(1)}° · r=${rDeg().toFixed(1)}°`,58,118);rctx.textAlign='center';rctx.font='800 27px Segoe UI';rctx.fillText('Thầy Hùng vật lí',dw/2,dh-34);rctx.textAlign='left'}
+function startRec(){if(rec&&rec.state==='recording')return;mime=bestMime();if(!mime){alert('Trình duyệt chưa hỗ trợ ghi video.');return}chunks=[];const stream=rc.captureStream(60);rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12000000});rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{const ext=mime.includes('mp4')?'mp4':'webm',a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:mime}));a.download=`046_Khuc_xa_song_mat_nuoc.${ext}`;a.click();$('recStatus').style.display='none';clearInterval(recTimer)};rec.start(1000);recStart=performance.now();$('recStatus').style.display='block';recTimer=setInterval(()=>{$('recStatus').textContent=`● ĐANG QUAY ${Math.floor((performance.now()-recStart)/1000)} s`},500)}
+$('recordBtn').onclick=startRec;$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=THREE.MathUtils.clamp((now-last)/1000,0,.033);last=now;updatePhysics(dt);updateVisuals();updateUI();updateAutoCam();controls.update();renderer.render(scene,camera);if(rec&&rec.state==='recording')drawRec()}
+applyBackground();applyLighting();rebuild();setCamera(1);requestAnimationFrame(animate);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>

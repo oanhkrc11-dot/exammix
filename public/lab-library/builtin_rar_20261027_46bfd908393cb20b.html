@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mô phỏng ném xiên - Tên lửa</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #0d1b2a;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, #10253d 0%, #0d1b2a 100%);
+      padding: 18px;
+      border-right: 2px solid rgba(255,255,255,0.08);
+      overflow-y: auto;
+    }
+
+    .panel h1 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .panel h2 {
+      margin: 18px 0 10px;
+      font-size: 20px;
+      color: #9bd1ff;
+    }
+
+    .hint {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #dcefff;
+      opacity: 0.9;
+    }
+
+    .row { margin-bottom: 14px; }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .value {
+      float: right;
+      color: #ffd166;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .btns {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: #1f6feb;
+      transition: transform .12s ease, opacity .2s ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    button.secondary { background: #3b506b; }
+    button.accent { background: #e85d04; }
+    button:active { transform: translateY(0); }
+
+    .checks {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .checks label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .stats {
+      margin-top: 8px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.1);
+      font-size: 15px;
+    }
+    .stat:last-child { border-bottom: none; }
+    .stat span:last-child { color: #ffd166; font-weight: 700; }
+
+    .scene-wrap {
+      position: relative;
+      background: #87ceeb;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .overlay {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      pointer-events: none;
+    }
+
+    .tag {
+      display: inline-block;
+      background: rgba(0,0,0,0.36);
+      border: 1px solid rgba(255,255,255,0.16);
+      color: #fff;
+      padding: 9px 12px;
+      border-radius: 999px;
+      font-size: 14px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      backdrop-filter: blur(4px);
+    }
+
+    .formulaBox {
+      position: absolute;
+      right: 18px;
+      top: 18px;
+      width: 290px;
+      background: rgba(0,0,0,0.38);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 16px;
+      padding: 14px;
+      color: white;
+      backdrop-filter: blur(4px);
+    }
+    .formulaBox h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: #ffe29a;
+    }
+    .formulaBox div {
+      margin: 8px 0;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .credit {
+      margin-top: 18px;
+      font-size: 13px;
+      opacity: .75;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+      .panel { max-height: 45vh; border-right: 0; border-bottom: 2px solid rgba(255,255,255,0.08); }
+      .formulaBox { width: 250px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="panel">
+    <h1>Mô phỏng tên lửa<br>chuyển động ném xiên</h1>
+    <div class="hint">
+      Tên lửa được làm lớn như trong video: có bệ phóng, lửa phụt, khói, quỹ đạo parabol, camera bám theo tên lửa và chế độ phân tích vật lí.
+    </div>
+
+    <h2>Thông số</h2>
+    <div class="row">
+      <label>Vận tốc ban đầu <span class="value" id="speedVal">70 m/s</span></label>
+      <input id="speed" type="range" min="20" max="120" step="1" value="70">
+    </div>
+    <div class="row">
+      <label>Góc phóng <span class="value" id="angleVal">52°</span></label>
+      <input id="angle" type="range" min="10" max="80" step="1" value="52">
+    </div>
+    <div class="row">
+      <label>Gia tốc trọng trường <span class="value" id="gVal">9.8 m/s²</span></label>
+      <input id="gravity" type="range" min="1.6" max="15" step="0.1" value="9.8">
+    </div>
+    <div class="row">
+      <label>Tốc độ phát lại <span class="value" id="timeScaleVal">1.0x</span></label>
+      <input id="timeScale" type="range" min="0.2" max="2.5" step="0.1" value="1.0">
+    </div>
+
+    <div class="btns">
+      <button id="launchBtn">▶ Phóng</button>
+      <button id="pauseBtn" class="secondary">⏸ Tạm dừng</button>
+      <button id="resetBtn" class="accent">↺ Reset</button>
+      <button id="modeBtn" class="secondary">Chế độ: Điện ảnh</button>
+    </div>
+
+    <h2>Hiển thị</h2>
+    <div class="checks">
+      <label><input id="showTrail" type="checkbox" checked> Hiện quỹ đạo</label>
+      <label><input id="showVectors" type="checkbox" checked> Hiện vectơ vận tốc</label>
+      <label><input id="showComponents" type="checkbox" checked> Hiện thành phần vx, vy</label>
+      <label><input id="showAxes" type="checkbox" checked> Hiện hệ trục Oxy</label>
+      <label><input id="showMarks" type="checkbox" checked> Hiện Hmax và tầm xa</label>
+      <label><input id="showFormulas" type="checkbox" checked> Hiện công thức</label>
+      <label><input id="followRocket" type="checkbox" checked> Camera bám theo tên lửa</label>
+    </div>
+
+    <h2>Thông số tính toán</h2>
+    <div class="stats">
+      <div class="stat"><span>Thời gian bay</span><span id="flightTime">0.00 s</span></div>
+      <div class="stat"><span>Độ cao cực đại</span><span id="maxHeight">0.00 m</span></div>
+      <div class="stat"><span>Tầm xa</span><span id="rangeVal">0.00 m</span></div>
+      <div class="stat"><span>Vận tốc ngang vx</span><span id="vxVal">0.00 m/s</span></div>
+      <div class="stat"><span>Vận tốc tại đỉnh</span><span id="vTop">0.00 m/s</span></div>
+      <div class="stat"><span>Thời gian hiện tại</span><span id="currentTime">0.00 s</span></div>
+    </div>
+
+    <div class="credit">
+      Gợi ý sử dụng trên lớp:<br>
+      - Chế độ Điện ảnh: mở bài, quan sát trực quan.<br>
+      - Chế độ Phân tích: dừng hình, phân tích vx, vy, Hmax, L.<br>
+      - Có thể đổi góc 30°, 45°, 60° để so sánh.
+    </div>
+  </div>
+
+  <div class="scene-wrap">
+    <canvas id="canvas"></canvas>
+    <div class="overlay">
+      <div class="tag" id="statusTag">Sẵn sàng phóng</div>
+      <div class="tag" id="coordTag">x = 0.0 m | y = 0.0 m</div>
+    </div>
+    <div class="formulaBox" id="formulaBox">
+      <h3>Công thức</h3>
+      <div>x = v₀ cosα · t</div>
+      <div>y = v₀ sinα · t − 1/2 g t²</div>
+      <div>Hmax = v₀² sin²α / (2g)</div>
+      <div>L = v₀² sin(2α) / g</div>
+      <div>vx = v₀ cosα ; vy = v₀ sinα − gt</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const speedEl = document.getElementById('speed');
+  const angleEl = document.getElementById('angle');
+  const gravityEl = document.getElementById('gravity');
+  const timeScaleEl = document.getElementById('timeScale');
+
+  const speedVal = document.getElementById('speedVal');
+  const angleVal = document.getElementById('angleVal');
+  const gVal = document.getElementById('gVal');
+  const timeScaleVal = document.getElementById('timeScaleVal');
+
+  const showTrailEl = document.getElementById('showTrail');
+  const showVectorsEl = document.getElementById('showVectors');
+  const showComponentsEl = document.getElementById('showComponents');
+  const showAxesEl = document.getElementById('showAxes');
+  const showMarksEl = document.getElementById('showMarks');
+  const showFormulasEl = document.getElementById('showFormulas');
+  const followRocketEl = document.getElementById('followRocket');
+
+  const launchBtn = document.getElementById('launchBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const modeBtn = document.getElementById('modeBtn');
+
+  const flightTimeEl = document.getElementById('flightTime');
+  const maxHeightEl = document.getElementById('maxHeight');
+  const rangeValEl = document.getElementById('rangeVal');
+  const vxValEl = document.getElementById('vxVal');
+  const vTopEl = document.getElementById('vTop');
+  const currentTimeEl = document.getElementById('currentTime');
+  const statusTag = document.getElementById('statusTag');
+  const coordTag = document.getElementById('coordTag');
+  const formulaBox = document.getElementById('formulaBox');
+
+  let W = 0, H = 0;
+  let dpr = Math.max(1, window.devicePixelRatio || 1);
+
+  let mode = 'cinematic';
+  let running = false;
+  let paused = false;
+  let t = 0;
+  let lastTs = 0;
+  let trail = [];
+  let smoke = [];
+  let explosionTime = 0;
+
+  const origin = { x: 120, y: 100 };
+  const world = {
+    v0: 70,
+    angleDeg: 52,
+    g: 9.8,
+    timeScale: 1.0,
+    flightTime: 0,
+    maxHeight: 0,
+    range: 0,
+    vx0: 0,
+    vy0: 0,
+    topTime: 0,
+  };
+
+  function resize() {
+    W = canvas.clientWidth;
+    H = canvas.clientHeight;
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function rad(deg) { return deg * Math.PI / 180; }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function fmt(v, n=2) { return Number(v).toFixed(n); }
+
+  function updateModel() {
+    world.v0 = parseFloat(speedEl.value);
+    world.angleDeg = parseFloat(angleEl.value);
+    world.g = parseFloat(gravityEl.value);
+    world.timeScale = parseFloat(timeScaleEl.value);
+
+    const a = rad(world.angleDeg);
+    world.vx0 = world.v0 * Math.cos(a);
+    world.vy0 = world.v0 * Math.sin(a);
+    world.flightTime = (2 * world.vy0) / world.g;
+    world.maxHeight = (world.vy0 * world.vy0) / (2 * world.g);
+    world.range = world.vx0 * world.flightTime;
+    world.topTime = world.vy0 / world.g;
+
+    speedVal.textContent = `${world.v0} m/s`;
+    angleVal.textContent = `${world.angleDeg}°`;
+    gVal.textContent = `${world.g.toFixed(1)} m/s²`;
+    timeScaleVal.textContent = `${world.timeScale.toFixed(1)}x`;
+
+    flightTimeEl.textContent = `${fmt(world.flightTime)} s`;
+    maxHeightEl.textContent = `${fmt(world.maxHeight)} m`;
+    rangeValEl.textContent = `${fmt(world.range)} m`;
+    vxValEl.textContent = `${fmt(world.vx0)} m/s`;
+    vTopEl.textContent = `${fmt(world.vx0)} m/s`;
+
+    formulaBox.style.display = showFormulasEl.checked ? 'block' : 'none';
+  }
+
+  function resetSim() {
+    t = 0;
+    trail = [];
+    smoke = [];
+    explosionTime = 0;
+    running = false;
+    paused = false;
+    lastTs = 0;
+    statusTag.textContent = 'Sẵn sàng phóng';
+    currentTimeEl.textContent = '0.00 s';
+    coordTag.textContent = 'x = 0.0 m | y = 0.0 m';
+  }
+
+  function launch() {
+    t = 0;
+    trail = [];
+    smoke = [];
+    explosionTime = 0;
+    running = true;
+    paused = false;
+    lastTs = 0;
+    statusTag.textContent = 'Tên lửa đang bay';
+  }
+
+  function togglePause() {
+    if (!running) return;
+    paused = !paused;
+    statusTag.textContent = paused ? 'Đang tạm dừng' : 'Tên lửa đang bay';
+  }
+
+  function getPos(time) {
+    const x = world.vx0 * time;
+    const y = world.vy0 * time - 0.5 * world.g * time * time;
+    return { x, y };
+  }
+
+  function getVel(time) {
+    const vx = world.vx0;
+    const vy = world.vy0 - world.g * time;
+    return { vx, vy, v: Math.hypot(vx, vy) };
+  }
+
+  function getScale() {
+    if (mode === 'analysis') {
+      const marginX = 180;
+      const marginTop = 120;
+      const usableW = Math.max(200, W - marginX - 120);
+      const usableH = Math.max(150, H - 180 - marginTop);
+      const sx = usableW / Math.max(30, world.range);
+      const sy = usableH / Math.max(20, world.maxHeight);
+      return Math.min(sx, sy, 12);
+    }
+    return 7.5;
+  }
+
+  function getCamera(current) {
+    const scale = getScale();
+    const baseY = H - 110;
+    if (mode === 'analysis' || !followRocketEl.checked || !running) {
+      return { offsetX: 80, baseY, scale };
+    }
+    const rocketScreenX = W * 0.42;
+    let offsetX = rocketScreenX - current.x * scale;
+    const minOffset = -world.range * scale + W - 170;
+    offsetX = clamp(offsetX, minOffset, 80);
+    return { offsetX, baseY, scale };
+  }
+
+  function worldToScreen(x, y, cam) {
+    return {
+      x: cam.offsetX + x * cam.scale,
+      y: cam.baseY - y * cam.scale
+    };
+  }
+
+  function drawSky() {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#6ec6ff');
+    grad.addColorStop(0.6, '#aee6ff');
+    grad.addColorStop(1, '#f1fbff');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // distant sun glow
+    const sun = ctx.createRadialGradient(W - 120, 120, 20, W - 120, 120, 160);
+    sun.addColorStop(0, 'rgba(255,255,220,0.9)');
+    sun.addColorStop(1, 'rgba(255,255,220,0)');
+    ctx.fillStyle = sun;
+    ctx.fillRect(W - 320, 0, 320, 320);
+
+    drawCloud(160, 110, 0.9);
+    drawCloud(420, 80, 1.2);
+    drawCloud(W - 300, 160, 1.1);
+    drawCloud(W - 550, 110, 0.85);
+  }
+
+  function drawCloud(x, y, s) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.arc(0, 10, 24, 0, Math.PI * 2);
+    ctx.arc(22, 0, 30, 0, Math.PI * 2);
+    ctx.arc(54, 12, 24, 0, Math.PI * 2);
+    ctx.arc(28, 18, 30, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawGround(cam) {
+    const gy = cam.baseY + 24;
+    const grad = ctx.createLinearGradient(0, gy, 0, H);
+    grad.addColorStop(0, '#6ba539');
+    grad.addColorStop(1, '#456f20');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, gy, W, H - gy);
+
+    ctx.strokeStyle = '#3c6420';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, gy);
+    ctx.lineTo(W, gy);
+    ctx.stroke();
+  }
+
+  function drawAxes(cam) {
+    if (!showAxesEl.checked) return;
+    const O = worldToScreen(0, 0, cam);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.lineWidth = 2;
+
+    // x-axis
+    ctx.beginPath();
+    ctx.moveTo(40, O.y);
+    ctx.lineTo(W - 60, O.y);
+    ctx.stroke();
+    arrowHead(W - 60, O.y, 0, 'rgba(0,0,0,0.65)', 10);
+
+    // y-axis
+    ctx.beginPath();
+    ctx.moveTo(O.x, H - 80);
+    ctx.lineTo(O.x, 60);
+    ctx.stroke();
+    arrowHead(O.x, 60, -Math.PI / 2, 'rgba(0,0,0,0.65)', 10);
+
+    ctx.font = 'bold 18px Arial';
+    ctx.fillText('O', O.x - 22, O.y + 24);
+    ctx.fillText('x', W - 46, O.y - 12);
+    ctx.fillText('y', O.x + 14, 80);
+    ctx.restore();
+  }
+
+  function drawLauncher(cam) {
+    const p = worldToScreen(0, 0, cam);
+    ctx.save();
+    ctx.translate(p.x - 10, p.y + 4);
+
+    ctx.fillStyle = '#7c8795';
+    ctx.fillRect(-36, 6, 92, 18);
+    ctx.fillStyle = '#434c56';
+    ctx.fillRect(-24, 0, 70, 10);
+    ctx.fillStyle = '#9aa6b2';
+    ctx.beginPath();
+    ctx.moveTo(-6, 0);
+    ctx.lineTo(34, -42);
+    ctx.lineTo(46, -36);
+    ctx.lineTo(6, 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawTrail(cam) {
+    if (!showTrailEl.checked || trail.length < 2) return;
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+    ctx.shadowColor = 'rgba(120,220,255,0.75)';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    trail.forEach((pt, i) => {
+      const p = worldToScreen(pt.x, pt.y, cam);
+      if (i === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x, p.y);
+    });
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function spawnSmoke(x, y, angle) {
+    for (let i = 0; i < 2; i++) {
+      smoke.push({
+        x,
+        y,
+        vx: -Math.cos(angle) * (0.7 + Math.random() * 0.6) + (Math.random() - 0.5) * 0.3,
+        vy: Math.sin(angle) * (0.2 + Math.random() * 0.4) + (Math.random() - 0.5) * 0.4,
+        r: 8 + Math.random() * 8,
+        life: 1,
+      });
+    }
+  }
+
+  function updateSmoke(dt) {
+    smoke.forEach(s => {
+      s.x += s.vx * dt * 18;
+      s.y += s.vy * dt * 18;
+      s.r += dt * 10;
+      s.life -= dt * 0.55;
+    });
+    smoke = smoke.filter(s => s.life > 0);
+  }
+
+  function drawSmoke(cam) {
+    smoke.forEach(s => {
+      const p = worldToScreen(s.x, s.y, cam);
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, s.life) * 0.65;
+      const g = ctx.createRadialGradient(p.x, p.y, 2, p.x, p.y, s.r);
+      g.addColorStop(0, 'rgba(255,255,255,0.9)');
+      g.addColorStop(1, 'rgba(200,200,200,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  function drawRocket(pos, vel, cam) {
+    const p = worldToScreen(pos.x, pos.y, cam);
+    const angle = Math.atan2(vel.vy, vel.vx);
+
+    const size = mode === 'cinematic' ? 1.35 : 1.0;
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(-angle); // screen y is inverted
+    ctx.scale(size, size);
+
+    // flame
+    const flicker = 1 + Math.sin(performance.now() * 0.03) * 0.12;
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath();
+    ctx.moveTo(-50, 0);
+    ctx.lineTo(-82 * flicker, 11);
+    ctx.lineTo(-68 * flicker, 0);
+    ctx.lineTo(-82 * flicker, -11);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#f77f00';
+    ctx.beginPath();
+    ctx.moveTo(-48, 0);
+    ctx.lineTo(-70 * flicker, 7);
+    ctx.lineTo(-61 * flicker, 0);
+    ctx.lineTo(-70 * flicker, -7);
+    ctx.closePath();
+    ctx.fill();
+
+    // body shadow
+    ctx.fillStyle = '#bcc7d3';
+    roundRect(-46, -12, 78, 24, 12, true);
+
+    // nose
+    ctx.fillStyle = '#e8eef5';
+    ctx.beginPath();
+    ctx.moveTo(32, -12);
+    ctx.lineTo(58, 0);
+    ctx.lineTo(32, 12);
+    ctx.closePath();
+    ctx.fill();
+
+    // main body top highlight
+    ctx.fillStyle = '#f8fbff';
+    roundRect(-42, -10, 70, 10, 8, true);
+    ctx.fillStyle = '#dbe4ec';
+    roundRect(-42, 0, 70, 10, 8, true);
+
+    // window
+    ctx.fillStyle = '#4cc9f0';
+    ctx.beginPath();
+    ctx.arc(8, 0, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#083d77';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // fins
+    ctx.fillStyle = '#d62828';
+    ctx.beginPath();
+    ctx.moveTo(-18, -10);
+    ctx.lineTo(-34, -24);
+    ctx.lineTo(-20, -8);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(-18, 10);
+    ctx.lineTo(-34, 24);
+    ctx.lineTo(-20, 8);
+    ctx.closePath();
+    ctx.fill();
+
+    // rear ring
+    ctx.fillStyle = '#8d99ae';
+    ctx.fillRect(-50, -10, 10, 20);
+
+    ctx.restore();
+
+    if (running && !paused) spawnSmoke(pos.x - Math.cos(angle) * 7, pos.y - Math.sin(angle) * 7, angle);
+
+    if (showVectorsEl.checked) {
+      drawVelocityVectors(p, vel, angle);
+    }
+  }
+
+  function drawVelocityVectors(p, vel, angle) {
+    const totalLen = clamp(vel.v * 1.2, 60, 140);
+    const vxLen = clamp(Math.abs(vel.vx) * 1.25, 50, 120);
+    const vyLen = clamp(Math.abs(vel.vy) * 1.25, 35, 110);
+
+    // total v (red)
+    drawArrow(p.x, p.y, p.x + Math.cos(angle) * totalLen, p.y - Math.sin(angle) * totalLen, '#ff4d4f', 4);
+    textLabel('v', p.x + Math.cos(angle) * (totalLen + 10), p.y - Math.sin(angle) * (totalLen + 10), '#ff4d4f');
+
+    if (showComponentsEl.checked) {
+      // vx (blue)
+      drawArrow(p.x, p.y + 18, p.x + vxLen, p.y + 18, '#0a84ff', 3);
+      textLabel('vx', p.x + vxLen + 10, p.y + 18, '#0a84ff');
+
+      // vy (yellow)
+      const vyDir = vel.vy >= 0 ? -1 : 1;
+      drawArrow(p.x - 18, p.y, p.x - 18, p.y + vyDir * vyLen, '#ffd60a', 3);
+      textLabel('vy', p.x - 10, p.y + vyDir * vyLen - 10 * vyDir, '#7a5c00');
+    }
+  }
+
+  function drawMarks(cam) {
+    if (!showMarksEl.checked) return;
+
+    const topPos = getPos(world.topTime);
+    const top = worldToScreen(topPos.x, topPos.y, cam);
+    const end = worldToScreen(world.range, 0, cam);
+    const start = worldToScreen(0, 0, cam);
+
+    // top point
+    ctx.save();
+    ctx.fillStyle = '#ff006e';
+    ctx.beginPath();
+    ctx.arc(top.x, top.y, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = 'bold 18px Arial';
+    ctx.fillStyle = '#3a0ca3';
+    ctx.fillText('Hmax', top.x + 10, top.y - 10);
+
+    // dashed height line
+    ctx.strokeStyle = 'rgba(80,0,120,0.6)';
+    ctx.setLineDash([6,6]);
+    ctx.beginPath();
+    ctx.moveTo(top.x, top.y);
+    ctx.lineTo(top.x, start.y);
+    ctx.stroke();
+
+    // range line
+    ctx.strokeStyle = 'rgba(10,90,150,0.8)';
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y + 16);
+    ctx.lineTo(end.x, end.y + 16);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    arrowHead(start.x, start.y + 16, Math.PI, 'rgba(10,90,150,0.8)', 8);
+    arrowHead(end.x, end.y + 16, 0, 'rgba(10,90,150,0.8)', 8);
+    ctx.fillStyle = '#0a4f7a';
+    ctx.fillText('Tầm xa L', (start.x + end.x) / 2 - 32, end.y + 40);
+
+    // labels A and B
+    ctx.fillStyle = '#001d3d';
+    ctx.fillText('A', start.x - 16, start.y - 10);
+    ctx.fillText('B', end.x + 8, end.y - 10);
+    ctx.restore();
+  }
+
+  function drawTelemetry(pos, vel) {
+    coordTag.textContent = `x = ${fmt(pos.x,1)} m | y = ${fmt(Math.max(0,pos.y),1)} m`;
+    currentTimeEl.textContent = `${fmt(t)} s`;
+  }
+
+  function drawExplosion(cam) {
+    if (explosionTime <= 0) return;
+    const p = worldToScreen(world.range, 0, cam);
+    const k = 1 - explosionTime / 0.6;
+    const r = 10 + k * 50;
+    ctx.save();
+    ctx.globalAlpha = 1 - k;
+    const g = ctx.createRadialGradient(p.x, p.y, 6, p.x, p.y, r);
+    g.addColorStop(0, 'rgba(255,240,180,1)');
+    g.addColorStop(0.4, 'rgba(255,170,0,0.9)');
+    g.addColorStop(1, 'rgba(255,80,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function roundRect(x, y, w, h, r, fill) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    if (fill) ctx.fill();
+  }
+
+  function drawArrow(x1, y1, x2, y2, color, width=3) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    arrowHead(x2, y2, angle, color, 10 + width);
+    ctx.restore();
+  }
+
+  function arrowHead(x, y, angle, color, size=10) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, size * 0.45);
+    ctx.lineTo(-size, -size * 0.45);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function textLabel(text, x, y, color) {
+    ctx.save();
+    ctx.font = 'bold 18px Arial';
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 4;
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function update(dt) {
+    if (running && !paused) {
+      t += dt * world.timeScale;
+      if (t > world.flightTime) {
+        t = world.flightTime;
+        running = false;
+        paused = false;
+        explosionTime = 0.6;
+        statusTag.textContent = 'Tên lửa đã chạm đất';
+      }
+      const pos = getPos(t);
+      trail.push(pos);
+      if (trail.length > 1200) trail.shift();
+    }
+
+    if (explosionTime > 0) explosionTime -= dt;
+    updateSmoke(dt);
+  }
+
+  function render() {
+    updateModel();
+    ctx.clearRect(0, 0, W, H);
+
+    const currentPos = getPos(t);
+    const currentVel = getVel(t);
+    const cam = getCamera(currentPos);
+
+    drawSky();
+    drawGround(cam);
+    drawAxes(cam);
+    drawLauncher(cam);
+    drawTrail(cam);
+    drawSmoke(cam);
+    drawMarks(cam);
+    drawRocket(currentPos, currentVel, cam);
+    drawExplosion(cam);
+    drawTelemetry(currentPos, currentVel);
+  }
+
+  function animate(ts) {
+    if (!lastTs) lastTs = ts;
+    const dt = Math.min(0.03, (ts - lastTs) / 1000);
+    lastTs = ts;
+    update(dt);
+    render();
+    requestAnimationFrame(animate);
+  }
+
+  [speedEl, angleEl, gravityEl, timeScaleEl, showFormulasEl].forEach(el => {
+    el.addEventListener('input', () => {
+      updateModel();
+      if (!running) render();
+    });
+  });
+
+  [showTrailEl, showVectorsEl, showComponentsEl, showAxesEl, showMarksEl, followRocketEl].forEach(el => {
+    el.addEventListener('change', render);
+  });
+
+  launchBtn.addEventListener('click', launch);
+  pauseBtn.addEventListener('click', togglePause);
+  resetBtn.addEventListener('click', () => { resetSim(); render(); });
+
+  modeBtn.addEventListener('click', () => {
+    mode = mode === 'cinematic' ? 'analysis' : 'cinematic';
+    modeBtn.textContent = mode === 'cinematic' ? 'Chế độ: Điện ảnh' : 'Chế độ: Phân tích';
+    render();
+  });
+
+  window.addEventListener('resize', () => { resize(); render(); });
+
+  resize();
+  updateModel();
+  resetSim();
+  render();
+  requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>

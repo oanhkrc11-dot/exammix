@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Đông Tây Nam Bắc</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#10283b;--panel:#14344d;--cyan:#74e6ff;--yellow:#ffe47c;
+  --green:#93ffd2;--red:#ff9e9e;--text:#f7fcff;--muted:#bfd4df;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:282px;min-width:265px;max-width:292px;height:100%;overflow:auto;padding:9px;
+  background:linear-gradient(180deg,#173b57,#0f293d);
+  border-right:1px solid rgba(130,230,255,.28);z-index:20
+}
+#view{position:relative;flex:1;height:100%;overflow:hidden;min-width:0}
+.title{font-weight:800;font-size:12.5px}
+.kicker{font-size:9px;color:var(--muted);margin-top:2px}
+.simTitle{font-size:14.5px;color:var(--cyan);font-weight:800;margin:7px 0 4px;text-transform:uppercase}
+.section{margin-top:6px;padding:7px;border:1px solid rgba(120,225,255,.18);border-radius:8px;background:rgba(18,48,71,.88)}
+.section h3{margin:0 0 5px;font-size:9.5px;color:#d0f6ff;text-transform:uppercase}
+.control{margin:6px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:3px}
+.row label{font-size:10.2px;font-weight:700}
+.value{font-size:10.2px;color:var(--yellow);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:15px;accent-color:#65d9f6}
+select{width:100%;padding:5px 6px;border-radius:7px;background:#17435f;color:white;border:1px solid rgba(120,225,255,.22);font-size:10px}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}
+button{min-height:32px;border:1px solid rgba(130,225,255,.22);border-radius:7px;padding:5px;background:#17435f;color:#fff;font-weight:700;font-size:10px;cursor:pointer}
+button:hover{filter:brightness(1.08)}
+#runBtn{background:#1b7750}
+#resetBtn{background:#6a4053}
+#info{
+  position:absolute;top:12px;right:12px;width:260px;padding:8px 10px;border-radius:10px;
+  background:rgba(16,38,56,.86);border:1px solid rgba(120,225,255,.30);z-index:10;
+  backdrop-filter:blur(4px);font-size:10.5px;pointer-events:none
+}
+#info .head{font-size:9.5px;color:#d0f6ff;font-weight:800;margin-bottom:4px;text-transform:uppercase}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 9px;font-variant-numeric:tabular-nums}
+#credit{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);color:#ffe17a;font-size:15px;font-weight:800;z-index:7;pointer-events:none}
+.label3d{padding:3px 5px;border-radius:7px;background:rgba(18,40,58,.78);border:1px solid rgba(130,225,255,.24);font-size:10px;font-weight:700;color:#f5fbff;white-space:nowrap}
+#legend{
+  position:absolute;left:14px;top:12px;padding:7px 9px;border-radius:9px;background:rgba(18,42,60,.84);
+  border:1px solid rgba(120,225,255,.25);font-size:10px;line-height:1.45;z-index:8
+}
+.dot{display:inline-block;width:9px;height:3px;vertical-align:middle;margin-right:4px}
+@media(max-width:1000px){#panel{width:258px;min-width:258px}#info{width:230px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+    <div class="kicker">CHUYỂN ĐỘNG TRÊN MẶT PHẲNG</div>
+    <div class="simTitle">11. Đông – Tây – Nam – Bắc</div>
+
+    <div class="section">
+      <h3>Chặng 1</h3>
+      <select id="dir1">
+        <option value="E">Đông</option><option value="W">Tây</option>
+        <option value="N">Bắc</option><option value="S">Nam</option>
+      </select>
+      <div class="control">
+        <div class="row"><label>Quãng đường</label><span class="value" id="d1Text">6 m</span></div>
+        <input id="d1" type="range" min="1" max="10" step="1" value="6">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Chặng 2</h3>
+      <select id="dir2">
+        <option value="N">Bắc</option><option value="S">Nam</option>
+        <option value="E">Đông</option><option value="W">Tây</option>
+      </select>
+      <div class="control">
+        <div class="row"><label>Quãng đường</label><span class="value" id="d2Text">4 m</span></div>
+        <input id="d2" type="range" min="1" max="10" step="1" value="4">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Chặng 3</h3>
+      <select id="dir3">
+        <option value="W">Tây</option><option value="E">Đông</option>
+        <option value="N">Bắc</option><option value="S">Nam</option>
+      </select>
+      <div class="control">
+        <div class="row"><label>Quãng đường</label><span class="value" id="d3Text">2 m</span></div>
+        <input id="d3" type="range" min="0" max="10" step="1" value="2">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Chuyển động</h3>
+      <div class="control">
+        <div class="row"><label>Tốc độ</label><span class="value" id="speedText">2.0 m/s</span></div>
+        <input id="speed" type="range" min="0.5" max="4" step="0.5" value="2">
+      </div>
+      <div class="buttons">
+        <button id="runBtn">▶ Bắt đầu</button>
+        <button id="pauseBtn">⏸ Dừng</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+        <button id="fitBtn">⛶ Fit</button>
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="legend">
+      <div><span class="dot" style="background:#ffe17a"></span>Quãng đường đã đi</div>
+      <div><span class="dot" style="background:#93ffd2"></span>Độ dịch chuyển</div>
+    </div>
+
+    <div id="info">
+      <div class="head">Số liệu</div>
+      <div class="infoGrid">
+        <span>Vị trí</span><b id="posInfo">(0; 0) m</b>
+        <span>Quãng đường</span><b id="sInfo">0.00 m</b>
+        <span>Δx</span><b id="dxInfo">0.00 m</b>
+        <span>Δy</span><b id="dyInfo">0.00 m</b>
+        <span>|Δr|</span><b id="drInfo">0.00 m</b>
+        <span>Hướng</span><b id="headingInfo">—</b>
+      </div>
+    </div>
+
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $=id=>document.getElementById(id);
+const view=$('view');
+const dirEls=[$('dir1'),$('dir2'),$('dir3')];
+const distEls=[$('d1'),$('d2'),$('d3')];
+const speedEl=$('speed');
+
+const state={
+  dirs:['E','N','W'],
+  dists:[6,4,2],
+  speed:2,
+  running:false,
+  paused:true,
+  segment:0,
+  segProgress:0,
+  pos:{x:0,y:0},
+  pathDistance:0,
+  lastStamp:performance.now()
+};
+
+const DIR={
+  E:{x:1,y:0,name:'Đông'},
+  W:{x:-1,y:0,name:'Tây'},
+  N:{x:0,y:1,name:'Bắc'},
+  S:{x:0,y:-1,name:'Nam'}
+};
+
+/* SCENE */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x16364d);
+scene.fog=new THREE.Fog(0x16364d,28,60);
+
+const camera=new THREE.PerspectiveCamera(45,view.clientWidth/view.clientHeight,.1,100);
+camera.position.set(12,13,15);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.07;
+controls.minDistance=8;
+controls.maxDistance=30;
+controls.minPolarAngle=.12;
+controls.maxPolarAngle=Math.PI*.48;
+controls.target.set(0,0,0);
+
+scene.add(new THREE.HemisphereLight(0xdff8ff,0x4b6577,2.0));
+const sun=new THREE.DirectionalLight(0xffffff,2.0);
+sun.position.set(8,16,10);sun.castShadow=true;scene.add(sun);
+const fill=new THREE.PointLight(0x88eaff,28,35,2);
+fill.position.set(-7,8,8);scene.add(fill);
+
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(30,30),
+  new THREE.MeshPhongMaterial({color:0x294b62,shininess:25})
+);
+floor.rotation.x=-Math.PI/2;
+floor.position.y=-.08;
+floor.receiveShadow=true;
+scene.add(floor);
+
+const grid=new THREE.GridHelper(30,30,0x8bd4ef,0x486e83);
+grid.position.y=-.02;
+grid.material.transparent=true;
+grid.material.opacity=.46;
+scene.add(grid);
+
+/* cardinal axes */
+const xAxis=new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-14,.03,0),new THREE.Vector3(14,.03,0)]),
+  new THREE.LineBasicMaterial({color:0xf1cf6c})
+);
+scene.add(xAxis);
+const yAxis=new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,.03,-14),new THREE.Vector3(0,.03,14)]),
+  new THREE.LineBasicMaterial({color:0x82ddff})
+);
+scene.add(yAxis);
+
+function makeLabel(text,x,z){
+  const d=document.createElement('div');d.className='label3d';d.textContent=text;
+  const l=new CSS2DObject(d);l.position.set(x,.35,z);scene.add(l);
+}
+makeLabel('ĐÔNG',13,0); makeLabel('TÂY',-13,0);
+makeLabel('BẮC',0,-13); makeLabel('NAM',0,13);
+
+/* walker */
+const walker=new THREE.Group();scene.add(walker);
+const body=new THREE.Mesh(
+  new THREE.CapsuleGeometry(.28,.75,8,16),
+  new THREE.MeshPhongMaterial({color:0x54d4ff,emissive:0x0a415a,shininess:90})
+);
+body.position.y=.75;body.castShadow=true;walker.add(body);
+
+const head=new THREE.Mesh(
+  new THREE.SphereGeometry(.25,24,18),
+  new THREE.MeshPhongMaterial({color:0xf0d4b8,shininess:45})
+);
+head.position.y=1.55;walker.add(head);
+
+const arrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(0,1.9,0),1.1,0x93ffd2,.24,.14);
+walker.add(arrow);
+
+const walkLabelDiv=document.createElement('div');
+walkLabelDiv.className='label3d';walkLabelDiv.textContent='A';
+const walkLabel=new CSS2DObject(walkLabelDiv);
+walkLabel.position.set(0,2.25,0);walker.add(walkLabel);
+
+/* route lines */
+let routeLine=null, traveledLine=null, displacementArrow=null;
+
+function pathPointsFull(){
+  let x=0,y=0;
+  const pts=[new THREE.Vector3(0,.06,0)];
+  for(let i=0;i<3;i++){
+    const d=DIR[state.dirs[i]];
+    x+=d.x*state.dists[i];
+    y+=d.y*state.dists[i];
+    pts.push(new THREE.Vector3(x,.06,-y));
+  }
+  return pts;
+}
+
+function rebuildRoute(){
+  if(routeLine){scene.remove(routeLine);routeLine.geometry.dispose();routeLine.material.dispose();}
+  routeLine=new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pathPointsFull()),
+    new THREE.LineDashedMaterial({color:0xb9d4df,dashSize:.28,gapSize:.18,transparent:true,opacity:.55})
+  );
+  routeLine.computeLineDistances();
+  scene.add(routeLine);
+}
+
+function currentTraveledPoints(){
+  let x=0,y=0;
+  const pts=[new THREE.Vector3(0,.09,0)];
+  for(let i=0;i<state.segment;i++){
+    const d=DIR[state.dirs[i]];
+    x+=d.x*state.dists[i]; y+=d.y*state.dists[i];
+    pts.push(new THREE.Vector3(x,.09,-y));
+  }
+  if(state.segment<3){
+    const d=DIR[state.dirs[state.segment]];
+    x+=d.x*state.segProgress; y+=d.y*state.segProgress;
+    pts.push(new THREE.Vector3(x,.09,-y));
+  }
+  return pts;
+}
+
+function rebuildTraveled(){
+  if(traveledLine){scene.remove(traveledLine);traveledLine.geometry.dispose();traveledLine.material.dispose();}
+  traveledLine=new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(currentTraveledPoints()),
+    new THREE.LineBasicMaterial({color:0xffe17a})
+  );
+  scene.add(traveledLine);
+}
+
+function rebuildDisplacement(){
+  if(displacementArrow){scene.remove(displacementArrow);}
+  const dx=state.pos.x,dy=state.pos.y;
+  const len=Math.hypot(dx,dy);
+  if(len<1e-6){displacementArrow=null;return;}
+  const dir=new THREE.Vector3(dx,0,-dy).normalize();
+  displacementArrow=new THREE.ArrowHelper(dir,new THREE.Vector3(0,.13,0),len,0x93ffd2,.32,.18);
+  scene.add(displacementArrow);
+}
+
+/* logic */
+function resetMotion(){
+  state.running=false;state.paused=true;state.segment=0;state.segProgress=0;
+  state.pos={x:0,y:0};state.pathDistance=0;
+  $('runBtn').textContent='▶ Bắt đầu';$('pauseBtn').textContent='⏸ Dừng';
+  updateVisual();
+}
+
+function updateVisual(){
+  walker.position.set(state.pos.x,.05,-state.pos.y);
+
+  const cur=state.segment<3?DIR[state.dirs[state.segment]]:null;
+  if(cur){
+    arrow.setDirection(new THREE.Vector3(cur.x,0,-cur.y));
+    walkLabelDiv.textContent=cur.name;
+  }else{
+    walkLabelDiv.textContent='Đích';
+  }
+
+  rebuildTraveled();
+  rebuildDisplacement();
+
+  const dx=state.pos.x,dy=state.pos.y,dr=Math.hypot(dx,dy);
+  $('posInfo').textContent=`(${dx.toFixed(1)}; ${dy.toFixed(1)}) m`;
+  $('sInfo').textContent=`${state.pathDistance.toFixed(2)} m`;
+  $('dxInfo').textContent=`${dx.toFixed(2)} m`;
+  $('dyInfo').textContent=`${dy.toFixed(2)} m`;
+  $('drInfo').textContent=`${dr.toFixed(2)} m`;
+
+  let heading='—';
+  if(dr>1e-6){
+    const ew=dx>0?'Đông':dx<0?'Tây':'';
+    const ns=dy>0?'Bắc':dy<0?'Nam':'';
+    heading=ns&&ew?`${ns}-${ew}`:(ns||ew);
+  }
+  $('headingInfo').textContent=heading;
+}
+
+function advance(dt){
+  if(!state.running || state.paused || state.segment>=3)return;
+
+  let remain=state.speed*dt;
+  while(remain>0 && state.segment<3){
+    const segLen=state.dists[state.segment];
+    const left=segLen-state.segProgress;
+    const step=Math.min(remain,left);
+    const d=DIR[state.dirs[state.segment]];
+
+    state.segProgress+=step;
+    state.pathDistance+=step;
+    state.pos.x+=d.x*step;
+    state.pos.y+=d.y*step;
+    remain-=step;
+
+    if(state.segProgress>=segLen-1e-8){
+      state.segment++;
+      state.segProgress=0;
+    }
+  }
+
+  if(state.segment>=3){
+    state.running=false;state.paused=true;
+    $('runBtn').textContent='▶ Chạy lại';
+  }
+
+  updateVisual();
+}
+
+/* UI */
+function syncInputs(){
+  state.dirs=dirEls.map(e=>e.value);
+  state.dists=distEls.map(e=>parseFloat(e.value));
+  state.speed=parseFloat(speedEl.value);
+  $('d1Text').textContent=`${state.dists[0]} m`;
+  $('d2Text').textContent=`${state.dists[1]} m`;
+  $('d3Text').textContent=`${state.dists[2]} m`;
+  $('speedText').textContent=`${state.speed.toFixed(1)} m/s`;
+  rebuildRoute();
+}
+
+[...dirEls,...distEls].forEach(el=>el.addEventListener('input',()=>{syncInputs();resetMotion();}));
+speedEl.addEventListener('input',()=>{state.speed=parseFloat(speedEl.value);$('speedText').textContent=`${state.speed.toFixed(1)} m/s`;});
+
+$('runBtn').addEventListener('click',()=>{
+  if(state.segment>=3)resetMotion();
+  state.running=true;state.paused=false;$('runBtn').textContent='▶ Đang chạy';
+});
+$('pauseBtn').addEventListener('click',()=>{
+  if(!state.running)return;
+  state.paused=!state.paused;
+  $('pauseBtn').textContent=state.paused?'▶ Tiếp tục':'⏸ Dừng';
+});
+$('resetBtn').addEventListener('click',resetAll);
+$('fitBtn').addEventListener('click',fitScene);
+
+function fitScene(){
+  camera.position.set(12,13,15);
+  controls.target.set(0,0,0);controls.update();
+}
+function resetAll(){
+  dirEls[0].value='E';dirEls[1].value='N';dirEls[2].value='W';
+  distEls[0].value='6';distEls[1].value='4';distEls[2].value='2';speedEl.value='2';
+  syncInputs();resetMotion();fitScene();
+}
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);labelRenderer.setSize(w,h);
+}
+window.addEventListener('resize',resize);
+
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt=(now-state.lastStamp)/1000;state.lastStamp=now;
+  dt=Math.min(Math.max(dt,0),0.028);
+  advance(dt);
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+resetAll();resize();animate(performance.now());
+</script>
+</body>
+</html>

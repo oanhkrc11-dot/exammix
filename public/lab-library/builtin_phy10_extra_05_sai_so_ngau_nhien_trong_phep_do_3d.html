@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Sai số ngẫu nhiên trong phép đo</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#020812;--panel:#071725;--cyan:#64ddff;--yellow:#ffda69;
+  --green:#7fffc2;--red:#ff8585;--text:#eefaff;--muted:#9bb9ca;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#020812;color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:372px;min-width:345px;max-width:388px;height:100%;overflow:auto;padding:14px;
+  background:linear-gradient(180deg,#081a2a,#04101b);
+  border-right:1px solid rgba(100,221,255,.22);z-index:20
+}
+#view{position:relative;flex:1;height:100%;overflow:hidden;min-width:0}
+.title{font-weight:800;font-size:15px;letter-spacing:.04em}
+.kicker{font-size:11px;color:var(--muted);margin-top:4px}
+.simTitle{font-size:18px;color:var(--cyan);font-weight:800;margin:12px 0 7px;text-transform:uppercase}
+.desc{font-size:12px;line-height:1.45;color:#cfe5f2}
+.section{margin-top:11px;padding:11px;border:1px solid rgba(100,221,255,.18);border-radius:12px;background:linear-gradient(180deg,rgba(13,36,55,.95),rgba(6,21,34,.94))}
+.section h3{margin:0 0 10px;font-size:12px;color:#b7edff;text-transform:uppercase;letter-spacing:.06em}
+.control{margin:10px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.row label{font-size:12px;font-weight:700}
+.value{font-size:12px;color:var(--yellow);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:#55cffa}
+.check{display:flex;align-items:center;gap:8px;font-size:12px;margin:8px 0}
+.check input{accent-color:#55cffa}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+button{min-height:40px;border:1px solid rgba(120,220,255,.22);border-radius:10px;padding:8px 6px;background:#10314b;color:#fff;font-weight:700;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+#measureBtn{background:#17683f}
+#batchBtn{background:#4a5520}
+#resetBtn{background:#593549}
+.note{font-size:11px;line-height:1.48;color:#b7cede}
+#resultBox{padding:9px;border-radius:9px;background:#06131f;border:1px solid rgba(100,221,255,.15);font-size:12px;line-height:1.5}
+.good{color:var(--green);font-weight:700}
+.warn{color:var(--yellow);font-weight:700}
+.bad{color:var(--red);font-weight:700}
+#info{
+  position:absolute;top:14px;right:14px;width:318px;padding:11px 13px;border-radius:13px;
+  background:rgba(4,15,25,.93);border:1px solid rgba(100,221,255,.28);z-index:10;
+  backdrop-filter:blur(5px);font-size:12px;pointer-events:none
+}
+#info .head{font-size:11px;text-transform:uppercase;color:#b8efff;font-weight:800;margin-bottom:6px}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-variant-numeric:tabular-nums}
+#credit{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);color:#ffdc70;font-size:18px;font-weight:800;text-shadow:0 0 12px rgba(255,220,112,.28);z-index:7;pointer-events:none}
+#tooltip{position:absolute;display:none;z-index:30;pointer-events:none;padding:8px 10px;border-radius:9px;background:rgba(4,14,23,.96);border:1px solid rgba(100,219,255,.3);font-size:11px;line-height:1.4;color:#eefaff}
+.label3d{padding:4px 7px;border-radius:8px;background:rgba(4,14,23,.8);border:1px solid rgba(100,219,255,.25);font-size:11px;font-weight:700;color:#e8f8ff;white-space:nowrap}
+.tableWrap{max-height:185px;overflow:auto;border:1px solid rgba(100,221,255,.13);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th,td{padding:6px;border-bottom:1px solid rgba(100,221,255,.10);text-align:center}
+th{position:sticky;top:0;background:#0c263a;color:#bdeeff}
+#chart{
+  width:100%;height:190px;display:block;background:#06131f;border-radius:8px
+}
+@media(max-width:1100px){#panel{width:345px;min-width:345px}#info{width:275px}#credit{font-size:15px}}
+</style>
+</head>
+
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+    <div class="kicker">ĐO LƯỜNG · SAI SỐ</div>
+    <div class="simTitle">05. Sai số ngẫu nhiên trong phép đo</div>
+    <div class="desc">
+      Mô phỏng lặp lại nhiều lần cùng một phép đo chiều dài. Kết quả dao động quanh
+      <b>giá trị thật</b> do sai số ngẫu nhiên. Khi số lần đo tăng, giá trị trung bình thường
+      ổn định hơn và tiến gần giá trị thật.
+    </div>
+
+    <div class="section">
+      <h3>Thiết lập phép đo</h3>
+      <div class="control">
+        <div class="row"><label>Giá trị thật</label><span class="value" id="trueText">12.00 cm</span></div>
+        <input id="trueSlider" type="range" min="5.00" max="20.00" step="0.05" value="12.00">
+      </div>
+      <div class="control">
+        <div class="row"><label>Mức nhiễu ngẫu nhiên σ</label><span class="value" id="sigmaText">0.20 cm</span></div>
+        <input id="sigmaSlider" type="range" min="0.02" max="1.00" step="0.01" value="0.20">
+      </div>
+      <div class="control">
+        <div class="row"><label>ĐCNN dụng cụ</label><span class="value" id="resText">0.10 cm</span></div>
+        <input id="resSlider" type="range" min="0" max="2" step="1" value="1">
+      </div>
+      <div class="check">
+        <input type="checkbox" id="quantize" checked>
+        <label for="quantize">Làm tròn theo ĐCNN</label>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="showTrue" checked>
+        <label for="showTrue">Hiện giá trị thật trên đồ thị</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Thao tác đo</h3>
+      <div class="buttons">
+        <button id="measureBtn">📏 Đo 1 lần</button>
+        <button id="batchBtn">⚡ Đo nhanh 10 lần</button>
+        <button id="undoBtn">↶ Xóa lần cuối</button>
+        <button id="clearBtn">Xóa toàn bộ</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+        <button id="fitBtn">⛶ Fit toàn cảnh</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Kết quả thống kê</h3>
+      <div id="resultBox">Chưa có phép đo.</div>
+    </div>
+
+    <div class="section">
+      <h3>Phân bố kết quả đo</h3>
+      <canvas id="chart"></canvas>
+      <div class="note" style="margin-top:7px">
+        Các cột biểu diễn số lần xuất hiện của giá trị đo trong từng khoảng.
+        Đường đứng màu vàng là giá trị trung bình; đường xanh là giá trị thật.
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Bảng số liệu</h3>
+      <div class="tableWrap">
+        <table>
+          <thead><tr><th>Lần</th><th>xᵢ (cm)</th><th>|xᵢ−x̄| (cm)</th></tr></thead>
+          <tbody id="dataBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Mô hình hóa</h3>
+      <div class="note">
+        Mỗi lần đo được mô hình hóa bởi <b>xᵢ = x thật + nhiễu ngẫu nhiên</b>,
+        trong đó nhiễu có phân bố gần chuẩn với độ lệch chuẩn σ.
+        Đây là mô hình minh họa sai số ngẫu nhiên. Không thêm sai số hệ thống cố định.
+        Nếu bật làm tròn, giá trị đo được lượng tử hóa theo ĐCNN của dụng cụ.
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="info">
+      <div class="head">Thông số tức thời</div>
+      <div class="infoGrid">
+        <span>Số lần đo n</span><b id="nInfo">0</b>
+        <span>Giá trị thật</span><b id="trueInfo">12.00 cm</b>
+        <span>Giá trị TB x̄</span><b id="meanInfo">—</b>
+        <span>ΔTB</span><b id="deltaInfo">—</b>
+        <span>Sai số tỉ đối</span><b id="relInfo">—</b>
+        <span>ĐCNN</span><b id="resInfo">0.10 cm</b>
+      </div>
+    </div>
+    <div id="tooltip"></div>
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* =========================================================
+   1. DOM + STATE
+========================================================= */
+const $=id=>document.getElementById(id);
+const view=$('view');
+const trueSlider=$('trueSlider'), sigmaSlider=$('sigmaSlider'), resSlider=$('resSlider');
+const quantize=$('quantize'), showTrue=$('showTrue');
+const RES=[0.01,0.10,0.50];
+
+const state={
+  trueValue:12.00,
+  sigma:0.20,
+  resolution:0.10,
+  measurements:[],
+  lastStamp:performance.now()
+};
+
+function gaussian(){
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function roundToResolution(x){
+  return quantize.checked ? Math.round(x/state.resolution)*state.resolution : x;
+}
+function mean(){
+  if(!state.measurements.length) return NaN;
+  return state.measurements.reduce((a,b)=>a+b,0)/state.measurements.length;
+}
+function meanAbsDeviation(){
+  const m=mean();
+  if(!Number.isFinite(m)) return NaN;
+  return state.measurements.reduce((s,x)=>s+Math.abs(x-m),0)/state.measurements.length;
+}
+function standardDeviation(){
+  const n=state.measurements.length;
+  if(n<2) return NaN;
+  const m=mean();
+  return Math.sqrt(state.measurements.reduce((s,x)=>s+(x-m)*(x-m),0)/(n-1));
+}
+
+/* =========================================================
+   2. THREE SCENE
+========================================================= */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x020812);
+scene.fog=new THREE.Fog(0x020812,18,42);
+
+const camera=new THREE.PerspectiveCamera(45,view.clientWidth/view.clientHeight,.1,100);
+camera.position.set(10,7,13);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.07;
+controls.minDistance=7;
+controls.maxDistance=28;
+controls.minPolarAngle=.10;
+controls.maxPolarAngle=Math.PI*.48;
+controls.target.set(0,.2,0);
+
+/* =========================================================
+   3. LIGHT / FLOOR
+========================================================= */
+scene.add(new THREE.HemisphereLight(0xa8e7ff,0x142331,1.25));
+const key=new THREE.DirectionalLight(0xffffff,1.25);
+key.position.set(8,14,9);
+key.castShadow=true;
+scene.add(key);
+
+const fill=new THREE.PointLight(0x45cfff,14,28,2);
+fill.position.set(-8,5,8);
+scene.add(fill);
+
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(36,24),
+  new THREE.MeshPhongMaterial({color:0x07131f,shininess:20})
+);
+floor.rotation.x=-Math.PI/2;
+floor.position.y=-2.15;
+floor.receiveShadow=true;
+scene.add(floor);
+
+const grid=new THREE.GridHelper(36,36,0x1e628b,0x123149);
+grid.position.y=-2.13;
+grid.material.transparent=true;
+grid.material.opacity=.25;
+scene.add(grid);
+
+/* =========================================================
+   4. MEASUREMENT VISUAL
+========================================================= */
+const scaleGroup=new THREE.Group();
+scene.add(scaleGroup);
+
+const SCALE=.55; // world units per cm
+const x0=-6.6;
+
+const base=new THREE.Mesh(
+  new THREE.BoxGeometry(13.2,.42,1.3),
+  new THREE.MeshPhongMaterial({color:0xd1c58f,shininess:40})
+);
+base.position.set(0,-.45,0);
+base.receiveShadow=true;
+scaleGroup.add(base);
+
+const tickGroup=new THREE.Group();
+scaleGroup.add(tickGroup);
+const labelGroup=new THREE.Group();
+scaleGroup.add(labelGroup);
+
+function valueToX(v){ return x0 + v*SCALE; }
+
+function buildScale(){
+  while(tickGroup.children.length){
+    const o=tickGroup.children.pop();
+    o.geometry?.dispose(); o.material?.dispose();
+  }
+  while(labelGroup.children.length) labelGroup.remove(labelGroup.children[0]);
+
+  for(let v=0;v<=24;v+=.5){
+    const major=Math.abs(v-Math.round(v))<1e-6;
+    const h=major?.45:.28;
+    const tick=new THREE.Mesh(
+      new THREE.BoxGeometry(.015,h,.03),
+      new THREE.MeshBasicMaterial({color:0x121820})
+    );
+    tick.position.set(valueToX(v),-.22+h/2,.66);
+    tickGroup.add(tick);
+    if(major && v%2===0){
+      const d=document.createElement('div');
+      d.className='label3d';
+      d.style.background='rgba(240,245,248,.88)';
+      d.style.color='#101820';
+      d.style.border='none';
+      d.style.padding='1px 4px';
+      d.textContent=v.toFixed(0);
+      const l=new CSS2DObject(d);
+      l.position.set(valueToX(v),.37,.72);
+      labelGroup.add(l);
+    }
+  }
+}
+buildScale();
+
+const objectMesh=new THREE.Mesh(
+  new THREE.BoxGeometry(1,.75,.70),
+  new THREE.MeshPhongMaterial({color:0x3fb9ff,emissive:0x07374e,shininess:90})
+);
+objectMesh.castShadow=true;
+scene.add(objectMesh);
+
+const trueMarker=new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-.1,-.8),new THREE.Vector3(0,1.2,.8)]),
+  new THREE.LineBasicMaterial({color:0x6dffc0})
+);
+scene.add(trueMarker);
+
+const meanMarker=new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-.1,-.8),new THREE.Vector3(0,1.45,.8)]),
+  new THREE.LineBasicMaterial({color:0xffd966})
+);
+scene.add(meanMarker);
+
+const sampleGroup=new THREE.Group();
+scene.add(sampleGroup);
+
+function update3DVisual(){
+  objectMesh.scale.x=Math.max(.4,state.trueValue*SCALE);
+  objectMesh.position.set(x0+state.trueValue*SCALE/2,.2,0);
+
+  trueMarker.position.x=valueToX(state.trueValue);
+  trueMarker.visible=showTrue.checked;
+
+  const m=mean();
+  meanMarker.visible=Number.isFinite(m);
+  if(Number.isFinite(m)) meanMarker.position.x=valueToX(m);
+
+  // last up to 30 sample pins
+  while(sampleGroup.children.length){
+    const o=sampleGroup.children.pop();
+    o.geometry?.dispose(); o.material?.dispose();
+  }
+  const last=state.measurements.slice(-30);
+  last.forEach((v,i)=>{
+    const pin=new THREE.Mesh(
+      new THREE.SphereGeometry(.07,12,10),
+      new THREE.MeshPhongMaterial({color:0xff8f8f,emissive:0x4a1111})
+    );
+    pin.position.set(valueToX(v),.88+(i%3)*.11,0);
+    sampleGroup.add(pin);
+  });
+}
+
+/* =========================================================
+   5. MEASUREMENT / STATS
+========================================================= */
+function takeMeasurement(){
+  const raw=state.trueValue + gaussian()*state.sigma;
+  const measured=roundToResolution(raw);
+  state.measurements.push(measured);
+  refreshAll();
+}
+
+function takeBatch(n){
+  for(let i=0;i<n;i++){
+    const raw=state.trueValue + gaussian()*state.sigma;
+    state.measurements.push(roundToResolution(raw));
+  }
+  refreshAll();
+}
+
+function updateStats(){
+  const n=state.measurements.length;
+  $('nInfo').textContent=n;
+  $('trueInfo').textContent=`${state.trueValue.toFixed(2)} cm`;
+  $('resInfo').textContent=`${state.resolution.toFixed(2)} cm`;
+
+  if(!n){
+    $('meanInfo').textContent='—';
+    $('deltaInfo').textContent='—';
+    $('relInfo').textContent='—';
+    $('resultBox').textContent='Chưa có phép đo.';
+    return;
+  }
+
+  const m=mean();
+  const mad=meanAbsDeviation();
+  const rel=m!==0?mad/Math.abs(m)*100:0;
+  const sd=standardDeviation();
+
+  $('meanInfo').textContent=`${m.toFixed(3)} cm`;
+  $('deltaInfo').textContent=`${mad.toFixed(3)} cm`;
+  $('relInfo').textContent=`${rel.toFixed(2)}%`;
+
+  const err=m-state.trueValue;
+  $('resultBox').innerHTML=
+    `<b>Số lần đo:</b> ${n}<br>`+
+    `<b>Giá trị trung bình:</b> <span class="${Math.abs(err)<=state.sigma/Math.sqrt(Math.max(n,1))?'good':'warn'}">${m.toFixed(3)} cm</span><br>`+
+    `<b>Độ lệch tuyệt đối TB:</b> ${mad.toFixed(3)} cm<br>`+
+    `<b>Độ lệch chuẩn mẫu:</b> ${Number.isFinite(sd)?sd.toFixed(3):'—'} cm<br>`+
+    `<b>Độ lệch x̄ so với giá trị thật:</b> ${err>=0?'+':''}${err.toFixed(3)} cm`;
+}
+
+/* =========================================================
+   6. TABLE
+========================================================= */
+function renderTable(){
+  const body=$('dataBody');
+  body.innerHTML='';
+  const m=mean();
+  state.measurements.forEach((x,i)=>{
+    const tr=document.createElement('tr');
+    const dev=Number.isFinite(m)?Math.abs(x-m):0;
+    tr.innerHTML=`<td>${i+1}</td><td>${x.toFixed(2)}</td><td>${dev.toFixed(3)}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+/* =========================================================
+   7. HISTOGRAM CANVAS
+========================================================= */
+const chart=$('chart');
+const ctx=chart.getContext('2d');
+
+function resizeChart(){
+  const dpr=Math.min(devicePixelRatio,2);
+  const r=chart.getBoundingClientRect();
+  chart.width=Math.max(10,Math.floor(r.width*dpr));
+  chart.height=Math.max(10,Math.floor(r.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  drawChart();
+}
+
+function drawChart(){
+  const W=chart.clientWidth,H=chart.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#06131f';
+  ctx.fillRect(0,0,W,H);
+
+  const L=38,R=10,T=12,B=28,w=W-L-R,h=H-T-B;
+
+  ctx.strokeStyle='rgba(130,190,220,.14)';
+  ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=T+h*i/4;
+    ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(L+w,y);ctx.stroke();
+  }
+
+  if(!state.measurements.length){
+    ctx.fillStyle='#9cb8c9';
+    ctx.font='11px Arial';
+    ctx.fillText('Chưa có dữ liệu đo',L+10,T+20);
+    return;
+  }
+
+  const data=state.measurements;
+  let min=Math.min(...data,state.trueValue);
+  let max=Math.max(...data,state.trueValue);
+  const pad=Math.max(state.sigma*2,state.resolution*3,.3);
+  min-=pad; max+=pad;
+
+  const bins=Math.min(20,Math.max(8,Math.round(Math.sqrt(data.length)*2)));
+  const bw=(max-min)/bins;
+  const counts=new Array(bins).fill(0);
+
+  for(const x of data){
+    let k=Math.floor((x-min)/bw);
+    if(k<0)k=0;if(k>=bins)k=bins-1;
+    counts[k]++;
+  }
+
+  const cmax=Math.max(...counts,1);
+  const barW=w/bins;
+
+  counts.forEach((c,i)=>{
+    const bh=(c/cmax)*h;
+    ctx.fillStyle='rgba(100,221,255,.55)';
+    ctx.fillRect(L+i*barW+1,T+h-bh,Math.max(1,barW-2),bh);
+  });
+
+  function xMap(x){ return L+(x-min)/(max-min)*w; }
+
+  if(showTrue.checked){
+    ctx.strokeStyle='#7fffc2';
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(xMap(state.trueValue),T);ctx.lineTo(xMap(state.trueValue),T+h);ctx.stroke();
+  }
+
+  const m=mean();
+  if(Number.isFinite(m)){
+    ctx.strokeStyle='#ffda69';
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(xMap(m),T);ctx.lineTo(xMap(m),T+h);ctx.stroke();
+  }
+
+  ctx.fillStyle='#9cb8c9';
+  ctx.font='10px Arial';
+  ctx.fillText(min.toFixed(2),L,H-8);
+  ctx.fillText(max.toFixed(2),W-42,H-8);
+  ctx.fillText('Giá trị đo (cm)',W/2-35,H-8);
+  ctx.fillText('Số lần',4,12);
+}
+
+/* =========================================================
+   8. UI
+========================================================= */
+function updateUI(){
+  $('trueText').textContent=`${state.trueValue.toFixed(2)} cm`;
+  $('sigmaText').textContent=`${state.sigma.toFixed(2)} cm`;
+  $('resText').textContent=`${state.resolution.toFixed(2)} cm`;
+}
+
+function refreshAll(){
+  updateUI();
+  updateStats();
+  renderTable();
+  drawChart();
+  update3DVisual();
+}
+
+/* =========================================================
+   9. EVENTS
+========================================================= */
+trueSlider.addEventListener('input',()=>{
+  state.trueValue=parseFloat(trueSlider.value);
+  refreshAll();
+});
+sigmaSlider.addEventListener('input',()=>{
+  state.sigma=parseFloat(sigmaSlider.value);
+  refreshAll();
+});
+resSlider.addEventListener('input',()=>{
+  state.resolution=RES[parseInt(resSlider.value,10)];
+  refreshAll();
+});
+quantize.addEventListener('change',refreshAll);
+showTrue.addEventListener('change',refreshAll);
+
+$('measureBtn').addEventListener('click',takeMeasurement);
+$('batchBtn').addEventListener('click',()=>takeBatch(10));
+$('undoBtn').addEventListener('click',()=>{
+  state.measurements.pop();
+  refreshAll();
+});
+$('clearBtn').addEventListener('click',()=>{
+  state.measurements=[];
+  refreshAll();
+});
+$('resetBtn').addEventListener('click',resetAll);
+$('fitBtn').addEventListener('click',fitScene);
+
+/* =========================================================
+   10. TOOLTIP
+========================================================= */
+const raycaster=new THREE.Raycaster();
+const mouse=new THREE.Vector2();
+
+renderer.domElement.addEventListener('mousemove',e=>{
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+
+  const hits=raycaster.intersectObject(objectMesh,false);
+  if(hits.length){
+    tooltip.style.display='block';
+    tooltip.style.left=`${e.offsetX+14}px`;
+    tooltip.style.top=`${e.offsetY+12}px`;
+    tooltip.innerHTML=`<b>Đại lượng cần đo</b><br>Giá trị thật = ${state.trueValue.toFixed(2)} cm`;
+  }else tooltip.style.display='none';
+});
+renderer.domElement.addEventListener('mouseleave',()=>tooltip.style.display='none');
+
+/* =========================================================
+   11. CAMERA / RESET / RESIZE
+========================================================= */
+function fitScene(){
+  camera.position.set(10,7,13);
+  controls.target.set(0,.1,0);
+  controls.update();
+}
+
+function resetAll(){
+  trueSlider.value='12.00';
+  sigmaSlider.value='0.20';
+  resSlider.value='1';
+  quantize.checked=true;
+  showTrue.checked=true;
+
+  state.trueValue=12.00;
+  state.sigma=0.20;
+  state.resolution=0.10;
+  state.measurements=[];
+
+  refreshAll();
+  fitScene();
+}
+
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
+  labelRenderer.setSize(w,h);
+  resizeChart();
+}
+window.addEventListener('resize',resize);
+
+/* =========================================================
+   12. ANIMATION
+========================================================= */
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+resetAll();
+resize();
+animate();
+</script>
+</body>
+</html>

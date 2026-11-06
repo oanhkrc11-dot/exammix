@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>034 · Cộng hưởng con lắc · dây treo chung V4</title>
+<style>
+:root{font-family:Segoe UI,Arial,sans-serif;color:#e9f6ff;background:#071523}
+*{box-sizing:border-box}body{margin:0}
+header{height:57px;background:#10283e;border-bottom:1px solid #36536b;display:flex;justify-content:space-between;align-items:center;padding:8px 16px}
+header b{font-size:15px}header small{display:block;font-size:11px;color:#9fb9c9;margin-top:4px}
+main{height:calc(100vh - 57px);min-height:560px;display:grid;grid-template-columns:248px minmax(0,1fr)}
+aside{padding:12px;overflow:auto;background:#10273b;border-right:1px solid #36536b}
+h3{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#77dcef;margin:15px 0 9px}
+label{display:block;margin:12px 0 5px;font-size:12px}
+input[type=range]{width:100%;accent-color:#40d6ee}
+button{background:#1a435c;border:1px solid #48718b;border-radius:8px;color:#edfbff;padding:9px 6px;font-weight:650;font-size:11px;cursor:pointer}
+button:hover{background:#2d6079}button.active{border-color:#4df2c7;background:#155766}.primary{background:#078a9c}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:6px}.speed{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.speed button{padding:9px 1px}
+.help{font-size:11px;line-height:1.6;color:#afc8d8;margin-top:12px}
+section{min-width:0;position:relative;overflow:hidden;background:#092033}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.hud{position:absolute;left:12px;bottom:12px;background:#081d2ddc;border:1px solid #42647e;border-radius:9px;padding:9px 12px;font-size:12px;pointer-events:none;line-height:1.6}
+.hud strong{color:#7ce4ef}.upper{position:absolute;top:13px;left:14px;font-size:12px;color:#e9f8ff;text-shadow:0 2px 5px #04131c;pointer-events:none}.amplitudes{position:absolute;right:14px;top:17px;width:218px;padding:12px;background:#071c2ce8;border:1px solid #416985;border-radius:10px;font-size:11px;pointer-events:none}.ampRow{display:flex;align-items:center;gap:7px;margin-top:7px}.ampName{width:43px;color:#cceafb}.ampTrack{flex:1;height:8px;background:#1c435a;border-radius:20px;overflow:hidden}.ampFill{display:block;height:100%;width:0;background:#6fe1fb;border-radius:20px}.ampNumber{width:39px;text-align:right;color:#c4d9e6}.ampRow:first-of-type .ampFill{background:#ffa64f}.ampInfo{font-size:10px;color:#90b5c8;margin-top:10px;line-height:1.5}@media(max-width:950px){.amplitudes{width:154px;top:65px}}.foot{position:absolute;right:12px;bottom:8px;font-size:10px;color:#b7cfdb;pointer-events:none}
+body.light header,body.light aside{background:#e4f1f8;color:#18374a}body.light button{background:#cae7f2;color:#143c53}body.light .help{color:#416376}
+@media(max-width:720px){main{display:flex;flex-direction:column;height:auto}section{height:64vh;min-height:400px}aside{order:2}}
+</style>
+</head>
+<body>
+<header><div><b>PHYSICS 3D PRO · 034 · V4</b><small>Cộng hưởng con lắc treo trên dây chung · Sửa lại đúng cơ chế truyền dao động</small></div><button id="theme">☀ Nền sáng</button></header>
+<main>
+<aside>
+<h3>Thí nghiệm</h3>
+<div class="controls">
+<button id="start" class="primary">▶ Bắt đầu</button>
+<button id="pause">⏸ Tạm dừng</button>
+<button id="reset">↺ Đặt lại</button>
+<button id="drive">◉ Kích thích: BẬT</button>
+</div>
+<label>Chiều dài con lắc nguồn: <b id="srcv">1,00 m</b></label>
+<input id="source" type="range" min="0.70" max="1.30" step="0.01" value="1.00">
+<label>Mức kích thích con lắc nguồn: <b id="ampv">8°</b></label>
+<input id="amp" type="range" min="2" max="16" step="1" value="8">
+<label>Độ căng dây chung: <b id="couplingv">Vừa</b></label>
+<input id="coupling" type="range" min="20" max="120" step="1" value="60">
+<label>Lực cản dao động: <b id="dampv">Nhỏ</b></label>
+<input id="damp" type="range" min="3" max="35" value="10">
+<h3>Tốc độ mô phỏng · 7 nấc</h3>
+<div class="speed" id="speedBtns">
+<button data-s="0.1">0,1×</button>
+<button data-s="0.25">0,25×</button>
+<button data-s="0.5">0,5×</button>
+<button data-s="0.75">0,75×</button>
+<button data-s="1" class="active">1×</button>
+<button data-s="1.5">1,5×</button>
+<button data-s="2">2×</button>
+</div>
+<h3>Biểu diễn và quan sát</h3>
+<div class="controls"><button id="bars" class="active">▥ Biên độ: BẬT</button><button id="amplify">≈ Dây ×2: BẬT</button></div>
+<div class="controls">
+<button id="trails">◌ Vệt: BẬT</button>
+<button id="labels">🏷 Nhãn: BẬT</button>
+<button id="auto">◉ Camera: TẮT</button>
+<button id="center">◎ Căn giữa</button>
+<button id="zoomIn">＋ Phóng to</button>
+<button id="zoomOut">－ Thu nhỏ</button>
+<button id="full">⛶ Toàn màn hình</button>
+<button id="shot">📷 Chụp ảnh</button>
+<button id="rec">● Quay video</button>
+</div>
+<div class="help" id="recmsg">Quay MP4 nếu trình duyệt hỗ trợ, nếu không dùng WebM.</div>
+<h3>Giải thích mô hình</h3>
+<div class="help">Dây chung dao động <b>theo phương ngang vuông góc với sợi dây</b>. Bản này dùng <b>một dây treo chung</b> giữa hai giá đỡ. Con lắc màu cam là <b>con lắc nguồn</b>. Khi nguồn dao động, nó làm điểm treo và dây ngang rung nhẹ, từ đó truyền dao động sang các con lắc còn lại. Con lắc có tần số riêng gần nguồn sẽ nhận năng lượng mạnh hơn nên biên độ tăng dần theo thời gian. Con lắc nguồn được cấp năng lượng bởi mô-men tuần hoàn; các con lắc khác <b>không có nguồn kích thích riêng</b>. Mô hình gần đúng dùng dây đàn hồi rời rạc và dao động con lắc trong cùng phương với chuyển động ngang của điểm treo. Thanh biên độ cho biết đỉnh góc trong 10 giây qua, không phải góc hiện thời; khi bật Dây ×2, chỉ phần vẽ dây được phóng đại, không đổi phương trình chuyển động.</div>
+</aside>
+<section id="stage"><canvas id="c"></canvas>
+<div class="upper"><b>THÍ NGHIỆM CỘNG HƯỞNG CON LẮC</b><div style="margin-top:4px;color:#c0d6e8">Dây treo chung rung nhẹ · Nguồn cam · Con lắc xanh nhận năng lượng qua dây</div></div>
+<div class="hud">
+<div>f nguồn: <strong id="freq">0,50 Hz</strong> · Thời gian: <strong id="time">0,0 s</strong></div>
+<div id="match">Gần cộng hưởng nhất: con lắc số 3</div>
+<div id="status">Sẵn sàng</div>
+</div>
+<div class="amplitudes" id="ampPanel"><b>BIÊN ĐỘ GÓC (°)</b><div id="ampRows"></div><div class="ampInfo">Đỉnh dao động trong khoảng 10 s gần nhất. Dây có thể được phóng đại khi vẽ.</div></div><div class="foot">Thầy Hùng vật lí · PHYSICS 3D PRO</div>
+</section>
+</main>
+<script>
+(()=>{'use strict';
+const $=s=>document.getElementById(s), c=$('c'), ctx=c.getContext('2d');
+if(!ctx){return;}
+const g=9.81, clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const respLens=[0.72,0.86,1.00,1.16,1.30];
+const st={running:false,paused:false,drive:true,src:1.00,ampDeg:8,coupling:60,damp:0.10,speed:1,yaw:0.68,pitch:0.16,zoom:1,auto:false,trails:true,labels:true,bars:true,amplify:true,time:0};
+let W=1,H=1,dpr=1,last=performance.now(),drag=null,rec=null,chunks=[];
+const anchorX=[-2.62,-1.32,0,1.32,2.62];
+const support={n:33,u:[],v:[],baseY:2.22,spanX1:-3.85,spanX2:3.85};
+for(let i=0;i<support.n;i++){support.u.push(0);support.v.push(0);} 
+let source={a:0,v:0,tail:[]};
+let ampHistory=Array.from({length:6},()=>[]),ampTimer=0;
+let resp=respLens.map(L=>({L,a:0,v:0,tail:[]}));
+function resize(){const r=c.getBoundingClientRect();W=Math.max(1,r.width);H=Math.max(1,r.height);dpr=Math.min(devicePixelRatio||1,2);c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);} new ResizeObserver(resize).observe($('stage')); resize();
+function P(x,y,z=0){const ca=Math.cos(st.yaw),sa=Math.sin(st.yaw),cp=Math.cos(st.pitch),sp=Math.sin(st.pitch),xx=x*ca-z*sa,zz=x*sa+z*ca,yy=y*cp-zz*sp,dd=y*sp+zz*cp;const sc=Math.min(W/11,H/7.5)*st.zoom*9/(9+dd*0.1);return{x:W*0.51+xx*sc,y:H*0.46-yy*sc,sc};}
+function seg(a,b,color,width=2,alpha=1){const A=P(...a),B=P(...b);ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.restore();}
+function poly(points,color,width=2,alpha=1){ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();points.forEach((q,i)=>{const p=P(...q); if(i) ctx.lineTo(p.x,p.y); else ctx.moveTo(p.x,p.y);});ctx.stroke();ctx.restore();}
+function ball(v,r,color){const p=P(...v),R=Math.max(3,r*p.sc);const gr=ctx.createRadialGradient(p.x-R*0.35,p.y-R*0.45,2,p.x,p.y,R);gr.addColorStop(0,'#ffffff');gr.addColorStop(0.15,color);gr.addColorStop(1,'#102b44');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(p.x,p.y,R,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#b6ddf3';ctx.lineWidth=1;ctx.stroke();}
+function label(txt,x,y,z,color='#eaf9ff',sz=13){const p=P(x,y,z);ctx.save();ctx.font=`bold ${sz}px Segoe UI`;ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#061624';ctx.strokeText(txt,p.x,p.y);ctx.fillStyle=color;ctx.fillText(txt,p.x,p.y);ctx.restore();}
+function supportIndexFromX(x){const t=(x-support.spanX1)/(support.spanX2-support.spanX1); return clamp(Math.round(t*(support.n-1)),1,support.n-2);}
+const sourceX=-3.40, sourceNode=supportIndexFromX(sourceX), respNodes=anchorX.map(supportIndexFromX);
+function resetState(){for(let i=0;i<support.n;i++){support.u[i]=0;support.v[i]=0;} source={a:0,v:0,tail:[]};ampHistory=Array.from({length:6},()=>[]);ampTimer=0; resp=respLens.map(L=>({L,a:0,v:0,tail:[]})); st.time=0; st.running=false; st.paused=false; $('start').textContent='▶ Bắt đầu'; $('pause').textContent='⏸ Tạm dừng';}
+function update(dt){
+ st.time+=dt;
+ const N=support.n, dx=(support.spanX2-support.spanX1)/(N-1);
+ const cWave=1.55+st.coupling*.024, stiffness=(cWave/dx)**2;
+ const dampingLine=.40+st.damp*.9;
+ const omegaD=Math.sqrt(g/st.src);
+ const torque=st.drive?(st.ampDeg/8)*1.55*Math.sin(omegaD*st.time):0;
+ // Calculate cable acceleration using tension, distributed damping and pendulum reaction.
+ const acc=Array(N).fill(0);
+ for(let j=1;j<N-1;j++)acc[j]=stiffness*(support.u[j-1]-2*support.u[j]+support.u[j+1])-dampingLine*support.v[j];
+ const pendula=[{node:sourceNode,q:source,L:st.src,drive:torque},...resp.map((q,i)=>({node:respNodes[i],q,L:q.L,drive:0}))];
+ // Pendulum reaction force on the cable: only the source receives the driving torque.
+ for(const {node,q,L} of pendula){
+   acc[node]+=.30*(g*Math.sin(q.a)*Math.cos(q.a)+L*q.v*q.v*Math.sin(q.a));
+ }
+ // Symplectic update of cable, fixed endpoints.
+ for(let j=1;j<N-1;j++){
+   support.v[j]+=acc[j]*dt;
+   support.u[j]+=support.v[j]*dt;
+ }
+ support.u[0]=support.u[N-1]=0;support.v[0]=support.v[N-1]=0;
+ // Moving-pivot pendulum equation in the same transverse direction as cable.
+ for(const {node,q,L,drive} of pendula){
+   const alpha=-(g/L)*Math.sin(q.a)-(acc[node]/L)*Math.cos(q.a)-st.damp*1.1*q.v+drive;
+   q.v+=alpha*dt;q.a+=q.v*dt;
+   // Display/model guard, far beyond the expected small-angle regime.
+   q.a=clamp(q.a,-1.05,1.05);
+ }
+ if(st.trails){
+   source.tail.push([source.a,support.u[sourceNode]]);
+   if(source.tail.length>70)source.tail.shift();
+   resp.forEach((p,i)=>{p.tail.push([p.a,support.u[respNodes[i]]]);if(p.tail.length>70)p.tail.shift();});
+ }else{source.tail.length=0;resp.forEach(p=>p.tail.length=0);}
+}
+function draw(){
+  const light=document.body.classList.contains('light');
+  const grad=ctx.createRadialGradient(W*0.5,H*0.23,20,W*0.5,H*0.5,Math.max(W,H)*0.8);
+  grad.addColorStop(0,light?'#e3f5ff':'#265575'); grad.addColorStop(1,light?'#83abc6':'#061625'); ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+  ctx.save(); ctx.globalAlpha=0.22; ctx.strokeStyle=light?'#6f9aac':'#42687b';
+  for(let x=0;x<W;x+=39){ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();}
+  for(let y=0;y<H;y+=39){ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();}
+  ctx.restore();
+  // stands
+  for(const x of [-4.0,4.0]){seg([x,-2.25,.45],[x,2.45,.45],'#273d50',13);seg([x,-2.25,.45],[x,2.45,.45],'#9caebb',8);seg([x-0.5,-2.25,.45],[x+0.5,-2.25,.45],'#cadbe4',11)}
+  // support string
+  const pts=[];
+  for(let i=0;i<support.n;i++){
+    const t=i/(support.n-1), x=support.spanX1+(support.spanX2-support.spanX1)*t, y=support.baseY, z=0.20+support.u[i]*(st.amplify?2:1);
+    pts.push([x,y,z]);
+  }
+  poly(pts,'#f6fbff',3.5,0.95); poly(pts,'#6ed8f0',1.2,0.6);
+  // source pivot and bob
+  const sp=[sourceX,support.baseY,0.20+support.u[sourceNode]*(st.amplify?2:1)];
+  const sLen=st.src*2.55;
+  const sBob=[sp[0], sp[1]-sLen*Math.cos(source.a), sp[2]+sLen*Math.sin(source.a)];
+  if(st.trails&&source.tail.length>2){for(let j=2;j<source.tail.length;j+=2){const [th,uz]=source.tail[j], [pr,pz]=source.tail[j-2]; const a=[sp[0],sp[1]-sLen*Math.cos(pr),.20+pz+sLen*Math.sin(pr)], b=[sp[0],sp[1]-sLen*Math.cos(th),.20+uz+sLen*Math.sin(th)]; seg(a,b,'#ffcb8a',1.7,j/source.tail.length*0.35);}}
+  seg(sp,sBob,'#f0e1c4',2.3); ball(sBob,0.18,'#ffad59'); ball(sp,0.055,'#eefaff');
+  if(st.labels){label('NGUỒN',sourceX,2.65,0.2,'#ffbd77',12); label(st.src.toFixed(2)+' m',sourceX,-1.82,0.2,'#ffc98e',12);}
+  // response pendulums
+  for(let i=0;i<resp.length;i++){
+    const x=anchorX[i], n=respNodes[i], p=resp[i], piv=[x,support.baseY,0.20+support.u[n]*(st.amplify?2:1)], len=p.L*2.55, bob=[x,piv[1]-len*Math.cos(p.a),piv[2]+len*Math.sin(p.a)];
+    if(st.trails&&p.tail.length>2){for(let j=2;j<p.tail.length;j+=2){const [th,uz]=p.tail[j], [pr,pz]=p.tail[j-2], a=[x,piv[1]-len*Math.cos(pr),.20+pz+len*Math.sin(pr)], b=[x,piv[1]-len*Math.cos(th),.20+uz+len*Math.sin(th)]; seg(a,b,'#47e5ff',1.5,j/p.tail.length*0.35);}}
+    seg(piv,bob,'#edf7ff',2.1); ball(bob,0.17,i===2?'#5cf4e1':'#72baf9'); ball(piv,0.055,'#e0eef7');
+    if(st.labels){label(String(i+1),x,2.63,0.25,'#e8f9ff',15); label(p.L.toFixed(2)+' m',x,-1.82,0.25,'#b8d4e6',12);}
+  }
+  // info
+  const f=(Math.sqrt(g/st.src)/(2*Math.PI)).toFixed(2); $('freq').textContent=f+' Hz'; $('time').textContent=st.time.toFixed(1)+' s';
+  let nearest=0; for(let i=1;i<resp.length;i++){if(Math.abs(resp[i].L-st.src)<Math.abs(resp[nearest].L-st.src)) nearest=i;}
+  $('match').textContent='Gần cộng hưởng nhất: con lắc số '+(nearest+1)+' ('+resp[nearest].L.toFixed(2)+' m)';
+  if(st.bars){$('ampRows').innerHTML=[source,...resp].map((q,i)=>{const peak=Math.max(0,...ampHistory[i].map(k=>k.v));const w=Math.min(100,peak/35*100);return '<div class="ampRow"><span class="ampName">'+(i?'Số '+i:'Nguồn')+'</span><span class="ampTrack"><span class="ampFill" style="width:'+w.toFixed(1)+'%"></span></span><span class="ampNumber">'+peak.toFixed(1)+'°</span></div>';}).join('');}
+  $('status').textContent=!st.running?'Sẵn sàng · Nhấn Bắt đầu':st.paused?'Đã tạm dừng':st.drive?'Dây treo đang nhận kích thích qua con lắc nguồn':'Đã tắt kích thích';
+}
+function tick(t){let dt=Math.min(0.045,Math.max(0,(t-last)/1000)); last=t; if(st.running && !st.paused){let remain=dt*st.speed; while(remain>0){const s=Math.min(remain,1/240); update(s); remain-=s;}} if(st.auto) st.yaw += dt*0.13; draw(); requestAnimationFrame(tick);} requestAnimationFrame(tick);
+$('start').onclick=()=>{if(!st.running){st.running=true;st.paused=false;$('start').textContent='▶ Đang chạy';} else {st.paused=false; $('pause').textContent='⏸ Tạm dừng'; $('start').textContent='▶ Đang chạy';}};
+$('pause').onclick=()=>{if(!st.running) return; st.paused=!st.paused; $('pause').textContent=st.paused?'▶ Tiếp tục':'⏸ Tạm dừng';};
+$('reset').onclick=resetState;
+$('drive').onclick=()=>{st.drive=!st.drive; $('drive').textContent='◉ Kích thích: '+(st.drive?'BẬT':'TẮT');};
+$('source').oninput=e=>{st.src=+e.target.value; $('srcv').textContent=st.src.toFixed(2).replace('.',',')+' m';};
+$('amp').oninput=e=>{st.ampDeg=+e.target.value; $('ampv').textContent=e.target.value+'°';};
+$('coupling').oninput=e=>{st.coupling=+e.target.value; $('couplingv').textContent=st.coupling<40?'Nhỏ':st.coupling<80?'Vừa':'Lớn';};
+$('damp').oninput=e=>{st.damp=+e.target.value/100; $('dampv').textContent=st.damp<0.08?'Rất nhỏ':st.damp<0.18?'Nhỏ':st.damp<0.28?'Vừa':'Lớn';};
+for(const b of document.querySelectorAll('#speedBtns button')) b.onclick=()=>{st.speed=+b.dataset.s; for(const x of document.querySelectorAll('#speedBtns button')) x.classList.toggle('active',x===b);};
+$('bars').onclick=()=>{st.bars=!st.bars;$('ampPanel').style.display=st.bars?'block':'none';$('bars').textContent='▥ Biên độ: '+(st.bars?'BẬT':'TẮT')};
+$('amplify').onclick=()=>{st.amplify=!st.amplify;$('amplify').textContent='≈ Dây ×2: '+(st.amplify?'BẬT':'TẮT')};
+$('trails').onclick=()=>{st.trails=!st.trails; $('trails').textContent='◌ Vệt: '+(st.trails?'BẬT':'TẮT');};
+$('labels').onclick=()=>{st.labels=!st.labels; $('labels').textContent='🏷 Nhãn: '+(st.labels?'BẬT':'TẮT');};
+$('auto').onclick=()=>{st.auto=!st.auto; $('auto').textContent='◉ Camera: '+(st.auto?'BẬT':'TẮT');};
+$('center').onclick=()=>{st.yaw=0.68; st.pitch=0.16; st.zoom=1; st.auto=false; $('auto').textContent='◉ Camera: TẮT';};
+$('zoomIn').onclick=()=>st.zoom=clamp(st.zoom*1.13,0.6,2); $('zoomOut').onclick=()=>st.zoom=clamp(st.zoom/1.13,0.6,2); $('full').onclick=()=>document.fullscreenElement?document.exitFullscreen():$('stage').requestFullscreen?.(); $('theme').onclick=()=>document.body.classList.toggle('light');
+c.onpointerdown=e=>{drag={x:e.clientX,y:e.clientY}; c.setPointerCapture(e.pointerId); st.auto=false; $('auto').textContent='◉ Camera: TẮT';}; c.onpointermove=e=>{if(!drag) return; st.yaw=clamp(st.yaw+(e.clientX-drag.x)*0.006,-0.7,0.7); st.pitch=clamp(st.pitch-(e.clientY-drag.y)*0.005,-0.3,0.5); drag.x=e.clientX; drag.y=e.clientY;}; c.onpointerup=c.onpointercancel=()=>drag=null; c.onwheel=e=>{e.preventDefault(); st.zoom=clamp(st.zoom*(e.deltaY>0?0.92:1.08),0.6,2);};
+$('shot').onclick=()=>{const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download='034_Cong_huong_day_chung.png'; a.click();};
+$('rec').onclick=()=>{ if(rec?.state==='recording'){rec.stop(); return;} try{ if(!window.MediaRecorder||!c.captureStream) throw Error('Trình duyệt không hỗ trợ quay video'); const mime=['video/mp4;codecs=avc1','video/webm;codecs=vp9','video/webm'].find(x=>MediaRecorder.isTypeSupported(x)); rec=new MediaRecorder(c.captureStream(30),mime?{mimeType:mime}:undefined); chunks=[]; rec.ondataavailable=e=>{if(e.data.size) chunks.push(e.data)}; rec.onstop=()=>{const blob=new Blob(chunks,{type:rec.mimeType}), url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download='034_Cong_huong_day_chung.'+(rec.mimeType.includes('mp4')?'mp4':'webm'); a.click(); setTimeout(()=>URL.revokeObjectURL(url),10000); $('rec').textContent='● Quay video'; $('recmsg').textContent='Đã xuất video';}; rec.start(); $('rec').textContent='■ Dừng quay'; $('recmsg').textContent='Đang quay...'; }catch(e){ $('recmsg').textContent=e.message; } };
+window.__experiment034v4={st,get source(){return source},get resp(){return resp},support,update,draw};
+})();
+</script>
+</body>
+</html>

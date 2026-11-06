@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mặt cắt hình nón động - GV Nguyễn Huy Hùng</title>
+<style>
+:root{
+  --bg:#030405; --panel:#0d1014; --line:#262b32; --text:#f5f7fb; --muted:#8d96a2;
+  --cyan:#2fe7ff; --pink:#ff3ba7; --yellow:#ffd84a; --green:#53f28f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020304;color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+#app{width:100vw;height:100vh;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px}
+.stage{
+  position:relative;overflow:hidden;border-radius:24px;border:1px solid #15191f;background:
+  radial-gradient(circle at 50% 42%,rgba(47,231,255,.06),transparent 34%),
+  linear-gradient(#020304,#050608);
+  box-shadow:0 24px 70px rgba(0,0,0,.5)
+}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+.header{
+  position:absolute;left:18px;right:18px;top:16px;display:flex;justify-content:space-between;align-items:center;pointer-events:none
+}
+.brand{font-size:13px;font-weight:900;letter-spacing:.12em}
+.badge{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.42);font-size:13px}
+.result{
+  position:absolute;left:50%;bottom:20px;transform:translateX(-50%);
+  padding:12px 20px;border-radius:16px;background:rgba(0,0,0,.56);border:1px solid rgba(255,255,255,.13);
+  backdrop-filter:blur(8px);font-size:clamp(22px,2vw,34px);font-weight:800;white-space:nowrap
+}
+.panel{
+  border:1px solid #171c22;border-radius:24px;background:rgba(12,15,19,.96);padding:16px;
+  display:flex;flex-direction:column;gap:14px;min-height:0
+}
+h1{margin:0;font-size:21px}
+.sub{margin:3px 0 0;color:var(--muted);font-size:13px}
+.group{padding:13px;border-radius:18px;border:1px solid #242a32;background:rgba(255,255,255,.02)}
+.control{margin:10px 0 13px}
+.labelrow{display:flex;justify-content:space-between;gap:12px;margin-bottom:7px;font-size:13px}
+.value{font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--pink)}
+.switch{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin:9px 0}
+.switch input{width:18px;height:18px;accent-color:var(--cyan)}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+button{
+  cursor:pointer;padding:12px 10px;border-radius:13px;border:1px solid #303640;background:#171b21;color:#fff;font-weight:800
+}
+button:hover{background:#20252c}
+button.primary{background:linear-gradient(135deg,#ff3ba7,#c51d73);border-color:#ff3ba7}
+button.cyan{background:linear-gradient(135deg,#1db7c9,#137bd7);border-color:#24cfe1}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:#cfd6de}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.note{margin-top:auto;font-size:12px;color:#747e89;line-height:1.45}
+@media(max-width:900px){
+  #app{grid-template-columns:1fr;padding:7px}
+  .panel{position:absolute;right:11px;top:11px;width:min(320px,calc(100vw - 22px));max-height:calc(100vh - 22px);overflow:auto;z-index:20}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <section class="stage" id="stage">
+    <canvas id="canvas"></canvas>
+    <div class="header">
+      <div class="brand">CONIC SECTION LAB</div>
+      <div class="badge" id="angleBadge">α = 20°</div>
+    </div>
+    <div class="result" id="result">ELLIPSE</div>
+  </section>
+
+  <aside class="panel">
+    <div>
+      <h1>Mặt cắt hình nón động</h1>
+      <p class="sub">Kéo mặt phẳng cắt để quan sát thiết diện</p>
+    </div>
+
+    <div class="group">
+      <div class="control">
+        <div class="labelrow"><span>Góc nghiêng mặt phẳng α</span><span class="value" id="angleVal">20°</span></div>
+        <input id="angle" type="range" min="0" max="75" step="1" value="20">
+      </div>
+      <div class="control">
+        <div class="labelrow"><span>Độ cao mặt phẳng h</span><span class="value" id="heightVal">0.15</span></div>
+        <input id="height" type="range" min="-0.65" max="0.65" step="0.01" value="0.15">
+      </div>
+      <div class="control">
+        <div class="labelrow"><span>Góc mở nửa hình nón β</span><span class="value" id="coneVal">35°</span></div>
+        <input id="cone" type="range" min="22" max="50" step="1" value="35">
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="switch"><span>Hiện hai nửa hình nón</span><input id="doubleCone" type="checkbox" checked></div>
+      <div class="switch"><span>Hiện đường sinh chuẩn</span><input id="generator" type="checkbox" checked></div>
+      <div class="switch"><span>Hiện lưới không gian</span><input id="grid" type="checkbox" checked></div>
+      <div class="switch"><span>Hiệu ứng phát sáng</span><input id="glow" type="checkbox" checked></div>
+    </div>
+
+    <div class="group">
+      <div class="legend">
+        <div><span class="dot" style="background:#2fe7ff"></span>Hình nón</div>
+        <div><span class="dot" style="background:#ffd84a"></span>Mặt phẳng cắt</div>
+        <div><span class="dot" style="background:#ff3ba7"></span>Thiết diện</div>
+        <div><span class="dot" style="background:#53f28f"></span>Đường sinh chuẩn</div>
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button class="primary" id="animateBtn">Tự động quét</button>
+      <button id="resetBtn">Mặc định</button>
+      <button class="cyan" id="presetBtn">Khám phá</button>
+      <button id="fullBtn">Toàn màn hình</button>
+    </div>
+
+    <div class="note">
+      Gợi ý: α = 0° → đường tròn; α nhỏ hơn β → ellipse;<br>
+      α ≈ β → parabol; α lớn hơn β → hypebol.<br><br>
+      GV: Nguyễn Huy Hùng
+    </div>
+  </aside>
+</div>
+
+<script>
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const stage=document.getElementById('stage');
+const angle=document.getElementById('angle');
+const height=document.getElementById('height');
+const cone=document.getElementById('cone');
+const doubleCone=document.getElementById('doubleCone');
+const generator=document.getElementById('generator');
+const gridToggle=document.getElementById('grid');
+const glow=document.getElementById('glow');
+const angleVal=document.getElementById('angleVal');
+const heightVal=document.getElementById('heightVal');
+const coneVal=document.getElementById('coneVal');
+const result=document.getElementById('result');
+const angleBadge=document.getElementById('angleBadge');
+
+let W=0,H=0,DPR=1,cx=0,cy=0,auto=false,last=performance.now();
+
+function resize(){
+  const r=stage.getBoundingClientRect();
+  DPR=Math.min(devicePixelRatio||1,2);
+  W=Math.floor(r.width);H=Math.floor(r.height);
+  canvas.width=W*DPR;canvas.height=H*DPR;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  cx=W*0.5;cy=H*0.5;
+}
+addEventListener('resize',resize);
+
+function proj(x,y,z){
+  const s=Math.min(W,H)*0.26;
+  return {
+    x:cx + (x - 0.58*z)*s,
+    y:cy + (0.34*x + y + 0.25*z)*s
+  };
+}
+
+function drawLine3D(a,b,color,width=1,dash=[]){
+  const p=proj(...a),q=proj(...b);
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);
+  ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();ctx.restore();
+}
+
+function drawGrid(){
+  if(!gridToggle.checked)return;
+  ctx.save();
+  for(let i=-5;i<=5;i++){
+    let a=[i*.25, .85, -1.2], b=[i*.25,.85,1.2];
+    drawLine3D(a,b,'rgba(180,195,210,.08)');
+    a=[-1.25,.85,i*.24]; b=[1.25,.85,i*.24];
+    drawLine3D(a,b,'rgba(180,195,210,.08)');
+  }
+  ctx.restore();
+}
+
+function conePoint(y,phi,beta){
+  const r=Math.abs(y)*Math.tan(beta);
+  return [r*Math.cos(phi), y, r*Math.sin(phi)];
+}
+
+function drawConeHalf(sign,beta){
+  const yMax=1.1*sign;
+  const steps=48;
+  ctx.save();
+  ctx.strokeStyle='rgba(47,231,255,.22)';
+  ctx.lineWidth=1;
+  if(glow.checked){ctx.shadowColor='#2fe7ff';ctx.shadowBlur=8}
+  for(let j=0;j<12;j++){
+    const phi=j*Math.PI*2/12;
+    const p0=proj(0,0,0), p1=proj(...conePoint(yMax,phi,beta));
+    ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);ctx.stroke();
+  }
+  ctx.beginPath();
+  for(let i=0;i<=steps;i++){
+    const phi=i*Math.PI*2/steps;
+    const p=proj(...conePoint(yMax,phi,beta));
+    if(i===0)ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+  }
+  ctx.closePath();ctx.stroke();
+  ctx.restore();
+}
+
+function planeY(x,z,alpha,h){
+  return h + x*Math.tan(alpha);
+}
+
+function drawPlane(alpha,h){
+  const size=1.05;
+  const corners=[
+    [-size,planeY(-size,-size,alpha,h),-size],
+    [ size,planeY( size,-size,alpha,h),-size],
+    [ size,planeY( size, size,alpha,h), size],
+    [-size,planeY(-size, size,alpha,h), size]
+  ].map(p=>proj(...p));
+  ctx.save();
+  ctx.fillStyle='rgba(255,216,74,.10)';
+  ctx.strokeStyle='rgba(255,216,74,.65)';
+  ctx.lineWidth=1.4;
+  if(glow.checked){ctx.shadowColor='#ffd84a';ctx.shadowBlur=10}
+  ctx.beginPath();ctx.moveTo(corners[0].x,corners[0].y);
+  for(let i=1;i<corners.length;i++)ctx.lineTo(corners[i].x,corners[i].y);
+  ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+}
+
+function classify(alpha,beta,h){
+  const eps=1.5*Math.PI/180;
+  if(Math.abs(alpha)<1*Math.PI/180) return 'ĐƯỜNG TRÒN';
+  if(Math.abs(alpha-beta)<eps) return 'PARABOL';
+  if(alpha<beta) return 'ELLIPSE';
+  return 'HYPEBOL';
+}
+
+function intersectionPoints(alpha,h,beta){
+  const pts=[];
+  const phiSteps=360;
+  const yRange=1.25;
+  for(let i=0;i<phiSteps;i++){
+    const phi=i*2*Math.PI/phiSteps;
+    const c=Math.cos(phi), s=Math.sin(phi);
+    for(const sign of (doubleCone.checked?[1,-1]:[1])){
+      // Cone: r = |y| tan(beta), x = r cos(phi), z = r sin(phi)
+      // Plane: y = h + x tan(alpha)
+      // Let y = sign*u, u>=0, x=u tan(beta) cos(phi)
+      // sign*u = h + u*tan(beta)*cos(phi)*tan(alpha)
+      const denom=sign - Math.tan(beta)*c*Math.tan(alpha);
+      if(Math.abs(denom)<1e-4) continue;
+      const u=h/denom;
+      if(u<0 || u>yRange) continue;
+      const y=sign*u, r=u*Math.tan(beta);
+      pts.push({phi,sign,p:proj(r*c,y,r*s)});
+    }
+  }
+  return pts;
+}
+
+function drawIntersection(alpha,h,beta){
+  const pts=intersectionPoints(alpha,h,beta);
+  const groups={p:[],n:[]};
+  pts.forEach(o=>(o.sign>0?groups.p:groups.n).push(o));
+  for(const arr of [groups.p,groups.n]){
+    if(arr.length<2) continue;
+    ctx.save();ctx.strokeStyle='#ff3ba7';ctx.lineWidth=3;
+    if(glow.checked){ctx.shadowColor='#ff3ba7';ctx.shadowBlur=18}
+    ctx.beginPath();
+    ctx.moveTo(arr[0].p.x,arr[0].p.y);
+    for(let i=1;i<arr.length;i++)ctx.lineTo(arr[i].p.x,arr[i].p.y);
+    ctx.stroke();ctx.restore();
+  }
+}
+
+function drawGenerator(beta){
+  if(!generator.checked)return;
+  const a=[0,0,0], b=conePoint(1.1,0,beta), c=conePoint(-1.1,Math.PI,beta);
+  drawLine3D(a,b,'rgba(83,242,143,.9)',2,[6,6]);
+  if(doubleCone.checked)drawLine3D(a,c,'rgba(83,242,143,.9)',2,[6,6]);
+}
+
+function render(){
+  ctx.clearRect(0,0,W,H);
+  const alpha=+angle.value*Math.PI/180;
+  const beta=+cone.value*Math.PI/180;
+  const h=+height.value;
+
+  drawGrid();
+  drawConeHalf(1,beta);
+  if(doubleCone.checked)drawConeHalf(-1,beta);
+  drawGenerator(beta);
+  drawPlane(alpha,h);
+  drawIntersection(alpha,h,beta);
+
+  const type=classify(alpha,beta,h);
+  result.textContent=type;
+  result.style.color= type==='PARABOL' ? '#ffd84a' : type==='HYPEBOL' ? '#53f28f' : type==='ĐƯỜNG TRÒN' ? '#2fe7ff' : '#ff3ba7';
+}
+
+function updateLabels(){
+  angleVal.textContent=angle.value+'°';
+  heightVal.textContent=(+height.value).toFixed(2);
+  coneVal.textContent=cone.value+'°';
+  angleBadge.textContent='α = '+angle.value+'°';
+  render();
+}
+
+[angle,height,cone].forEach(el=>el.addEventListener('input',updateLabels));
+[doubleCone,generator,gridToggle,glow].forEach(el=>el.addEventListener('change',render));
+
+document.getElementById('resetBtn').onclick=()=>{
+  angle.value=20;height.value=.15;cone.value=35;doubleCone.checked=true;generator.checked=true;gridToggle.checked=true;glow.checked=true;updateLabels();
+};
+document.getElementById('presetBtn').onclick=()=>{
+  const presets=[
+    {a:0,h:.25,b:35},
+    {a:18,h:.18,b:35},
+    {a:35,h:.1,b:35},
+    {a:52,h:.12,b:35}
+  ];
+  const p=presets[Math.floor(Math.random()*presets.length)];
+  angle.value=p.a;height.value=p.h;cone.value=p.b;updateLabels();
+};
+document.getElementById('animateBtn').onclick=()=>{
+  auto=!auto;
+  document.getElementById('animateBtn').textContent=auto?'Dừng quét':'Tự động quét';
+  last=performance.now();
+};
+document.getElementById('fullBtn').onclick=()=>{
+  if(!document.fullscreenElement)stage.requestFullscreen?.(); else document.exitFullscreen?.();
+};
+
+function loop(now){
+  const dt=Math.min((now-last)/1000,.05);last=now;
+  if(auto){
+    let a=+angle.value + dt*18;
+    if(a>75)a=0;
+    angle.value=a;
+    updateLabels();
+  }
+  requestAnimationFrame(loop);
+}
+
+resize();updateLabels();requestAnimationFrame(loop);
+</script>
+</body>
+</html>

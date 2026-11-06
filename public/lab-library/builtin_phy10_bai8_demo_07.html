@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mô phỏng bài toán xe máy tăng tốc rồi chậm dần</title>
+<style>
+  :root{
+    --bg:#f6f8fc; --card:#fff; --text:#1f2937; --muted:#667085; --line:#d0d5dd;
+    --blue:#2563eb; --green:#16a34a; --orange:#f59e0b; --red:#dc2626; --purple:#7c3aed;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  .wrap{max-width:1280px;margin:auto;padding:18px}
+  h1{margin:0 0 8px;color:#173a78;font-size:clamp(22px,3vw,34px)}
+  .sub{margin:0 0 16px;color:var(--muted);line-height:1.6}
+  .layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,.9fr);gap:16px}
+  .card{background:var(--card);border:1px solid #e4e7ec;border-radius:18px;padding:14px}
+  .scene{position:relative;height:330px;border-radius:14px;overflow:hidden;border:1px solid #d5dbe5;background:linear-gradient(180deg,#dff1ff 0 62%,#d4dbe4 62% 100%)}
+  .sun{position:absolute;right:40px;top:32px;width:52px;height:52px;border-radius:50%;background:#ffd36a;box-shadow:0 0 0 10px rgba(255,211,106,.25)}
+  .cloud{position:absolute;background:#fff;border-radius:30px;height:24px}
+  .cloud:before,.cloud:after{content:"";position:absolute;background:#fff;border-radius:50%}
+  .cloud:before{width:28px;height:28px;left:8px;top:-12px}
+  .cloud:after{width:38px;height:38px;left:28px;top:-18px}
+  .cloud.c1{width:78px;left:65px;top:58px}
+  .cloud.c2{width:92px;left:240px;top:42px}
+  .road{position:absolute;left:0;right:0;bottom:0;height:126px;background:#585d66}
+  .lane{position:absolute;left:0;right:0;bottom:60px;height:6px;background:repeating-linear-gradient(90deg,#fff 0 42px,transparent 42px 80px)}
+  .markWrap{position:absolute;left:0;right:0;bottom:80px;height:36px;pointer-events:none}
+  .roadLabel{position:absolute;bottom:0;transform:translateX(-50%);font-size:12px;font-weight:700;color:#334155;background:#ffffffcc;padding:2px 6px;border-radius:8px}
+  .roadTick{position:absolute;bottom:18px;width:2px;height:18px;background:#cbd5e1}
+  .bike{position:absolute;left:60px;bottom:57px;width:145px;height:78px;transform:translateX(0);will-change:transform}
+  .bike svg{display:block;width:100%;height:100%}
+  .shadow{position:absolute;left:78px;bottom:52px;width:110px;height:14px;background:rgba(0,0,0,.18);filter:blur(3px);border-radius:50%}
+  .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  button{border:0;border-radius:10px;padding:10px 12px;font:inherit;font-weight:800;cursor:pointer}
+  .blue{background:var(--blue);color:#fff}.green{background:var(--green);color:#fff}.orange{background:var(--orange);color:#fff}
+  .gray{background:#eef2f6;color:#1f2937}.purple{background:var(--purple);color:#fff}
+  .meterRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+  .metric{background:#f8fafc;border:1px solid #e4e7ec;border-radius:12px;padding:10px}
+  .metric .k{font-size:12px;color:#728095;margin-bottom:4px}
+  .metric .v{font-size:20px;font-weight:900;color:#172033}
+  .sliderWrap{margin-top:12px}
+  input[type=range]{width:100%}
+  .status{background:#edf6ff;border:1px solid #cee4fb;border-radius:12px;padding:12px;line-height:1.6;color:#174a7f;font-weight:700}
+  .formula{background:#fff9e9;border:1px solid #f0dc9b;border-radius:12px;padding:12px;line-height:1.65}
+  .vtwrap{border:1px solid #dbe2ea;border-radius:14px;overflow:hidden;margin-top:12px}
+  svg{display:block;width:100%;height:auto}
+  .steps{display:grid;gap:8px;margin-top:12px}
+  .step{background:#fafcff;border:1px solid #e4e7ec;border-radius:12px;padding:10px;line-height:1.5}
+  .tag{display:inline-block;padding:4px 9px;border-radius:999px;background:#eef4ff;color:#173a78;font-size:13px;font-weight:800;margin-bottom:8px}
+  .small{font-size:13px;color:var(--muted);margin-top:8px}
+  @media(max-width:980px){.layout{grid-template-columns:1fr}}
+  @media(max-width:620px){.controls{grid-template-columns:1fr 1fr}.meterRow{grid-template-columns:1fr}.wrap{padding:10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mô phỏng bài toán: xe máy tăng tốc rồi chậm dần</h1>
+  <p class="sub">
+    Bài toán: xe máy đang chuyển động thẳng với vận tốc <b>10 m/s</b>, sau <b>5 s</b> tăng lên
+    <b>12 m/s</b>. Sau đó xe <b>chậm dần đều</b> với độ lớn gia tốc đúng bằng gia tốc lúc tăng tốc.
+    Mô phỏng dưới đây cho phép quan sát cả <b>2 giai đoạn</b> và xem luôn kết quả của câu a, b.
+  </p>
+
+  <div class="layout">
+    <section class="card">
+      <div class="scene" id="scene">
+        <div class="sun"></div>
+        <div class="cloud c1"></div>
+        <div class="cloud c2"></div>
+        <div class="road"></div>
+        <div class="lane" id="lane"></div>
+        <div class="markWrap" id="markWrap"></div>
+        <div class="shadow" id="bikeShadow"></div>
+        <div class="bike" id="bike">
+          <svg viewBox="0 0 220 110" aria-label="Xe máy">
+            <circle cx="47" cy="84" r="23" fill="#1f2937"/><circle cx="165" cy="84" r="23" fill="#1f2937"/>
+            <circle cx="47" cy="84" r="10" fill="#9ca3af"/><circle cx="165" cy="84" r="10" fill="#9ca3af"/>
+            <path d="M47 84 L85 47 L124 47 L140 66 L165 84" fill="none" stroke="#111827" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M72 80 L93 61 L131 61 L151 78" fill="none" stroke="#111827" stroke-width="5" stroke-linecap="round"/>
+            <path d="M85 47 L98 26 H126" fill="none" stroke="#111827" stroke-width="6" stroke-linecap="round"/>
+            <path d="M126 26 L149 44" fill="none" stroke="#111827" stroke-width="6" stroke-linecap="round"/>
+            <path d="M91 25 H120 L137 44 H98 Z" fill="#dc2626" stroke="#991b1b" stroke-width="3"/>
+            <rect x="102" y="14" width="14" height="10" rx="2" fill="#1d4ed8"/>
+            <path d="M126 24 H153" stroke="#111827" stroke-width="5" stroke-linecap="round"/>
+            <path d="M152 24 L164 17" stroke="#111827" stroke-width="4" stroke-linecap="round"/>
+            <path d="M110 47 H135" stroke="#7c2d12" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="102" cy="28" r="11" fill="#f1c27d"/>
+            <path d="M96 39 L110 39 L119 57 L110 76 L100 76 L94 56 Z" fill="#2563eb"/>
+            <path d="M94 45 L74 58" stroke="#f1c27d" stroke-width="6" stroke-linecap="round"/>
+            <path d="M118 45 L139 58" stroke="#f1c27d" stroke-width="6" stroke-linecap="round"/>
+            <path d="M101 76 L82 92" stroke="#111827" stroke-width="6" stroke-linecap="round"/>
+            <path d="M112 76 L138 90" stroke="#111827" stroke-width="6" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="blue" id="playAll">▶ Chạy cả bài toán</button>
+        <button class="green" id="play1">▶ Chỉ chạy giai đoạn 1</button>
+        <button class="orange" id="play2">▶ Chỉ chạy giai đoạn 2</button>
+        <button class="gray" id="pause">⏸ Tạm dừng</button>
+        <button class="gray" id="step">+1 s</button>
+        <button class="purple" id="reset">↺ Làm lại</button>
+      </div>
+
+      <div class="sliderWrap">
+        <label for="timeSlider" style="font-weight:800;font-size:14px">Thời điểm đang xem: <span id="timeText">0,0 s</span></label>
+        <input id="timeSlider" type="range" min="0" max="35" step="0.1" value="0">
+      </div>
+
+      <div class="meterRow">
+        <div class="metric"><div class="k">Thời gian</div><div class="v" id="mTime">0,0 s</div></div>
+        <div class="metric"><div class="k">Vận tốc tức thời</div><div class="v" id="mSpeed">10,0 m/s</div></div>
+        <div class="metric"><div class="k">Gia tốc tức thời</div><div class="v" id="mAccel">+0,4 m/s²</div></div>
+      </div>
+
+      <div class="vtwrap">
+        <svg id="vtSvg" viewBox="0 0 920 430" role="img" aria-label="Đồ thị vận tốc theo thời gian">
+          <rect x="0" y="0" width="920" height="430" fill="#fff"/>
+          <rect x="90" y="35" width="760" height="315" fill="#fcfdff" stroke="#e4e7ec"/>
+          <g id="grid"></g>
+          <g id="axes">
+            <line x1="90" y1="350" x2="850" y2="350" stroke="#111827" stroke-width="3"/>
+            <line x1="90" y1="350" x2="90" y2="35" stroke="#111827" stroke-width="3"/>
+            <polygon points="860,350 846,343 846,357" fill="#111827"/>
+            <polygon points="90,23 83,37 97,37" fill="#111827"/>
+            <text x="872" y="356" font-size="22" font-weight="800" fill="#111827">t (s)</text>
+            <text x="32" y="28" font-size="22" font-weight="800" fill="#111827">v (m/s)</text>
+          </g>
+          <g id="ticks"></g>
+          <polyline id="line1" points="" fill="none" stroke="#2563eb" stroke-width="4"/>
+          <polyline id="line2" points="" fill="none" stroke="#dc2626" stroke-width="4"/>
+          <circle id="marker" cx="90" cy="225" r="7" fill="#16a34a" stroke="white" stroke-width="3"/>
+          <g id="markerInfo">
+            <rect id="markerBox" x="120" y="70" width="180" height="42" rx="10" fill="#eef4ff" stroke="#bfd3ff"/>
+            <text id="markerLabel" x="135" y="97" font-size="16" font-weight="800" fill="#173a78">t = 0,0 s; v = 10,0 m/s</text>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <aside class="card">
+      <div class="tag">Kết quả bài toán</div>
+      <div class="status" id="status">
+        Sẵn sàng. Hãy nhấn <b>“Chạy cả bài toán”</b> để quan sát xe tăng tốc 5 s rồi chậm dần đến khi dừng lại.
+      </div>
+
+      <div class="formula" id="formula">
+        <b>Câu a)</b> Gia tốc khi tăng tốc:<br>
+        \(a = \dfrac{v-v_0}{t} = \dfrac{12-10}{5} = 0,4\ \text{m/s}^2\).<br><br>
+        <b>Câu b)</b> Sau đó xe chậm dần với độ lớn gia tốc bằng 0,4 m/s² nên:<br>
+        \(0 = 12 - 0,4t\Rightarrow t = 30\ \text{s}\).<br>
+        Vậy xe cần <b>30 s</b> kể từ lúc bắt đầu chậm dần để dừng lại.
+      </div>
+
+      <div class="steps">
+        <div class="step"><b>Giai đoạn 1:</b> từ <b>0 → 5 s</b>, xe tăng tốc đều từ <b>10 m/s</b> lên <b>12 m/s</b>, nên \(a = +0,4\ \text{m/s}^2\).</div>
+        <div class="step"><b>Giai đoạn 2:</b> từ <b>5 → 35 s</b>, xe chậm dần đều từ <b>12 m/s</b> về <b>0</b>, nên \(a = -0,4\ \text{m/s}^2\).</div>
+        <div class="step"><b>Phương trình vận tốc:</b><br>
+          • Giai đoạn 1: \(v = 10 + 0,4t\), với \(0 \le t \le 5\).<br>
+          • Giai đoạn 2: \(v = 12 - 0,4(t-5)\), với \(5 \le t \le 35\).
+        </div>
+      </div>
+
+      <div class="small">
+        Gợi ý quan sát: tại <b>t = 5 s</b>, mô phỏng chuyển từ tăng tốc sang chậm dần. Trên đồ thị \(v-t\), điểm đổi giai đoạn là <b>(5; 12)</b>.
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const bike = document.getElementById('bike');
+  const bikeShadow = document.getElementById('bikeShadow');
+  const lane = document.getElementById('lane');
+  const markWrap = document.getElementById('markWrap');
+  const slider = document.getElementById('timeSlider');
+  const timeText = document.getElementById('timeText');
+  const mTime = document.getElementById('mTime');
+  const mSpeed = document.getElementById('mSpeed');
+  const mAccel = document.getElementById('mAccel');
+  const status = document.getElementById('status');
+  const marker = document.getElementById('marker');
+  const markerLabel = document.getElementById('markerLabel');
+  const markerBox = document.getElementById('markerBox');
+  const line1 = document.getElementById('line1');
+  const line2 = document.getElementById('line2');
+  const grid = document.getElementById('grid');
+  const ticks = document.getElementById('ticks');
+
+  const sceneW = () => document.getElementById('scene').clientWidth;
+  const X0 = 90, Y0 = 350, W = 760, H = 315;
+  const tMax = 35, vMax = 14;
+  let t = 0;
+  let mode = 'all'; // all, phase1, phase2
+  let running = false, paused = false, raf = 0, last = null;
+  let laneOffset = 0;
+
+  function fmt(n){ return n.toFixed(1).replace('.', ','); }
+  function clamp(x,a,b){ return Math.min(b, Math.max(a,x)); }
+
+  function buildRoadMarks(){
+    markWrap.innerHTML = '';
+    const w = sceneW();
+    for(let i=0;i<=10;i++){
+      const x = 60 + i*(w-120)/10;
+      const tick = document.createElement('div');
+      tick.className = 'roadTick';
+      tick.style.left = x + 'px';
+      const lb = document.createElement('div');
+      lb.className = 'roadLabel';
+      lb.style.left = x + 'px';
+      lb.textContent = (i*20) + ' m';
+      markWrap.appendChild(tick);
+      markWrap.appendChild(lb);
+    }
+  }
+
+  function buildVT(){
+    grid.innerHTML = ''; ticks.innerHTML = '';
+    for(let i=0;i<=7;i++){
+      const x = X0 + W*i/7;
+      const gl = document.createElementNS('http://www.w3.org/2000/svg','line');
+      gl.setAttribute('x1',x); gl.setAttribute('y1',35);
+      gl.setAttribute('x2',x); gl.setAttribute('y2',350);
+      gl.setAttribute('stroke','#e4e7ec'); gl.setAttribute('stroke-width','1');
+      grid.appendChild(gl);
+
+      const tk = document.createElementNS('http://www.w3.org/2000/svg','line');
+      tk.setAttribute('x1',x); tk.setAttribute('y1',350);
+      tk.setAttribute('x2',x); tk.setAttribute('y2',360);
+      tk.setAttribute('stroke','#111827'); tk.setAttribute('stroke-width','2');
+      ticks.appendChild(tk);
+
+      if(i<7){
+        const lab = document.createElementNS('http://www.w3.org/2000/svg','text');
+        lab.setAttribute('x',x); lab.setAttribute('y',383); lab.setAttribute('text-anchor','middle');
+        lab.setAttribute('font-size','17'); lab.setAttribute('font-weight','700'); lab.setAttribute('fill','#111827');
+        lab.textContent = i*5;
+        ticks.appendChild(lab);
+      }
+    }
+    const x8 = X0 + W;
+    const labEnd = document.createElementNS('http://www.w3.org/2000/svg','text');
+    labEnd.setAttribute('x',x8); labEnd.setAttribute('y',383); labEnd.setAttribute('text-anchor','middle');
+    labEnd.setAttribute('font-size','17'); labEnd.setAttribute('font-weight','700'); labEnd.setAttribute('fill','#111827');
+    labEnd.textContent = 35;
+    ticks.appendChild(labEnd);
+
+    for(let j=0;j<=7;j++){
+      const v = j*2;
+      const y = Y0 - H*(v/vMax);
+      const gl = document.createElementNS('http://www.w3.org/2000/svg','line');
+      gl.setAttribute('x1',90); gl.setAttribute('y1',y);
+      gl.setAttribute('x2',850); gl.setAttribute('y2',y);
+      gl.setAttribute('stroke','#e4e7ec'); gl.setAttribute('stroke-width','1');
+      grid.appendChild(gl);
+
+      const tk = document.createElementNS('http://www.w3.org/2000/svg','line');
+      tk.setAttribute('x1',80); tk.setAttribute('y1',y);
+      tk.setAttribute('x2',90); tk.setAttribute('y2',y);
+      tk.setAttribute('stroke','#111827'); tk.setAttribute('stroke-width','2');
+      ticks.appendChild(tk);
+
+      const lab = document.createElementNS('http://www.w3.org/2000/svg','text');
+      lab.setAttribute('x',68); lab.setAttribute('y',y+6); lab.setAttribute('text-anchor','end');
+      lab.setAttribute('font-size','17'); lab.setAttribute('font-weight','700'); lab.setAttribute('fill','#111827');
+      lab.textContent = v;
+      ticks.appendChild(lab);
+    }
+  }
+
+  function velocityAt(time){
+    if(time <= 5) return 10 + 0.4*time;
+    return Math.max(0, 12 - 0.4*(time - 5));
+  }
+
+  function accelAt(time){
+    if(time < 5) return 0.4;
+    if(time === 35) return 0;
+    return -0.4;
+  }
+
+  function distanceAt(time){
+    if(time <= 5){
+      return 10*time + 0.5*0.4*time*time;
+    }
+    const s1 = 10*5 + 0.5*0.4*25; // 55 m
+    const dt = time - 5;
+    return s1 + 12*dt - 0.5*0.4*dt*dt;
+  }
+
+  function toX(tt){ return X0 + W*(tt/tMax); }
+  function toY(v){ return Y0 - H*(v/vMax); }
+
+  function updateGraph(){
+    const p1 = [`${toX(0)},${toY(10)}`];
+    const end1 = Math.min(t,5);
+    if(end1 > 0) p1.push(`${toX(end1)},${toY(velocityAt(end1))}`);
+    line1.setAttribute('points', p1.join(' '));
+
+    const p2 = [];
+    if(t > 5){
+      p2.push(`${toX(5)},${toY(12)}`);
+      p2.push(`${toX(t)},${toY(velocityAt(t))}`);
+    }
+    line2.setAttribute('points', p2.join(' '));
+
+    const vx = toX(t), vy = toY(velocityAt(t));
+    marker.setAttribute('cx', vx);
+    marker.setAttribute('cy', vy);
+
+    let boxX = vx + 12;
+    let boxY = vy - 34;
+    if(boxX > 650) boxX = vx - 190;
+    if(boxY < 40) boxY = vy + 18;
+    markerBox.setAttribute('x', boxX);
+    markerBox.setAttribute('y', boxY);
+    markerLabel.setAttribute('x', boxX + 14);
+    markerLabel.setAttribute('y', boxY + 27);
+    markerLabel.textContent = `t = ${fmt(t)} s; v = ${fmt(velocityAt(t))} m/s`;
+  }
+
+  function updateScene(){
+    const s = distanceAt(t);
+    const x = 20 + (s/325) * (sceneW() - 180); // scale to fit full journey
+    bike.style.transform = `translateX(${x}px)`;
+    bikeShadow.style.transform = `translateX(${x}px)`;
+
+    laneOffset -= velocityAt(t) * 0.18;
+    lane.style.backgroundPositionX = laneOffset + 'px';
+    markWrap.style.transform = `translateX(${laneOffset*0.35}px)`;
+  }
+
+  function updateInfo(){
+    const v = velocityAt(t);
+    const a = accelAt(t);
+    timeText.textContent = `${fmt(t)} s`;
+    mTime.textContent = `${fmt(t)} s`;
+    mSpeed.textContent = `${fmt(v)} m/s`;
+    mAccel.textContent = `${a > 0 ? '+' : ''}${fmt(a)} m/s²`;
+
+    if(t < 5){
+      status.innerHTML = `Đang ở <b>giai đoạn 1</b>: xe tăng tốc đều từ <b>10 m/s</b> lên <b>12 m/s</b>.
+      Tại thời điểm <b>${fmt(t)} s</b>, vận tốc là <b>${fmt(v)} m/s</b>.`;
+    } else if(t < 35){
+      status.innerHTML = `Đang ở <b>giai đoạn 2</b>: xe chậm dần đều với gia tốc <b>-0,4 m/s²</b>.
+      Sau khi đã đạt <b>12 m/s</b>, xe cần <b>30 s</b> để dừng lại. Tại thời điểm hiện tại, vận tốc là <b>${fmt(v)} m/s</b>.`;
+    } else {
+      status.innerHTML = `Xe đã <b>dừng lại</b> tại thời điểm <b>35,0 s</b> tính từ lúc bắt đầu mô phỏng.
+      Kết quả: <b>a = 0,4 m/s²</b>; thời gian chậm dần đến khi dừng là <b>30 s</b>.`;
+    }
+  }
+
+  function render(){
+    slider.value = t;
+    updateScene();
+    updateGraph();
+    updateInfo();
+  }
+
+  function stopAnim(){
+    cancelAnimationFrame(raf);
+    running = false;
+    paused = false;
+    last = null;
+    document.getElementById('pause').textContent = '⏸ Tạm dừng';
+  }
+
+  function setTime(newT){
+    t = clamp(newT, 0, 35);
+    render();
+  }
+
+  function start(which){
+    stopAnim();
+    mode = which;
+    if(which === 'phase1') setTime(0);
+    if(which === 'phase2') setTime(5);
+    running = true;
+    paused = false;
+    last = null;
+    raf = requestAnimationFrame(step);
+  }
+
+  function step(ts){
+    if(!running) return;
+    if(paused){
+      last = ts;
+      raf = requestAnimationFrame(step);
+      return;
+    }
+    if(last === null) last = ts;
+    const dt = Math.min((ts-last)/1000, 0.05);
+    last = ts;
+
+    let speedFactor = 3.2; // tăng tốc độ phát mô phỏng
+    t += dt * speedFactor;
+
+    if(mode === 'phase1' && t >= 5){
+      t = 5;
+      render();
+      stopAnim();
+      status.innerHTML = `Đã kết thúc <b>giai đoạn 1</b>. Xe đạt vận tốc <b>12 m/s</b> sau <b>5 s</b>.
+      Từ đây suy ra gia tốc: <b>a = 0,4 m/s²</b>.`;
+      return;
+    }
+    if((mode === 'phase2' || mode === 'all') && t >= 35){
+      t = 35;
+      render();
+      stopAnim();
+      status.innerHTML = `Đã chạy xong toàn bộ bài toán. Xe dừng lại sau <b>30 s</b> kể từ lúc bắt đầu chậm dần.`;
+      return;
+    }
+    render();
+    raf = requestAnimationFrame(step);
+  }
+
+  document.getElementById('playAll').addEventListener('click', ()=>start('all'));
+  document.getElementById('play1').addEventListener('click', ()=>start('phase1'));
+  document.getElementById('play2').addEventListener('click', ()=>start('phase2'));
+  document.getElementById('pause').addEventListener('click', ()=>{
+    if(!running) return;
+    paused = !paused;
+    document.getElementById('pause').textContent = paused ? '▶ Tiếp tục' : '⏸ Tạm dừng';
+  });
+  document.getElementById('step').addEventListener('click', ()=>{
+    stopAnim();
+    setTime(t + 1);
+  });
+  document.getElementById('reset').addEventListener('click', ()=>{
+    stopAnim();
+    laneOffset = 0;
+    markWrap.style.transform = 'translateX(0)';
+    setTime(0);
+    status.innerHTML = 'Đã làm lại. Hãy nhấn <b>“Chạy cả bài toán”</b> để quan sát xe tăng tốc 5 s rồi chậm dần đến khi dừng lại.';
+  });
+  slider.addEventListener('input', ()=>{
+    stopAnim();
+    setTime(Number(slider.value));
+  });
+  window.addEventListener('resize', ()=>{
+    buildRoadMarks();
+    render();
+  });
+
+  buildRoadMarks();
+  buildVT();
+  render();
+})();
+</script>
+</body>
+</html>

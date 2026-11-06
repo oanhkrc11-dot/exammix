@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-49 Điện trường của một điện tích điểm âm 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#020912;color:#eef8fb}
+#app{display:grid;grid-template-columns:252px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800}.desc{font-size:10.4px;color:#a9c2cd;line-height:1.35}h1{font-size:17px;margin:4px 0 6px;line-height:1.1}
+.ctl{display:grid;grid-template-columns:74px 1fr 64px;gap:5px;align-items:center;margin:5px 0}.ctl label{font-size:9.6px}.ctl output{font-size:9.1px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9.2px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 55% 32%,#123d58 0,#0a263b 38%,#061725 70%,#030b13 100%)}#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label{position:absolute;transform:translate(-50%,-50%);background:rgba(244,250,252,.95);color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9.3px;white-space:nowrap}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10.4px;font-weight:700}
+#hud{position:absolute;right:12px;bottom:12px;z-index:7;display:flex;gap:9px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:7px 9px}.hud span{display:block;font-size:8px;color:#98bac8}.hud b{font-size:10.3px}
+#note{position:absolute;left:12px;bottom:12px;z-index:7;width:485px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.2px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700}.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style></head>
+<body>
+<div id="app"><aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D</div><h1>50 · Điện trường của một điện tích điểm âm</h1>
+<p class="desc">Điện tích âm tạo điện trường hướng vào điện tích. Độ lớn giảm theo bình phương khoảng cách đến điện tích.</p>
+
+<div class="ctl"><label>Tốc độ mô phỏng</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Điện tích q</label><input id="charge" type="range" min=".5" max="10" step=".5" value="4"><output id="chargeOut"></output></div>
+<div class="ctl"><label>x điện tích</label><input id="qx" type="range" min="-2" max="2" step=".1" value="0"><output id="qxOut"></output></div>
+<div class="ctl"><label>r điểm M</label><input id="radius" type="range" min=".8" max="6" step=".1" value="3"><output id="radiusOut"></output></div>
+<div class="ctl"><label>Góc M</label><input id="angle" type="range" min="0" max="360" step="1" value="35"><output id="angleOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showLines" type="checkbox" checked> Đường sức</label>
+<label class="check"><input id="showVector" type="checkbox" checked> Vectơ E tại M</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showSphere" type="checkbox" checked> Mặt cầu r</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+<label class="check"><input id="showPotential" type="checkbox"> Mặt đẳng thế</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Căn giữa</button>
+<button id="r1Btn" class="btn">r=1 m</button><button id="r2Btn" class="btn">r=2 m</button>
+<button id="r4Btn" class="btn">r=4 m</button><button id="orbitBtn" class="btn">↻ Quay điểm M</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div><div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view"><div id="three"></div><div id="labels"></div>
+<div id="formula">E = k|q|/r² &nbsp; · &nbsp; k = 9×10⁹ N·m²/C² &nbsp; · &nbsp; q&lt;0 ⇒ \vec E hướng vào q</div>
+<div id="hud">
+<div class="hud"><span>q</span><b id="qHud"></b></div>
+<div class="hud"><span>r</span><b id="rHud"></b></div>
+<div class="hud"><span>E(M)</span><b id="EHud"></b></div>
+<div class="hud"><span>V(M)</span><b id="VHud"></b></div>
+<div class="hud"><span>E·r²</span><b id="constHud"></b></div>
+</div>
+<div id="note">Đường sức màu cyan tỏa ra từ điện tích dương. Vectơ \u20d7E tại M cùng phương bán kính QM và hướng ra ngoài. Độ dài mũi tên được chuẩn hóa để dễ nhìn, còn số liệu E tính đúng theo E=k|q|/r².</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id),view=$('view');
+const K=9e9;
+const state={running:true,t:0,speed:1,qMicro:-4,qx:0,r:3,angleDeg:35,orbit:false};
+
+const qC=()=>state.qMicro*1e-6;
+const E=()=>K*Math.abs(qC())/(state.r*state.r);
+const V=()=>K*qC()/state.r;
+const angle=()=>THREE.MathUtils.degToRad(state.angleDeg);
+
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=6.5;controls.maxDistance=24;controls.minPolarAngle=.35;controls.maxPolarAngle=2.3;
+scene.add(new THREE.HemisphereLight(0xffffff,0x172832,4.2));const dl=new THREE.DirectionalLight(0xffffff,4.2);dl.position.set(5,9,8);scene.add(dl);
+
+const lab=new THREE.Group();scene.add(lab);lab.position.set(0,-.4,0);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(18,14),new THREE.MeshStandardMaterial({color:0x0a1c28,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-3.3;lab.add(floor);
+const grid=new THREE.GridHelper(18,24,0x2e586a,0x123345);grid.position.y=-3.29;lab.add(grid);
+
+// charge
+const chargeMat=new THREE.MeshStandardMaterial({color:0x4aa8ff,emissive:0x174b8d,emissiveIntensity:.8,roughness:.28,metalness:.15});
+const charge=new THREE.Mesh(new THREE.SphereGeometry(.55,32,22),chargeMat);lab.add(charge);
+
+// plus sign
+const plusG=new THREE.Group();lab.add(plusG);
+const plusMat=new THREE.MeshBasicMaterial({color:0xffffff});
+const ph=new THREE.Mesh(new THREE.BoxGeometry(.55,.10,.08),plusMat);plusG.add(ph);
+
+// field lines
+const fieldG=new THREE.Group();lab.add(fieldG);
+const dirs=[];
+for(let a=0;a<12;a++){
+ const th=2*Math.PI*a/12;
+ for(let b=-2;b<=2;b++){
+   const el=b*Math.PI/10;
+   dirs.push(new THREE.Vector3(Math.cos(el)*Math.cos(th),Math.sin(el),Math.cos(el)*Math.sin(th)).normalize())
+ }
+}
+function rebuildFieldLines(){
+ fieldG.clear();
+ for(const d of dirs){
+   const start=new THREE.Vector3(state.qx,0,0).addScaledVector(d,.62);
+   const end=new THREE.Vector3(state.qx,0,0).addScaledVector(d,6.3);
+   const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([start,end]),new THREE.LineBasicMaterial({color:0x63dcff,transparent:true,opacity:.5}));
+   fieldG.add(line);
+   const inward=d.clone().multiplyScalar(-1);
+   const a=new THREE.ArrowHelper(inward,new THREE.Vector3(state.qx,0,0).addScaledVector(d,4.8),.75,0x9be8ff,.16,.09);
+   fieldG.add(a);
+ }
+}
+
+// point M and E arrow
+const probe=new THREE.Mesh(new THREE.SphereGeometry(.18,18,14),new THREE.MeshStandardMaterial({color:0xffd166,emissive:0x8b6110,emissiveIntensity:.55}));lab.add(probe);
+const eArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),2,0xffd166,.28,.15);lab.add(eArrow);
+
+// radius line
+const radiusLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineDashedMaterial({color:0xffffff,dashSize:.18,gapSize:.12,transparent:true,opacity:.65}));lab.add(radiusLine);
+
+// sphere r and equipotential spheres
+const rSphere=new THREE.Mesh(new THREE.SphereGeometry(1,36,20),new THREE.MeshBasicMaterial({color:0xffd166,wireframe:true,transparent:true,opacity:.16}));lab.add(rSphere);
+const eqG=new THREE.Group();lab.add(eqG);
+for(const rr of [1.5,2.5,4.0,5.5]){
+ const s=new THREE.Mesh(new THREE.SphereGeometry(rr,28,16),new THREE.MeshBasicMaterial({color:0xd971ff,wireframe:true,transparent:true,opacity:.09}));
+ eqG.add(s)
+}
+
+// in-world graph E(r)
+const gc=document.createElement('canvas');gc.width=820;gc.height=350;const gctx=gc.getContext('2d'),gtex=new THREE.CanvasTexture(gc);
+const graphFrame=new THREE.Mesh(new THREE.BoxGeometry(5.3,2.5,.12),new THREE.MeshStandardMaterial({color:0xeaf3f6,roughness:.48}));graphFrame.position.set(4.3,2.7,-2.7);lab.add(graphFrame);
+const graphPlane=new THREE.Mesh(new THREE.PlaneGeometry(5.05,2.27),new THREE.MeshBasicMaterial({map:gtex,side:THREE.DoubleSide}));graphPlane.position.set(4.3,2.7,-2.62);lab.add(graphPlane);
+
+function drawGraph(){
+ gctx.fillStyle='#f8fafb';gctx.fillRect(0,0,gc.width,gc.height);
+ gctx.fillStyle='#263b45';gctx.font='bold 25px Segoe UI';gctx.fillText('E(r) ∝ 1/r²',315,32);
+ gctx.strokeStyle='#d2dee3';gctx.lineWidth=1;
+ for(let i=0;i<=10;i++){const x=55+i*70;gctx.beginPath();gctx.moveTo(x,50);gctx.lineTo(x,300);gctx.stroke()}
+ for(let j=0;j<=5;j++){const y=55+j*49;gctx.beginPath();gctx.moveTo(55,y);gctx.lineTo(755,y);gctx.stroke()}
+ const maxE=K*Math.abs(qC())/(.8*.8);
+ gctx.strokeStyle='#1677c8';gctx.lineWidth=4;gctx.beginPath();
+ for(let i=0;i<=500;i++){
+   const r=.8+5.2*i/500,ev=K*Math.abs(qC())/(r*r),px=55+700*i/500,py=300-245*Math.min(1,ev/maxE);
+   i?gctx.lineTo(px,py):gctx.moveTo(px,py)
+ }gctx.stroke();
+ const ev=E(),px=55+700*(state.r-.8)/5.2,py=300-245*Math.min(1,ev/maxE);
+ gctx.fillStyle='#ff5d5d';gctx.beginPath();gctx.arc(px,py,8,0,Math.PI*2);gctx.fill();
+ gctx.fillStyle='#50656f';gctx.font='17px Segoe UI';gctx.fillText('r (m)',735,330);gctx.fillText('E',16,58);
+ gtex.needsUpdate=true
+}
+
+function probePos(){
+ return new THREE.Vector3(state.qx,0,0).add(new THREE.Vector3(state.r*Math.cos(angle()),1.05*Math.sin(angle()*1.25),state.r*Math.sin(angle())));
+}
+function updatePhysics(dt){
+ if(!state.running)return;
+ state.t+=dt*state.speed;
+ if(state.orbit){state.angleDeg=(state.angleDeg+28*dt*state.speed)%360;$('angle').value=state.angleDeg}
+}
+function updateVisuals(){
+ charge.position.set(state.qx,0,0);plusG.position.set(state.qx,0,.56);
+ const p=probePos(),origin=new THREE.Vector3(state.qx,0,0),dir=origin.clone().sub(p).normalize();
+ probe.position.copy(p);
+ eArrow.position.copy(p);eArrow.setDirection(dir);
+ const normLen=.65+2.2*Math.min(1,Math.sqrt(E()/56000));eArrow.setLength(normLen,.27,.14);eArrow.visible=$('showVector').checked;
+ radiusLine.geometry.dispose();radiusLine.geometry=new THREE.BufferGeometry().setFromPoints([origin,p]);radiusLine.computeLineDistances();
+ rSphere.position.copy(origin);rSphere.scale.setScalar(state.r);rSphere.visible=$('showSphere').checked;
+ eqG.position.copy(origin);eqG.visible=$('showPotential').checked;
+ fieldG.visible=$('showLines').checked;grid.visible=$('showGrid').checked;
+ drawGraph();
+}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('chargeOut').value=(-Math.abs(state.qMicro)).toFixed(1)+' μC';$('qxOut').value=state.qx.toFixed(1)+' m';$('radiusOut').value=state.r.toFixed(1)+' m';$('angleOut').value=state.angleDeg.toFixed(0)+'°';
+ $('qHud').textContent=state.qMicro.toFixed(1)+' μC';$('rHud').textContent=state.r.toFixed(2)+' m';$('EHud').textContent=E().toExponential(2)+' N/C';$('VHud').textContent=V().toExponential(2)+' V';$('constHud').textContent=(E()*state.r*state.r).toExponential(2);
+}
+function sync(reset=false){
+ state.speed=+$('speed').value;state.qMicro=-Math.abs(+$('charge').value);state.qx=+$('qx').value;state.r=+$('radius').value;state.angleDeg=+$('angle').value;
+ if(reset)state.t=0;rebuildFieldLines();updateUI()
+}
+['charge','qx','radius','angle'].forEach(id=>$(id).addEventListener('input',()=>sync(false)));$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;
+function setR(r){$('radius').value=r;sync(false)}$('r1Btn').onclick=()=>setR(1);$('r2Btn').onclick=()=>setR(2);$('r4Btn').onclick=()=>setR(4);
+$('orbitBtn').onclick=()=>{state.orbit=!state.orbit;$('orbitBtn').textContent=state.orbit?'⏹ Dừng quay M':'↻ Quay điểm M'};
+$('resetBtn').onclick=()=>{Object.assign(state,{running:true,t:0,speed:1,qMicro:-4,qx:0,r:3,angleDeg:35,orbit:false});for(const [id,v] of [['speed',1],['charge',4],['qx',0],['radius',3],['angle',35]])$(id).value=v;$('orbitBtn').textContent='↻ Quay điểm M';rebuildFieldLines();fit();updateUI()};
+$('fitBtn').onclick=fit;
+$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fit()},80));
+
+const labels=$('labels');function mk(t){const e=document.createElement('div');e.className='label';e.textContent=t;labels.appendChild(e);return e}
+const lQ=mk('Q < 0'),lM=mk('Điểm khảo sát M'),lE=mk('E hướng về Q');
+function project(el,p){const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=(q.z>1||!$('showLabels').checked)?'none':'block'}
+
+function fit(){controls.target.set(.4,.3,0);camera.position.set(11.8,7.0,15.8);camera.lookAt(controls.target);controls.update()}
+function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}
+window.addEventListener('resize',()=>{resize();fit()});
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{
+ if(!renderer.domElement.captureStream||!window.MediaRecorder)return;
+ const m=mime();rec=new MediaRecorder(renderer.domElement.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});
+ chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`050_Dien_truong_dien_tich_diem_am_3D.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};
+ rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false
+};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+resize();rebuildFieldLines();fit();updateUI();
+let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);
+ const dt=Math.min(.033,(now-last)/1000);last=now;
+ updatePhysics(dt);updateVisuals();updateUI();
+ const p=probePos(),q=new THREE.Vector3(state.qx,0,0);
+ project(lQ,q.clone().add(new THREE.Vector3(0,1.1,.6)));
+ project(lM,p.clone().add(new THREE.Vector3(0,.65,0)));
+ project(lE,p.clone().add(new THREE.Vector3(.7,.4,.2)));
+ controls.update();renderer.render(scene,camera)
+}
+requestAnimationFrame(animate);
+</script></body></html>

@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mô phỏng con lắc lò xo thẳng đứng</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #eef4fb;
+      color: #111827;
+    }
+
+    .app {
+      width: min(1380px, 96vw);
+      margin: 18px auto;
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
+      overflow: hidden;
+      border: 1px solid #dbe7f3;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0f2f63, #155e75);
+      color: #ffffff;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 27px;
+      letter-spacing: 0.2px;
+    }
+
+    .formula {
+      font-size: 16px;
+      background: rgba(255,255,255,0.16);
+      padding: 9px 14px;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(260px, 1fr));
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #f8fafc;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid #dbe7f3;
+      padding: 10px 12px;
+      border-radius: 14px;
+      min-height: 58px;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 11px 16px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      color: white;
+      transition: 0.18s;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.03);
+    }
+
+    #startBtn { background: #16a34a; }
+    #pauseBtn { background: #f59e0b; }
+    #resetBtn { background: #2563eb; }
+
+    .control-box {
+      display: grid;
+      grid-template-columns: 98px 1fr 100px;
+      align-items: center;
+      gap: 10px;
+      background: #ffffff;
+      border: 1px solid #dbe7f3;
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-size: 15px;
+      min-height: 58px;
+    }
+
+    .control-box span.label {
+      color: #0f2f63;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #2563eb;
+    }
+
+    input[type="number"] {
+      width: 88px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 8px 7px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f2f63;
+      text-align: right;
+      background: #ffffff;
+    }
+
+    .unit {
+      font-size: 13px;
+      color: #475569;
+      font-weight: 600;
+      margin-left: 2px;
+    }
+
+    .toggles {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      gap: 10px;
+      padding: 14px 18px;
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 9px 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .toggle input {
+      width: 17px;
+      height: 17px;
+      accent-color: #2563eb;
+    }
+
+    .equation-panel {
+      display: grid;
+      grid-template-columns: 1.35fr 0.85fr;
+      gap: 14px;
+      padding: 14px 18px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .equation-card {
+      background: #ffffff;
+      border: 1px solid #dbe7f3;
+      border-radius: 14px;
+      padding: 14px 16px;
+      box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
+    }
+
+    .equation-title {
+      font-weight: 800;
+      color: #0f2f63;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .equation-line {
+      font-size: 16px;
+      line-height: 1.55;
+      color: #111827;
+      font-weight: 600;
+    }
+
+    .blue { color: #2563eb; }
+    .green-text { color: #16a34a; }
+    .orange-text { color: #ea580c; }
+
+    .time-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 10px;
+    }
+
+    .time-box input {
+      width: 110px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f2f63;
+      text-align: right;
+    }
+
+
+    .time-actions {
+      display: flex;
+      gap: 8px;
+      margin: 10px 0 10px;
+      flex-wrap: wrap;
+    }
+
+    .mini-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #ffffff;
+      background: #2563eb;
+    }
+
+    .comment-note {
+      margin-top: 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 10px 12px;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .result-box {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 10px 12px;
+      line-height: 1.6;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+
+    .sim-canvas-wrap {
+      position: relative;
+    }
+
+    .sim-buttons {
+      position: absolute;
+      right: 22px;
+      top: 132px;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid #dbe7f3;
+      padding: 9px;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+
+    .sim-buttons button {
+      width: 128px;
+      padding: 10px 12px;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1.45fr 0.92fr;
+      gap: 16px;
+      padding: 18px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid #dbe7f3;
+      border-radius: 16px;
+      background: #ffffff;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    }
+
+    .card-title {
+      background: #f1f5f9;
+      padding: 10px 14px;
+      font-weight: 800;
+      color: #0f2f63;
+      border-bottom: 1px solid #dbe7f3;
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #ffffff;
+    }
+
+    .graphs {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .info {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 0 18px 18px;
+    }
+
+    .note {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 13px;
+      line-height: 1.45;
+      font-size: 14.5px;
+    }
+
+    .note b { color: #0f2f63; }
+    .green { background: #f0fdf4; border-color: #bbf7d0; }
+    .purple { background: #faf5ff; border-color: #e9d5ff; }
+    .amber { background: #fffbeb; border-color: #fde68a; }
+
+    @media (max-width: 1080px) {
+      .controls { grid-template-columns: 1fr; }
+      .toggles { grid-template-columns: 1fr 1fr; }
+      .equation-panel { grid-template-columns: 1fr; }
+      .main { grid-template-columns: 1fr; }
+      .info { grid-template-columns: 1fr; }
+      header { align-items: flex-start; }
+      .formula { white-space: normal; }
+    }
+
+    @media (max-width: 640px) {
+      .toggles { grid-template-columns: 1fr; }
+      .control-box { grid-template-columns: 1fr; }
+      input[type="number"] { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Mô phỏng con lắc lò xo thẳng đứng</h1>
+      <div class="formula">
+        x = A cos(ωt + φ) &nbsp; | &nbsp;
+        v = −Aω sin(ωt + φ) &nbsp; | &nbsp;
+        a = −ω²x
+      </div>
+    </header>
+
+    <div class="controls">
+      <label class="control-box">
+        <span class="label">Biên độ A</span>
+        <input id="ampSlider" type="range" min="1" max="8" step="0.1" value="4" />
+        <span><input id="ampInput" type="number" min="1" max="8" step="0.1" value="4" /><span class="unit">cm</span></span>
+      </label>
+
+      
+
+      <label class="control-box">
+        <span class="label">Pha đầu φ</span>
+        <input id="phaseSlider" type="range" min="-180" max="180" step="1" value="0" />
+        <span><input id="phaseInput" type="number" min="-180" max="180" step="1" value="0" /><span class="unit">°</span></span>
+      </label>
+
+      <label class="control-box">
+        <span class="label">Độ cứng k</span>
+        <input id="kSlider" type="range" min="25" max="300" step="1" value="100" />
+        <span><input id="kInput" type="number" min="25" max="300" step="1" value="100" /><span class="unit">N/m</span></span>
+      </label>
+
+      <label class="control-box">
+        <span class="label">Khối lượng m</span>
+        <input id="massSlider" type="range" min="0.1" max="3" step="0.01" value="0.5" />
+        <span><input id="massInput" type="number" min="0.1" max="3" step="0.01" value="0.5" /><span class="unit">kg</span></span>
+      </label>
+
+      <label class="control-box">
+        <span class="label">Tốc độ mô phỏng</span>
+        <input id="speedSlider" type="range" min="0.05" max="1.5" step="0.01" value="0.5" />
+        <span><input id="speedInput" type="number" min="0.05" max="1.5" step="0.01" value="0.5" /><span class="unit">x</span></span>
+      </label>
+    </div>
+
+    <div class="toggles">
+      <label class="toggle"><input id="showVelocityVector" type="checkbox" checked /> Hiện véc tơ vận tốc</label>
+      <label class="toggle"><input id="showElasticVector" type="checkbox" checked /> Hiện véc tơ lực đàn hồi</label>
+      <label class="toggle"><input id="showNaturalLine" type="checkbox" checked /> Hiện vị trí lò xo không biến dạng</label>
+      <label class="toggle"><input id="showXVA" type="checkbox" checked /> Hiện đồ thị x, v, a</label>
+      <label class="toggle"><input id="showEnergyGraph" type="checkbox" checked /> Hiện đồ thị năng lượng</label>
+      <label class="toggle"><input id="showForceGraph" type="checkbox" checked /> Hiện đồ thị lực</label>
+      <label class="toggle"><input id="showGuides" type="checkbox" checked /> Hiện đường gạch ngang</label>
+      <label class="toggle"><input id="showProjectionGuide" type="checkbox" checked /> Hiện đường nối hình chiếu</label>
+    </div>
+
+    <div class="equation-panel">
+      <div class="equation-card">
+        <div class="equation-title">Phương trình dao động (ω, f, T tính từ k và m)</div>
+        <div id="omegaText" class="equation-line"></div>
+        <div id="freqText" class="equation-line"></div>
+        <div id="periodText" class="equation-line"></div>
+        <div id="phaseText" class="equation-line"></div>
+        <div id="xEquation" class="equation-line blue"></div>
+        <div id="vEquation" class="equation-line green-text"></div>
+        <div id="aEquation" class="equation-line orange-text"></div>
+      </div>
+
+      <div class="equation-card">
+        <div class="equation-title">Tính giá trị tại thời điểm t</div>
+        <label class="time-box">
+          Nhập thời gian:
+          <input id="timeInput" type="number" min="0" step="0.01" value="0" />
+          <span>s</span>
+        </label>
+        <div class="time-actions">
+          <button id="gotoTimeBtn" class="mini-btn">⏹ Dừng tại t này</button>
+        </div>
+        <div id="timeResult" class="result-box"></div>
+        <div id="instantComment" class="comment-note"></div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="card">
+        <div class="card-title">Mô phỏng vật nặng - lò xo thẳng đứng</div>
+        <div class="sim-canvas-wrap">
+          <div class="sim-buttons">
+            <button id="startBtn">▶ Bắt đầu</button>
+            <button id="pauseBtn">⏸ Tạm dừng</button>
+            <button id="resetBtn">↻ Đặt lại</button>
+          </div>
+          <canvas id="springCanvas" width="860" height="620"></canvas>
+        </div>
+      </div>
+
+      <div class="graphs">
+        <div class="card" id="xvaCard">
+          <div class="card-title">Đồ thị x, v, a theo thời gian (chuẩn hóa để so pha)</div>
+          <canvas id="xvaCanvas" width="500" height="255"></canvas>
+        </div>
+
+        <div class="card" id="energyGraphCard">
+          <div class="card-title">Đồ thị thế năng, động năng và cơ năng</div>
+          <canvas id="energyCanvas" width="500" height="255"></canvas>
+        </div>
+
+        <div class="card" id="forceGraphCard">
+          <div class="card-title">Đồ thị lực phục hồi và lực đàn hồi theo thời gian</div>
+          <canvas id="forceCanvas" width="500" height="255"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="info">
+      <div class="note">
+        <b>Lưu ý:</b> Đồ thị chung x, v, a dùng dạng <b>chuẩn hóa</b> để so sánh pha của ba đại lượng trên cùng một hệ trục. Với con lắc lò xo: <b>ω = √(k/m)</b>, <b>f = ω/(2π)</b>, <b>T = 2π/ω</b>.
+      </div>
+      <div class="note green">
+        <b>Lò xo không biến dạng:</b> nằm phía trên VTCB một đoạn Δl = mg/k.
+      </div>
+      <div class="note purple">
+        <b>Lực phục hồi:</b> Fph = −kx.<br>
+        <b>Lực đàn hồi:</b> Fđh = k|Δl + x|.
+      </div>
+      <div class="note amber">
+        <b>Đơn vị:</b> x theo cm, v theo cm/s, a theo cm/s².
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const springCanvas = document.getElementById('springCanvas');
+    const sctx = springCanvas.getContext('2d');
+
+    const xvaCanvas = document.getElementById('xvaCanvas');
+    const xvactx = xvaCanvas.getContext('2d');
+
+    const energyCanvas = document.getElementById('energyCanvas');
+    const ectx = energyCanvas.getContext('2d');
+
+    const forceCanvas = document.getElementById('forceCanvas');
+    const fctx = forceCanvas.getContext('2d');
+
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const pairs = {
+      amp:   { slider: document.getElementById('ampSlider'),   input: document.getElementById('ampInput'),   min: 1,   max: 8,   digits: 1 },      phase: { slider: document.getElementById('phaseSlider'), input: document.getElementById('phaseInput'), min: -180,max: 180, digits: 0 },
+      k:     { slider: document.getElementById('kSlider'),     input: document.getElementById('kInput'),     min: 25,  max: 300, digits: 0 },
+      mass:  { slider: document.getElementById('massSlider'),  input: document.getElementById('massInput'),  min: 0.1, max: 3,   digits: 2 },
+      speed: { slider: document.getElementById('speedSlider'), input: document.getElementById('speedInput'), min: 0.05, max: 1.5, digits: 2 }
+    };
+
+    const timeInput = document.getElementById('timeInput');
+    const gotoTimeBtn = document.getElementById('gotoTimeBtn');
+    const omegaText = document.getElementById('omegaText');
+    const freqText = document.getElementById('freqText');
+    const periodText = document.getElementById('periodText');
+    const phaseText = document.getElementById('phaseText');
+    const xEquation = document.getElementById('xEquation');
+    const vEquation = document.getElementById('vEquation');
+    const aEquation = document.getElementById('aEquation');
+    const timeResult = document.getElementById('timeResult');
+    const instantComment = document.getElementById('instantComment');
+
+    const checks = {
+      showVelocityVector: document.getElementById('showVelocityVector'),
+      showElasticVector: document.getElementById('showElasticVector'),
+      showNaturalLine: document.getElementById('showNaturalLine'),
+      showXVA: document.getElementById('showXVA'),
+      showEnergyGraph: document.getElementById('showEnergyGraph'),
+      showForceGraph: document.getElementById('showForceGraph'),
+      showGuides: document.getElementById('showGuides'),
+      showProjectionGuide: document.getElementById('showProjectionGuide')
+    };
+
+    const cards = {
+      xva: document.getElementById('xvaCard'),
+      energy: document.getElementById('energyGraphCard'),
+      force: document.getElementById('forceGraphCard')
+    };
+
+    let A = 4;            // cm
+    let k = 100;          // N/m
+    let mass = 0.5;       // kg
+    let f = 0;            // Hz, tính từ k và m
+    let omega = 0;        // rad/s, tính từ k và m
+    let phi = 0;          // rad
+    let speed = 0.5;      // hệ số mô phỏng
+    const g = 9.8;
+
+    let running = false;
+    let startTime = null;
+    let elapsedBeforePause = 0;
+    let motionTrail = [];
+    let lastTrailKey = null;
+
+    const anchorX = 215;
+    const topY = 78;
+    const eqY = 315;
+    const scale = 28;     // px/cm
+
+    const supportW = 74;
+    const supportH = 14;
+    const blockW = 56;
+    const blockH = 34;
+
+    const axisProjX = 515;
+
+    function clamp(value, min, max) {
+      if (Number.isNaN(value)) return min;
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function formatValue(value, digits) {
+      if (digits === 0) return String(Math.round(value));
+      return Number(value).toFixed(digits).replace(/0+$/, '').replace(/\.$/, '');
+    }
+
+    function syncPair(name, source) {
+      const p = pairs[name];
+      const raw = source === 'input' ? Number(p.input.value) : Number(p.slider.value);
+      const value = clamp(raw, p.min, p.max);
+      p.slider.value = value;
+      p.input.value = formatValue(value, p.digits);
+      updateParams();
+    }
+
+    Object.keys(pairs).forEach(name => {
+      pairs[name].slider.addEventListener('input', () => syncPair(name, 'slider'));
+      pairs[name].input.addEventListener('change', () => syncPair(name, 'input'));
+      pairs[name].input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') syncPair(name, 'input');
+      });
+    });
+
+    Object.values(checks).forEach(chk => chk.addEventListener('change', updateGraphVisibility));
+
+    function updateParams() {
+      A = Number(pairs.amp.input.value);
+      phi = Number(pairs.phase.input.value) * Math.PI / 180;
+      k = Number(pairs.k.input.value);
+      mass = Number(pairs.mass.input.value);
+      speed = Number(pairs.speed.input.value);
+
+      omega = Math.sqrt(k / mass);
+      f = omega / (2 * Math.PI);
+    }
+
+    function updateGraphVisibility() {
+      cards.xva.style.display = checks.showXVA.checked ? 'block' : 'none';
+      cards.energy.style.display = checks.showEnergyGraph.checked ? 'block' : 'none';
+      cards.force.style.display = checks.showForceGraph.checked ? 'block' : 'none';
+    }
+
+    function currentTimeSeconds(timestamp) {
+      if (!running) return elapsedBeforePause;
+      if (startTime === null) startTime = timestamp - elapsedBeforePause * 1000 / speed;
+      return ((timestamp - startTime) / 1000) * speed;
+    }
+
+    function deltaLCm() {
+      return (mass * g / k) * 100;
+    }
+
+    function springNaturalY() {
+      return eqY - deltaLCm() * scale;
+    }
+
+    function stateAt(t) {
+      const angle = omega * t + phi;
+
+      const xCm = A * Math.cos(angle);
+      const xM = xCm / 100;
+      const AM = A / 100;
+      const dL = mass * g / k;
+      const extension = dL + xM;
+
+      const FdhSigned = -k * extension;     // N
+      const Fdh = Math.abs(FdhSigned);      // N
+      const Fph = -k * xM;                  // N
+
+      const W = 0.5 * k * AM * AM;
+      const Wt = 0.5 * k * xM * xM;
+      const Wd = W - Wt;
+
+      const vCm = -A * omega * Math.sin(angle);  // cm/s
+      const aCm = -omega * omega * xCm;          // cm/s²
+
+      const vmax = A * omega;                    // cm/s
+      const amax = A * omega * omega;            // cm/s²
+
+      return { angle, xCm, xM, dL, extension, FdhSigned, Fdh, Fph, W, Wt, Wd, vCm, aCm, vmax, amax };
+    }
+
+    function formatPi(value) {
+      const coeff = value / Math.PI;
+      if (Math.abs(coeff) < 1e-10) return '0';
+      if (Math.abs(coeff - 1) < 1e-10) return 'π';
+      if (Math.abs(coeff + 1) < 1e-10) return '-π';
+      return `${coeff.toFixed(2)}π`;
+    }
+
+    function formatSignedPi(value) {
+      const coeff = value / Math.PI;
+      if (Math.abs(coeff) < 1e-10) return '+ 0';
+      if (coeff > 0) return `+ ${coeff.toFixed(2)}π`;
+      return `- ${Math.abs(coeff).toFixed(2)}π`;
+    }
+
+    function updateEquationPanel() {
+      const omegaPi = formatPi(omega);
+      const phiRad = formatPi(phi);
+      const signedPhi = formatSignedPi(phi);
+
+      const vmax = A * omega;
+      const amax = A * omega * omega;
+      const period = 1 / f;
+
+      omegaText.innerHTML = `Tốc độ góc: ω = ${omegaPi} rad/s = ${omega.toFixed(3)} rad/s`;
+      freqText.innerHTML = `Tần số: f = ${f.toFixed(3)} Hz`;
+      periodText.innerHTML = `Chu kỳ: T = ${period.toFixed(3)} s`;
+      phaseText.innerHTML = `Pha ban đầu: φ = ${phiRad} rad`;
+
+      xEquation.innerHTML = `x = ${A.toFixed(2)}cos(${omegaPi}t ${signedPhi}) cm`;
+      vEquation.innerHTML = `v = -${vmax.toFixed(2)}sin(${omegaPi}t ${signedPhi}) cm/s`;
+      aEquation.innerHTML = `a = -${amax.toFixed(2)}cos(${omegaPi}t ${signedPhi}) cm/s²`;
+    }
+
+    function updateTimeResult() {
+      const tValue = Math.max(0, Number(timeInput.value) || 0);
+      const st = stateAt(tValue);
+
+      timeResult.innerHTML = `
+        Tại t = ${tValue.toFixed(2)} s:<br>
+        x = ${st.xCm.toFixed(2)} cm<br>
+        v = ${st.vCm.toFixed(2)} cm/s<br>
+        a = ${st.aCm.toFixed(2)} cm/s²
+      `;
+      describeCurrentState(tValue);
+    }
+
+
+    function describeCurrentState(tValue) {
+      const st = stateAt(tValue);
+      const nearEq = Math.abs(st.xCm) <= Math.max(0.25, A * 0.12);
+      const nearTop = Math.abs(st.xCm + A) <= Math.max(0.25, A * 0.15);
+      const nearBottom = Math.abs(st.xCm - A) <= Math.max(0.25, A * 0.15);
+
+      let title = '';
+      let body = '';
+
+      if (nearEq) {
+        title = 'Qua vị trí cân bằng';
+        body = 'x gần bằng 0, độ lớn lực kéo về và gia tốc nhỏ. Vận tốc đạt độ lớn lớn nhất.';
+      } else if (nearTop || nearBottom) {
+        title = nearTop ? 'Gần biên trên' : 'Gần biên dưới';
+        body = 'Vận tốc gần bằng 0; độ lớn gia tốc và lực kéo về lớn. Hướng của a⃗ và F⃗kv luôn về VTCB.';
+      } else if (st.xCm * st.vCm > 0) {
+        title = 'Vật đang đi xa VTCB';
+        body = 'Li độ và vận tốc cùng dấu nên vật đang đi ra xa vị trí cân bằng. a⃗ và F⃗kv ngược chiều chuyển động.';
+      } else {
+        title = 'Vật đang trở về VTCB';
+        body = 'Li độ và vận tốc trái dấu nên vật đang chuyển động trở về vị trí cân bằng. a⃗ và F⃗kv cùng chiều chuyển động.';
+      }
+
+      instantComment.innerHTML = `<b>Nhận xét tức thời tại t = ${tValue.toFixed(2)} s:</b><br><span style="color:#1d4ed8;font-weight:700">${title}</span> – ${body}`;
+    }
+
+    function syncSimulationToInputTime() {
+      const tValue = Math.max(0, Number(timeInput.value) || 0);
+      running = false;
+      startTime = null;
+      elapsedBeforePause = tValue;
+      motionTrail = [];
+      lastTrailKey = null;
+      updateTimeResult();
+      describeCurrentState(tValue);
+    }
+
+    function updateMotionTrail(centerY, t) {
+      const key = `${centerY.toFixed(1)}|${Math.floor(t * 25)}`;
+      if (key === lastTrailKey) return;
+      lastTrailKey = key;
+      motionTrail.push({ y: centerY, t });
+      if (motionTrail.length > 6) motionTrail.shift();
+    }
+
+    function drawSweepCursor(ctx, x, top, h) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(59,130,246,0.08)';
+      ctx.fillRect(x - 6, top, 12, h);
+      ctx.strokeStyle = 'rgba(100,116,139,0.85)';
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([5,4]);
+      ctx.beginPath();
+      ctx.moveTo(x, top);
+      ctx.lineTo(x, top + h);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+
+    function drawRoundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function drawArrowHead(ctx, x, y, angle) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-11, -6);
+      ctx.lineTo(-11, 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawSpringVertical(ctx, x, y1, y2, coils, amp) {
+      const lead = 10;
+      ctx.strokeStyle = '#374151';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x, y1);
+      ctx.lineTo(x, y1 + lead);
+
+      const start = y1 + lead;
+      const end = y2 - lead;
+      const length = end - start;
+      const steps = coils * 22;
+
+      for (let i = 0; i <= steps; i++) {
+        const u = i / steps;
+        const yy = start + u * length;
+        const xx = x + Math.sin(u * Math.PI * 2 * coils) * amp;
+        ctx.lineTo(xx, yy);
+      }
+
+      ctx.lineTo(x, y2);
+      ctx.stroke();
+    }
+
+    function drawMass(ctx, centerX, centerY, alpha = 1, dashed = false) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      const x = centerX - blockW / 2;
+      const y = centerY - blockH / 2;
+      drawRoundRect(ctx, x, y, blockW, blockH, 6);
+      ctx.fillStyle = dashed ? '#dbeafe' : '#60a5fa';
+      ctx.fill();
+      ctx.lineWidth = dashed ? 2 : 3.5;
+      ctx.strokeStyle = '#1d4ed8';
+      if (dashed) ctx.setLineDash([6, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = dashed ? '#64748b' : '#0f172a';
+      ctx.font = 'bold 19px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('m', centerX, centerY);
+      ctx.restore();
+    }
+
+    function drawLegend(ctx, items, x, y) {
+      ctx.font = '13px Arial';
+      ctx.textAlign = 'left';
+      items.forEach((item, i) => {
+        const yy = y + i * 18;
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x, yy);
+        ctx.lineTo(x + 18, yy);
+        ctx.stroke();
+        ctx.fillStyle = '#111827';
+        ctx.fillText(item.label, x + 24, yy + 4);
+      });
+    }
+
+
+    function drawColoredArrow(ctx, x, y1, y2, color, label, align = 'left') {
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(x, y1);
+      ctx.lineTo(x, y2);
+      ctx.stroke();
+      drawArrowHead(ctx, x, y2, y2 > y1 ? Math.PI / 2 : -Math.PI / 2);
+
+      const tx = align === 'left' ? x + 26 : x - 26;
+      const ty = (y1 + y2) / 2 + 4;
+      ctx.save();
+      ctx.font = 'bold 15px Arial';
+      const textW = ctx.measureText(label).width;
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      drawRoundRect(ctx, align === 'left' ? tx - 6 : tx - textW - 6, ty - 14, textW + 12, 20, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.textAlign = align;
+      ctx.fillText(label, tx, ty);
+      ctx.restore();
+    }
+
+    function drawRainbowArrow(ctx, x, y1, y2, label) {
+      const grad = ctx.createLinearGradient(x, y1, x, y2);
+      grad.addColorStop(0.00, '#ef4444');
+      grad.addColorStop(0.16, '#f97316');
+      grad.addColorStop(0.32, '#eab308');
+      grad.addColorStop(0.48, '#22c55e');
+      grad.addColorStop(0.64, '#3b82f6');
+      grad.addColorStop(0.82, '#6366f1');
+      grad.addColorStop(1.00, '#a855f7');
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(x, y1);
+      ctx.lineTo(x, y2);
+      ctx.stroke();
+
+      ctx.fillStyle = '#7c3aed';
+      drawArrowHead(ctx, x, y2, y2 > y1 ? Math.PI / 2 : -Math.PI / 2);
+
+      const tx = x - 30;
+      const ty = (y1 + y2) / 2 + 4;
+      ctx.save();
+      ctx.font = 'bold 15px Arial';
+      const textW = ctx.measureText(label).width;
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.strokeStyle = '#7c3aed';
+      ctx.lineWidth = 1;
+      drawRoundRect(ctx, tx - textW - 6, ty - 14, textW + 12, 20, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.textAlign = 'right';
+      ctx.fillStyle = grad;
+      ctx.fillText(label, tx, ty);
+      ctx.restore();
+    }
+
+    function drawInfoCard(ctx, x, y, w, h, text, color) {
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      drawRoundRect(ctx, x, y, w, h, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = color;
+      ctx.font = 'bold 15px Arial';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x + 10, y + h / 2);
+      ctx.restore();
+    }
+
+    function drawRainbowTitle(ctx, text, x, y) {
+      ctx.save();
+      ctx.font = '900 24px Arial';
+      ctx.textAlign = 'left';
+      const metrics = ctx.measureText(text);
+      const w = metrics.width + 22;
+      const h = 34;
+
+      ctx.fillStyle = 'rgba(255,255,255,0.94)';
+      ctx.strokeStyle = '#1d4ed8';
+      ctx.lineWidth = 2;
+      drawRoundRect(ctx, x - 10, y - 26, w, h, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      const grad = ctx.createLinearGradient(x, y - 18, x + 350, y + 8);
+      grad.addColorStop(0.00, '#ef4444');
+      grad.addColorStop(0.18, '#f97316');
+      grad.addColorStop(0.34, '#eab308');
+      grad.addColorStop(0.50, '#22c55e');
+      grad.addColorStop(0.68, '#3b82f6');
+      grad.addColorStop(0.84, '#6366f1');
+      grad.addColorStop(1.00, '#a855f7');
+
+      ctx.fillStyle = grad;
+      ctx.shadowColor = 'rgba(15, 23, 42, 0.30)';
+      ctx.shadowBlur = 3;
+      ctx.fillText(text, x, y);
+      ctx.restore();
+    }
+
+    function drawSpringScene(t) {
+      const st = stateAt(t);
+      const centerY = eqY + st.xCm * scale;
+      const topExtremeY = eqY - A * scale;
+      const bottomExtremeY = eqY + A * scale;
+      const naturalY = springNaturalY();
+      const fphMax = Math.max(k * (A / 100), 0.001);
+
+      sctx.clearRect(0, 0, springCanvas.width, springCanvas.height);
+      sctx.fillStyle = '#f8fafc';
+      sctx.fillRect(0, 0, springCanvas.width, springCanvas.height);
+
+      // Giá treo màu xanh nước biển
+      sctx.fillStyle = '#38bdf8';
+      sctx.fillRect(anchorX - supportW / 2, topY - 18, supportW, supportH);
+      sctx.strokeStyle = '#0369a1';
+      sctx.lineWidth = 2;
+      sctx.strokeRect(anchorX - supportW / 2, topY - 18, supportW, supportH);
+
+      // Tên thầy Hùng đóng khung
+      drawRainbowTitle(sctx, 'Thầy Hùng Vật Lí - 0977.061.160', 330, 58);
+
+      if (checks.showNaturalLine.checked) {
+        sctx.strokeStyle = '#dc2626';
+        sctx.lineWidth = 3;
+        sctx.setLineDash([10, 6]);
+        sctx.beginPath();
+        sctx.moveTo(anchorX, naturalY);
+        sctx.lineTo(axisProjX + 6, naturalY);
+        sctx.stroke();
+        sctx.setLineDash([]);
+
+        sctx.fillStyle = '#dc2626';
+        sctx.font = 'bold 15px Arial';
+        sctx.textAlign = 'left';
+        sctx.fillText('Fđh = 0', 585, naturalY + 5);
+      }
+
+      drawMass(sctx, anchorX, topExtremeY + blockH / 2, 0.22, true);
+      drawMass(sctx, anchorX, bottomExtremeY + blockH / 2, 0.22, true);
+
+      updateMotionTrail(centerY, t);
+      motionTrail.forEach((item, idx) => {
+        const alpha = 0.03 + idx / Math.max(1, motionTrail.length) * 0.08;
+        drawMass(sctx, anchorX, item.y, alpha, false);
+      });
+
+      drawSpringVertical(sctx, anchorX, topY, centerY - blockH / 2, 18, 14);
+      drawMass(sctx, anchorX, centerY, 1, false);
+
+      // Chỉ nối từ lò xo đến trục Ox
+      if (checks.showGuides.checked) {
+        sctx.strokeStyle = '#2563eb';
+        sctx.lineWidth = 2;
+        sctx.setLineDash([6, 5]);
+        [topExtremeY, eqY, bottomExtremeY].forEach(y => {
+          sctx.beginPath();
+          sctx.moveTo(anchorX, y);
+          sctx.lineTo(axisProjX, y);
+          sctx.stroke();
+        });
+        sctx.setLineDash([]);
+      }
+
+      // Trục Ox và đoạn quỹ đạo màu xanh lá
+      sctx.strokeStyle = '#111827';
+      sctx.lineWidth = 2.5;
+      sctx.beginPath();
+      sctx.moveTo(axisProjX, 95);
+      sctx.lineTo(axisProjX, 535);
+      sctx.stroke();
+
+      sctx.strokeStyle = '#16a34a';
+      sctx.lineWidth = 5;
+      sctx.beginPath();
+      sctx.moveTo(axisProjX, topExtremeY);
+      sctx.lineTo(axisProjX, bottomExtremeY);
+      sctx.stroke();
+
+      sctx.fillStyle = '#111827';
+      drawArrowHead(sctx, axisProjX, 535, Math.PI / 2);
+
+      function drawAxisTick(y, label, color = '#1d4ed8') {
+        sctx.strokeStyle = '#111827';
+        sctx.lineWidth = 2;
+        sctx.beginPath();
+        sctx.moveTo(axisProjX - 9, y);
+        sctx.lineTo(axisProjX + 9, y);
+        sctx.stroke();
+
+        sctx.fillStyle = color;
+        sctx.font = 'bold 16px Arial';
+        sctx.textAlign = 'left';
+        sctx.fillText(label, axisProjX + 16, y + 5);
+      }
+
+      drawAxisTick(topExtremeY, `−A = ${formatValue(A,1)} cm`);
+      drawAxisTick(eqY, 'VTCB');
+      drawAxisTick(bottomExtremeY, `+A = ${formatValue(A,1)} cm`);
+
+      if (checks.showProjectionGuide.checked) {
+        sctx.strokeStyle = '#64748b';
+        sctx.lineWidth = 2;
+        sctx.setLineDash([5, 5]);
+        sctx.beginPath();
+        sctx.moveTo(anchorX + blockW / 2, centerY);
+        sctx.lineTo(axisProjX, centerY);
+        sctx.stroke();
+        sctx.setLineDash([]);
+      }
+
+      sctx.fillStyle = '#ec4899';
+      sctx.beginPath();
+      sctx.arc(axisProjX, centerY, 7.2, 0, Math.PI * 2);
+      sctx.fill();
+      sctx.strokeStyle = '#be185d';
+      sctx.lineWidth = 1.5;
+      sctx.stroke();
+
+      // Bên trái: Fkv, a, Fđh
+      if (Math.abs(st.Fph) > 0.0001) {
+        const fDir = st.Fph >= 0 ? 1 : -1;
+        const lenF = Math.min(105, 20 + Math.abs(st.Fph) / fphMax * 80);
+        drawRainbowArrow(sctx, anchorX - 198, centerY, centerY + fDir * lenF, 'Fkv');
+      }
+
+      if (Math.abs(st.aCm) > 0.01) {
+        const aDir = st.aCm >= 0 ? 1 : -1;
+        const lenA = Math.min(105, 20 + Math.abs(st.aCm) / Math.max(st.amax, 0.001) * 80);
+        drawColoredArrow(sctx, anchorX - 152, centerY, centerY + aDir * lenA, '#16a34a', 'a', 'right');
+      }
+
+      if (checks.showElasticVector.checked) {
+        const forceDir = st.FdhSigned <= 0 ? -1 : 1;
+        const forceLen = Math.min(100, 20 + st.Fdh * 12);
+        drawColoredArrow(sctx, anchorX - 108, centerY, centerY + forceDir * forceLen, '#7c3aed', 'Fđh', 'right');
+      }
+
+      // Bên phải: v
+      if (checks.showVelocityVector.checked) {
+        const velDir = st.vCm >= 0 ? 1 : -1;
+        if (Math.abs(st.vCm) > 0.01) {
+          const len = Math.min(95, 20 + Math.abs(st.vCm) / Math.max(st.vmax, 0.001) * 70);
+          drawColoredArrow(sctx, anchorX + 126, centerY, centerY + velDir * len, '#dc2626', 'v', 'left');
+        }
+      }
+
+      sctx.fillStyle = '#111827';
+      sctx.font = 'bold 16px Arial';
+      sctx.textAlign = 'left';
+      sctx.fillText('Ox', axisProjX + 10, 533);
+
+      // Khung thông tin
+      const cardW = 192, cardH = 28, gap = 12;
+      const x0 = 14, row1 = 546, row2 = 581;
+
+      drawInfoCard(sctx, x0 + 0 * (cardW + gap), row1, cardW, cardH, `x = ${st.xCm.toFixed(2)} cm`, '#2563eb');
+      drawInfoCard(sctx, x0 + 1 * (cardW + gap), row1, cardW, cardH, `a = ${st.aCm.toFixed(2)} cm/s²`, '#16a34a');
+      drawInfoCard(sctx, x0 + 2 * (cardW + gap), row1, cardW, cardH, `vmax = ${st.vmax.toFixed(2)} cm/s`, '#7c3aed');
+      drawInfoCard(sctx, x0 + 3 * (cardW + gap), row1, cardW, cardH, `Δl = ${deltaLCm().toFixed(2)} cm`, '#f59e0b');
+
+      drawInfoCard(sctx, x0 + 0 * (cardW + gap), row2, cardW, cardH, `v = ${st.vCm.toFixed(2)} cm/s`, '#dc2626');
+      drawInfoCard(sctx, x0 + 1 * (cardW + gap), row2, cardW, cardH, `Fđh = ${st.Fdh.toFixed(2)} N`, '#7c3aed');
+      drawInfoCard(sctx, x0 + 2 * (cardW + gap), row2, cardW, cardH, `amax = ${st.amax.toFixed(2)} cm/s²`, '#0ea5e9');
+      drawInfoCard(sctx, x0 + 3 * (cardW + gap), row2, cardW, cardH, `T = ${(1 / f).toFixed(2)} s`, '#475569');
+    }
+
+    function drawGraphPaper(ctx, left, top, w, h) {
+      ctx.save();
+      ctx.strokeStyle = '#eaf2fb';
+      ctx.lineWidth = 1;
+      for (let x = left; x <= left + w + 0.1; x += 20) {
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, top + h);
+        ctx.stroke();
+      }
+      for (let y = top; y <= top + h + 0.1; y += 20) {
+        ctx.beginPath();
+        ctx.moveTo(left, y);
+        ctx.lineTo(left + w, y);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = '#d5e4f5';
+      ctx.lineWidth = 1.15;
+      for (let x = left; x <= left + w + 0.1; x += 100) {
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, top + h);
+        ctx.stroke();
+      }
+      for (let y = top; y <= top + h + 0.1; y += 100) {
+        ctx.beginPath();
+        ctx.moveTo(left, y);
+        ctx.lineTo(left + w, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawAxes(ctx, left, top, w, h, yLabel, xLabel, xAxisY = null) {
+      const axisTop = top - 16;
+      const axisBottom = top + h;
+      const xAxis = xAxisY === null ? axisBottom : xAxisY;
+
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(left, axisTop);
+      ctx.lineTo(left, axisBottom);
+      ctx.moveTo(left, xAxis);
+      ctx.lineTo(left + w, xAxis);
+      ctx.stroke();
+
+      ctx.fillStyle = '#111827';
+      drawArrowHead(ctx, left + w, xAxis, 0);
+      drawArrowHead(ctx, left, axisTop, -Math.PI / 2);
+
+      ctx.font = '13px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(xLabel, left + w - 8, xAxis + 22);
+      ctx.fillText(yLabel, left + 24, axisTop - 10);
+    }
+
+    function getSweepInfo(t, w) {
+      const sweepTime = 2.2 / f;
+      const tLocal = ((t % sweepTime) + sweepTime) % sweepTime;
+      const progress = tLocal / sweepTime;
+      const xNow = 56 + progress * w;
+      return { sweepTime, tLocal, progress, xNow };
+    }
+
+    function drawYAxisTracker(ctx, xAxis, y, xEnd, color) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(xAxis, y);
+      ctx.lineTo(xEnd, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(xAxis, y, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawXVAGraph(t) {
+      xvactx.clearRect(0, 0, xvaCanvas.width, xvaCanvas.height);
+      xvactx.fillStyle = '#ffffff';
+      xvactx.fillRect(0, 0, xvaCanvas.width, xvaCanvas.height);
+
+      const left = 56, top = 38, w = xvaCanvas.width - 96, h = 155;
+      const midY = top + h / 2;
+      const { sweepTime, tLocal, xNow } = getSweepInfo(t, w);
+
+      drawGraphPaper(xvactx, left, top, w, h);
+
+      xvactx.strokeStyle = '#dbe7f3';
+      xvactx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = top + i * h / 4;
+        xvactx.beginPath();
+        xvactx.moveTo(left, y);
+        xvactx.lineTo(left + w, y);
+        xvactx.stroke();
+      }
+
+      drawAxes(xvactx, left, top, w, h, 'Chuẩn hóa', 't', midY);
+
+      xvactx.textAlign = 'right';
+      xvactx.fillStyle = '#111827';
+      xvactx.fillText('+1', left - 8, top + 4);
+      xvactx.fillText('0', left - 8, midY + 4);
+      xvactx.fillText('−1', left - 8, top + h + 4);
+
+      function yNorm(val) {
+        return midY - val * (h / 2);
+      }
+
+      function drawSweepSeries(color, valueFn) {
+        xvactx.strokeStyle = color;
+        xvactx.lineWidth = 3;
+        xvactx.beginPath();
+        const N = 400;
+        for (let i = 0; i <= N; i++) {
+          const u = i / N;
+          const tt = u * tLocal;
+          const x = left + (tt / sweepTime) * w;
+          const y = yNorm(valueFn(stateAt(tt)));
+          if (i === 0) xvactx.moveTo(x, y);
+          else xvactx.lineTo(x, y);
+        }
+        xvactx.stroke();
+      }
+
+      drawSweepSeries('#2563eb', st => st.xCm / Math.max(A, 1e-9));
+      drawSweepSeries('#16a34a', st => st.vCm / Math.max(st.vmax, 1e-9));
+      drawSweepSeries('#ea580c', st => st.aCm / Math.max(st.amax, 1e-9));
+
+      const st = stateAt(tLocal);
+      const yx = yNorm(st.xCm / Math.max(A, 1e-9));
+      const yv = yNorm(st.vCm / Math.max(st.vmax, 1e-9));
+      const ya = yNorm(st.aCm / Math.max(st.amax, 1e-9));
+
+      xvactx.fillStyle = '#2563eb';
+      xvactx.beginPath();
+      xvactx.arc(xNow, yx, 4.8, 0, Math.PI * 2);
+      xvactx.fill();
+
+      xvactx.fillStyle = '#16a34a';
+      xvactx.beginPath();
+      xvactx.arc(xNow, yv, 4.8, 0, Math.PI * 2);
+      xvactx.fill();
+
+      xvactx.fillStyle = '#ea580c';
+      xvactx.beginPath();
+      xvactx.arc(xNow, ya, 4.8, 0, Math.PI * 2);
+      xvactx.fill();
+
+      drawSweepCursor(xvactx, xNow, top, h);
+
+      drawLegend(xvactx, [
+        { color: '#2563eb', label: 'x' },
+        { color: '#16a34a', label: 'v' },
+        { color: '#ea580c', label: 'a' }
+      ], 64, 216);
+
+      drawInfoCard(xvactx, 150, 206, 160, 24, `x = ${st.xCm.toFixed(2)} cm`, '#2563eb');
+      drawInfoCard(xvactx, 330, 206, 180, 24, `v = ${st.vCm.toFixed(2)} cm/s`, '#16a34a');
+      drawInfoCard(xvactx, 535, 206, 205, 24, `a = ${st.aCm.toFixed(2)} cm/s²`, '#ea580c');
+    }
+
+    function drawEnergyGraph(t) {
+      ectx.clearRect(0, 0, energyCanvas.width, energyCanvas.height);
+      ectx.fillStyle = '#ffffff';
+      ectx.fillRect(0, 0, energyCanvas.width, energyCanvas.height);
+
+      const left = 56, top = 38, w = energyCanvas.width - 96, h = 155;
+      const { sweepTime, tLocal, xNow } = getSweepInfo(t, w);
+      const Wmax = Math.max(stateAt(0).W, 0.00001);
+
+      drawGraphPaper(ectx, left, top, w, h);
+      drawAxes(ectx, left, top, w, h, 'W (J)', 't');
+
+      ectx.strokeStyle = '#dbe7f3';
+      ectx.lineWidth = 1;
+      [0.25, 0.5, 0.75, 1].forEach(fr => {
+        const y = top + h - fr * h;
+        ectx.beginPath();
+        ectx.moveTo(left, y);
+        ectx.lineTo(left + w, y);
+        ectx.stroke();
+      });
+
+      function yOf(val) {
+        return top + h - (val / Wmax) * h;
+      }
+
+      function drawSweepSeries(color, valueFn, lineWidth = 3) {
+        ectx.strokeStyle = color;
+        ectx.lineWidth = lineWidth;
+        ectx.beginPath();
+        const N = 400;
+        for (let i = 0; i <= N; i++) {
+          const u = i / N;
+          const tt = u * tLocal;
+          const x = left + (tt / sweepTime) * w;
+          const y = yOf(valueFn(stateAt(tt)));
+          if (i === 0) ectx.moveTo(x, y);
+          else ectx.lineTo(x, y);
+        }
+        ectx.stroke();
+      }
+
+      const wGradient = ectx.createLinearGradient(left, top, left + w, top);
+      wGradient.addColorStop(0.00, '#ef4444');
+      wGradient.addColorStop(0.16, '#f97316');
+      wGradient.addColorStop(0.32, '#eab308');
+      wGradient.addColorStop(0.48, '#22c55e');
+      wGradient.addColorStop(0.64, '#3b82f6');
+      wGradient.addColorStop(0.82, '#6366f1');
+      wGradient.addColorStop(1.00, '#a855f7');
+
+      drawSweepSeries('#7c3aed', st => st.Wt, 3);
+      drawSweepSeries('#16a34a', st => st.Wd, 3);
+      drawSweepSeries(wGradient, st => st.W, 3);
+
+      const st = stateAt(tLocal);
+      const yWt = yOf(st.Wt);
+      const yWd = yOf(st.Wd);
+      const yW = yOf(st.W);
+
+      ectx.fillStyle = '#7c3aed';
+      ectx.beginPath();
+      ectx.arc(xNow, yWt, 4.8, 0, Math.PI * 2);
+      ectx.fill();
+
+      ectx.fillStyle = '#16a34a';
+      ectx.beginPath();
+      ectx.arc(xNow, yWd, 4.8, 0, Math.PI * 2);
+      ectx.fill();
+
+      ectx.fillStyle = '#3b82f6';
+      ectx.beginPath();
+      ectx.arc(xNow, yW, 4.8, 0, Math.PI * 2);
+      ectx.fill();
+
+      drawSweepCursor(ectx, xNow, top, h);
+
+      drawLegend(ectx, [
+        { color: '#7c3aed', label: 'Wt' },
+        { color: '#16a34a', label: 'Wđ' },
+        { color: wGradient, label: 'W' }
+      ], 64, 216);
+
+      drawInfoCard(ectx, 170, 206, 190, 24, `Wt = ${st.Wt.toFixed(4)} J`, '#7c3aed');
+      drawInfoCard(ectx, 390, 206, 190, 24, `Wđ = ${st.Wd.toFixed(4)} J`, '#16a34a');
+      drawInfoCard(ectx, 610, 206, 170, 24, `W = ${st.W.toFixed(4)} J`, '#3b82f6');
+    }
+
+    function drawForceGraph(t) {
+      fctx.clearRect(0, 0, forceCanvas.width, forceCanvas.height);
+      fctx.fillStyle = '#ffffff';
+      fctx.fillRect(0, 0, forceCanvas.width, forceCanvas.height);
+
+      const left = 56, top = 38, w = forceCanvas.width - 96, h = 155;
+      const { sweepTime, tLocal, xNow } = getSweepInfo(t, w);
+
+      const dLCm = deltaLCm();
+      const FdhMax = Math.max(
+        k * Math.abs((dLCm + A) / 100),
+        k * Math.abs((dLCm - A) / 100),
+        0.1
+      );
+      const FphMax = k * (A / 100);
+      const Fmax = Math.max(FdhMax, FphMax, 0.1);
+
+      const midY = top + h / 2;
+
+      drawGraphPaper(fctx, left, top, w, h);
+
+      fctx.strokeStyle = '#dbe7f3';
+      fctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = top + i * h / 4;
+        fctx.beginPath();
+        fctx.moveTo(left, y);
+        fctx.lineTo(left + w, y);
+        fctx.stroke();
+      }
+
+      drawAxes(fctx, left, top, w, h, 'F (N)', 't', midY);
+
+      fctx.textAlign = 'right';
+      fctx.fillStyle = '#111827';
+      fctx.fillText(Fmax.toFixed(2), left - 8, top + 4);
+      fctx.fillText('0', left - 8, midY + 4);
+      fctx.fillText((-Fmax).toFixed(2), left - 8, top + h + 4);
+
+      function yOf(F) {
+        return midY - (F / Fmax) * (h / 2);
+      }
+
+      function drawSweepSeries(color, valueFn) {
+        fctx.strokeStyle = color;
+        fctx.lineWidth = 3;
+        fctx.beginPath();
+        const N = 400;
+        for (let i = 0; i <= N; i++) {
+          const u = i / N;
+          const tt = u * tLocal;
+          const x = left + (tt / sweepTime) * w;
+          const y = yOf(valueFn(stateAt(tt)));
+          if (i === 0) fctx.moveTo(x, y);
+          else fctx.lineTo(x, y);
+        }
+        fctx.stroke();
+      }
+
+      drawSweepSeries('#2563eb', st => st.Fph);
+      drawSweepSeries('#dc2626', st => st.Fdh);
+
+      const st = stateAt(tLocal);
+      const yFph = yOf(st.Fph);
+      const yFdh = yOf(st.Fdh);
+
+      fctx.fillStyle = '#2563eb';
+      fctx.beginPath();
+      fctx.arc(xNow, yFph, 4.8, 0, Math.PI * 2);
+      fctx.fill();
+
+      fctx.fillStyle = '#dc2626';
+      fctx.beginPath();
+      fctx.arc(xNow, yFdh, 4.8, 0, Math.PI * 2);
+      fctx.fill();
+
+      drawSweepCursor(fctx, xNow, top, h);
+
+      drawLegend(fctx, [
+        { color: '#2563eb', label: 'Fph' },
+        { color: '#dc2626', label: 'Fđh' }
+      ], 64, 220);
+
+      fctx.font = '13px Arial';
+      fctx.textAlign = 'left';
+      fctx.fillStyle = '#2563eb';
+      fctx.fillText(`Fph = ${st.Fph.toFixed(2)} N`, 150, 223);
+
+      fctx.fillStyle = '#dc2626';
+      fctx.fillText(`Fđh = ${st.Fdh.toFixed(2)} N`, 340, 223);
+    }
+
+    function animate(timestamp) {
+      updateParams();
+      updateEquationPanel();
+      updateTimeResult();
+      updateGraphVisibility();
+
+      const t = currentTimeSeconds(timestamp);
+      if (running) {
+        timeInput.value = t.toFixed(2);
+        updateTimeResult();
+      }
+
+      drawSpringScene(t);
+      if (checks.showXVA.checked) drawXVAGraph(t);
+      if (checks.showEnergyGraph.checked) drawEnergyGraph(t);
+      if (checks.showForceGraph.checked) drawForceGraph(t);
+
+      requestAnimationFrame(animate);
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (!running) {
+        running = true;
+        startTime = null;
+      }
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (running) {
+        running = false;
+        elapsedBeforePause = ((performance.now() - startTime) / 1000) * speed;
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      running = false;
+      startTime = null;
+      elapsedBeforePause = 0;
+      motionTrail = [];
+      lastTrailKey = null;
+      timeInput.value = 0;
+      updateTimeResult();
+    });
+
+    gotoTimeBtn.addEventListener('click', syncSimulationToInputTime);
+    timeInput.addEventListener('input', updateTimeResult);
+
+    Object.keys(pairs).forEach(name => syncPair(name, 'input'));
+    updateGraphVisibility();
+    updateTimeResult();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

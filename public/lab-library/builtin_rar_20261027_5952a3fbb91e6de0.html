@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PHYSICS 11 LAB 06 - Vòng tròn lượng giác của dao động điều hòa</title>
+<style>
+:root{
+  --panel:#071720;--cyan:#63e2ff;--mint:#7fffd6;--red:#ff758a;
+  --blue:#4aa8ff;--amber:#ffd166;--text:#eefcff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#17394b;color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+#app{display:grid;grid-template-columns:308px 1fr;height:100vh}
+#panel{background:linear-gradient(180deg,#071821,#06121a);border-right:1px solid #1b4c60;padding:10px;overflow:auto;scrollbar-width:thin;scrollbar-color:#347b93 transparent}
+.eyebrow{font-size:10px;letter-spacing:1.3px;color:var(--cyan);font-weight:800;margin-bottom:5px}
+h1{font-size:18px;line-height:1.08;margin:0 0 6px}
+p{font-size:11px;line-height:1.36;color:#bdd4dd;margin:0}
+hr{border:0;border-top:1px solid #1a4050;margin:9px 0}
+.section{font-size:10.5px;font-weight:800;color:#d8f2fa;margin-bottom:6px}
+.control{display:grid;grid-template-columns:84px 1fr 60px;gap:6px;align-items:center;margin:6px 0}
+.control label{font-size:11px}
+.control output{font-size:10.5px;color:var(--mint);font-weight:700;text-align:right}
+input[type=range]{width:100%;accent-color:#4bd9f5}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:7px 0}
+.check{background:#0b2737;border:1px solid #1d4e62;border-radius:8px;padding:6px;font-size:10.5px;display:flex;gap:6px;align-items:center}
+input[type=checkbox]{accent-color:#65eaff}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.btn{border:1px solid #2c6880;border-radius:8px;background:#0e3044;color:#fff;padding:8px 6px;font-size:11px;font-weight:800;cursor:pointer}
+.btn.primary{background:#0a8a6e;border-color:#2ce0b6}
+.btn.full{grid-column:1/-1}
+.legend{font-size:10px;color:#bfdbe5;display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px}.dx{background:#4aa8ff}.dc{background:#ffd166}
+#graphWrap{height:126px;border:1px solid #1c5167;border-radius:8px;background:#04151e;overflow:hidden;position:relative}
+#graph{width:100%;height:100%;display:block}
+.graphTitle{position:absolute;left:7px;top:4px;font-size:9px;color:#9cc4d3;background:rgba(4,20,29,.85);padding:2px 4px;border-radius:4px}
+.model{background:#092433;border:1px solid #1d5065;border-radius:8px;padding:7px;font-size:9.8px;line-height:1.35;color:#bad8e3}
+.model b{color:#fff}
+#view{position:relative;min-width:0;height:100vh;background:radial-gradient(circle at 56% 35%,#8bc4d9 0%,#5a91a7 30%,#356c82 60%,#21495d 100%)}
+#three,#labels{position:absolute;inset:0}
+#three{z-index:1}
+#labels{z-index:6;pointer-events:none}
+.label3d{position:absolute;transform:translate(-50%,-50%);background:rgba(7,28,40,.84);border:1px solid #4d95b2;color:#f1fcff;border-radius:6px;padding:4px 7px;font-size:10.5px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.22)}
+#formula{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:7;background:rgba(6,25,35,.80);border:1px solid #32718a;border-radius:9px;padding:7px 11px;font-size:11px;white-space:nowrap}
+#hud{position:absolute;right:12px;top:12px;z-index:8;width:232px;background:rgba(7,28,40,.87);border:1px solid #3b7893;border-radius:11px;padding:10px 11px;backdrop-filter:blur(4px)}
+#hud h3{font-size:10px;color:var(--cyan);letter-spacing:.8px;margin:0 0 8px}
+.row{display:flex;justify-content:space-between;gap:12px;font-size:11px;margin:6px 0}
+.row span:first-child{color:#d6ebf3}
+#phaseBox{position:absolute;left:14px;bottom:14px;z-index:7;width:250px;background:rgba(248,252,253,.94);border:1px solid #9fb9c4;border-radius:10px;padding:9px;color:#233845;font-size:10.5px;box-shadow:0 7px 22px #0003}
+#phaseBox b{display:block;margin-bottom:5px}
+#tooltip{position:absolute;z-index:30;display:none;pointer-events:none;background:#061c28;border:1px solid #4ad5ff;border-radius:7px;padding:7px 9px;font-size:10.5px}
+#credit{position:absolute;left:50%;bottom:8px;z-index:7;transform:translateX(-50%);font-size:11px;color:#e1eef4}
+#hint{position:absolute;right:12px;bottom:12px;z-index:7;font-size:10px;color:#eefaff;background:rgba(6,26,38,.64);border:1px solid #2d5b70;border-radius:8px;padding:6px 8px}
+@media(max-width:1050px){#app{grid-template-columns:285px 1fr}#hud{width:208px}#formula{font-size:10px}#phaseBox{width:220px;font-size:9.7px}}
+@media(max-height:760px){#panel{padding-top:8px}.control{margin:5px 0}.btn{padding:7px 5px}#graphWrap{height:110px}.model{font-size:9px}}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="eyebrow">PHYSICS 11 LAB · 3D CINEMATIC</div>
+<h1>06 · Vòng tròn lượng giác của dao động điều hòa</h1>
+<p>Hình chiếu của chuyển động tròn đều lên trục Ox tạo dao động điều hòa. Điểm tròn, hình chiếu và đồ thị luôn đồng bộ.</p>
+<hr>
+<div class="section">ĐIỀU KHIỂN</div>
+<div class="control"><label>Tốc độ</label><input id="speed" type="range" min="0.25" max="2" step="0.05" value="1"><output id="speedOut">1.00×</output></div>
+<div class="control"><label>Biên độ A</label><input id="amp" type="range" min="1" max="5" step="0.1" value="3"><output id="ampOut">3.0 cm</output></div>
+<div class="control"><label>Tần số f</label><input id="freq" type="range" min="0.10" max="1.50" step="0.05" value="0.50"><output id="freqOut">0.50 Hz</output></div>
+<div class="control"><label>Pha đầu φ</label><input id="phi" type="range" min="-180" max="180" step="5" value="0"><output id="phiOut">0°</output></div>
+<div class="checks">
+<label class="check"><input id="showRadius" type="checkbox" checked> Bán kính</label>
+<label class="check"><input id="showProjection" type="checkbox" checked> Hình chiếu</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+</div>
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Đang chạy</button><button id="pauseBtn" class="btn">⏸ Tạm dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Fit</button>
+<button id="clearGraphBtn" class="btn full">Xóa đồ thị</button>
+</div>
+<hr>
+<div class="section">ĐỒ THỊ x(t) · 15 s</div>
+<div class="legend"><span><i class="dot dx"></i>x(t)</span><span><i class="dot dc"></i>trạng thái hiện tại</span></div>
+<div id="graphWrap"><canvas id="graph"></canvas><div class="graphTitle">t (s) →</div></div>
+<hr>
+<div class="model"><b>Mô hình hóa:</b> điểm M chuyển động tròn đều bán kính A với tốc độ góc ω. Hình chiếu P của M lên Ox có <i>x=Acos(ωt+φ)</i>. Kích thước hình vẽ được phóng đại trực quan.</div>
+</aside>
+
+<main id="view">
+<div id="three"></div><div id="labels"></div>
+<div id="formula">x = A cos(ωt + φ) &nbsp; | &nbsp; ω = 2πf &nbsp; | &nbsp; T = 1/f</div>
+<div id="hud">
+<h3>SỐ LIỆU TỨC THỜI</h3>
+<div class="row"><span>t</span><b id="tHud">0.00 s</b></div>
+<div class="row"><span>x</span><b id="xHud">3.00 cm</b></div>
+<div class="row"><span>góc pha</span><b id="thetaHud">0°</b></div>
+<div class="row"><span>T</span><b id="periodHud">2.00 s</b></div>
+<div class="row"><span>ω</span><b id="omegaHud">3.142 rad/s</b></div>
+<div class="row"><span>φ</span><b id="phaseHud">0°</b></div>
+</div>
+<div id="phaseBox"><b>Ý nghĩa hình học</b>Điểm M quay đều trên đường tròn. Tọa độ hình chiếu P trên Ox chính là li độ x của dao động điều hòa.</div>
+<div id="tooltip"></div><div id="credit">Thầy Hùng vật lí</div><div id="hint">Kéo: xoay · Lăn: zoom · Rê điểm M/P: xem số liệu</div>
+</main>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const state={running:true,paused:false,t:0,speed:1,A:3,f:.5,phiDeg:0,x:3,theta:0,lastGraphT:-1};
+const MAX_DT=.033,GRAPH_WINDOW=15,WORLD_PER_CM=.86;
+const $=id=>document.getElementById(id);
+const dom={speed:$('speed'),amp:$('amp'),freq:$('freq'),phi:$('phi'),speedOut:$('speedOut'),ampOut:$('ampOut'),freqOut:$('freqOut'),phiOut:$('phiOut'),showRadius:$('showRadius'),showProjection:$('showProjection'),showGrid:$('showGrid'),showLabels:$('showLabels'),startBtn:$('startBtn'),pauseBtn:$('pauseBtn'),resetBtn:$('resetBtn'),fitBtn:$('fitBtn'),clearGraphBtn:$('clearGraphBtn'),tooltip:$('tooltip')};
+
+const view=$('view'),scene=new THREE.Scene();scene.fog=new THREE.Fog(0x7fb4c8,24,48);
+const camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=7;controls.maxDistance=30;controls.minPolarAngle=.35;controls.maxPolarAngle=Math.PI/2.05;
+scene.add(new THREE.HemisphereLight(0xf7fdff,0x5d7c89,3.2));const key=new THREE.DirectionalLight(0xffffff,2.2);key.position.set(8,12,9);key.castShadow=true;scene.add(key);const fill=new THREE.PointLight(0xb1edff,1.4,36);fill.position.set(-6,7,5);scene.add(fill);
+
+const lab=new THREE.Group();scene.add(lab);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(34,20),new THREE.MeshStandardMaterial({color:0x7da9ba,roughness:.9}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.2;floor.receiveShadow=true;lab.add(floor);
+const grid=new THREE.GridHelper(34,34,0x3aa8d3,0x5d8999);grid.position.y=-2.19;lab.add(grid);
+const back=new THREE.Mesh(new THREE.PlaneGeometry(28,13),new THREE.MeshStandardMaterial({color:0xa8c5d2,roughness:.96,side:THREE.DoubleSide}));back.position.set(0,3.5,-6);lab.add(back);
+
+// circular-motion board
+const boardBase=new THREE.Mesh(new THREE.BoxGeometry(11,.35,5.7),new THREE.MeshStandardMaterial({color:0x688b9c,roughness:.78}));boardBase.position.set(-1.7,-1.55,0);boardBase.castShadow=true;lab.add(boardBase);
+const circleCenter=new THREE.Vector3(-2.9,2.0,0);
+const circleGroup=new THREE.Group();lab.add(circleGroup);
+
+const circleMat=new THREE.LineBasicMaterial({color:0xeafaff});
+let circleGeom;
+function rebuildCircle(){
+  const R=state.A*WORLD_PER_CM;
+  const pts=[];
+  for(let i=0;i<=160;i++){const a=i/160*Math.PI*2;pts.push(new THREE.Vector3(circleCenter.x+R*Math.cos(a),circleCenter.y+R*Math.sin(a),0))}
+  if(circleGeom)circleGeom.dispose();
+  circleGeom=new THREE.BufferGeometry().setFromPoints(pts);
+  circleLine.geometry=circleGeom;
+}
+const circleLine=new THREE.Line(new THREE.BufferGeometry(),circleMat);circleGroup.add(circleLine);
+
+const xAxis=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-7,2,0),new THREE.Vector3(7.8,2,0)]),new THREE.LineBasicMaterial({color:0x2f6f86}));lab.add(xAxis);
+const yAxis=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(circleCenter.x,-1.1,0),new THREE.Vector3(circleCenter.x,5.3,0)]),new THREE.LineBasicMaterial({color:0x2f6f86}));lab.add(yAxis);
+function cone(pos,rot,color=0x2f6f86){const c=new THREE.Mesh(new THREE.ConeGeometry(.13,.34,18),new THREE.MeshBasicMaterial({color}));c.position.copy(pos);c.rotation.z=rot;lab.add(c)}
+cone(new THREE.Vector3(7.95,2,0),-Math.PI/2);cone(new THREE.Vector3(circleCenter.x,5.45,0),0);
+
+const M=new THREE.Mesh(new THREE.SphereGeometry(.20,28,20),new THREE.MeshStandardMaterial({color:0xff5c59,emissive:0x5f1515,emissiveIntensity:.35,roughness:.2}));M.castShadow=true;lab.add(M);
+const P=new THREE.Mesh(new THREE.SphereGeometry(.18,28,20),new THREE.MeshStandardMaterial({color:0x38bdf8,emissive:0x0a3f60,emissiveIntensity:.35,roughness:.2}));P.castShadow=true;lab.add(P);
+const O=new THREE.Mesh(new THREE.SphereGeometry(.12,22,16),new THREE.MeshStandardMaterial({color:0xffd166,emissive:0x604b10,emissiveIntensity:.3}));O.position.copy(circleCenter);lab.add(O);
+
+const radiusLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xffd166}));
+lab.add(radiusLine);
+const projLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineDashedMaterial({color:0x58d5ff,dashSize:.18,gapSize:.12}));
+lab.add(projLine);
+
+// moving projection guide to graph
+const linkLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineDashedMaterial({color:0x7fffd6,dashSize:.16,gapSize:.10}));
+lab.add(linkLine);
+
+// world graph x(t)
+const wc=document.createElement('canvas');wc.width=1000;wc.height=430;
+const wg=wc.getContext('2d'),wtex=new THREE.CanvasTexture(wc);wtex.colorSpace=THREE.SRGBColorSpace;
+const frame=new THREE.Mesh(new THREE.BoxGeometry(7.15,3.20,.12),new THREE.MeshStandardMaterial({color:0xe0eaee,roughness:.42,metalness:.1}));
+frame.position.set(4.2,4.0,-1.35);lab.add(frame);
+const graphBoard=new THREE.Mesh(new THREE.PlaneGeometry(6.9,2.95),new THREE.MeshBasicMaterial({map:wtex,side:THREE.DoubleSide}));
+graphBoard.position.set(4.2,4.0,-1.27);lab.add(graphBoard);
+
+// phase arc
+const arcLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xffa24c}));
+lab.add(arcLine);
+
+const labelsHost=$('labels');function mkLabel(t){const e=document.createElement('div');e.className='label3d';e.textContent=t;labelsHost.appendChild(e);return e}
+const lM=mkLabel('M · chuyển động tròn đều'),lP=mkLabel('P · hình chiếu'),lO=mkLabel('O'),lX=mkLabel('Ox'),lPhi=mkLabel('ωt + φ');
+function projectLabel(el,pos){const p=pos.clone().project(camera);if(p.z>1){el.style.display='none';return}el.style.display=dom.showLabels.checked?'block':'none';el.style.left=((p.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-p.y*.5+.5)*view.clientHeight)+'px'}
+
+function omega(){return 2*Math.PI*state.f}
+function calc(){const th=omega()*state.t+state.phiDeg*Math.PI/180;state.theta=th;state.x=state.A*Math.cos(th)}
+function updatePhysics(dt){if(!(state.running&&!state.paused))return;state.t+=dt*state.speed;calc();if(state.t-state.lastGraphT>=.04){state.lastGraphT=state.t;pushGraph()}}
+
+function drawWorldGraph(){
+ const w=wc.width,h=wc.height;wg.fillStyle='#f8fcfd';wg.fillRect(0,0,w,h);wg.strokeStyle='#d0dee5';wg.lineWidth=2;
+ for(let i=0;i<=10;i++){const x=80+(w-130)*i/10;wg.beginPath();wg.moveTo(x,65);wg.lineTo(x,h-55);wg.stroke()}
+ for(let j=0;j<=6;j++){const y=65+(h-120)*j/6;wg.beginPath();wg.moveTo(80,y);wg.lineTo(w-50,y);wg.stroke()}
+ wg.strokeStyle='#263743';wg.lineWidth=4;wg.beginPath();wg.moveTo(80,h/2);wg.lineTo(w-50,h/2);wg.stroke();wg.beginPath();wg.moveTo(80,65);wg.lineTo(80,h-55);wg.stroke();
+ wg.fillStyle='#253944';wg.font='bold 28px Segoe UI';wg.fillText('HÌNH CHIẾU TẠO DAO ĐỘNG ĐIỀU HÒA  x(t)',145,38);
+ const om=omega(),T=1/state.f,span=3*T,ph=state.phiDeg*Math.PI/180,maxA=Math.max(state.A,1);
+ const X=t=>80+(w-130)*t/span,Y=x=>h/2-x/(maxA*1.25)*(h-130)/2;
+ wg.strokeStyle='#2f8df4';wg.lineWidth=5;wg.beginPath();
+ for(let i=0;i<=800;i++){const t=span*i/800,xx=state.A*Math.cos(om*t+ph),px=X(t),py=Y(xx);if(i===0)wg.moveTo(px,py);else wg.lineTo(px,py)}wg.stroke();
+ const tm=((state.t%span)+span)%span,xc=state.A*Math.cos(om*tm+ph),px=X(tm),py=Y(xc);
+ wg.fillStyle='#f0a52b';wg.beginPath();wg.arc(px,py,10,0,Math.PI*2);wg.fill();
+ wg.fillStyle='#344a56';wg.font='19px Segoe UI';wg.fillText('x = A cos(ωt + φ)',390,h-18);wtex.needsUpdate=true
+}
+function updateVisuals(){
+ const R=state.A*WORLD_PER_CM,th=state.theta;
+ const mx=circleCenter.x+R*Math.cos(th),my=circleCenter.y+R*Math.sin(th),px=circleCenter.x+R*Math.cos(th),py=circleCenter.y;
+ M.position.set(mx,my,0);P.position.set(px,py,0);
+ rebuildCircle();
+ radiusLine.visible=dom.showRadius.checked;radiusLine.geometry.setFromPoints([circleCenter,new THREE.Vector3(mx,my,0)]);
+ projLine.visible=dom.showProjection.checked;projLine.geometry.setFromPoints([new THREE.Vector3(mx,my,0),new THREE.Vector3(px,py,0)]);projLine.computeLineDistances();
+ linkLine.visible=dom.showProjection.checked;linkLine.geometry.setFromPoints([new THREE.Vector3(px,py,0),new THREE.Vector3(px,-.8,0)]);linkLine.computeLineDistances();
+ const arcR=.72;const arcPts=[];const ang=((th%(Math.PI*2))+Math.PI*2)%(Math.PI*2);const steps=40;
+ for(let i=0;i<=steps;i++){const a=ang*i/steps;arcPts.push(new THREE.Vector3(circleCenter.x+arcR*Math.cos(a),circleCenter.y+arcR*Math.sin(a),.02))}
+ arcLine.geometry.setFromPoints(arcPts);
+ grid.visible=dom.showGrid.checked;
+ projectLabel(lM,new THREE.Vector3(mx,my+.55,0));projectLabel(lP,new THREE.Vector3(px,py-.48,0));projectLabel(lO,new THREE.Vector3(circleCenter.x-.35,circleCenter.y-.30,0));projectLabel(lX,new THREE.Vector3(7.25,2.38,0));projectLabel(lPhi,new THREE.Vector3(circleCenter.x+.85,circleCenter.y+.72,0));
+ drawWorldGraph()
+}
+
+function fmt(n,d=2){return(Math.abs(n)<1e-9?0:n).toFixed(d)}
+function normDeg(rad){let d=rad*180/Math.PI;d=((d%360)+360)%360;return d}
+function updateUI(){const om=omega(),T=1/state.f;dom.speedOut.value=state.speed.toFixed(2)+'×';dom.ampOut.value=state.A.toFixed(1)+' cm';dom.freqOut.value=state.f.toFixed(2)+' Hz';dom.phiOut.value=Math.round(state.phiDeg)+'°';$('tHud').textContent=fmt(state.t)+' s';$('xHud').textContent=fmt(state.x)+' cm';$('thetaHud').textContent=fmt(normDeg(state.theta),0)+'°';$('periodHud').textContent=fmt(T)+' s';$('omegaHud').textContent=fmt(om,3)+' rad/s';$('phaseHud').textContent=Math.round(state.phiDeg)+'°';dom.startBtn.textContent=state.running&&!state.paused?'▶ Đang chạy':'▶ Bắt đầu'}
+function apply(){state.speed=+dom.speed.value;state.A=+dom.amp.value;state.f=+dom.freq.value;state.phiDeg=+dom.phi.value;calc();updateUI();rebuildCircle()}
+[dom.speed,dom.amp,dom.freq,dom.phi].forEach(e=>e.addEventListener('input',apply));dom.startBtn.onclick=()=>{state.running=true;state.paused=false};dom.pauseBtn.onclick=()=>state.paused=true;
+function resetAll(){Object.assign(state,{running:true,paused:false,t:0,speed:1,A:3,f:.5,phiDeg:0,lastGraphT:-1});dom.speed.value=1;dom.amp.value=3;dom.freq.value=.5;dom.phi.value=0;clearGraph();calc();rebuildCircle();fitCamera();updateUI()}
+dom.resetBtn.onclick=resetAll;dom.fitBtn.onclick=fitCamera;dom.clearGraphBtn.onclick=clearGraph;
+
+const canvas=$('graph'),ctx=canvas.getContext('2d');let data=[];function pushGraph(){data.push({t:state.t,x:state.x});const t0=state.t-GRAPH_WINDOW;while(data.length&&data[0].t<t0)data.shift()}function clearGraph(){data=[];state.lastGraphT=-1}
+function drawGraph(){
+ const dpr=Math.min(devicePixelRatio,2),w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.width!==Math.floor(w*dpr)||canvas.height!==Math.floor(h*dpr)){canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr)}
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#04141d';ctx.fillRect(0,0,w,h);const L=28,R=5,T=16,B=18,pw=w-L-R,ph=h-T-B;ctx.strokeStyle='#153b4c';
+ for(let i=0;i<=4;i++){let yy=T+ph*i/4;ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(w-R,yy);ctx.stroke()}for(let i=0;i<=5;i++){let xx=L+pw*i/5;ctx.beginPath();ctx.moveTo(xx,T);ctx.lineTo(xx,h-B);ctx.stroke()}
+ const maxA=Math.max(state.A,1),ys=ph/(2*maxA*1.15),tMax=data.length?data[data.length-1].t:GRAPH_WINDOW,tMin=Math.max(0,tMax-GRAPH_WINDOW),X=t=>L+(t-tMin)/GRAPH_WINDOW*pw,Y=y=>T+ph/2-y*ys;
+ ctx.strokeStyle='#486a7c';ctx.beginPath();ctx.moveTo(L,T+ph/2);ctx.lineTo(w-R,T+ph/2);ctx.stroke();
+ ctx.strokeStyle='#4aa8ff';ctx.lineWidth=1.7;ctx.beginPath();let first=true;for(const p of data){if(p.t<tMin)continue;const xx=X(p.t),yy=Y(p.x);if(first){ctx.moveTo(xx,yy);first=false}else ctx.lineTo(xx,yy)}ctx.stroke();
+ if(data.length){const p=data[data.length-1];ctx.fillStyle='#ffd166';ctx.beginPath();ctx.arc(X(p.t),Y(p.x),3.8,0,Math.PI*2);ctx.fill()}
+}
+
+function fitCamera(){const box=new THREE.Box3().setFromObject(lab).expandByScalar(.7),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3()),maxDim=Math.max(size.x,size.y,size.z),fov=camera.fov*Math.PI/180;let dist=maxDim/(2*Math.tan(fov/2))*1.20;camera.position.set(center.x+dist*.48,center.y+dist*.22,center.z+dist*.65);controls.target.set(.2,1.7,0);controls.update()}
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();renderer.domElement.addEventListener('pointermove',e=>{const r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(mouse,camera);const hitM=raycaster.intersectObject(M,false),hitP=raycaster.intersectObject(P,false);if(hitM.length||hitP.length){dom.tooltip.style.display='block';dom.tooltip.style.left=(e.clientX-r.left+14)+'px';dom.tooltip.style.top=(e.clientY-r.top+14)+'px';dom.tooltip.innerHTML=hitM.length?`<b>Điểm M</b><br>góc pha = ${fmt(normDeg(state.theta),0)}°<br>x_M chiếu lên Ox = ${fmt(state.x)} cm`:`<b>Hình chiếu P</b><br>x = ${fmt(state.x)} cm`}else dom.tooltip.style.display='none'});renderer.domElement.addEventListener('pointerleave',()=>dom.tooltip.style.display='none');
+function resize(){const w=view.clientWidth,h=view.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}window.addEventListener('resize',resize);resize();calc();rebuildCircle();fitCamera();pushGraph();
+let last=performance.now();function animate(now){requestAnimationFrame(animate);let dt=(now-last)/1000;last=now;dt=Math.min(MAX_DT,Math.max(0,dt));updatePhysics(dt);updateVisuals();updateUI();drawGraph();controls.update();renderer.render(scene,camera)}requestAnimationFrame(animate);
+</script>
+</body>
+</html>

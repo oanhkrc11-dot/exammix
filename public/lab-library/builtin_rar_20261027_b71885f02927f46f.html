@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sóng dọc trên lò xo - thí nghiệm ảo đo đạc</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#eef4ff;color:#0f172a}
+.app{width:min(1280px,96vw);margin:18px auto;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #dbe5f2;box-shadow:0 14px 36px rgba(15,23,42,.16)}
+header{background:#0b3b78;color:#fff;padding:18px 24px}
+header h1{margin:0 0 6px;font-size:32px}
+header p{margin:0;font-size:16px;opacity:.96}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid #e5e7eb}
+button{border:0;border-radius:12px;padding:11px 16px;font-size:15px;font-weight:700;color:#fff;cursor:pointer}
+#startBtn{background:#16a34a}
+#pulseBtn{background:#7c3aed}
+#stopDriveBtn{background:#dc2626}
+#boundaryBtn{background:#0ea5e9}
+#pauseBtn{background:#f59e0b;color:#111827}
+#resetBtn{background:#2563eb}
+.box{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;font-size:14px}
+input[type=range]{width:120px;accent-color:#2563eb}
+.main{display:grid;grid-template-columns:1.58fr .72fr;gap:16px;padding:18px}
+.card{border:1px solid #dbe5f2;border-radius:16px;background:#fff;overflow:hidden}
+canvas{width:100%;height:auto;display:block;background:#fff}
+.info{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:0 18px 18px}
+.note{border-radius:14px;border:1px solid #e2e8f0;background:#f8fafc;padding:14px;line-height:1.5;font-size:15px}
+.note b{color:#0b3b78}
+@media(max-width:980px){.main{grid-template-columns:1fr}.info{grid-template-columns:1fr}header h1{font-size:25px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>Sóng dọc trên lò xo – thí nghiệm ảo đo đạc</h1>
+  <p>Dùng cảm biến để đo tốc độ truyền sóng, đặt hai mốc để đo bước sóng, và theo dõi dao động của từng phần tử trên lò xo.</p>
+</header>
+
+<div class="controls">
+  <button id="startBtn">▶ Kích thích tuần hoàn</button>
+  <button id="pulseBtn">⚡ Tạo một xung</button>
+  <button id="stopDriveBtn">⏹ Ngừng kích thích</button>
+  <button id="boundaryBtn">Đầu phải: Cố định</button>
+  <button id="pauseBtn">⏸ Tạm dừng</button>
+  <button id="resetBtn">↻ Đặt lại</button>
+
+  <label class="box">Biên độ:
+    <input id="ampSlider" type="range" min="4" max="24" step="1" value="14">
+    <b><span id="ampValue">14</span> px</b>
+  </label>
+
+  <label class="box">Tần số:
+    <input id="freqSlider" type="range" min="0.4" max="6" step="0.1" value="1.2">
+    <b><span id="freqValue">1.2</span> Hz</b>
+  </label>
+
+  <label class="box">Tốc độ truyền:
+    <input id="speedSlider" type="range" min="120" max="300" step="10" value="200">
+    <b><span id="speedValue">200</span> px/s</b>
+  </label>
+
+  <label class="box">Theo dõi phần tử:
+    <input id="trackSlider" type="range" min="8" max="112" step="1" value="60">
+    <b><span id="trackValue">60</span></b>
+  </label>
+
+  <label class="box">Cảm biến S1:
+    <input id="sensor1Slider" type="range" min="8" max="95" step="1" value="25">
+    <b><span id="sensor1Value">25</span></b>
+  </label>
+
+  <label class="box">Cảm biến S2:
+    <input id="sensor2Slider" type="range" min="20" max="112" step="1" value="85">
+    <b><span id="sensor2Value">85</span></b>
+  </label>
+
+  <label class="box">Mốc M1:
+    <input id="marker1Slider" type="range" min="8" max="90" step="1" value="35">
+    <b><span id="marker1Value">35</span></b>
+  </label>
+
+  <label class="box">Mốc M2:
+    <input id="marker2Slider" type="range" min="20" max="112" step="1" value="70">
+    <b><span id="marker2Value">70</span></b>
+  </label>
+</div>
+
+<div class="main">
+  <div class="card"><canvas id="waveCanvas" width="940" height="560"></canvas></div>
+  <div class="card"><canvas id="infoCanvas" width="460" height="560"></canvas></div>
+</div>
+
+<div class="info">
+  <div class="note"><b>Đo tốc độ truyền:</b> đặt S1 và S2 trên lò xo, quan sát thời điểm sóng tới từng cảm biến rồi dùng <b>v = Δx / Δt</b>.</div>
+  <div class="note"><b>Đo bước sóng:</b> đặt M1 và M2 vào hai vùng nén liên tiếp hoặc hai vùng dãn liên tiếp, khi đó <b>λ = |M2 - M1|</b>.</div>
+  <div class="note"><b>Gợi ý:</b> dùng <b>xung đơn</b> để đo tốc độ truyền cho rõ, dùng <b>kích thích tuần hoàn</b> để đo bước sóng thuận lợi hơn.</div>
+</div>
+</div>
+
+<script>
+const canvas=document.getElementById('waveCanvas'), ctx=canvas.getContext('2d');
+const infoCanvas=document.getElementById('infoCanvas'), ictx=infoCanvas.getContext('2d');
+
+const startBtn=document.getElementById('startBtn');
+const pulseBtn=document.getElementById('pulseBtn');
+const stopDriveBtn=document.getElementById('stopDriveBtn');
+const boundaryBtn=document.getElementById('boundaryBtn');
+const pauseBtn=document.getElementById('pauseBtn');
+const resetBtn=document.getElementById('resetBtn');
+
+const ampSlider=document.getElementById('ampSlider');
+const freqSlider=document.getElementById('freqSlider');
+const speedSlider=document.getElementById('speedSlider');
+const trackSlider=document.getElementById('trackSlider');
+const sensor1Slider=document.getElementById('sensor1Slider');
+const sensor2Slider=document.getElementById('sensor2Slider');
+const marker1Slider=document.getElementById('marker1Slider');
+const marker2Slider=document.getElementById('marker2Slider');
+
+const ampValue=document.getElementById('ampValue');
+const freqValue=document.getElementById('freqValue');
+const speedValue=document.getElementById('speedValue');
+const trackValue=document.getElementById('trackValue');
+const sensor1Value=document.getElementById('sensor1Value');
+const sensor2Value=document.getElementById('sensor2Value');
+const marker1Value=document.getElementById('marker1Value');
+const marker2Value=document.getElementById('marker2Value');
+
+const W=canvas.width,H=canvas.height;
+const xL=115,xR=855,midY=258,L=xR-xL;
+const N=120;
+const a=L/N;
+const visualCoilPitch=4.8;
+
+const u=new Float64Array(N+1);
+const vel=new Float64Array(N+1);
+
+let A=14,f=1.2,c=200,trackIndex=60;
+let sensor1Index=25,sensor2Index=85,marker1Index=35,marker2Index=70;
+let started=false,running=false;
+let simTime=0,lastTs=null;
+let driveMode='off';               // off | continuous | pulse
+let driveStartTime=0;
+let rightBoundary='fixed';         // fixed | free
+
+const rampTime=1.4;
+const pulseDuration=0.95;
+const dampingDriven=0.18;
+const dampingFree=0.30;
+const history=[];
+const historyWindow=8.0;
+const arrivalThreshold=1.2;
+let sensorTriggered1=false, sensorTriggered2=false;
+let sensorTime1=null, sensorTime2=null;
+
+function updateParams(){
+  A=Number(ampSlider.value);
+  f=Number(freqSlider.value);
+  c=Number(speedSlider.value);
+  trackIndex=Number(trackSlider.value);
+  sensor1Index=Math.min(Number(sensor1Slider.value), Number(sensor2Slider.value)-2);
+  sensor2Index=Math.max(Number(sensor2Slider.value), Number(sensor1Slider.value)+2);
+  marker1Index=Math.min(Number(marker1Slider.value), Number(marker2Slider.value)-2);
+  marker2Index=Math.max(Number(marker2Slider.value), Number(marker1Slider.value)+2);
+
+  // Keep sliders synced visually if constraints adjusted
+  sensor1Slider.value=sensor1Index;
+  sensor2Slider.value=sensor2Index;
+  marker1Slider.value=marker1Index;
+  marker2Slider.value=marker2Index;
+
+  ampValue.textContent=A;
+  freqValue.textContent=f.toFixed(1);
+  speedValue.textContent=c;
+  trackValue.textContent=trackIndex;
+  sensor1Value.textContent=sensor1Index;
+  sensor2Value.textContent=sensor2Index;
+  marker1Value.textContent=marker1Index;
+  marker2Value.textContent=marker2Index;
+  boundaryBtn.textContent = rightBoundary === 'fixed' ? 'Đầu phải: Cố định' : 'Đầu phải: Tự do';
+}
+
+function smoothRamp(t){
+  if(t<=0)return 0;
+  if(t>=rampTime)return 1;
+  const z=t/rampTime;
+  return z*z*(3-2*z);
+}
+
+function driverDisplacement(t){
+  if(!started || driveMode==='off') return 0;
+  const td=t-driveStartTime;
+  if(td<=0) return 0;
+
+  if(driveMode==='continuous'){
+    return A*smoothRamp(td)*Math.sin(2*Math.PI*f*td);
+  }
+
+  if(driveMode==='pulse'){
+    if(td>=pulseDuration) return 0;
+    const envelope=Math.sin(Math.PI*td/pulseDuration);
+    return A*envelope*envelope*Math.sin(2*Math.PI*f*td);
+  }
+  return 0;
+}
+
+function driveIsActiveNow(t){
+  if(driveMode==='continuous') return true;
+  if(driveMode==='pulse'){
+    return (t-driveStartTime) < pulseDuration;
+  }
+  return false;
+}
+
+function resetSensorTimes(){
+  sensorTriggered1=false;
+  sensorTriggered2=false;
+  sensorTime1=null;
+  sensorTime2=null;
+}
+
+function resetState(){
+  u.fill(0); vel.fill(0);
+  simTime=0; lastTs=null;
+  started=false; running=false;
+  driveMode='off'; driveStartTime=0;
+  history.length=0;
+  resetSensorTimes();
+}
+
+function stepPhysics(dt){
+  const k=(c/a)*(c/a);
+  const acc=new Float64Array(N+1);
+  const sourceActive=driveIsActiveNow(simTime);
+  const damp=(driveMode==='off') ? dampingFree : dampingDriven;
+
+  // Biên trái
+  if(sourceActive){
+    u[0]=driverDisplacement(simTime);
+    vel[0]=0;
+  }else{
+    u[0]=0;
+    vel[0]=0;
+    if(driveMode==='pulse' && simTime-driveStartTime>=pulseDuration){
+      driveMode='off';
+    }
+  }
+
+  // Nội bộ
+  for(let i=1;i<N;i++){
+    acc[i]=k*(u[i+1]-2*u[i]+u[i-1]) - damp*vel[i];
+  }
+
+  // Biên phải
+  if(rightBoundary==='fixed'){
+    u[N]=0;
+    vel[N]=0;
+  }else{
+    acc[N]=k*(u[N-1]-u[N]) - damp*vel[N];
+  }
+
+  for(let i=1;i<N;i++){
+    vel[i]+=acc[i]*dt;
+    u[i]+=vel[i]*dt;
+  }
+
+  if(rightBoundary==='free'){
+    vel[N]+=acc[N]*dt;
+    u[N]+=vel[N]*dt;
+  }else{
+    u[N]=0;
+    vel[N]=0;
+  }
+
+  if(sourceActive){
+    u[0]=driverDisplacement(simTime+dt);
+    vel[0]=0;
+  }else{
+    u[0]=0;
+    vel[0]=0;
+  }
+
+  simTime+=dt;
+}
+
+function updateSensors(){
+  if(!sensorTriggered1 && Math.abs(u[sensor1Index]) > arrivalThreshold){
+    sensorTriggered1=true;
+    sensorTime1=simTime;
+  }
+  if(!sensorTriggered2 && Math.abs(u[sensor2Index]) > arrivalThreshold){
+    sensorTriggered2=true;
+    sensorTime2=simTime;
+  }
+}
+
+function localStrain(i){
+  if(i<=0||i>=N)return 0;
+  return (u[i+1]-u[i-1])/(2*a);
+}
+
+function drawSupport(){
+  if(rightBoundary==='fixed'){
+    ctx.fillStyle='#d1d5db';
+    ctx.fillRect(xR-8,midY-118,30,236);
+    ctx.strokeStyle='#374151';ctx.lineWidth=2;
+    ctx.strokeRect(xR-8,midY-118,30,236);
+    ctx.strokeStyle='#9ca3af';ctx.lineWidth=1.1;
+    for(let y=midY-100;y<=midY+100;y+=18){
+      ctx.beginPath();ctx.moveTo(xR-5,y+12);ctx.lineTo(xR+18,y-12);ctx.stroke();
+    }
+    ctx.fillStyle='#111827';ctx.font='bold 18px Arial';ctx.textAlign='center';
+    ctx.fillText('Đầu cố định',xR+5,midY-145);
+  }else{
+    ctx.strokeStyle='#64748b';ctx.lineWidth=5;
+    ctx.beginPath();ctx.moveTo(xR+5,midY-85);ctx.lineTo(xR+5,midY+85);ctx.stroke();
+    ctx.fillStyle='#111827';ctx.font='bold 18px Arial';ctx.textAlign='center';
+    ctx.fillText('Đầu tự do',xR+8,midY-145);
+  }
+}
+
+function drawDriver(){
+  const sx = driveIsActiveNow(simTime) ? (xL+u[0]) : xL;
+
+  ctx.strokeStyle='#64748b';ctx.lineWidth=5;
+  ctx.beginPath();ctx.moveTo(42,midY);ctx.lineTo(sx-18,midY);ctx.stroke();
+
+  const active = driveIsActiveNow(simTime);
+  ctx.fillStyle = active ? '#ef4444' : '#94a3b8';
+  ctx.fillRect(sx-18,midY-53,18,106);
+  ctx.strokeStyle = active ? '#991b1b' : '#475569';
+  ctx.lineWidth=2;ctx.strokeRect(sx-18,midY-53,18,106);
+
+  ctx.fillStyle = active ? '#b91c1c' : '#334155';
+  ctx.font='bold 18px Arial';ctx.textAlign='center';
+  let label='Nguồn đang nghỉ';
+  if(driveMode==='continuous' && active) label='Kích thích tuần hoàn';
+  if(driveMode==='pulse' && active) label='Nguồn tạo xung';
+  if(driveMode==='off') label='Nguồn đang nghỉ';
+  ctx.fillText(label,sx+12,midY-88);
+
+  if(active){
+    ctx.strokeStyle='#b91c1c';ctx.fillStyle='#b91c1c';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(sx-40,midY+82);ctx.lineTo(sx+40,midY+82);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(sx-40,midY+82);ctx.lineTo(sx-28,midY+75);ctx.lineTo(sx-28,midY+89);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.moveTo(sx+40,midY+82);ctx.lineTo(sx+28,midY+75);ctx.lineTo(sx+28,midY+89);ctx.closePath();ctx.fill();
+    ctx.font='bold 15px Arial';ctx.fillText('dao động ngang',sx,midY+108);
+  }else{
+    ctx.font='bold 15px Arial';ctx.fillStyle='#334155';
+    ctx.fillText('đứng yên tại vị trí cân bằng',sx+28,midY+108);
+  }
+}
+
+function drawDensityBands(){
+  for(let i=2;i<N-1;i++){
+    const strain=localStrain(i);
+    if(Math.abs(strain)<0.035) continue;
+    const x=xL+i*a+u[i];
+    ctx.fillStyle = strain<0 ? 'rgba(239,68,68,.09)' : 'rgba(34,197,94,.08)';
+    ctx.fillRect(x-a*1.1,midY-62,a*2.2,124);
+  }
+}
+
+function drawSpringPath(){
+  ctx.beginPath();
+  const samples=N*10;
+  for(let j=0;j<=samples;j++){
+    const q=j/10;
+    const i=Math.min(N-1,Math.floor(q));
+    const frac=q-i;
+    const x1=xL+i*a+u[i];
+    const x2=xL+(i+1)*a+u[i+1];
+    const x=x1+(x2-x1)*frac;
+    const y=midY+30*Math.sin(2*Math.PI*q/visualCoilPitch);
+    if(j===0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  }
+}
+
+function drawSpring(){
+  ctx.strokeStyle='rgba(29,78,216,.16)';ctx.lineWidth=10;
+  drawSpringPath();ctx.stroke();
+  ctx.strokeStyle='#1d4ed8';ctx.lineWidth=3.2;
+  drawSpringPath();ctx.stroke();
+
+  ctx.strokeStyle='rgba(30,64,175,.30)';ctx.lineWidth=1.2;
+  for(let i=0;i<=N;i+=14){
+    const x=xL+i*a+u[i];
+    ctx.beginPath();
+    ctx.ellipse(x,midY,4.2,34,0,0,Math.PI*2);
+    ctx.stroke();
+  }
+}
+
+function drawParticles(){
+  ctx.fillStyle='#0f172a';
+  for(let i=0;i<=N;i+=10){
+    const x=xL+i*a+u[i];
+    ctx.beginPath();ctx.arc(x,midY,3.4,0,Math.PI*2);ctx.fill();
+  }
+
+  const xt=xL+trackIndex*a+u[trackIndex];
+  ctx.beginPath();
+  ctx.arc(xt,midY,7.5,0,Math.PI*2);
+  ctx.fillStyle='#f59e0b';
+  ctx.fill();
+  ctx.lineWidth=2;
+  ctx.strokeStyle='#92400e';
+  ctx.stroke();
+
+  ctx.fillStyle='#92400e';
+  ctx.font='bold 16px Arial';
+  ctx.textAlign='center';
+  ctx.fillText('Phần tử theo dõi', xt, midY-96);
+
+  ctx.strokeStyle='#92400e';
+  ctx.fillStyle='#92400e';
+  ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(xt,midY-82);ctx.lineTo(xt,midY-10);ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(xt,midY-10);
+  ctx.lineTo(xt-7,midY-22);
+  ctx.lineTo(xt+7,midY-22);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawMarkerLine(x, color, label, yTop, yBottom){
+  ctx.strokeStyle=color;
+  ctx.lineWidth=2;
+  ctx.setLineDash([7,6]);
+  ctx.beginPath();
+  ctx.moveTo(x, yTop);
+  ctx.lineTo(x, yBottom);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle=color;
+  ctx.font='bold 16px Arial';
+  ctx.textAlign='center';
+  ctx.fillText(label, x, yTop-8);
+}
+
+function drawSensorsAndMarkers(){
+  const xS1 = xL + sensor1Index*a + u[sensor1Index];
+  const xS2 = xL + sensor2Index*a + u[sensor2Index];
+  const xM1 = xL + marker1Index*a + u[marker1Index];
+  const xM2 = xL + marker2Index*a + u[marker2Index];
+
+  drawMarkerLine(xS1, '#dc2626', 'S1', midY-120, midY+120);
+  drawMarkerLine(xS2, '#16a34a', 'S2', midY-120, midY+120);
+  drawMarkerLine(xM1, '#7c3aed', 'M1', midY-145, midY+145);
+  drawMarkerLine(xM2, '#0ea5e9', 'M2', midY-145, midY+145);
+
+  // Lambda measurement arrow
+  ctx.strokeStyle='#4c1d95';
+  ctx.fillStyle='#4c1d95';
+  ctx.lineWidth=2;
+  const y = midY + 150;
+  ctx.beginPath();ctx.moveTo(xM1,y);ctx.lineTo(xM2,y);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(xM1,y);ctx.lineTo(xM1+12,y-7);ctx.lineTo(xM1+12,y+7);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(xM2,y);ctx.lineTo(xM2-12,y-7);ctx.lineTo(xM2-12,y+7);ctx.closePath();ctx.fill();
+  ctx.font='bold 15px Arial';
+  ctx.textAlign='center';
+  ctx.fillText('λ đo', (xM1+xM2)/2, y-8);
+}
+
+function updateHistory(){
+  history.push({t: simTime, u: u[trackIndex]});
+  while(history.length && simTime-history[0].t > historyWindow){
+    history.shift();
+  }
+}
+
+function drawScene(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#fff';
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle='#0b3b78';
+  ctx.font='bold 30px Arial';
+  ctx.textAlign='center';
+  ctx.fillText('Sóng dọc truyền trên lò xo',W/2,44);
+
+  ctx.strokeStyle='#cbd5e1';
+  ctx.lineWidth=1.4;
+  ctx.setLineDash([6,6]);
+  ctx.beginPath();ctx.moveTo(xL,midY);ctx.lineTo(xR,midY);ctx.stroke();
+  ctx.setLineDash([]);
+
+  drawSupport();
+  drawDensityBands();
+  drawSpring();
+  drawParticles();
+  drawSensorsAndMarkers();
+  drawDriver();
+
+  ctx.fillStyle='#334155';
+  ctx.font='16px Arial';
+  ctx.textAlign='left';
+
+  let line1='Ban đầu: lò xo đứng yên, chưa có phần tử nào dao động.';
+  if(started && driveMode==='continuous'){
+    line1='Đang kích thích tuần hoàn: thuận lợi để đo bước sóng giữa hai vùng nén liên tiếp.';
+  }else if(started && driveMode==='pulse'){
+    line1='Đang tạo xung: thuận lợi để đo thời gian sóng tới các cảm biến S1, S2.';
+  }else if(started && driveMode==='off'){
+    line1='Đã ngừng kích thích: lò xo tiếp tục dao động do năng lượng trước đó rồi tắt dần.';
+  }
+  ctx.fillText(line1,70,486);
+
+  let line2 = rightBoundary==='fixed'
+    ? 'Đầu phải cố định: sóng phản xạ hình thành tại biên cố định.'
+    : 'Đầu phải tự do: phản xạ ở đầu tự do khác với đầu cố định.';
+  ctx.fillText(line2,70,512);
+}
+
+function infoBox(x,y,w,h,fill,stroke){
+  ictx.fillStyle=fill;
+  ictx.strokeStyle=stroke;
+  ictx.lineWidth=2;
+  ictx.beginPath();
+  ictx.roundRect(x,y,w,h,14);
+  ictx.fill();
+  ictx.stroke();
+}
+
+function drawGraph(x,y,w,h){
+  ictx.fillStyle='#ffffff';
+  ictx.strokeStyle='#cbd5e1';
+  ictx.lineWidth=1.5;
+  ictx.fillRect(x,y,w,h);
+  ictx.strokeRect(x,y,w,h);
+
+  const mid = y + h/2;
+  ictx.strokeStyle='#94a3b8';
+  ictx.lineWidth=1.1;
+  ictx.beginPath();
+  ictx.moveTo(x+36, y+16);
+  ictx.lineTo(x+36, y+h-22);
+  ictx.lineTo(x+w-12, y+h-22);
+  ictx.stroke();
+
+  ictx.beginPath();
+  ictx.moveTo(x+36, mid);
+  ictx.lineTo(x+w-12, mid);
+  ictx.stroke();
+
+  ictx.fillStyle='#475569';
+  ictx.font='13px Arial';
+  ictx.textAlign='center';
+  ictx.fillText('u', x+16, y+20);
+  ictx.fillText('t', x+w-12, y+h-6);
+  ictx.fillText('0', x+24, mid+4);
+
+  const scale = 1.15 * Math.max(A, 8);
+  ictx.fillText((scale).toFixed(0), x+16, y+26);
+  ictx.fillText((-scale).toFixed(0), x+18, y+h-28);
+
+  if(history.length<2) return;
+
+  ictx.strokeStyle='#f59e0b';
+  ictx.lineWidth=2.2;
+  ictx.beginPath();
+  for(let i=0;i<history.length;i++){
+    const p=history[i];
+    const tx=(p.t-(simTime-historyWindow))/historyWindow;
+    const px = x+36 + tx*(w-50);
+    const py = mid - (p.u/scale)*(h*0.36);
+    if(i===0) ictx.moveTo(px,py);
+    else ictx.lineTo(px,py);
+  }
+  ictx.stroke();
+}
+
+function drawInfo(){
+  ictx.clearRect(0,0,infoCanvas.width,infoCanvas.height);
+  ictx.fillStyle='#fff';
+  ictx.fillRect(0,0,infoCanvas.width,infoCanvas.height);
+
+  ictx.fillStyle='#0b3b78';
+  ictx.font='bold 28px Arial';
+  ictx.textAlign='center';
+  ictx.fillText('Bảng đo đạc',230,42);
+
+  infoBox(18,70,424,102,'#f8fafc','#dbe5f2');
+  ictx.fillStyle='#111827';
+  ictx.textAlign='left';
+  ictx.font='bold 18px Arial';
+  ictx.fillText('Thông số hiện tại',36,100);
+  ictx.font='16px Arial';
+  let modeText='Ngừng kích thích';
+  if(driveMode==='continuous') modeText='Kích thích tuần hoàn';
+  if(driveMode==='pulse') modeText='Xung đơn';
+  ictx.fillText(`Chế độ nguồn: ${modeText}`,36,128);
+  ictx.fillText(`Điều kiện biên: ${rightBoundary==='fixed' ? 'Đầu phải cố định' : 'Đầu phải tự do'}`,36,152);
+
+  infoBox(18,188,424,128,'#fff7ed','#fed7aa');
+  ictx.fillStyle='#92400e';
+  ictx.font='bold 18px Arial';
+  ictx.fillText('1. Đo tốc độ truyền sóng',36,218);
+  ictx.fillStyle='#111827';
+  ictx.font='16px Arial';
+  const x1 = sensor1Index*a;
+  const x2 = sensor2Index*a;
+  const dx = Math.abs(x2-x1);
+  const dt = (sensorTime1!==null && sensorTime2!==null) ? Math.abs(sensorTime2-sensorTime1) : null;
+  const vMeasured = (dt && dt>1e-6) ? dx/dt : null;
+  ictx.fillText(`Δx = ${dx.toFixed(1)} px`,36,248);
+  ictx.fillText(`t₁ = ${sensorTime1===null ? 'chưa có' : sensorTime1.toFixed(3)+' s'}`,160,248);
+  ictx.fillText(`t₂ = ${sensorTime2===null ? 'chưa có' : sensorTime2.toFixed(3)+' s'}`,300,248);
+  ictx.fillText(`Δt = ${dt===null ? 'chưa có' : dt.toFixed(3)+' s'}`,36,276);
+  ictx.fillText(`v đo = ${vMeasured===null ? 'chưa có' : vMeasured.toFixed(1)+' px/s'}`,190,276);
+  ictx.fillText(`v đặt = ${c.toFixed(1)} px/s`,330,276);
+
+  infoBox(18,330,424,96,'#f3e8ff','#d8b4fe');
+  ictx.fillStyle='#6b21a8';
+  ictx.font='bold 18px Arial';
+  ictx.fillText('2. Đo bước sóng',36,360);
+  ictx.fillStyle='#111827';
+  ictx.font='16px Arial';
+  const xm1 = marker1Index*a;
+  const xm2 = marker2Index*a;
+  const lambdaMeasured = Math.abs(xm2-xm1);
+  const lambdaTheory = c/f;
+  ictx.fillText(`λ đo = |M2 - M1| = ${lambdaMeasured.toFixed(1)} px`,36,390);
+  ictx.fillText(`λ lí thuyết ≈ v/f = ${lambdaTheory.toFixed(1)} px`,36,416);
+
+  infoBox(18,438,424,104,'#fefefe','#dbe5f2');
+  ictx.fillStyle='#0b3b78';
+  ictx.font='bold 18px Arial';
+  ictx.fillText('3. Theo dõi một phần tử',36,468);
+  ictx.fillStyle='#111827';
+  ictx.font='16px Arial';
+  ictx.fillText(`Chỉ số phần tử: ${trackIndex} | Li độ hiện tại: ${u[trackIndex].toFixed(2)} px`,36,494);
+  ictx.fillText(`t = ${simTime.toFixed(2)} s`,36,520);
+
+  drawGraph(228,452,200,82);
+}
+
+function animate(ts){
+  updateParams();
+
+  if(lastTs===null) lastTs=ts;
+  let frameDt=Math.min((ts-lastTs)/1000,0.04);
+  lastTs=ts;
+
+  if(running){
+    const dt=1/600;
+    let remain=frameDt;
+    while(remain>0){
+      const h=Math.min(dt,remain);
+      stepPhysics(h);
+      remain-=h;
+    }
+    updateSensors();
+    updateHistory();
+  }else{
+    if(history.length===0) updateHistory();
+  }
+
+  drawScene();
+  drawInfo();
+  requestAnimationFrame(animate);
+}
+
+function beginDrive(mode){
+  if(!started){
+    started=true;
+    simTime=0;
+    history.length=0;
+  }
+  driveMode=mode;
+  driveStartTime=simTime;
+  resetSensorTimes();
+  running=true;
+  lastTs=null;
+}
+
+startBtn.addEventListener('click',()=> beginDrive('continuous'));
+pulseBtn.addEventListener('click',()=> beginDrive('pulse'));
+
+stopDriveBtn.addEventListener('click',()=>{
+  if(started){
+    driveMode='off';
+    u[0]=0;
+    vel[0]=0;
+    running=true;
+    lastTs=null;
+  }
+});
+
+boundaryBtn.addEventListener('click',()=>{
+  rightBoundary = rightBoundary === 'fixed' ? 'free' : 'fixed';
+  updateParams();
+});
+
+pauseBtn.addEventListener('click',()=>{ running=false; });
+resetBtn.addEventListener('click',()=>{ resetState(); });
+
+[
+  ampSlider,freqSlider,speedSlider,trackSlider,
+  sensor1Slider,sensor2Slider,marker1Slider,marker2Slider
+].forEach(el=>el.addEventListener('input',updateParams));
+
+updateParams();
+resetState();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

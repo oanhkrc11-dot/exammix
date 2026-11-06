@@ -1,0 +1,159 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>015 | Định luật II Newton – Cinematic PRO V3 · Club Lighting</title><style>
+:root{font-family:Segoe UI,Arial,sans-serif;color:#e7f6ff;background:#092031}*{box-sizing:border-box}body{margin:0;overflow:hidden}#app{display:grid;grid-template-columns:246px 1fr;height:100vh}aside{background:linear-gradient(170deg,#103248,#061623);padding:12px;overflow:auto;border-right:1px solid #44677d}h1{font-size:17px;margin:8px 0}p{font-size:11px;line-height:1.5;color:#abc6d5}.ey,.sec{font-size:10px;letter-spacing:1.1px;font-weight:800;color:#6edbff}.sec{margin:16px 0 7px}select,button{border:1px solid #406981;background:#12384f;color:#f1fcff;border-radius:8px;padding:9px 7px;font:600 11px Segoe UI,Arial;cursor:pointer}select{width:100%}button:hover{background:#1c5875}button:disabled{opacity:.4;cursor:default}.primary{background:#137ca7}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px}.slider{margin:12px 0;font-size:11px}.slider .head{display:flex;justify-content:space-between}.slider b{color:#ffdb79}input[type=range]{width:100%;accent-color:#4bd1fa;margin-top:7px}.tiny{font-size:10px;color:#96b6c9}main{position:relative;min-width:0;background:radial-gradient(circle at 55% 30%,#21435c,#0b1d31 65%,#061320)}canvas{width:100%;height:100%;display:block;touch-action:none}#top{position:absolute;top:12px;left:12px;display:flex;gap:6px;flex-wrap:wrap;max-width:540px}#top button{background:#0b293ed9}#title{position:absolute;bottom:88px;right:14px;text-align:right;max-width:390px;pointer-events:none}#title h2{font-size:16px;margin:0;color:#c6f0ff}#title small{color:#ffd983}#desc{position:absolute;bottom:20px;right:14px;max-width:390px;padding:10px;border:1px solid #3e708a;background:#061c2adc;border-radius:10px;font-size:11px;line-height:1.5;pointer-events:none}#hud{position:absolute;bottom:20px;left:14px;padding:9px 12px;border-radius:10px;background:#082536df;border:1px solid #42728a;font-size:11px;line-height:1.7;pointer-events:none;min-width:260px}#err{position:absolute;left:20%;top:40%;display:none;background:#4b2021;color:white;padding:15px;z-index:20}.foot{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:11px;color:#ffdf94;pointer-events:none}.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.actions button{padding:8px 3px}#stepText{font-size:11px;background:#071d2d;border:1px solid #345d71;border-radius:8px;padding:10px;margin-top:8px;line-height:1.5}@media(max-width:680px){#app{grid-template-columns:180px 1fr}aside{padding:7px}#top{max-width:210px}#title{max-width:200px}#desc{max-width:210px;font-size:9px}#hud{font-size:9px;max-width:190px}}
+</style></head><body><div id="app"><aside><div class="ey">PHYSICS 10 LAB · 3D CINEMATIC PRO</div><h1>015 · Định luật II Newton</h1><p>SGK Kết nối tri thức · Khảo sát mối liên hệ giữa lực, khối lượng và gia tốc. Mô phỏng bám sát bản chất: <b>a = F / m</b>.</p><div class="sec">CHỌN THÍ NGHIỆM</div><select id="mode"><option value="force">01 · Cùng khối lượng, đổi lực</option><option value="mass">02 · Cùng lực, đổi khối lượng</option><option value="verify">03 · Kiểm chứng F = ma</option></select><div id="params"></div><div class="sec">ÁNH SÁNG SÂN KHẤU / VŨ TRƯỜNG</div><select id="showlight"><option value="studio">Phòng thí nghiệm · Chuẩn</option><option value="disco">Vũ trường · Đèn quét RGB</option><option value="dance">Nhạc sàn · Moving head</option><option value="bar">Quán bar · Neon ấm</option><option value="laser">Laser · Tia giao nhau</option><option value="club">Nightclub · Đèn xoay</option><option value="concert">Sân khấu · Spotlight</option><option value="uv">UV · Blacklight</option><option value="rainbow">Cầu vồng · Color wash</option><option value="party">Party · Disco ball</option></select><div class="slider"><div class="head">Độ sáng hiệu ứng <b id="lightPowerVal">65%</b></div><input id="lightPower" type="range" min="0" max="100" value="65"></div><div class="buttons"><button id="pulse">♫ Nhịp đèn: BẬT</button><button id="lightFreeze">❚❚ Dừng đèn</button></div><p class="tiny">Hiệu ứng đèn tự đổi theo nhịp mô phỏng, không phát nhạc. Giữ nền và mô hình dễ quan sát.</p><div class="sec">KHUNG NHÌN 3D</div><div class="buttons"><button id="down">↓ Hạ cả cảnh</button><button id="up">↑ Nâng cả cảnh</button><button id="left">← Sang trái</button><button id="right">→ Sang phải</button></div><div class="slider"><div class="head">Độ cao khung nhìn <b id="heightVal">0.0</b></div><input id="height" type="range" min="-3" max="3" step=".1" value="0"></div><div class="sec">THAO TÁC</div><div class="buttons"><button id="start" class="primary">▶ Bắt đầu</button><button id="pause">Ⅱ Tạm dừng</button><button id="reset">↻ Đặt lại</button><button id="fit">◎ Căn giữa</button></div><div class="sec">VÍ DỤ NHANH</div><div class="actions"><button id="step0">a)</button><button id="step1">b)</button><button id="step2">c)</button></div><div id="stepText"></div><div class="sec">XUẤT HÌNH / VIDEO</div><div class="buttons"><button id="png">📷 PNG</button><button id="record">● Quay video</button><button id="stopRecord" disabled>■ Dừng quay</button><button id="fullscreen">⛶ Toàn màn</button></div><p id="recLabel" class="tiny">Chưa quay. MP4 nếu trình duyệt hỗ trợ, nếu không xuất WebM.</p><p class="tiny">Chuột trái: xoay 3D · Con lăn: phóng to · Chuột phải: kéo cảnh · Camera bám mặc định tắt.</p></aside><main id="view"><canvas id="scene"></canvas><div id="top"><button id="auto">◉ Camera bám: TẮT</button><button id="light">✦ Nền: Chuẩn</button><button id="grid">▦ Lưới</button><button id="camera">◉ Góc nhìn</button></div><div id="title"><small>PHYSICS 10 · CINEMATIC EXPERIMENT</small><h2 id="heading">ĐỊNH LUẬT II NEWTON</h2></div><div id="desc"></div><div id="hud"></div><div class="foot">Thầy Hùng vật lí</div><div id="err"></div></main></div>
+<script>
+'use strict';
+(()=>{
+const $=id=>document.getElementById(id),canvas=$('scene'),ctx=canvas.getContext('2d'),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const cfg={mode:'force',F1:2,F2:5,mFixed:2,Ffixed:4,m1:1,m2:3,F:4,m:2,viewY:0,viewX:0,zoom:1,azimuth:-.22,elevation:.26,cameraFollow:false,showGrid:true,light:0,running:false,time:0};
+const presets={force:[['mFixed','Khối lượng chung',0.5,5,0.1,'kg'],['F1','Lực kéo xe A',0.5,8,0.1,'N'],['F2','Lực kéo xe B',0.5,8,0.1,'N']],mass:[['Ffixed','Lực kéo chung',0.5,8,0.1,'N'],['m1','Khối lượng xe A',0.5,5,0.1,'kg'],['m2','Khối lượng xe B',0.5,5,0.1,'kg']],verify:[['F','Hợp lực tác dụng',0.5,8,0.1,'N'],['m','Khối lượng xe',0.5,5,0.1,'kg']]};
+let viewport={w:1200,h:700},cam={x:0,y:1,z:0},focusX=0,last=0,recorder,recordChunks=[],recStart=0,manualView={azimuth:-.22,elevation:.26,zoom:1},fxTime=0,fxPaused=false,pulseEnabled=true;
+
+function resetMotion(){cfg.time=0;cfg.running=false;focusX=0;}
+function setMode(){cfg.mode=$('mode').value;resetMotion();cfg.cameraFollow=false;cfg.viewX=0;cfg.viewY=0;cfg.zoom=1;cfg.azimuth=-.22;cfg.elevation=.26;updateControls();updateUI()}
+function updateControls(){const wrap=$('params');wrap.innerHTML='';for(const [key,name,min,max,step,unit] of presets[cfg.mode]){const d=document.createElement('div');d.className='slider';const title=document.createElement('div');title.className='head';title.innerHTML=`<span>${name}</span><b></b>`;const inp=document.createElement('input');inp.type='range';Object.assign(inp,{min,max,step,value:cfg[key]});const out=title.querySelector('b');const setLabel=()=>out.textContent=Number(cfg[key]).toFixed(step<1?1:0)+' '+unit;inp.addEventListener('input',()=>{cfg[key]=Number(inp.value);resetMotion();setLabel();updateUI()});setLabel();d.append(title,inp);wrap.append(d);}if(cfg.mode==='force'){$('step0').textContent='a) F nhỏ';$('step1').textContent='b) F lệch';$('step2').textContent='c) F bằng';}else if(cfg.mode==='mass'){$('step0').textContent='a) m lệch';$('step1').textContent='b) m chênh';$('step2').textContent='c) m bằng';}else{$('step0').textContent='a) Cơ bản';$('step1').textContent='b) Tăng F';$('step2').textContent='c) Tăng m';}}
+function updateUI(){const titles={force:'CÙNG KHỐI LƯỢNG, ĐỔI LỰC',mass:'CÙNG LỰC, ĐỔI KHỐI LƯỢNG',verify:'KIỂM CHỨNG F = ma'};const descriptions={force:'Hai xe có cùng khối lượng. Thay đổi độ lớn lực kéo để so sánh gia tốc. Xe chịu lực lớn hơn sẽ có gia tốc lớn hơn và tăng tốc nhanh hơn.',mass:'Hai xe chịu cùng một lực kéo. Thay đổi khối lượng để so sánh gia tốc. Xe nhẹ hơn sẽ có gia tốc lớn hơn.',verify:'Một xe chịu hợp lực không đổi trên mặt phẳng ngang bỏ qua ma sát. Thay đổi lực F và khối lượng m để kiểm chứng trực tiếp công thức a = F/m.'};$('heading').textContent=titles[cfg.mode];$('desc').textContent=descriptions[cfg.mode];$('auto').textContent='◉ Camera điện ảnh: '+(cfg.cameraFollow?'BẬT':'TẮT');$('auto').style.color=cfg.cameraFollow?'#69ffc5':'';$('height').value=cfg.viewY;$('heightVal').textContent=cfg.viewY.toFixed(1);$('stepText').textContent=cfg.mode==='force'?'Quan sát: cùng khối lượng, xe nào chịu lực lớn hơn thì gia tốc lớn hơn. Khi bật camera điện ảnh, camera bám xe đi trước và đổi góc nhìn như cảnh quay hành động.':cfg.mode==='mass'?'Quan sát: cùng lực kéo, xe nhẹ hơn tăng tốc nhanh hơn. Khi bật camera điện ảnh, camera bám xe đi trước.':'Quan sát trực tiếp các vectơ lực và gia tốc cùng hướng; số liệu cập nhật theo công thức a = F/m. Camera bám có thể quay nhiều góc quanh xe.';}
+
+function v3(x,y,z=0){return {x,y,z}}
+function project(p){const x=p.x-cam.x,y=p.y-cam.y,z=p.z-cam.z;const ca=Math.cos(cfg.azimuth),sa=Math.sin(cfg.azimuth),ce=Math.cos(cfg.elevation),se=Math.sin(cfg.elevation);const xx=x*ca-z*sa,zz=x*sa+z*ca;const yy=y*ce-zz*se;const depth=yy*0+zz*ce+y*se;const perspective=clamp(11/(11+depth*.34),.35,2.5);const scale=Math.min(viewport.w/14,viewport.h/8)*cfg.zoom;return {x:viewport.w*.51+xx*scale*perspective,y:viewport.h*.51-yy*scale*perspective,scale:scale*perspective};}
+function line(a,b,color='#7ee2fb',width=2,dash=[]){const A=project(a),B=project(b);ctx.save();ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.lineWidth=width;ctx.strokeStyle=color;ctx.setLineDash(dash);ctx.stroke();ctx.restore();}
+function polygon(points,color,stroke='#37677d',lw=1){ctx.beginPath();points.forEach((p,i)=>{const q=project(p);i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y)});ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.lineWidth=lw;ctx.strokeStyle=stroke;ctx.stroke();}
+function boxPts(x,y,z,w,h,d){let X=w/2,Y=h/2,Z=d/2;return [v3(x-X,y-Y,z-Z),v3(x+X,y-Y,z-Z),v3(x+X,y+Y,z-Z),v3(x-X,y+Y,z-Z),v3(x-X,y-Y,z+Z),v3(x+X,y-Y,z+Z),v3(x+X,y+Y,z+Z),v3(x-X,y+Y,z+Z)]}
+function cube(x,y,z,w,h,d,color='#89a',edge='#35576c'){const p=boxPts(x,y,z,w,h,d);polygon([p[0],p[1],p[2],p[3]],shade(color,-18),edge);polygon([p[1],p[5],p[6],p[2]],shade(color,-4),edge);polygon([p[3],p[2],p[6],p[7]],shade(color,14),edge);polygon([p[4],p[5],p[6],p[7]],color,edge)}
+function shade(hex,amt){let c=hex.replace('#','');let n=parseInt(c,16),r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;return '#'+(((1<<24)+(clamp(r,0,255)<<16)+(clamp(g,0,255)<<8)+clamp(b,0,255))|0).toString(16).slice(1)}
+function ball(x,y,z,r,color='#dfefff'){const c=project(v3(x,y,z));const rr=Math.max(2,r*c.scale);const g=ctx.createRadialGradient(c.x-rr*.35,c.y-rr*.35,rr*.15,c.x,c.y,rr);g.addColorStop(0,'#fff');g.addColorStop(.25,color);g.addColorStop(1,shade(color,-30));ctx.beginPath();ctx.fillStyle=g;ctx.arc(c.x,c.y,rr,0,Math.PI*2);ctx.fill();ctx.lineWidth=1;ctx.strokeStyle=shade(color,-45);ctx.stroke();}
+function text(str,x,y,z,color='#dff6ff',size=13){const p=project(v3(x,y,z));ctx.fillStyle=color;ctx.font=`700 ${size}px Segoe UI`;ctx.textAlign='center';ctx.fillText(str,p.x,p.y)}
+function arrow3D(x1,y1,z1,x2,y2,z2,color='#ffd57e',label=''){const A=project(v3(x1,y1,z1)),B=project(v3(x2,y2,z2));ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();const ang=Math.atan2(B.y-A.y,B.x-A.x),s=10;ctx.beginPath();ctx.moveTo(B.x,B.y);ctx.lineTo(B.x-s*Math.cos(ang-.42),B.y-s*Math.sin(ang-.42));ctx.lineTo(B.x-s*Math.cos(ang+.42),B.y-s*Math.sin(ang+.42));ctx.closePath();ctx.fill();if(label){ctx.font='700 12px Segoe UI';ctx.fillText(label,(A.x+B.x)/2,(A.y+B.y)/2-8)}ctx.restore();}
+function ramp(x1,y1,x2,y2,z=0,color='#c99266'){line(v3(x1,y1,z),v3(x2,y2,z),'#e5bb8f',8);line(v3(x1,y1-.06,z+.6),v3(x2,y2-.06,z+.6),'#7f5f4b',3);line(v3(x1,y1-.06,z-.6),v3(x2,y2-.06,z-.6),'#7f5f4b',3)}
+function road(){cube(focusX-cfg.viewX, -1.95, 0, 240, .05, 90, '#203f53','#1c3343');if(!cfg.showGrid)return;const lo=Math.floor((focusX-cfg.viewX-60)/2)*2,hi=Math.ceil((focusX-cfg.viewX+70)/2)*2;for(let x=lo;x<=hi;x+=2){line(v3(x,-1.8,-25),v3(x,-1.8,25),'#2b6580',.75)}for(let z=-24;z<=24;z+=2){line(v3(lo,-1.8,z),v3(hi,-1.8,z),'#255a76',.75)}}
+function laneAt(x1,x2,z,label=''){line(v3(x1,.34,z-1.05),v3(x2,.34,z-1.05),'#668fa0',10);line(v3(x1,.34,z+1.05),v3(x2,.34,z+1.05),'#668fa0',10);const begin=Math.floor(x1/4)*4;for(let x=begin;x<x2;x+=4)line(v3(x,.355,z),v3(Math.min(x+1.7,x2),.355,z),'#d9d6ad',2.5);if(label)text(label,x1+5,.95,z,'#9fe7ff',12)}
+function wheels(x,y,z,span=1.15,width=.52,r=.18){
+ // Four fixed axle centers in WORLD coordinates; changing camera angle never moves axles.
+ const centers=[];
+ for(const dx of [-span*.36,span*.36])for(const dz of [-width,width])centers.push({x:x+dx,y:y-.30,z:z+dz});
+ // Far wheels are rendered before near wheels; no fake z-offset for silver hub.
+ centers.sort((a,b)=>{
+  const sa=a.x*Math.sin(cfg.azimuth)+a.z*Math.cos(cfg.azimuth);
+  const sb=b.x*Math.sin(cfg.azimuth)+b.z*Math.cos(cfg.azimuth);
+  return sb-sa;
+ });
+ for(const p of centers){
+  ball(p.x,p.y,p.z,r,'#23292f');
+  const q=project(p),R=Math.max(2,r*q.scale*.48);
+  ctx.beginPath();ctx.arc(q.x,q.y,R,0,Math.PI*2);ctx.fillStyle='#b4d2de';ctx.fill();
+  ctx.beginPath();ctx.arc(q.x,q.y,R*.39,0,Math.PI*2);ctx.fillStyle='#355665';ctx.fill();
+ }
+}
+
+function cart(x,y=.8,z=0,body='#d9a66e',roof='#4b9bb8'){cube(x,y+.02,z,1.88,.40,1.08,body);cube(x,y+.31,z,1.44,.14,1.02,roof);cube(x,y+.51,z,.98,.08,.82,'#7fd4ef');wheels(x,y+.02,z,1.72,.48,.18)}
+function dataTag(str,x,y,z,w=100){const p=project(v3(x,y,z));ctx.save();ctx.fillStyle='rgba(7,29,45,.88)';ctx.strokeStyle='#3d6a7f';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(p.x-w/2,p.y-18,w,30,8);ctx.fill();ctx.stroke();ctx.fillStyle='#fff4c0';ctx.font='700 12px Segoe UI';ctx.textAlign='center';ctx.fillText(str,p.x,p.y+3);ctx.restore();}
+CanvasRenderingContext2D.prototype.roundRect ||= function(x,y,w,h,r){this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);return this};
+
+function kinematics(a,t,x0=-8){return x0+.5*a*t*t}
+function forceScene(){const a1=cfg.F1/cfg.mFixed,a2=cfg.F2/cfg.mFixed;const x1=kinematics(a1,cfg.time,-8),x2=kinematics(a2,cfg.time,-8);laneAt(focusX-50,focusX+70,-2.1,'XE A');laneAt(focusX-50,focusX+70,2.1,'XE B');cart(x1,.8,-2.1,'#d7a067','#428eb0');cart(x2,.8,2.1,'#e2b95f','#4aa4c5');arrow3D(x1-1.2,1.15,-2.1,x1-1.2+Math.min(2.2,cfg.F1*.32),1.15,-2.1,'#ffd57e',`F₁ = ${cfg.F1.toFixed(1)} N`);arrow3D(x1-1.2,.68,-2.1,x1-1.2+Math.min(1.8,a1*.7),.68,-2.1,'#7ef6ff',`a₁ = ${a1.toFixed(2)}`);arrow3D(x2-1.2,1.15,2.1,x2-1.2+Math.min(2.2,cfg.F2*.32),1.15,2.1,'#ffd57e',`F₂ = ${cfg.F2.toFixed(1)} N`);arrow3D(x2-1.2,.68,2.1,x2-1.2+Math.min(1.8,a2*.7),.68,2.1,'#7ef6ff',`a₂ = ${a2.toFixed(2)}`);dataTag(`m = ${cfg.mFixed.toFixed(1)} kg`,x1,.32,-2.1,94);dataTag(`m = ${cfg.mFixed.toFixed(1)} kg`,x2,.32,2.1,94);return {focus:Math.max(x1,x2),hud:`<b>Định luật II Newton · Cùng khối lượng</b><div>Xe A: F₁ = ${cfg.F1.toFixed(1)} N → a₁ = ${(a1).toFixed(2)} m/s²</div><div>Xe B: F₂ = ${cfg.F2.toFixed(1)} N → a₂ = ${(a2).toFixed(2)} m/s²</div><div>Kết luận: với m không đổi, a tỉ lệ thuận với F.</div>`}}
+function massScene(){const a1=cfg.Ffixed/cfg.m1,a2=cfg.Ffixed/cfg.m2;const x1=kinematics(a1,cfg.time,-8),x2=kinematics(a2,cfg.time,-8);laneAt(focusX-50,focusX+70,-2.1,'XE A');laneAt(focusX-50,focusX+70,2.1,'XE B');cart(x1,.8,-2.1,'#cda56f','#428eb0');cart(x2,.8,2.1,'#b88e62','#3d7f9d');arrow3D(x1-1.2,1.15,-2.1,x1-1.2+Math.min(2.3,cfg.Ffixed*.32),1.15,-2.1,'#ffd57e',`F = ${cfg.Ffixed.toFixed(1)} N`);arrow3D(x1-1.2,.68,-2.1,x1-1.2+Math.min(1.8,a1*.7),.68,-2.1,'#7ef6ff',`a₁ = ${a1.toFixed(2)}`);arrow3D(x2-1.2,1.15,2.1,x2-1.2+Math.min(2.3,cfg.Ffixed*.32),1.15,2.1,'#ffd57e',`F = ${cfg.Ffixed.toFixed(1)} N`);arrow3D(x2-1.2,.68,2.1,x2-1.2+Math.min(1.8,a2*.7),.68,2.1,'#7ef6ff',`a₂ = ${a2.toFixed(2)}`);dataTag(`m₁ = ${cfg.m1.toFixed(1)} kg`,x1,.32,-2.1,96);dataTag(`m₂ = ${cfg.m2.toFixed(1)} kg`,x2,.32,2.1,96);return {focus:Math.max(x1,x2),hud:`<b>Định luật II Newton · Cùng lực kéo</b><div>Xe A: m₁ = ${cfg.m1.toFixed(1)} kg → a₁ = ${(a1).toFixed(2)} m/s²</div><div>Xe B: m₂ = ${cfg.m2.toFixed(1)} kg → a₂ = ${(a2).toFixed(2)} m/s²</div><div>Kết luận: với F không đổi, a tỉ lệ nghịch với m.</div>`}}
+function verifyScene(){const a=cfg.F/cfg.m,x=kinematics(a,cfg.time,-8);laneAt(focusX-55,focusX+75,0,'XE KHẢO SÁT');cart(x,.82,0,'#e0a96b','#4b9bb8');arrow3D(x-1.2,1.18,0,x-1.2+Math.min(2.6,cfg.F*.33),1.18,0,'#ffd57e',`F = ${cfg.F.toFixed(1)} N`);arrow3D(x-1.2,.70,0,x-1.2+Math.min(2.0,a*.75),.70,0,'#7ef6ff',`a = ${a.toFixed(2)} m/s²`);dataTag(`m = ${cfg.m.toFixed(1)} kg`,x,.32,0,90);text('F và a cùng hướng',x,2.25,0,'#d9f7ff',14);return {focus:x,hud:`<b>Kiểm chứng F = ma</b><div>F = ${cfg.F.toFixed(1)} N · m = ${cfg.m.toFixed(1)} kg</div><div>a = F / m = ${cfg.F.toFixed(1)} / ${cfg.m.toFixed(1)} = ${a.toFixed(2)} m/s²</div><div>Kết luận: vectơ gia tốc cùng hướng với hợp lực.</div>`}}
+
+
+function cinematicCamera(targetX,targetV,dt){
+  // Bám vị trí tuyệt đối của xe; chỉ nội suy offset/góc quay để không trễ khi xe tăng tốc.
+  const shot=(cfg.time*0.45)%8;
+  let offset=2.0,desiredAz=-0.22,desiredEl=.26,desiredZoom=1;
+  if(shot<2){offset=2.5;desiredAz=-.85;desiredEl=.16;desiredZoom=1.12;}
+  else if(shot<4){offset=1.5;desiredAz=-.30;desiredEl=.10;desiredZoom=1.08;}
+  else if(shot<6){offset=-1.0;desiredAz=.40;desiredEl=.34;desiredZoom=1.07;}
+  else {offset=1.0;desiredAz=.95;desiredEl=.46;desiredZoom=1.15;}
+  const desiredX=targetX+offset;
+  // Không dùng truy đuổi chậm kiểu lerp trực tiếp giữa 2 tọa độ xe.
+  // Điều chỉnh vị trí theo bước vận tốc xe + hiệu chỉnh lệch khung hình.
+  const error=desiredX-focusX;
+  const step=targetV*dt+clamp(error-targetV*dt,-12*dt,12*dt);
+  focusX+=step;
+  // Khi có thay đổi cảnh hoặc tốc độ cao: ưu tiên giữ xe trong hình.
+  if(Math.abs(desiredX-focusX)>1.1)focusX=desiredX-Math.sign(desiredX-focusX)*1.1;
+  cfg.azimuth+=(desiredAz-cfg.azimuth)*Math.min(1,dt*1.8);
+  cfg.elevation+=(desiredEl-cfg.elevation)*Math.min(1,dt*1.7);
+  cfg.zoom+=(desiredZoom-cfg.zoom)*Math.min(1,dt*1.7);
+}
+function trackedVehicle(){
+  const t=cfg.time;
+  if(cfg.mode==='force'){
+    const a=Math.max(cfg.F1,cfg.F2)/cfg.mFixed;
+    return {x:-8+.5*a*t*t,v:a*t};
+  }
+  if(cfg.mode==='mass'){
+    const a=cfg.Ffixed/Math.min(cfg.m1,cfg.m2);
+    return {x:-8+.5*a*t*t,v:a*t};
+  }
+  const a=cfg.F/cfg.m;
+  return {x:-8+.5*a*t*t,v:a*t};
+}
+
+const lightColors=['#00d9ff','#fc43b5','#9a70ff','#47ffa9','#ffc466','#398bff'];
+function withAlpha(color,alpha){
+ const a=clamp(alpha,0,1);
+ if(color[0]==='#'){
+  const h=color.slice(1),n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h.slice(0,6),16);
+  return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;
+ }
+ const m=color.match(/^hsl\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*\)$/);
+ if(m){
+  const H=Number(m[1]),S=Number(m[2])/100,L=Number(m[3])/100;
+  const k=n=>(n+H/30)%12, q=S*Math.min(L,1-L),f=n=>L-q*Math.max(-1,Math.min(k(n)-3,9-k(n),1));
+  return `rgba(${Math.round(f(0)*255)},${Math.round(f(8)*255)},${Math.round(f(4)*255)},${a})`;
+ }
+ return color;
+}
+function renderStageLights(dt){
+ const mode=$('showlight').value;if(mode==='studio')return;
+ if(!fxPaused)fxTime+=dt;
+ const t=fxTime, W=viewport.w,H=viewport.h,power=Number($('lightPower').value)/100;
+ if(power<=0)return;
+ const beat=pulseEnabled?(0.83+0.17*(.5+.5*Math.sin(t*2*Math.PI*1.5))):1;
+ ctx.save();ctx.globalCompositeOperation='screen';
+ const tint={disco:['#00beff','#ff35c8'],dance:['#338dff','#ff68f6'],bar:['#c04b82','#e8a54b'],laser:['#28ffb4','#42a2ff'],club:['#b74cff','#17e5e1'],concert:['#fff0bb','#7e9cff'],uv:['#9a62ff','#2fdcfd'],rainbow:['#ff5a7b','#46caff'],party:['#70fffa','#ec65ff']}[mode];
+ let alpha=power*beat;
+ // Projected volumetric light cones, confined to the upper two-thirds to avoid the HUD.
+ const beams=(mode==='bar'?3:mode==='concert'?4:mode==='laser'?8:mode==='party'?9:6);
+ for(let i=0;i<beams;i++){
+  const phase=t*(mode==='laser'?2.7:mode==='dance'?1.4:0.65)+i*2.2;
+  const originX=W*(.09+.82*(i+.5)/beams),originY=H*(.03+.04*Math.sin(i*1.7));
+  const targetX=W*(.50+.43*Math.sin(phase)),targetY=H*(.56+.06*Math.cos(phase*.63));
+  const c=mode==='rainbow'?`hsl(${(i*53+t*34)%360} 95% 66%)`:lightColors[(i+Math.floor(t*.7))%lightColors.length];
+  const beamColor=(mode==='bar'?tint[i%2]:(mode==='concert'?tint[i%2]:c));
+  const rg=ctx.createLinearGradient(originX,originY,targetX,targetY);
+  rg.addColorStop(0,withAlpha(beamColor,0));rg.addColorStop(.48,withAlpha(beamColor,.16));rg.addColorStop(1,withAlpha(beamColor,0));
+  ctx.globalAlpha=alpha*(mode==='bar'?.22:mode==='laser'?.50:.29);
+  ctx.fillStyle=rg;ctx.beginPath();ctx.moveTo(originX-8,originY);ctx.lineTo(originX+8,originY);ctx.lineTo(targetX+W*(mode==='laser'?.008:.10),targetY);ctx.lineTo(targetX-W*(mode==='laser'?.008:.10),targetY);ctx.closePath();ctx.fill();
+  if(mode==='laser'||mode==='dance') {ctx.globalAlpha=alpha*.48;ctx.lineWidth=mode==='laser'?1.4:2.5;ctx.strokeStyle=beamColor;ctx.beginPath();ctx.moveTo(originX,originY);ctx.lineTo(targetX,targetY);ctx.stroke();}
+ }
+ // Colored wash and moving pools of light on the stage, transparent so physics stays readable.
+ for(let i=0;i<(mode==='bar'?3:5);i++){
+  let x=W*(.24+.14*i)+Math.sin(t*(mode==='concert'?.3:.8)+i*1.8)*W*.16;
+  let y=H*(.41+.09*Math.cos(t*.55+i*2.3));
+  let R=Math.min(W,H)*(mode==='bar'?.28:.21);
+  const g=ctx.createRadialGradient(x,y,1,x,y,R);
+  const c=(mode==='bar'?tint[i%2]:mode==='uv'?'#815bff':lightColors[(i+Math.floor(t))%6]);
+  g.addColorStop(0,withAlpha(c,.28));g.addColorStop(1,withAlpha(c,0));ctx.globalAlpha=alpha*(mode==='bar'?.19:.15);ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,R,0,Math.PI*2);ctx.fill();
+ }
+ if(mode==='party'||mode==='club'){
+   for(let i=0;i<42;i++){
+    let ang=(i*2.39996+t*(mode==='club'?1.4:.5)),r=Math.sqrt((i+.5)/42)*Math.min(W,H)*.42;
+    let x=W*.5+Math.cos(ang)*r,y=H*.42+Math.sin(ang)*r*.64;
+    ctx.globalAlpha=alpha*.48;ctx.fillStyle=lightColors[i%6];ctx.beginPath();ctx.arc(x,y,2.4+(i%3),0,Math.PI*2);ctx.fill();
+   }
+ }
+ ctx.globalCompositeOperation='source-over';ctx.restore();
+}
+
+function frame(dt){const w=canvas.clientWidth,h=canvas.clientHeight,dpr=Math.min(devicePixelRatio||1,2);if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}viewport={w,h};ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);const sky=ctx.createLinearGradient(0,0,0,h);const variants=[['#123049','#061422'],['#234961','#0b2437'],['#47372d','#112436'],['#244f70','#0b2437'],['#0d1933','#090d1d']];sky.addColorStop(0,variants[cfg.light][0]);sky.addColorStop(1,variants[cfg.light][1]);ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);if(cfg.running)cfg.time+=dt;let scene={focus:0,hud:''};cam={x:focusX-cfg.viewX,y:-cfg.viewY,z:0};road();if(cfg.mode==='force')scene=forceScene();else if(cfg.mode==='mass')scene=massScene();else scene=verifyScene();if(cfg.cameraFollow){{const target=trackedVehicle();cinematicCamera(target.x,target.v,dt);}}cam={x:focusX-cfg.viewX,y:-cfg.viewY,z:0};ctx.clearRect(0,0,w,h);ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);road();if(cfg.mode==='force')scene=forceScene();else if(cfg.mode==='mass')scene=massScene();else scene=verifyScene();renderStageLights(dt);$('hud').innerHTML=`<b>${cfg.running?'● ĐANG CHẠY':'Ⅱ ĐANG DỪNG'}</b><div>t = ${cfg.time.toFixed(1)} s · camera ${cfg.cameraFollow?'điện ảnh, bám xe theo thời gian thực':'giữ nguyên khung hình'}</div>${scene.hud}`;}
+function go(){cfg.running=true;cfg.time=0;focusX=0;}
+$('mode').addEventListener('change',setMode);$('start').onclick=go;$('pause').onclick=()=>cfg.running=false;$('reset').onclick=()=>{resetMotion();cfg.viewY=cfg.viewX=0;cfg.zoom=1;cfg.azimuth=-.22;cfg.elevation=.26;updateUI()};$('step0').onclick=()=>{if(cfg.mode==='force'){Object.assign(cfg,{mFixed:2,F1:2,F2:4})}else if(cfg.mode==='mass'){Object.assign(cfg,{Ffixed:4,m1:1,m2:3})}else{Object.assign(cfg,{F:4,m:2})}resetMotion();updateControls();updateUI()};$('step1').onclick=()=>{if(cfg.mode==='force'){Object.assign(cfg,{mFixed:2,F1:2,F2:6})}else if(cfg.mode==='mass'){Object.assign(cfg,{Ffixed:4,m1:1,m2:4})}else{Object.assign(cfg,{F:6,m:2})}resetMotion();updateControls();updateUI()};$('step2').onclick=()=>{if(cfg.mode==='force'){Object.assign(cfg,{mFixed:2,F1:4,F2:4})}else if(cfg.mode==='mass'){Object.assign(cfg,{Ffixed:4,m1:2,m2:2})}else{Object.assign(cfg,{F:4,m:4})}resetMotion();updateControls();updateUI()};
+$('down').onclick=()=>setHeight(cfg.viewY-.35);$('up').onclick=()=>setHeight(cfg.viewY+.35);$('left').onclick=()=>{cfg.viewX-=.35};$('right').onclick=()=>{cfg.viewX+=.35};$('height').oninput=e=>setHeight(+e.target.value);function setHeight(v){cfg.viewY=clamp(v,-3,3);$('height').value=cfg.viewY;$('heightVal').textContent=cfg.viewY.toFixed(1)}
+$('showlight').onchange=()=>{fxTime=0};$('lightPower').oninput=e=>{$('lightPowerVal').textContent=e.target.value+'%'};$('pulse').onclick=()=>{pulseEnabled=!pulseEnabled;$('pulse').textContent='♫ Nhịp đèn: '+(pulseEnabled?'BẬT':'TẮT')};$('lightFreeze').onclick=()=>{fxPaused=!fxPaused;$('lightFreeze').textContent=fxPaused?'▶ Chạy đèn':'❚❚ Dừng đèn'};$('fit').onclick=()=>{cfg.viewY=cfg.viewX=0;cfg.zoom=1;cfg.azimuth=-.22;cfg.elevation=.26;manualView={azimuth:cfg.azimuth,elevation:cfg.elevation,zoom:cfg.zoom};updateUI()};$('auto').onclick=()=>{cfg.cameraFollow=!cfg.cameraFollow;if(cfg.cameraFollow){manualView={azimuth:cfg.azimuth,elevation:cfg.elevation,zoom:cfg.zoom};const target=trackedVehicle();focusX=target.x+2.0;}updateUI()};$('light').onclick=()=>{cfg.light=(cfg.light+1)%5;$('light').textContent='✦ Ánh sáng: '+['Chuẩn','Sáng+','Đèn tóc','Ngoài trời','Vũ trụ'][cfg.light]};$('grid').onclick=()=>cfg.showGrid=!cfg.showGrid;$('camera').onclick=()=>{const views=[[-.22,.26],[0,.08],[1.0,.45],[-1.2,-.20]];let i=views.findIndex(v=>v[0]===cfg.azimuth&&v[1]===cfg.elevation);i=(i+1)%views.length;cfg.azimuth=views[i][0];cfg.elevation=views[i][1];if(!cfg.cameraFollow){manualView={azimuth:cfg.azimuth,elevation:cfg.elevation,zoom:cfg.zoom};}};$('fullscreen').onclick=()=>document.fullscreenElement?document.exitFullscreen():$('view').requestFullscreen?.();$('png').onclick=()=>{const a=document.createElement('a');a.download='015_Newton2_3D.png';a.href=canvas.toDataURL('image/png');a.click()};
+let drag=null;canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,b:e.button};canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(drag.b===2){cfg.viewX-=dx*.02;setHeight(cfg.viewY-dy*.015)}else{cfg.azimuth=clamp(cfg.azimuth+dx*.006,-Math.PI,Math.PI);cfg.elevation=clamp(cfg.elevation+dy*.006,-1.3,1.3);if(!cfg.cameraFollow){manualView={azimuth:cfg.azimuth,elevation:cfg.elevation,zoom:cfg.zoom};}}drag={x:e.clientX,y:e.clientY,b:drag.b}});canvas.addEventListener('pointerup',()=>drag=null);canvas.addEventListener('wheel',e=>{e.preventDefault();cfg.zoom=clamp(cfg.zoom*Math.exp(-e.deltaY*.001),.35,3.5);if(!cfg.cameraFollow){manualView={azimuth:cfg.azimuth,elevation:cfg.elevation,zoom:cfg.zoom};}},{passive:false});
+$('record').onclick=()=>{try{const types=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'];let type=types.find(t=>MediaRecorder.isTypeSupported(t));if(!type)throw Error('Trình duyệt không hỗ trợ ghi video');recordChunks=[];recorder=new MediaRecorder(canvas.captureStream(30),{mimeType:type});recorder.ondataavailable=e=>{if(e.data.size)recordChunks.push(e.data)};recorder.onstop=()=>{let url=URL.createObjectURL(new Blob(recordChunks,{type})),a=document.createElement('a');a.href=url;a.download='015_Newton2_3D.'+(type.includes('mp4')?'mp4':'webm');a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);$('record').disabled=false;$('stopRecord').disabled=true;$('recLabel').textContent='Đã xuất video.'};recorder.start();recStart=performance.now();$('record').disabled=true;$('stopRecord').disabled=false;$('recLabel').textContent='Đang quay...';}catch(e){$('recLabel').textContent=e.message}};$('stopRecord').onclick=()=>{if(recorder&&recorder.state==='recording')recorder.stop()};
+let previous=performance.now();function animate(now){try{let dt=Math.min(.045,(now-previous)/1000);previous=now;frame(dt);if(recorder&&recorder.state==='recording')$('recLabel').textContent='Đang quay '+((now-recStart)/1000).toFixed(1)+' s';}catch(e){$('err').textContent='Lỗi: '+e.message;$('err').style.display='block';console.error(e);}requestAnimationFrame(animate)}
+updateControls();updateUI();requestAnimationFrame(animate);
+})();
+</script></body></html>

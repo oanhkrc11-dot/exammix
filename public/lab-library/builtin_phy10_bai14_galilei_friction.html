@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Galilei – 3 trường hợp có ma sát</title>
+  <style>
+    :root{
+      --bg:#f5f9ff;
+      --panel:#ffffff;
+      --panel2:#f7fbff;
+      --line:#d7e6f2;
+      --text:#20384d;
+      --muted:#5f7587;
+      --blue:#1f8ed8;
+      --cyan:#2db7e5;
+      --green:#2fa76e;
+      --orange:#efaa34;
+      --red:#de5c5c;
+      --shadow:0 16px 38px rgba(35,78,116,.12);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Segoe UI", Arial, sans-serif;
+      color:var(--text);
+      background:linear-gradient(180deg,#f8fbff 0%, #eef6ff 100%);
+    }
+    .wrap{max-width:1520px;margin:auto;padding:18px}
+    .hero{
+      background:linear-gradient(135deg,#fff,#f4faff 70%,#edf6ff);
+      border:1px solid var(--line);
+      border-radius:24px;
+      padding:18px 22px;
+      box-shadow:var(--shadow);
+    }
+    .hero h1{margin:0 0 8px;font-size:clamp(24px,4vw,40px);color:#25547c}
+    .hero p{margin:0;color:var(--muted);line-height:1.65}
+    .note{
+      margin-top:14px;padding:12px 14px;border-left:5px solid var(--orange);border-radius:16px;
+      background:linear-gradient(180deg,#fffefc,#f8fcff);color:#566d80;line-height:1.6
+    }
+    .grid{display:grid;gap:16px;margin-top:16px}
+    .case{
+      display:grid;grid-template-columns:minmax(0,1.3fr) 390px;gap:16px;
+      background:linear-gradient(180deg,var(--panel),var(--panel2));
+      border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:14px
+    }
+    .sceneWrap{border:1px solid #d7e8f2;border-radius:22px;overflow:hidden;background:#fff}
+    canvas{display:block;width:100%;height:auto;background:linear-gradient(180deg,#ffffff 0%,#fbfdff 60%,#f1f7ff 100%)}
+    .caption{margin-top:8px;color:#758999;font-size:13px}
+    .right{display:flex;flex-direction:column;gap:12px}
+    .desc,.statBox,.ctrlBox,.ideaBox{
+      padding:14px;border:1px solid #dce8f1;border-radius:18px;background:linear-gradient(180deg,#fff,#f7fbff)
+    }
+    .desc h2{margin:0 0 8px;font-size:20px;color:#24547c}
+    .desc p,.ideaBox p{margin:0;line-height:1.6;color:#5d7283}
+    .tag{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef7ff;border:1px solid #dceafd;color:#255b82;font-weight:700;font-size:13px}
+    .legend{display:flex;flex-wrap:wrap;gap:8px}
+    .ctrlBox h3,.statBox h3,.ideaBox h3{margin:0 0 10px;font-size:15px;color:#24557d}
+    .btnRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+    button{border:0;border-radius:12px;padding:11px 10px;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(40,90,130,.12)}
+    .b1{background:#2c7be5;color:#fff}.b2{background:#e8f3ff;color:#245b82}.b3{background:#f6e7b8;color:#5b4303}
+    .sliderWrap{margin-top:12px}
+    .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:8px}
+    .row label{font-weight:700;color:#44647d}
+    .value{min-width:70px;text-align:right;color:#24557b;font-weight:800}
+    input[type=range]{width:100%;accent-color:#2c7be5}
+    .stat{display:grid;grid-template-columns:1fr auto;gap:10px;padding:6px 0;border-bottom:1px dashed #deebf4;font-size:14px}
+    .stat:last-child{border-bottom:0}.stat b{color:#215075}
+    .pill{display:inline-block;margin:6px 8px 0 0;padding:6px 10px;border-radius:999px;background:#eef7ff;border:1px solid #d9eaff;color:#245b82;font-weight:700;font-size:13px}
+    @media(max-width:1220px){.case{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <h1>Thí nghiệm Galilei – 3 trường hợp, mỗi trường hợp có nút chuyển động riêng</h1>
+    <p>Mỗi trường hợp dưới đây có <b>bộ nút điều khiển riêng</b> để bạn cho viên bi chuyển động độc lập. Mô phỏng đã thêm <b>ma sát</b>, vì vậy có thể quan sát rõ viên bi <b>dừng lại ở đâu</b> trong từng trường hợp.</p>
+    <div class="note">
+      Trong mô phỏng này dùng hệ số ma sát cố định <b>μ = 0,18</b>. Vì có ma sát nên: <b>(a)</b> và <b>(b)</b> viên bi không lên lại đến đúng độ cao ban đầu; <b>(c)</b> viên bi lăn trên đoạn ngang rồi dừng lại sau một quãng đường hữu hạn.
+    </div>
+  </section>
+
+  <section class="grid">
+    <article class="case">
+      <div>
+        <div class="sceneWrap"><canvas id="cvA" width="1020" height="300"></canvas></div>
+        <div class="caption">(a) Viên bi lăn xuống máng 1, qua đáy rồi lăn lên máng 2. Do có ma sát, viên bi dừng lại <b>trước khi đạt tới độ cao h</b>.</div>
+      </div>
+      <div class="right">
+        <div class="desc">
+          <h2>a) Máng 2 nghiêng khá dốc</h2>
+          <p>Viên bi <b>nhanh dần</b> khi xuống máng 1, đạt vận tốc lớn nhất ở đáy, rồi <b>chậm dần</b> khi lên máng 2. Vì có ma sát nên viên bi dừng lại ở độ cao <b>thấp hơn h</b>.</p>
+        </div>
+        <div class="ctrlBox">
+          <h3>Điều khiển riêng cho trường hợp (a)</h3>
+          <div class="btnRow">
+            <button class="b1" id="playA">▶ Chạy a</button>
+            <button class="b2" id="pauseA">⏸ Dừng a</button>
+            <button class="b3" id="resetA">↺ Làm lại</button>
+          </div>
+          <div class="sliderWrap">
+            <div class="row"><label>Tốc độ mô phỏng viên bi</label><div class="value" id="speedAText">1.00×</div></div>
+            <input id="speedA" type="range" min="0.5" max="2.5" step="0.25" value="1">
+          </div>
+        </div>
+        <div class="statBox">
+          <h3>Quan sát chính</h3>
+          <div class="stat"><span>Giai đoạn đầu</span><b id="stateA">Đứng yên</b></div>
+          <div class="stat"><span>Vị trí dừng</span><b id="stopA">Chưa chạy</b></div>
+          <div class="stat"><span>Độ cao khi dừng</span><b id="heightA">—</b></div>
+          <div class="stat"><span>So với độ cao h</span><b>Thấp hơn</b></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="case">
+      <div>
+        <div class="sceneWrap"><canvas id="cvB" width="1020" height="300"></canvas></div>
+        <div class="caption">(b) Máng 2 thoải hơn, nên viên bi vẫn đi được <b>xa hơn</b> trên máng 2 trước khi dừng lại, nhưng độ cao dừng vẫn thấp hơn h do ma sát.</div>
+      </div>
+      <div class="right">
+        <div class="desc">
+          <h2>b) Máng 2 thoải hơn</h2>
+          <p>Vì máng 2 thoải hơn nên viên bi đi được <b>quãng đường dài hơn</b> trên máng 2 trước khi dừng. Tuy nhiên do ma sát, nó vẫn dừng lại ở độ cao <b>thấp hơn độ cao ban đầu</b>.</p>
+        </div>
+        <div class="ctrlBox">
+          <h3>Điều khiển riêng cho trường hợp (b)</h3>
+          <div class="btnRow">
+            <button class="b1" id="playB">▶ Chạy b</button>
+            <button class="b2" id="pauseB">⏸ Dừng b</button>
+            <button class="b3" id="resetB">↺ Làm lại</button>
+          </div>
+          <div class="sliderWrap">
+            <div class="row"><label>Tốc độ mô phỏng viên bi</label><div class="value" id="speedBText">1.00×</div></div>
+            <input id="speedB" type="range" min="0.5" max="2.5" step="0.25" value="1">
+          </div>
+        </div>
+        <div class="statBox">
+          <h3>Quan sát chính</h3>
+          <div class="stat"><span>Giai đoạn đầu</span><b id="stateB">Đứng yên</b></div>
+          <div class="stat"><span>Vị trí dừng</span><b id="stopB">Chưa chạy</b></div>
+          <div class="stat"><span>Độ cao khi dừng</span><b id="heightB">—</b></div>
+          <div class="stat"><span>So với trường hợp (a)</span><b>Đi xa hơn</b></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="case">
+      <div>
+        <div class="sceneWrap"><canvas id="cvC" width="1020" height="300"></canvas></div>
+        <div class="caption">(c) Khi máng 2 nằm ngang, viên bi vẫn tiếp tục lăn một đoạn trên phần ngang, nhưng do ma sát nên cuối cùng <b>vẫn dừng lại</b>.</div>
+      </div>
+      <div class="right">
+        <div class="desc">
+          <h2>c) Máng 2 nằm ngang</h2>
+          <p>Sau khi nhanh dần xuống máng 1, viên bi đi sang phần nằm ngang với vận tốc lớn nhất ở đáy. Do có ma sát trên mặt ngang nên viên bi <b>chậm dần đều</b> rồi dừng lại sau một quãng đường nhất định.</p>
+        </div>
+        <div class="ctrlBox">
+          <h3>Điều khiển riêng cho trường hợp (c)</h3>
+          <div class="btnRow">
+            <button class="b1" id="playC">▶ Chạy c</button>
+            <button class="b2" id="pauseC">⏸ Dừng c</button>
+            <button class="b3" id="resetC">↺ Làm lại</button>
+          </div>
+          <div class="sliderWrap">
+            <div class="row"><label>Tốc độ mô phỏng viên bi</label><div class="value" id="speedCText">1.00×</div></div>
+            <input id="speedC" type="range" min="0.5" max="2.5" step="0.25" value="1">
+          </div>
+        </div>
+        <div class="statBox">
+          <h3>Quan sát chính</h3>
+          <div class="stat"><span>Giai đoạn đầu</span><b id="stateC">Đứng yên</b></div>
+          <div class="stat"><span>Vị trí dừng</span><b id="stopC">Chưa chạy</b></div>
+          <div class="stat"><span>Chuyển động ở phần ngang</span><b id="horiC">Chưa quan sát</b></div>
+          <div class="stat"><span>Kết luận</span><b>Dừng lại do ma sát</b></div>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>
+
+<script>
+(() => {
+  const MU = 0.18;
+  const G = 9.8;
+
+  function $(id){ return document.getElementById(id); }
+  function dist(a,b){ return Math.hypot(b.x-a.x, b.y-a.y); }
+  function lerp(a,b,t){ return a + (b-a)*t; }
+  function pointAlong(a,b,sPx){
+    const L = dist(a,b);
+    const t = L === 0 ? 0 : Math.max(0, Math.min(1, sPx/L));
+    return {x: lerp(a.x,b.x,t), y: lerp(a.y,b.y,t)};
+  }
+
+  class CaseSim {
+    constructor(cfg){
+      Object.assign(this, cfg);
+      this.cv = $(cfg.canvasId);
+      this.ctx = this.cv.getContext('2d');
+      this.playBtn = $(cfg.playId);
+      this.pauseBtn = $(cfg.pauseId);
+      this.resetBtn = $(cfg.resetId);
+      this.speedEl = $(cfg.speedId);
+      this.speedText = $(cfg.speedTextId);
+      this.stateEl = $(cfg.stateId);
+      this.stopEl = $(cfg.stopId);
+      this.heightEl = cfg.heightId ? $(cfg.heightId) : null;
+      this.extraEl = cfg.extraId ? $(cfg.extraId) : null;
+
+      this.speedFactor = 1;
+      this.running = false;
+      this.initGeometry();
+      this.bindUI();
+      this.reset();
+    }
+
+    initGeometry(){
+      this.start = {x:110, y:55};
+      this.bottom = {x:410, y:205};
+      this.end = this.caseType === 'a' ? {x:735, y:55}
+               : this.caseType === 'b' ? {x:920, y:105}
+               : {x:955, y:205};
+
+      this.h = 1.25; // m, height reference for teaching
+      this.scale = (this.bottom.y - this.start.y) / this.h; // px per meter
+      this.L1 = dist(this.start, this.bottom) / this.scale;
+      this.theta1 = Math.asin(this.h / this.L1);
+      this.aDown = G * (Math.sin(this.theta1) - MU * Math.cos(this.theta1));
+      this.tDown = Math.sqrt(2 * this.L1 / this.aDown);
+      this.vBottom = this.aDown * this.tDown;
+
+      this.L2 = dist(this.bottom, this.end) / this.scale;
+      this.theta2 = this.caseType === 'c' ? 0 : Math.asin((this.bottom.y - this.end.y) / (dist(this.bottom, this.end)));
+
+      if(this.caseType === 'c'){
+        this.aUp = -MU * G;
+      } else {
+        this.aUp = -(G * (Math.sin(this.theta2) + MU * Math.cos(this.theta2)));
+      }
+
+      this.sStop2 = Math.max(0, (this.vBottom * this.vBottom) / (2 * Math.abs(this.aUp)));
+      this.stopReachEnd = this.sStop2 > this.L2 && this.caseType !== 'c';
+      this.stopDistanceOnSegment = Math.min(this.sStop2, this.L2);
+      this.stopPoint = pointAlong(this.bottom, this.end, this.stopDistanceOnSegment * this.scale);
+
+      if(this.caseType !== 'c'){
+        this.stopHeight = ((this.bottom.y - this.stopPoint.y) / this.scale).toFixed(2);
+      }
+    }
+
+    bindUI(){
+      this.playBtn.onclick = () => { this.running = true; };
+      this.pauseBtn.onclick = () => { this.running = false; };
+      this.resetBtn.onclick = () => { this.reset(); };
+      this.speedEl.addEventListener('input', () => {
+        this.speedFactor = +this.speedEl.value;
+        this.speedText.textContent = this.speedFactor.toFixed(2) + '×';
+      });
+    }
+
+    reset(){
+      this.running = false;
+      this.segment = 1;
+      this.tSeg = 0;
+      this.finished = false;
+      this.ball = {x:this.start.x, y:this.start.y};
+      this.trail = [{x:this.ball.x,y:this.ball.y}];
+      this.speedFactor = +this.speedEl.value;
+      this.speedText.textContent = this.speedFactor.toFixed(2) + '×';
+      this.updateText('Đứng yên', 'Chưa chạy');
+      if(this.heightEl) this.heightEl.textContent = '—';
+      if(this.extraEl) this.extraEl.textContent = 'Chưa quan sát';
+      this.draw();
+    }
+
+    updateText(state, stop){
+      this.stateEl.textContent = state;
+      this.stopEl.textContent = stop;
+    }
+
+    step(dt){
+      if(!this.running || this.finished) return;
+      const d = dt * this.speedFactor;
+      this.tSeg += d;
+
+      if(this.segment === 1){
+        const t = Math.min(this.tSeg, this.tDown);
+        const s = 0.5 * this.aDown * t * t;
+        this.ball = pointAlong(this.start, this.bottom, s * this.scale);
+        this.updateText('Xuống máng 1: nhanh dần', 'Chưa dừng');
+        if(t >= this.tDown){
+          this.segment = 2;
+          this.tSeg = 0;
+        }
+      } else if(this.segment === 2){
+        const a = this.aUp;
+        const tStop = this.vBottom / Math.abs(a);
+        const t = Math.min(this.tSeg, tStop);
+        const s = this.vBottom * t + 0.5 * a * t * t; // a is negative
+        this.ball = pointAlong(this.bottom, this.end, s * this.scale);
+
+        if(this.caseType === 'c'){
+          this.updateText('Trên đoạn ngang: chậm dần do ma sát', `Dừng cách đáy ${(s).toFixed(2)} m`);
+          if(this.extraEl) this.extraEl.textContent = 'Chậm dần đều';
+        } else {
+          this.updateText('Lên máng 2: chậm dần', `Dừng trên máng 2`);
+          if(this.heightEl) this.heightEl.textContent = `${((this.bottom.y - this.ball.y)/this.scale).toFixed(2)} m`;
+        }
+
+        if(t >= tStop){
+          this.ball = {x:this.stopPoint.x, y:this.stopPoint.y};
+          this.finished = true;
+          this.running = false;
+          if(this.caseType === 'c'){
+            this.updateText('Đã dừng', `Dừng sau ${(this.sStop2).toFixed(2)} m trên đoạn ngang`);
+            if(this.extraEl) this.extraEl.textContent = 'Đã dừng lại';
+          } else {
+            this.updateText('Đã dừng', `Dừng tại điểm đã đánh dấu`);
+            if(this.heightEl) this.heightEl.textContent = `${this.stopHeight} m`;
+          }
+        }
+      }
+
+      this.trail.push({x:this.ball.x,y:this.ball.y});
+      if(this.trail.length > 260) this.trail.shift();
+    }
+
+    drawArrow(x1,y1,x2,y2,color,label=''){
+      const c = this.ctx;
+      c.save();
+      c.strokeStyle = color; c.fillStyle = color; c.lineWidth = 2.7;
+      c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+      const a = Math.atan2(y2-y1,x2-x1), s = 10;
+      c.beginPath();
+      c.moveTo(x2,y2);
+      c.lineTo(x2-s*Math.cos(a-.45), y2-s*Math.sin(a-.45));
+      c.lineTo(x2-s*Math.cos(a+.45), y2-s*Math.sin(a+.45));
+      c.closePath(); c.fill();
+      if(label){ c.font='700 15px Segoe UI'; c.fillText(label,x2+8,y2-6); }
+      c.restore();
+    }
+
+    draw(){
+      const c = this.ctx, W = this.cv.width, H = this.cv.height;
+      c.clearRect(0,0,W,H);
+      c.fillStyle = '#fcfeff'; c.fillRect(0,0,W,H);
+
+      // track
+      c.save();
+      c.strokeStyle = '#1f9edd';
+      c.lineWidth = 6;
+      c.lineCap = 'round';
+      c.lineJoin = 'round';
+      c.beginPath();
+      c.moveTo(this.start.x,this.start.y);
+      c.lineTo(this.bottom.x,this.bottom.y);
+      c.lineTo(this.end.x,this.end.y);
+      c.stroke();
+      c.restore();
+
+      c.save();
+      c.strokeStyle = 'rgba(31,158,221,.9)';
+      c.lineWidth = 5;
+      c.beginPath(); c.moveTo(80,205); c.lineTo(W-80,205); c.stroke();
+      c.restore();
+
+      c.save();
+      c.strokeStyle = 'rgba(0,0,0,.08)';
+      c.lineWidth = 16; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(80,216); c.lineTo(W-80,216); c.stroke();
+      c.restore();
+
+      // labels 1 and 2
+      c.fillStyle = '#2d4053'; c.font = '700 22px Segoe UI';
+      c.fillText('1', this.start.x-18, this.start.y+12);
+      c.fillText('2', this.end.x+10, this.end.y+12);
+
+      // height marker h
+      this.drawArrow(this.start.x-34, this.start.y, this.start.x-34, this.bottom.y, '#444');
+      this.drawArrow(this.start.x-34, this.bottom.y, this.start.x-34, this.start.y, '#444');
+      c.fillStyle = '#333'; c.font = '700 22px Segoe UI';
+      c.fillText('h', this.start.x-52, (this.start.y+this.bottom.y)/2 + 6);
+
+      // trail
+      c.save();
+      c.strokeStyle = this.caseType === 'c' ? 'rgba(47,167,110,.45)' : 'rgba(217,77,147,.4)';
+      c.lineWidth = 3;
+      c.beginPath();
+      this.trail.forEach((p,i)=> i===0 ? c.moveTo(p.x,p.y) : c.lineTo(p.x,p.y));
+      c.stroke();
+      c.restore();
+
+      // stop marker
+      c.save();
+      c.strokeStyle = '#de5c5c'; c.fillStyle='#de5c5c';
+      c.setLineDash([6,6]); c.lineWidth = 2;
+      c.beginPath(); c.moveTo(this.stopPoint.x, this.stopPoint.y-36); c.lineTo(this.stopPoint.x, this.stopPoint.y+36); c.stroke();
+      c.setLineDash([]);
+      c.beginPath(); c.arc(this.stopPoint.x, this.stopPoint.y, 5, 0, Math.PI*2); c.fill();
+      c.font = '700 16px Segoe UI';
+      c.fillText('Điểm dừng do ma sát', this.stopPoint.x+12, this.stopPoint.y-10);
+      c.restore();
+
+      // same height reference for a,b
+      if(this.caseType !== 'c'){
+        c.save();
+        c.strokeStyle = 'rgba(104,129,148,.45)'; c.lineWidth = 2; c.setLineDash([8,8]);
+        c.beginPath(); c.moveTo(this.start.x+10,this.start.y); c.lineTo(Math.min(this.end.x+20,W-60), this.start.y); c.stroke();
+        c.restore();
+      }
+
+      // ball
+      c.save();
+      const grad = c.createRadialGradient(this.ball.x-4,this.ball.y-6,2,this.ball.x,this.ball.y,15);
+      grad.addColorStop(0,'#fefefe'); grad.addColorStop(.35,'#b8bfc5'); grad.addColorStop(1,'#43474c');
+      c.fillStyle = grad; c.beginPath(); c.arc(this.ball.x,this.ball.y,14,0,Math.PI*2); c.fill();
+      c.strokeStyle = 'rgba(0,0,0,.25)'; c.stroke();
+      c.restore();
+
+      // motion blur on horizontal case
+      if(this.caseType === 'c' && this.segment === 2 && !this.finished){
+        c.save(); c.strokeStyle = '#999'; c.lineWidth = 2;
+        for(let i=0;i<4;i++){
+          c.beginPath();
+          c.moveTo(this.ball.x-22-i*8, this.ball.y-4+i);
+          c.lineTo(this.ball.x-10-i*8, this.ball.y-4+i);
+          c.stroke();
+        }
+        c.restore();
+      }
+
+      // case letter and state
+      c.fillStyle = '#274e71'; c.font = '700 24px Segoe UI'; c.fillText(this.caseType + ')', 26, 34);
+      c.fillStyle = '#37556d'; c.font = '700 19px Segoe UI';
+      c.fillText(this.stateEl.textContent, 620, 34);
+      c.fillStyle = '#597488'; c.font = '600 16px Segoe UI';
+      c.fillText(`μ = ${MU.toFixed(2)}`, 620, 58);
+    }
+  }
+
+  const sims = [
+    new CaseSim({ caseType:'a', canvasId:'cvA', playId:'playA', pauseId:'pauseA', resetId:'resetA', speedId:'speedA', speedTextId:'speedAText', stateId:'stateA', stopId:'stopA', heightId:'heightA' }),
+    new CaseSim({ caseType:'b', canvasId:'cvB', playId:'playB', pauseId:'pauseB', resetId:'resetB', speedId:'speedB', speedTextId:'speedBText', stateId:'stateB', stopId:'stopB', heightId:'heightB' }),
+    new CaseSim({ caseType:'c', canvasId:'cvC', playId:'playC', pauseId:'pauseC', resetId:'resetC', speedId:'speedC', speedTextId:'speedCText', stateId:'stateC', stopId:'stopC', extraId:'horiC' })
+  ];
+
+  let last = performance.now();
+  function loop(now){
+    const dt = Math.min(0.03, (now-last)/1000);
+    last = now;
+    sims.forEach(sim => { sim.step(dt); sim.draw(); });
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+<\/script>
+</body>
+</html>

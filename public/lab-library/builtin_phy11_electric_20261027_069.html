@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>069 - Đưa điện môi vào tụ điện</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07131e;color:#eef9ff;font-family:Inter,Segoe UI,system-ui,sans-serif}
+#app{position:fixed;inset:0}
+#panel{position:fixed;left:12px;top:12px;bottom:12px;width:364px;z-index:40;overflow:auto;padding:11px;border-radius:16px;background:rgba(8,18,28,.97);border:1px solid rgba(111,193,235,.22);box-shadow:0 18px 52px rgba(0,0,0,.42)}
+#panel.hide{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none}
+h1{font-size:14px;margin:0 0 3px}.sub{font-size:10.5px;color:#7bdcff;font-weight:800}
+.desc{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(12,28,41,.72);font-size:10.3px;line-height:1.45;color:#cce1ee}
+.section{margin:10px 0 6px;color:#75d8ff;font-weight:900;font-size:10.5px}
+label.control{display:block;margin:7px 0 9px;font-size:10.8px}label.control .value{float:right;color:#9fe9ff;font-weight:800}
+input[type=range]{width:100%;accent-color:#52c9ff;margin-top:4px}
+.buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:7px}
+button{border:1px solid #355a73;background:#122332;color:#eef8ff;border-radius:9px;padding:7px 6px;font-size:10.4px;font-weight:800;cursor:pointer}
+button.primary{border-color:#54d692;background:#1b5136}button.active{border-color:#6ad9ff;background:#123c56}
+.checkrow{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:10.4px;color:#cfe2ee}
+.modeling{margin-top:9px;padding:8px 9px;border-radius:10px;background:rgba(21,28,38,.72);border-left:3px solid #d8a447;font-size:10px;line-height:1.42;color:#c8d4dd}
+#graph{width:100%;height:180px;background:#071019;border-radius:9px;margin-top:8px;border:1px solid rgba(104,186,225,.14)}
+#formula{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:28;padding:8px 14px;border-radius:999px;background:rgba(6,16,25,.68);border:1px solid rgba(102,209,255,.2);font-size:14px;font-weight:900}
+#hud{position:fixed;right:16px;top:16px;z-index:20;width:450px;padding:10px 11px;border-radius:13px;background:rgba(6,14,22,.70);border:1px solid rgba(116,193,234,.18);font-size:11px;line-height:1.55}#hud b{color:#ffd972}
+#probar{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:35;display:flex;gap:5px;padding:5px;border-radius:12px;background:rgba(6,14,22,.54);border:1px solid rgba(115,195,235,.16)}
+#credit{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:18;color:#ffe075;font-size:14px;font-weight:900}
+#legend{position:fixed;right:18px;bottom:18px;z-index:20;width:310px;padding:8px 10px;border-radius:10px;background:rgba(6,14,22,.66);border:1px solid rgba(116,193,234,.16);font-size:10px;line-height:1.5}
+#recStatus{position:fixed;right:18px;bottom:150px;z-index:30;display:none;padding:7px 10px;border-radius:10px;background:rgba(125,0,0,.72);font-size:11px;font-weight:900}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="formula">C = ε₀εᵣS/d · phân cực điện môi → điện dung tăng</div>
+<div id="probar"><button id="fullscreenBtn">⛶</button><button id="panelBtn">☰</button><button id="bgBtn">🌗</button><button id="lightBtn">💡</button><button id="camBtn">🎥</button><button id="autoCamBtn">↻ Cam</button><button id="recordBtn">🔴 Quay</button><button id="stopRecordBtn">⏹</button></div>
+
+<div id="panel">
+<h1>PHYSICS 11 LAB · 3D CINEMATIC</h1>
+<div class="sub">069 · ĐƯA ĐIỆN MÔI VÀO TỤ ĐIỆN</div>
+<div class="desc">Chèn một khối điện môi tuyến tính vào giữa hai bản tụ. Các phân tử điện môi được minh hoạ như <b>lưỡng cực điện</b> quay theo điện trường. Điện dung tăng khi phần điện môi chiếm trong khe tụ tăng.</div>
+
+<div class="section">CHẾ ĐỘ VẬT LÍ</div>
+<div class="buttons"><button id="connectedBtn" class="active">🔌 Nối nguồn · U không đổi</button><button id="isolatedBtn">🔒 Ngắt nguồn · Q không đổi</button></div>
+
+<div class="section">ĐIỀU KHIỂN</div>
+<label class="control">Tốc độ mô phỏng <span id="speedVal" class="value">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
+<label class="control">Mức chèn điện môi <span id="insertVal" class="value">0%</span><input id="insert" type="range" min="0" max="100" step="1" value="0"></label>
+<label class="control">Hằng số điện môi εᵣ <span id="erVal" class="value">4.00</span><input id="er" type="range" min="1.1" max="10" step=".1" value="4"></label>
+<label class="control">Diện tích bản S <span id="areaVal" class="value">240 cm²</span><input id="area" type="range" min="100" max="600" step="10" value="240"></label>
+<label class="control">Khoảng cách d <span id="dVal" class="value">10 mm</span><input id="distance" type="range" min="3" max="25" step=".5" value="10"></label>
+<label class="control">Nguồn U₀ <span id="u0Val" class="value">100 V</span><input id="u0" type="range" min="10" max="300" step="5" value="100"></label>
+<label class="control">Tốc độ chèn <span id="motionVal" class="value">1.0×</span><input id="motion" type="range" min=".3" max="2" step=".1" value="1"></label>
+
+<div class="section">NÚT NHANH</div>
+<div class="buttons">
+<button id="start" class="primary">▶ Bắt đầu</button><button id="pause">⏸ Tạm dừng</button>
+<button id="reset">↻ Đặt lại</button><button id="fit">⛶ Fit</button>
+<button id="insertBtn">→ Chèn điện môi</button><button id="removeBtn">← Rút điện môi</button>
+<button id="halfBtn">Chèn 50%</button><button id="fullBtn">Chèn 100%</button>
+<button id="lockQBtn">Chốt Q hiện tại</button><button id="airBtn">εᵣ = 1.1</button>
+</div>
+
+<div class="section">HIỂN THỊ</div>
+<label class="checkrow"><input id="showField" type="checkbox" checked> Điện trường trong khe tụ</label>
+<label class="checkrow"><input id="showDipoles" type="checkbox" checked> Lưỡng cực phân cực</label>
+<label class="checkrow"><input id="showCharges" type="checkbox" checked> Điện tích trên bản</label>
+<label class="checkrow"><input id="showDielectric" type="checkbox" checked> Khối điện môi</label>
+<label class="checkrow"><input id="showGrid" type="checkbox" checked> Lưới</label>
+
+<canvas id="graph" width="320" height="180"></canvas>
+<div class="modeling"><b>Mô hình hóa:</b> điện môi tuyến tính, đồng chất, được chèn theo diện tích. Mô hình dùng xấp xỉ hai phần tụ mắc song song: phần có điện môi và phần không khí. Bỏ qua hiệu ứng mép. Các lưỡng cực chỉ là minh họa phân cực, không phải cấu trúc phân tử thật.</div>
+</div>
+
+<div id="hud"><b>ĐƯA ĐIỆN MÔI VÀO TỤ ĐIỆN</b><br>
+Chế độ = <b id="modeOut"></b><br>
+Tỉ lệ chèn = <b id="insertOut"></b><br>
+εᵣ = <b id="erOut"></b><br>
+C hiệu dụng = <b id="cOut"></b><br>
+U = <b id="uOut"></b><br>
+Q = <b id="qOut"></b><br>
+E vùng không khí = <b id="eAirOut"></b><br>
+E trong điện môi = <b id="eDieOut"></b><br>
+W = <b id="wOut"></b><br>
+Kết luận = <b id="conclusionOut"></b></div>
+
+<div id="legend"><b>Quan sát phân cực điện môi</b><br>
+• Các lưỡng cực quay sao cho mômen điện hướng theo điện trường.<br>
+• Điện môi làm điện dung tăng.<br>
+• 🔌 Nối nguồn: U giữ không đổi → Q tăng khi chèn điện môi.<br>
+• 🔒 Ngắt nguồn: Q giữ không đổi → U giảm khi chèn điện môi.</div>
+
+<div id="credit">Thầy Hùng vật lí</div><div id="recStatus">● ĐANG QUAY</div><canvas id="recordCanvas" width="1920" height="1080" style="display:none"></canvas>
+
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const $=id=>document.getElementById(id),EPS0=8.8541878128e-12;
+
+const s={running:false,paused:false,time:0,speed:1,mode:'connected',insertPct:0,er:4,areaCm2:240,dMm:10,u0:100,qLocked:0,motion:1,motionDir:0,bg:0,light:0,cam:1,autoCam:false};
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('app').appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x06131e);
+const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,200);camera.position.set(9,6.5,11);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=4.5;controls.maxDistance=28;controls.minPolarAngle=.18;controls.maxPolarAngle=1.5;controls.target.set(0,.2,0);
+const hemi=new THREE.HemisphereLight(0xe3f7ff,0x10202d,1.7);scene.add(hemi);const key=new THREE.DirectionalLight(0xffffff,1.8);key.position.set(7,10,8);scene.add(key);const rim=new THREE.PointLight(0x56d8ff,1.2,30,2);rim.position.set(-5,5,-5);scene.add(rim);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(38,28),new THREE.MeshStandardMaterial({color:0x101c27,roughness:.92}));floor.rotation.x=-Math.PI/2;floor.position.y=-3.1;scene.add(floor);const grid=new THREE.GridHelper(38,38,0x2e5b72,0x173241);grid.position.y=-3.09;grid.material.transparent=true;grid.material.opacity=.14;scene.add(grid);
+
+const root=new THREE.Group();scene.add(root);const plateG=new THREE.Group(),dieG=new THREE.Group(),fieldG=new THREE.Group(),dipoleG=new THREE.Group(),chargeG=new THREE.Group();root.add(plateG,dieG,fieldG,dipoleG,chargeG);
+let leftPlate,rightPlate;
+
+const area=()=>s.areaCm2*1e-4, d=()=>s.dMm*1e-3, f=()=>THREE.MathUtils.clamp(s.insertPct/100,0,1);
+const Ceff=()=>EPS0*area()/d()*(1+(s.er-1)*f());
+const U=()=>s.mode==='connected'?s.u0:s.qLocked/Math.max(1e-18,Ceff());
+const Q=()=>s.mode==='connected'?Ceff()*s.u0:s.qLocked;
+const Eair=()=>U()/d();
+const Edie=()=>U()/d()/Math.max(1,s.er);
+const W=()=>s.mode==='connected'?.5*Ceff()*U()*U:Q()*Q()/(2*Math.max(1e-18,Ceff()));
+function fmtSI(v,u){const a=Math.abs(v);if(u==='F'){if(a<1e-12)return `${(v*1e15).toFixed(2)} fF`;if(a<1e-9)return `${(v*1e12).toFixed(2)} pF`;if(a<1e-6)return `${(v*1e9).toFixed(2)} nF`;return `${(v*1e6).toFixed(2)} µF`}if(u==='C'){if(a<1e-12)return `${(v*1e15).toFixed(2)} fC`;if(a<1e-9)return `${(v*1e12).toFixed(2)} pC`;if(a<1e-6)return `${(v*1e9).toFixed(2)} nC`;return `${(v*1e6).toFixed(2)} µC`}if(u==='J'){if(a<1e-9)return `${(v*1e12).toFixed(2)} pJ`;if(a<1e-6)return `${(v*1e9).toFixed(2)} nJ`;if(a<1e-3)return `${(v*1e6).toFixed(2)} µJ`;return `${(v*1e3).toFixed(2)} mJ`}return `${v}`}
+function clearGroup(g){while(g.children.length){const o=g.children.pop();o.traverse?.(x=>{x.geometry?.dispose?.();x.material?.dispose?.()})}}
+function dims(){const A=area(),aspect=1.4,w=Math.sqrt(A*aspect),h=A/w,scale=23;return {w:w*scale,h:h*scale,gap:THREE.MathUtils.clamp(s.dMm*.12,.36,3.0)}}
+
+function buildPlates(){clearGroup(plateG);const dm=dims();leftPlate=new THREE.Mesh(new THREE.BoxGeometry(.15,dm.h,dm.w),new THREE.MeshStandardMaterial({color:0xaeb8c1,metalness:.72,roughness:.25,emissive:0xff6045,emissiveIntensity:.12}));rightPlate=new THREE.Mesh(new THREE.BoxGeometry(.15,dm.h,dm.w),new THREE.MeshStandardMaterial({color:0xaeb8c1,metalness:.72,roughness:.25,emissive:0x3562ff,emissiveIntensity:.12}));leftPlate.position.x=-dm.gap/2;rightPlate.position.x=dm.gap/2;plateG.add(leftPlate,rightPlate)}
+
+function buildDielectric(){clearGroup(dieG);if(!$('showDielectric').checked||f()<=.001)return;const dm=dims(),w=dm.w*f();const m=new THREE.Mesh(new THREE.BoxGeometry(Math.max(.08,dm.gap-.20),dm.h*.88,w*.94),new THREE.MeshPhysicalMaterial({color:0x78d7ff,transparent:true,opacity:.18,roughness:.15,transmission:.15,side:THREE.DoubleSide,depthWrite:false}));m.position.z=-dm.w/2+w/2;dieG.add(m)}
+
+function buildField(){clearGroup(fieldG);if(!$('showField').checked||Math.abs(U())<1e-12)return;const dm=dims(),dieW=dm.w*f(),airW=dm.w-dieW;const dir=new THREE.Vector3(1,0,0),sx=leftPlate.position.x+.08;
+ function addRegion(z0,w,color,scale){if(w<=.04)return;const ny=5,nz=4;for(let iy=0;iy<ny;iy++)for(let iz=0;iz<nz;iz++){const y=-dm.h*.36+iy*(dm.h*.72/(ny-1)),z=z0-w*.36+iz*(w*.72/(nz-1));fieldG.add(new THREE.ArrowHelper(dir,new THREE.Vector3(sx,y,z),Math.max(.12,dm.gap-.16),color,.10*scale,.06*scale))}}
+ if(dieW>0)addRegion(-dm.w/2+dieW/2,dieW,0x7ff6ff,.8);
+ if(airW>0)addRegion(-dm.w/2+dieW+airW/2,airW,0x63dcff,1.0);
+}
+
+function buildDipoles(){clearGroup(dipoleG);if(!$('showDipoles').checked||f()<=.001)return;const dm=dims(),dieW=dm.w*f();const cols=4,rows=5,layers=4;for(let ix=0;ix<cols;ix++)for(let iy=0;iy<rows;iy++)for(let iz=0;iz<layers;iz++){const x=-dm.gap*.32+ix*(dm.gap*.64/Math.max(1,cols-1)),y=-dm.h*.34+iy*(dm.h*.68/Math.max(1,rows-1)),z=-dm.w/2+dieW*.12+iz*(dieW*.76/Math.max(1,layers-1));const g=new THREE.Group();const neg=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),new THREE.MeshBasicMaterial({color:0x6895ff}));const pos=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),new THREE.MeshBasicMaterial({color:0xff907a}));neg.position.x=-.09;pos.position.x=.09;const rod=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.18,8),new THREE.MeshBasicMaterial({color:0xd4e6ef}));rod.rotation.z=Math.PI/2;g.add(neg,pos,rod);g.position.set(x,y,z);g.rotation.z=0;dipoleG.add(g)}}
+
+function buildCharges(){clearGroup(chargeG);if(!$('showCharges').checked||Math.abs(Q())<1e-20)return;const dm=dims(),count=Math.min(140,Math.max(16,Math.round(Math.abs(Q())*1e11))),geom=new THREE.SphereGeometry(.043,8,6),pm=new THREE.MeshBasicMaterial({color:0xff9d86}),nm=new THREE.MeshBasicMaterial({color:0x92b2ff});for(let i=0;i<count;i++){const uy=(i%12)/11,uz=(Math.floor(i/12)%12)/11,y=-dm.h*.40+uy*dm.h*.80,z=-dm.w*.40+uz*dm.w*.80;const p=new THREE.Mesh(geom,pm);p.position.set(leftPlate.position.x+.095,y,z);chargeG.add(p);const n=new THREE.Mesh(geom,nm);n.position.set(rightPlate.position.x-.095,y,z);chargeG.add(n)}}
+
+function drawGraph(){const c=$('graph'),g=c.getContext('2d'),w=c.width,h=c.height;g.fillStyle='#071019';g.fillRect(0,0,w,h);const L=42,T=12,B=26,R=10,pw=w-L-R,ph=h-T-B;g.strokeStyle='rgba(190,225,240,.28)';g.beginPath();g.moveTo(L,T);g.lineTo(L,T+ph);g.lineTo(L+pw,T+ph);g.stroke();const c0=EPS0*area()/d(),c1=c0*s.er;g.strokeStyle='#72e7ff';g.lineWidth=2;g.beginPath();for(let i=0;i<=180;i++){const ff=i/180,cc=c0*(1+(s.er-1)*ff),x=L+ff*pw,y=T+ph*(1-(cc-c0)/Math.max(1e-30,c1-c0));i?g.lineTo(x,y):g.moveTo(x,y)}g.stroke();const gx=L+f()*pw,gy=T+ph*(1-(Ceff()-c0)/Math.max(1e-30,c1-c0));g.fillStyle='#ffd65f';g.beginPath();g.arc(gx,gy,4,0,Math.PI*2);g.fill();g.fillStyle='#91aabb';g.font='9px Segoe UI';g.fillText('C',10,12);g.fillText('% chèn',w-42,h-6)}
+
+function updatePhysics(dt){if(!s.running||s.paused)return;s.time+=dt*s.speed;if(s.motionDir!==0){s.insertPct+=s.motionDir*24*dt*s.speed*s.motion;if(s.insertPct>=100){s.insertPct=100;s.motionDir=0}if(s.insertPct<=0){s.insertPct=0;s.motionDir=0}$('insert').value=s.insertPct;rebuildDynamic()}}
+function updateVisuals(){grid.visible=$('showGrid').checked;if(s.autoCam){const a=s.time*.13;camera.position.set(Math.cos(a)*10,5.8,Math.sin(a)*10);camera.lookAt(controls.target)}}
+function conclusion(){return s.mode==='connected'?'Chèn điện môi → C,Q tăng; U không đổi':'Chèn điện môi → C tăng; U,E,W giảm; Q không đổi'}
+function updateUI(){$('speedVal').textContent=`${s.speed.toFixed(2)}×`;$('insertVal').textContent=`${s.insertPct.toFixed(0)}%`;$('erVal').textContent=s.er.toFixed(2);$('areaVal').textContent=`${s.areaCm2.toFixed(0)} cm²`;$('dVal').textContent=`${s.dMm.toFixed(1)} mm`;$('u0Val').textContent=`${s.u0.toFixed(0)} V`;$('motionVal').textContent=`${s.motion.toFixed(1)}×`;$('modeOut').textContent=s.mode==='connected'?'NỐI NGUỒN · U không đổi':'NGẮT NGUỒN · Q không đổi';$('insertOut').textContent=`${s.insertPct.toFixed(1)}%`;$('erOut').textContent=s.er.toFixed(2);$('cOut').textContent=fmtSI(Ceff(),'F');$('uOut').textContent=`${U().toFixed(2)} V`;$('qOut').textContent=fmtSI(Q(),'C');$('eAirOut').textContent=`${Eair().toFixed(1)} V/m`;$('eDieOut').textContent=`${Edie().toFixed(1)} V/m`;$('wOut').textContent=fmtSI(W(),'J');$('conclusionOut').textContent=conclusion();drawGraph()}
+function rebuildDynamic(){buildPlates();buildDielectric();buildField();buildDipoles();buildCharges();updateUI()}
+
+const bgs=[{b:0x06131e,f:0x101c27},{b:0xeaf2f6,f:0xd6e1e6},{b:0x06162a,f:0x0b2039}];
+function applyBg(){const m=bgs[s.bg];scene.background.setHex(m.b);floor.material.color.setHex(m.f)}
+function applyLight(){if(s.light===0){hemi.intensity=1.7;key.intensity=1.8;rim.intensity=1.2}else if(s.light===1){hemi.intensity=2.2;key.intensity=2.3;rim.intensity=.5}else{hemi.intensity=1.05;key.intensity=1.15;rim.intensity=2}}
+function setCam(m){s.cam=m%4;s.autoCam=false;if(m===0)camera.position.set(0,10,.01);else if(m===1)camera.position.set(9,6.5,11);else if(m===2)camera.position.set(0,4,13);else camera.position.set(5,3.6,6);controls.target.set(0,.2,0);camera.lookAt(controls.target);controls.update()}
+async function fs(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}}
+
+$('connectedBtn').onclick=()=>{s.mode='connected';s.motionDir=0;$('connectedBtn').classList.add('active');$('isolatedBtn').classList.remove('active');rebuildDynamic()};
+$('isolatedBtn').onclick=()=>{s.qLocked=Ceff()*s.u0;s.mode='isolated';s.motionDir=0;$('isolatedBtn').classList.add('active');$('connectedBtn').classList.remove('active');rebuildDynamic()};
+$('lockQBtn').onclick=()=>{s.qLocked=Q();s.mode='isolated';$('isolatedBtn').classList.add('active');$('connectedBtn').classList.remove('active');rebuildDynamic()};
+$('speed').oninput=e=>s.speed=+e.target.value;$('insert').oninput=e=>{s.insertPct=+e.target.value;s.motionDir=0;rebuildDynamic()};$('er').oninput=e=>{if(s.mode==='isolated')s.qLocked=Q();s.er=+e.target.value;rebuildDynamic()};$('area').oninput=e=>{if(s.mode==='isolated')s.qLocked=Q();s.areaCm2=+e.target.value;rebuildDynamic()};$('distance').oninput=e=>{if(s.mode==='isolated')s.qLocked=Q();s.dMm=+e.target.value;rebuildDynamic()};$('u0').oninput=e=>{s.u0=+e.target.value;if(s.mode==='connected')rebuildDynamic();else updateUI()};$('motion').oninput=e=>{s.motion=+e.target.value;updateUI()};
+$('showField').onchange=buildField;$('showDipoles').onchange=buildDipoles;$('showCharges').onchange=buildCharges;$('showDielectric').onchange=buildDielectric;
+$('start').onclick=()=>{s.running=true;s.paused=false};$('pause').onclick=()=>s.paused=!s.paused;$('fit').onclick=()=>setCam(1);$('insertBtn').onclick=()=>{s.running=true;s.paused=false;s.motionDir=1};$('removeBtn').onclick=()=>{s.running=true;s.paused=false;s.motionDir=-1};$('halfBtn').onclick=()=>{s.insertPct=50;s.motionDir=0;$('insert').value=50;rebuildDynamic()};$('fullBtn').onclick=()=>{s.insertPct=100;s.motionDir=0;$('insert').value=100;rebuildDynamic()};$('airBtn').onclick=()=>{s.er=1.1;$('er').value=1.1;rebuildDynamic()};
+$('reset').onclick=()=>{Object.assign(s,{running:false,paused:false,time:0,speed:1,mode:'connected',insertPct:0,er:4,areaCm2:240,dMm:10,u0:100,qLocked:0,motion:1,motionDir:0,bg:0,light:0,cam:1,autoCam:false});$('speed').value=1;$('insert').value=0;$('er').value=4;$('area').value=240;$('distance').value=10;$('u0').value=100;$('motion').value=1;$('connectedBtn').classList.add('active');$('isolatedBtn').classList.remove('active');applyBg();applyLight();setCam(1);rebuildDynamic()};
+$('fullscreenBtn').onclick=fs;$('panelBtn').onclick=()=>$('panel').classList.toggle('hide');$('bgBtn').onclick=()=>{s.bg=(s.bg+1)%3;applyBg()};$('lightBtn').onclick=()=>{s.light=(s.light+1)%3;applyLight()};$('camBtn').onclick=()=>setCam((s.cam+1)%4);$('autoCamBtn').onclick=()=>s.autoCam=!s.autoCam;
+
+const rc=$('recordCanvas'),ctx=rc.getContext('2d');let rec=null,chunks=[],mime='',rt=null;
+function bestMime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function drawRec(){const sw=renderer.domElement.width,sh=renderer.domElement.height,dw=rc.width,dh=rc.height,k=Math.max(dw/sw,dh/sh),rw=sw*k,rh=sh*k;ctx.fillStyle='#06131e';ctx.fillRect(0,0,dw,dh);ctx.drawImage(renderer.domElement,(dw-rw)/2,(dh-rh)/2,rw,rh);ctx.fillStyle='rgba(4,12,20,.72)';ctx.fillRect(34,34,1560,115);ctx.fillStyle='#fff';ctx.font='800 30px Segoe UI';ctx.fillText('069 · ĐƯA ĐIỆN MÔI VÀO TỤ ĐIỆN',58,76);ctx.fillStyle='#ffe075';ctx.font='700 22px Segoe UI';ctx.fillText(`${s.mode==='connected'?'U không đổi':'Q không đổi'} · chèn=${s.insertPct.toFixed(0)}% · εr=${s.er.toFixed(1)} · C=${fmtSI(Ceff(),'F')} · U=${U().toFixed(2)} V`,58,108)}
+function startRec(){if(rec&&rec.state==='recording')return;mime=bestMime();if(!mime){alert('Trình duyệt chưa hỗ trợ ghi video.');return}chunks=[];rec=new MediaRecorder(rc.captureStream(60),{mimeType:mime,videoBitsPerSecond:12000000});rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:mime}));a.download=`069_Dua_dien_moi_vao_tu_dien.${mime.includes('mp4')?'mp4':'webm'}`;a.click();$('recStatus').style.display='none';clearInterval(rt);rt=null};rec.start(100);$('recStatus').style.display='block';drawRec();rt=setInterval(drawRec,1000/60)}
+$('recordBtn').onclick=startRec;$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=THREE.MathUtils.clamp((now-last)/1000,0,.033);last=now;updatePhysics(dt);updateVisuals();updateUI();controls.update();renderer.render(scene,camera);if(rec&&rec.state==='recording')drawRec()}
+applyBg();applyLight();rebuildDynamic();setCam(1);requestAnimationFrame(animate);addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>

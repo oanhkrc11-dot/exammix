@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sóng âm trong ống khí - mô hình động lực học</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#eef4ff;color:#0f172a}
+.app{width:min(1240px,96vw);margin:18px auto;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #dbe5f2;box-shadow:0 14px 36px rgba(15,23,42,.15)}
+header{background:#0b3b78;color:#fff;padding:18px 24px}
+header h1{margin:0 0 6px;font-size:32px}
+header p{margin:0;font-size:16px;opacity:.96}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid #e5e7eb}
+button{border:0;border-radius:12px;padding:11px 16px;font-size:15px;font-weight:700;color:white;cursor:pointer}
+#startBtn{background:#16a34a}
+#pulseBtn{background:#7c3aed}
+#stopBtn{background:#dc2626}
+#endBtn{background:#0ea5e9}
+#resetBtn{background:#2563eb}
+.box{display:flex;align-items:center;gap:9px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;font-size:14px}
+input[type=range]{width:140px;accent-color:#2563eb}
+.main{display:grid;grid-template-columns:1.52fr .78fr;gap:16px;padding:18px}
+.card{border:1px solid #dbe5f2;border-radius:16px;overflow:hidden;background:#fff}
+canvas{display:block;width:100%;height:auto;background:#fff}
+.info{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:0 18px 18px}
+.note{border:1px solid #e2e8f0;border-radius:14px;padding:14px;background:#f8fafc;line-height:1.5;font-size:15px}
+.note b{color:#0b3b78}
+@media(max-width:920px){.main{grid-template-columns:1fr}.info{grid-template-columns:1fr}header h1{font-size:25px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>Sóng âm trong ống khí</h1>
+  <p>Mô hình động lực học các lớp không khí: loa tạo dao động ở đầu trái, sóng nén – dãn truyền trong ống, phản xạ tại đầu kín hoặc thoát một phần ở đầu hở.</p>
+</header>
+
+<div class="controls">
+  <button id="startBtn">▶ Phát âm liên tục</button>
+  <button id="pulseBtn">⚡ Phát một xung</button>
+  <button id="stopBtn">⏹ Ngừng loa</button>
+  <button id="endBtn">Đầu phải: HỞ</button>
+  <button id="resetBtn">↻ Đặt lại</button>
+
+  <label class="box">Tần số:
+    <input id="freqSlider" type="range" min="0.5" max="5" step="0.1" value="1.5">
+    <b><span id="freqValue">1.5</span> Hz</b>
+  </label>
+
+  <label class="box">Biên độ loa:
+    <input id="ampSlider" type="range" min="3" max="18" step="1" value="10">
+    <b><span id="ampValue">10</span> px</b>
+  </label>
+
+  <label class="box">Tốc độ truyền:
+    <input id="speedSlider" type="range" min="120" max="280" step="10" value="200">
+    <b><span id="speedValue">200</span> px/s</b>
+  </label>
+</div>
+
+<div class="main">
+  <div class="card"><canvas id="tubeCanvas" width="880" height="540"></canvas></div>
+  <div class="card"><canvas id="infoCanvas" width="440" height="540"></canvas></div>
+</div>
+
+<div class="info">
+  <div class="note"><b>Ngừng loa:</b> nguồn dừng tác dụng, nhưng sóng đã phát vẫn tiếp tục truyền và tắt dần.</div>
+  <div class="note"><b>Đầu kín:</b> phản xạ gần toàn phần. <b>Đầu hở:</b> một phần sóng phản xạ, một phần năng lượng bức xạ ra ngoài.</div>
+  <div class="note"><b>Sóng âm là sóng dọc:</b> các lớp không khí dao động theo phương truyền sóng; vùng nén và dãn lan truyền dọc ống.</div>
+</div>
+</div>
+
+<script>
+const tubeCanvas=document.getElementById('tubeCanvas');
+const ctx=tubeCanvas.getContext('2d');
+const infoCanvas=document.getElementById('infoCanvas');
+const ictx=infoCanvas.getContext('2d');
+
+const startBtn=document.getElementById('startBtn');
+const pulseBtn=document.getElementById('pulseBtn');
+const stopBtn=document.getElementById('stopBtn');
+const endBtn=document.getElementById('endBtn');
+const resetBtn=document.getElementById('resetBtn');
+
+const freqSlider=document.getElementById('freqSlider');
+const ampSlider=document.getElementById('ampSlider');
+const speedSlider=document.getElementById('speedSlider');
+
+const freqValue=document.getElementById('freqValue');
+const ampValue=document.getElementById('ampValue');
+const speedValue=document.getElementById('speedValue');
+
+const W=tubeCanvas.width,H=tubeCanvas.height;
+const xL=120,xR=800,midY=255,L=xR-xL;
+const yTop=150,yBottom=360;
+
+const N=130;
+const a=L/N;
+const u=new Float64Array(N+1);
+const vel=new Float64Array(N+1);
+
+let f=1.5,A=10,c=200;
+let mode='off';           // off | continuous | pulse
+let running=true;
+let simTime=0,lastTs=null;
+let driveStart=0;
+let endType='open';       // open | closed
+
+const rampTime=1.0;
+const pulseDuration=0.75;
+const baseDamping=0.18;
+const openLoss=2.3;       // loss near open end, mimics energy radiated out
+
+function updateParams(){
+  f=Number(freqSlider.value);
+  A=Number(ampSlider.value);
+  c=Number(speedSlider.value);
+  freqValue.textContent=f.toFixed(1);
+  ampValue.textContent=A;
+  speedValue.textContent=c;
+}
+
+function smoothRamp(z){
+  if(z<=0)return 0;
+  if(z>=1)return 1;
+  return z*z*(3-2*z);
+}
+
+function driver(t){
+  const td=t-driveStart;
+  if(mode==='off' || td<=0) return 0;
+
+  if(mode==='continuous'){
+    return A*smoothRamp(td/rampTime)*Math.sin(2*Math.PI*f*td);
+  }
+
+  if(mode==='pulse'){
+    if(td>=pulseDuration) return 0;
+    const env=Math.sin(Math.PI*td/pulseDuration);
+    return A*env*env*Math.sin(2*Math.PI*f*td);
+  }
+
+  return 0;
+}
+
+function sourceActive(t){
+  if(mode==='continuous')return true;
+  if(mode==='pulse')return (t-driveStart)<pulseDuration;
+  return false;
+}
+
+function resetState(){
+  u.fill(0);vel.fill(0);
+  mode='off';
+  simTime=0;
+  driveStart=0;
+  lastTs=null;
+}
+
+function stepPhysics(dt){
+  const k=(c/a)*(c/a);
+  const acc=new Float64Array(N+1);
+  const active=sourceActive(simTime);
+
+  // left boundary = speaker
+  if(active){
+    u[0]=driver(simTime);
+    vel[0]=0;
+  }else{
+    u[0]=0;
+    vel[0]=0;
+    if(mode==='pulse' && simTime-driveStart>=pulseDuration){
+      mode='off';
+    }
+  }
+
+  // interior
+  for(let i=1;i<N;i++){
+    let damp=baseDamping;
+
+    // stronger damping close to open end to allow energy to leave the tube
+    if(endType==='open' && i>N-18){
+      const w=(i-(N-18))/18;
+      damp += openLoss*w*w;
+    }
+
+    acc[i]=k*(u[i+1]-2*u[i]+u[i-1]) - damp*vel[i];
+  }
+
+  // right boundary
+  if(endType==='closed'){
+    // rigid wall: particle displacement at wall is zero
+    u[N]=0;
+    vel[N]=0;
+  }else{
+    // approximate pressure-release/open boundary:
+    // spatial derivative of displacement ~ 0, plus radiation loss.
+    acc[N]=k*(u[N-1]-u[N]) - (baseDamping+openLoss)*vel[N];
+  }
+
+  for(let i=1;i<N;i++){
+    vel[i]+=acc[i]*dt;
+    u[i]+=vel[i]*dt;
+  }
+
+  if(endType==='open'){
+    vel[N]+=acc[N]*dt;
+    u[N]+=vel[N]*dt;
+  }else{
+    u[N]=0;
+    vel[N]=0;
+  }
+
+  if(active){
+    u[0]=driver(simTime+dt);
+    vel[0]=0;
+  }else{
+    u[0]=0;
+    vel[0]=0;
+  }
+
+  simTime+=dt;
+}
+
+function localStrain(i){
+  if(i<=0||i>=N)return 0;
+  return (u[i+1]-u[i-1])/(2*a);
+}
+
+function drawTube(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f8fbff';
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle='#0b3b78';
+  ctx.font='bold 30px Arial';
+  ctx.textAlign='center';
+  ctx.fillText('Sóng âm truyền trong ống khí',W/2,45);
+
+  // tube
+  ctx.fillStyle='#eef6ff';
+  ctx.fillRect(xL,yTop,xR-xL,yBottom-yTop);
+
+  ctx.strokeStyle='#334155';
+  ctx.lineWidth=4;
+  ctx.beginPath();
+  ctx.moveTo(xL,yTop);ctx.lineTo(xR,yTop);
+  ctx.moveTo(xL,yBottom);ctx.lineTo(xR,yBottom);
+  ctx.stroke();
+
+  // compression / rarefaction bands
+  for(let i=2;i<N-1;i++){
+    const strain=localStrain(i);
+    if(Math.abs(strain)<0.025)continue;
+    const x=xL+i*a+u[i];
+    ctx.fillStyle=strain<0?'rgba(239,68,68,.13)':'rgba(34,197,94,.10)';
+    ctx.fillRect(x-a*1.1,yTop+4,a*2.2,yBottom-yTop-8);
+  }
+
+  // air particles
+  const rows=7;
+  for(let j=0;j<rows;j++){
+    const yy=yTop+24+j*(yBottom-yTop-48)/(rows-1);
+    for(let i=3;i<N;i+=4){
+      const x=xL+i*a+u[i];
+      const strain=localStrain(i);
+
+      ctx.beginPath();
+      ctx.arc(x,yy,3.1,0,Math.PI*2);
+
+      if(strain<-.04)ctx.fillStyle='#dc2626';
+      else if(strain>.04)ctx.fillStyle='#16a34a';
+      else ctx.fillStyle='#334155';
+
+      ctx.fill();
+    }
+  }
+
+  drawSpeaker();
+  drawRightEnd();
+
+  ctx.fillStyle='#475569';
+  ctx.font='16px Arial';
+  ctx.textAlign='left';
+
+  if(mode==='continuous'){
+    ctx.fillText('Loa đang phát liên tục: năng lượng được truyền liên tục vào cột khí.',65,438);
+  }else if(mode==='pulse'){
+    ctx.fillText('Loa vừa phát một xung: gói nén–dãn đang truyền và phản xạ trong ống.',65,438);
+  }else{
+    ctx.fillText('Loa đã dừng: sóng đã tồn tại trong ống vẫn tiếp tục truyền rồi tắt dần.',65,438);
+  }
+
+  if(endType==='closed'){
+    ctx.fillText('Đầu kín: phần tử khí sát thành có li độ xấp xỉ bằng 0, phản xạ gần toàn phần.',65,466);
+  }else{
+    ctx.fillText('Đầu hở: một phần năng lượng âm thoát ra ngoài, phần còn lại phản xạ trong ống.',65,466);
+  }
+}
+
+function drawSpeaker(){
+  const sx=xL;
+  const faceX=sourceActive(simTime)?xL+u[0]:xL;
+
+  ctx.fillStyle='#475569';
+  ctx.fillRect(55,midY-72,45,144);
+
+  ctx.fillStyle='#64748b';
+  ctx.beginPath();
+  ctx.moveTo(100,midY-55);
+  ctx.lineTo(faceX,midY-28);
+  ctx.lineTo(faceX,midY+28);
+  ctx.lineTo(100,midY+55);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle='#0f172a';
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  ctx.fillStyle='#111827';
+  ctx.font='bold 18px Arial';
+  ctx.textAlign='center';
+  ctx.fillText(sourceActive(simTime)?'Loa đang phát':'Loa đã dừng',78,midY-94);
+}
+
+function drawRightEnd(){
+  if(endType==='closed'){
+    ctx.fillStyle='#cbd5e1';
+    ctx.fillRect(xR-4,yTop-5,28,yBottom-yTop+10);
+    ctx.strokeStyle='#475569';
+    ctx.lineWidth=2;
+    ctx.strokeRect(xR-4,yTop-5,28,yBottom-yTop+10);
+
+    ctx.fillStyle='#111827';
+    ctx.font='bold 18px Arial';
+    ctx.textAlign='center';
+    ctx.fillText('Đầu kín',xR+10,yTop-22);
+  }else{
+    ctx.strokeStyle='#0ea5e9';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(xR,yTop);ctx.lineTo(xR,yBottom);
+    ctx.stroke();
+
+    // radiation marks outside open end
+    ctx.strokeStyle='rgba(14,165,233,.35)';
+    ctx.lineWidth=2;
+    for(let r=18;r<=70;r+=18){
+      ctx.beginPath();
+      ctx.arc(xR,midY,r,-Math.PI/3,Math.PI/3);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle='#111827';
+    ctx.font='bold 18px Arial';
+    ctx.textAlign='center';
+    ctx.fillText('Đầu hở',xR,yTop-22);
+  }
+}
+
+function box(x,y,w,h,fill,stroke){
+  ictx.fillStyle=fill;
+  ictx.strokeStyle=stroke;
+  ictx.lineWidth=2;
+  ictx.beginPath();
+  ictx.roundRect(x,y,w,h,14);
+  ictx.fill();
+  ictx.stroke();
+}
+
+function drawInfo(){
+  ictx.clearRect(0,0,440,540);
+  ictx.fillStyle='#fff';
+  ictx.fillRect(0,0,440,540);
+
+  ictx.fillStyle='#0b3b78';
+  ictx.font='bold 28px Arial';
+  ictx.textAlign='center';
+  ictx.fillText('Bản chất vật lí',220,42);
+
+  box(18,72,404,108,'#f8fafc','#dbe5f2');
+  ictx.fillStyle='#111827';
+  ictx.font='bold 19px Arial';
+  ictx.textAlign='left';
+  ictx.fillText('1. Sóng dọc',36,104);
+  ictx.font='16px Arial';
+  ictx.fillText('Các lớp không khí dao động dọc theo ống.',36,134);
+  ictx.fillText('Biến dạng nén–dãn mới là thứ truyền đi.',36,160);
+
+  box(18,202,404,116,'#fff1f2','#fecdd3');
+  ictx.fillStyle='#b91c1c';
+  ictx.font='bold 19px Arial';
+  ictx.fillText('2. Khi ngừng loa',36,236);
+  ictx.fillStyle='#111827';
+  ictx.font='16px Arial';
+  ictx.fillText('Nguồn dừng tác dụng ngay.',36,266);
+  ictx.fillText('Sóng trong ống vẫn tiếp tục tồn tại.',36,294);
+
+  box(18,340,404,128,'#f0fdf4','#bbf7d0');
+  ictx.fillStyle='#15803d';
+  ictx.font='bold 19px Arial';
+  ictx.fillText('3. Phản xạ ở đầu ống',36,374);
+  ictx.fillStyle='#111827';
+  ictx.font='16px Arial';
+  ictx.fillText('Đầu kín: phản xạ gần như toàn phần.',36,404);
+  ictx.fillText('Đầu hở: phản xạ một phần, một phần',36,430);
+  ictx.fillText('năng lượng thoát ra ngoài.',36,454);
+
+  ictx.fillStyle='#0f172a';
+  ictx.font='bold 16px Arial';
+  ictx.fillText(`λ ≈ ${(c/f).toFixed(1)} px`,36,500);
+  ictx.fillText(`t = ${simTime.toFixed(2)} s`,245,500);
+}
+
+function animate(ts){
+  updateParams();
+
+  if(lastTs===null)lastTs=ts;
+  let frameDt=Math.min((ts-lastTs)/1000,0.04);
+  lastTs=ts;
+
+  if(running){
+    const dt=1/700;
+    let remain=frameDt;
+
+    while(remain>0){
+      const h=Math.min(dt,remain);
+      stepPhysics(h);
+      remain-=h;
+    }
+  }
+
+  drawTube();
+  drawInfo();
+  requestAnimationFrame(animate);
+}
+
+startBtn.addEventListener('click',()=>{
+  mode='continuous';
+  driveStart=simTime;
+  running=true;
+  lastTs=null;
+});
+
+pulseBtn.addEventListener('click',()=>{
+  mode='pulse';
+  driveStart=simTime;
+  running=true;
+  lastTs=null;
+});
+
+stopBtn.addEventListener('click',()=>{
+  mode='off';
+  u[0]=0;
+  vel[0]=0;
+  running=true;
+  lastTs=null;
+});
+
+endBtn.addEventListener('click',()=>{
+  endType=endType==='open'?'closed':'open';
+  endBtn.textContent=`Đầu phải: ${endType==='open'?'HỞ':'KÍN'}`;
+});
+
+resetBtn.addEventListener('click',resetState);
+
+[freqSlider,ampSlider,speedSlider].forEach(el=>el.addEventListener('input',updateParams));
+
+updateParams();
+resetState();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

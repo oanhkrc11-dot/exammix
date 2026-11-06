@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mô phỏng ném ngang – hoạt nghiệm vị trí V2</title>
+<style>
+:root{
+  --bg:#05070b; --panel:#0d1320; --panel2:#111827; --line:#283449;
+  --text:#eef4ff; --muted:#9fb0ca; --pink:#ff5aa5; --blue:#59b6ff;
+  --cyan:#47d7ff; --green:#38d39f; --yellow:#ffd35c; --orange:#ff9d3a;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);
+  background:radial-gradient(circle at 20% 0,#131d31 0,#070a10 42%,#030507 100%);
+}
+.app{max-width:1400px;margin:auto;padding:16px}
+.header{
+  border:1px solid var(--line);border-radius:18px;padding:15px 17px;
+  background:linear-gradient(135deg,#101827,#0b1220);
+  box-shadow:0 12px 30px rgba(0,0,0,.35)
+}
+.header h1{margin:0;font-size:clamp(22px,2.5vw,34px)}
+.header p{margin:8px 0 0;color:#c7d4e9;line-height:1.55}
+.layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(340px,.8fr);gap:14px;margin-top:14px}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 28px rgba(0,0,0,.28)}
+.simCard{padding:13px}
+.scene{
+  position:relative;height:650px;border-radius:14px;overflow:hidden;border:1px solid #263248;
+  background:
+    linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(180deg,#03060b,#050911);
+  background-size:50px 50px,50px 50px,auto;
+}
+.sceneTitle{
+  position:absolute;left:13px;top:12px;z-index:50;padding:8px 11px;border-radius:10px;
+  background:#0b1424e8;border:1px solid #34445f;font-weight:700;color:#dbe9ff
+}
+
+/* Cơ cấu thí nghiệm vẽ lại sát hình SGK */
+.apparatusSvg{
+  position:absolute;
+  left:72px;
+  top:82px;
+  width:190px;
+  height:205px;
+  z-index:20;
+  overflow:visible;
+}
+.apparatusSvg .steel{
+  fill:#0f82ba;
+  stroke:#5cc8f0;
+  stroke-width:2.2;
+}
+.apparatusSvg .steelDark{
+  fill:#0c75ae;
+  stroke:#54bde8;
+  stroke-width:1.8;
+}
+.apparatusSvg .trigger{
+  fill:none;
+  stroke:#1592c6;
+  stroke-width:5;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  transform-origin:56px 90px;
+}
+.apparatusSvg .guideLine{
+  fill:none;
+  stroke:#1a8dc0;
+  stroke-width:4;
+}
+.apparatusSvg.fire .trigger{
+  animation:triggerTap .36s ease-in-out;
+}
+@keyframes triggerTap{
+  0%{transform:rotate(-6deg)}
+  45%{transform:rotate(10deg)}
+  100%{transform:rotate(-6deg)}
+}
+
+.floor{
+  position:absolute;left:36px;right:36px;bottom:48px;height:5px;background:#93a4b8;
+  box-shadow:0 0 16px rgba(255,255,255,.18)
+}
+.verticalGuide{
+  position:absolute;width:2px;border-left:2px dashed #3e9acb;opacity:.8;z-index:4
+}
+.trajectory{
+  position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;overflow:visible
+}
+.ball{
+  position:absolute;width:28px;height:28px;border-radius:50%;transform:translate(-50%,-50%);z-index:30;
+  box-shadow:0 0 14px currentColor
+}
+.ballA{color:var(--pink);background:radial-gradient(circle at 32% 28%,#ffd5eb 0 16%,var(--pink) 40%,#9d1d60 100%)}
+.ballB{color:var(--pink);background:radial-gradient(circle at 32% 28%,#ffd5eb 0 16%,#f766a8 40%,#a11f62 100%)}
+.ballLabel{
+  position:absolute;transform:translate(-50%,-50%);z-index:31;font-size:17px;font-weight:700;
+  color:#f2f6ff;
+  paint-order:stroke;
+  text-shadow:0 1px 3px #000;
+}
+.vector{
+  position:absolute;height:3px;background:var(--yellow);border-radius:999px;transform-origin:left center;z-index:22
+}
+.vector::after{
+  content:"";position:absolute;right:-1px;top:50%;transform:translateY(-50%);
+  border-left:9px solid var(--yellow);border-top:5px solid transparent;border-bottom:5px solid transparent
+}
+.vectorText{
+  position:absolute;z-index:23;font-size:12px;font-weight:600;color:#ffe9a7;background:#07101bd9;border-radius:7px;padding:3px 6px
+}
+.ghost{
+  position:absolute;width:14px;height:14px;border-radius:50%;transform:translate(-50%,-50%);z-index:8;
+  border:2px solid currentColor;background:rgba(255,255,255,.03);box-shadow:0 0 8px currentColor
+}
+.ghostA{color:var(--pink)} .ghostB{color:var(--blue)}
+.sameY{
+  position:absolute;height:1px;border-top:1px dashed #6a7890;z-index:6;opacity:.7
+}
+.timeStamp{
+  position:absolute;z-index:9;font-size:10px;color:#9fb0ca;transform:translate(-50%,-50%);
+}
+.stats{
+  position:absolute;right:14px;top:60px;z-index:45;width:240px;background:#0b1424e8;border:1px solid #34445f;border-radius:13px;padding:10px 12px
+}
+.stats h3{margin:0 0 8px;font-size:16px;color:#dce9ff}
+.stat{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #243248;font-size:13px}
+.stat:last-child{border-bottom:0}.stat b{color:#fff}
+.controls{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+button{
+  border:0;border-radius:11px;padding:11px 8px;color:#fff;font-weight:700;cursor:pointer;box-shadow:0 5px 12px rgba(0,0,0,.22)
+}
+.blue{background:#2563eb}.green{background:#059669}.orange{background:#d97706}.purple{background:#7c3aed}.red{background:#dc4b57}
+.controlPanel{margin-top:12px;padding:12px;background:#0b1424;border:1px solid #26364f;border-radius:13px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.row+.row{margin-top:10px}
+label{font-weight:600;color:#c9d8ee;min-width:180px}
+input[type=range]{flex:1;min-width:150px;accent-color:#4d8df7}
+.value{min-width:85px;text-align:center;padding:6px 9px;border-radius:9px;background:#101d31;border:1px solid #334663;color:#9fd0ff;font-weight:700}
+.speedHint{
+  width:100%;
+  color:#91a6c5;
+  font-size:12px;
+  padding-left:190px;
+  margin-top:-3px;
+}
+.side{display:flex;flex-direction:column;gap:14px}
+.panel{padding:13px}
+.panel h3{margin:0 0 10px;color:#dce9ff}
+.explain{line-height:1.6;color:#d2deef}
+.formula{display:inline-block;margin:6px 0;padding:6px 9px;border-radius:9px;background:#101d31;border:1px solid #334663;color:#9fd0ff;font-weight:700}
+.compare{display:grid;gap:8px}
+.box{padding:9px 10px;border:1px solid #2c3a52;border-radius:11px;background:#0a1220;line-height:1.5}
+.legend{display:grid;gap:7px;font-size:13px}
+.legendRow{display:flex;align-items:center;gap:8px}
+.sw{width:24px;height:7px;border-radius:8px}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}.controls{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:620px){
+  .app{padding:8px}.scene{height:600px}.controls{grid-template-columns:1fr 1fr}.stats{width:205px}
+  .apparatusSvg{left:35px;transform:scale(.9);transform-origin:left top}
+  label{min-width:135px}.speedHint{padding-left:0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Thí nghiệm ném ngang: so sánh hai chuyển động A và B</h1>
+    <p>Cơ cấu thí nghiệm đã được vẽ lại sát hình SGK hơn: hai viên bi <b>A và B đặt cạnh nhau ở cùng độ cao</b>; khi kích hoạt, A được đẩy theo phương ngang còn B rơi thẳng đứng.</p>
+  </div>
+
+  <div class="layout">
+    <section class="card simCard">
+      <div class="scene" id="scene">
+        <div class="sceneTitle">Hoạt nghiệm vị trí — ảnh chụp cách nhau những khoảng thời gian bằng nhau</div>
+
+        <!-- Cơ cấu theo hình SGK -->
+        <svg class="apparatusSvg" id="apparatusSvg" viewBox="0 0 180 200" aria-label="Cơ cấu thả bi B và ném ngang bi A">
+          <!-- Giá đứng phía trên, dạng chữ U -->
+          <path class="guideLine" d="M75 12 L75 91 L92 91 L92 12 Q92 5 84 5 Q75 5 75 12 Z"/>
+          <!-- Bệ ngang phía trên -->
+          <rect class="steel" x="46" y="90" width="88" height="18" rx="2"/>
+          <rect x="50" y="91" width="78" height="10" fill="#e8f3f8"/>
+          <!-- Thanh chặn đứng bên phải -->
+          <rect class="steelDark" x="132" y="43" width="11" height="54" rx="1"/>
+          <!-- Thanh gõ nghiêng -->
+          <path id="triggerArm" class="trigger" d="M18 42 Q35 69 55 88 L65 96"/>
+          <!-- Giá đỡ thấp bên trái giữ bi B -->
+          <path class="steelDark" d="M12 154 L71 154 L71 126 L82 126 L82 166 L12 166 Z"/>
+          <!-- Giá đỡ bên phải cạnh bi A -->
+          <path class="steelDark" d="M119 97 L131 97 L131 165 L160 165 L160 178 L119 178 Z"/>
+          <!-- chốt nhỏ đẩy A -->
+          <rect class="steel" x="119" y="126" width="12" height="26" rx="2"/>
+        </svg>
+
+        <div class="floor"></div>
+        <div class="verticalGuide" id="verticalGuide"></div>
+        <svg class="trajectory" id="traj">
+          <path id="parabola" fill="none" stroke="#5fb7e7" stroke-width="2.2" stroke-dasharray="9 7" opacity=".9"></path>
+          <path id="freeFall" fill="none" stroke="#5fb7e7" stroke-width="2.2" stroke-dasharray="9 7" opacity=".75"></path>
+        </svg>
+
+        <div class="ball ballA" id="ballA"></div>
+        <div class="ball ballB" id="ballB"></div>
+        <div class="ballLabel" id="labelA">A</div>
+        <div class="ballLabel" id="labelB">B</div>
+
+        <div class="vector" id="v0Vec"></div>
+        <div class="vectorText" id="v0Text">v₀</div>
+
+        <div id="ghostLayer"></div>
+
+        <div class="stats">
+          <h3>Đang quan sát</h3>
+          <div class="stat"><span>Thời gian</span><b id="timeText">0.000 s</b></div>
+          <div class="stat"><span>Độ rơi của A</span><b id="dropA">0.00 m</b></div>
+          <div class="stat"><span>Độ rơi của B</span><b id="dropB">0.00 m</b></div>
+          <div class="stat"><span>Độ dời ngang của A</span><b id="xA">0.00 m</b></div>
+          <div class="stat"><span>vᵧ của A và B</span><b id="vyText">0.00 m/s</b></div>
+          <div class="stat"><span>Kết quả</span><b id="resultText">Sẵn sàng</b></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="blue" id="releaseBtn">▶ Thả / ném đồng thời</button>
+        <button class="green" id="pauseBtn">⏸ Tạm dừng</button>
+        <button class="orange" id="stepBtn">📸 Từng ảnh hoạt nghiệm</button>
+        <button class="purple" id="strobeBtn">✨ Hoạt nghiệm: Bật</button>
+        <button class="red" id="resetBtn">↻ Làm lại</button>
+      </div>
+
+      <div class="controlPanel">
+        <div class="row">
+          <label>Độ cao h</label>
+          <input id="hRange" type="range" min="1.5" max="4.0" step="0.1" value="3.0">
+          <div class="value" id="hVal">3.0 m</div>
+        </div>
+        <div class="row">
+          <label>Vận tốc ném ngang v₀</label>
+          <input id="vRange" type="range" min="1.0" max="5.0" step="0.2" value="3.0">
+          <div class="value" id="vVal">3.0 m/s</div>
+        </div>
+        <div class="row">
+          <label>Tốc độ trình diễn</label>
+          <input id="speedRange" type="range" min="0.15" max="1.00" step="0.05" value="0.35">
+          <div class="value" id="speedVal">0.35×</div>
+          <div class="speedHint">Thanh này chỉ làm hoạt ảnh nhanh/chậm hơn, không làm thay đổi các đại lượng vật lí của bài toán.</div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="card panel">
+        <h3>Mô tả chuyển động</h3>
+        <div class="explain">
+          <b>Bi B:</b> được giải phóng khỏi giá đỡ và rơi thẳng đứng với \(v_{0y}=0\).<br><br>
+          <b>Bi A:</b> được chốt đẩy theo phương ngang với vận tốc đầu \(v_0\), đồng thời cũng rơi xuống do trọng lực.
+        </div>
+      </div>
+
+      <div class="card panel">
+        <h3>Điểm cốt lõi cần quan sát</h3>
+        <div class="compare">
+          <div class="box">A và B bắt đầu ở <b>cùng độ cao</b> và được giải phóng <b>cùng một thời điểm</b>.</div>
+          <div class="box">Sau các khoảng thời gian bằng nhau, hai vị trí hoạt nghiệm của A và B nằm trên <b>cùng một đường ngang</b>.</div>
+          <div class="box">A đi theo <b>quỹ đạo parabol</b>; B đi theo <b>đường thẳng đứng</b>.</div>
+          <div class="box">Bỏ qua sức cản không khí, hai viên bi <b>chạm đất đồng thời</b>.</div>
+        </div>
+      </div>
+
+      <div class="card panel">
+        <h3>Cơ sở vật lí</h3>
+        <div class="explain">
+          Theo phương ngang của A:
+          <div class="formula">x = v₀t</div><br>
+          Theo phương thẳng đứng của cả A và B:
+          <div class="formula">y = ½gt²</div><br>
+          và
+          <div class="formula">vᵧ = gt</div><br>
+          Vì cả hai cùng có \(v_{0y}=0\) và cùng gia tốc \(g\), chuyển động theo phương thẳng đứng của chúng là như nhau.
+        </div>
+      </div>
+
+      <div class="card panel">
+        <h3>Chú thích</h3>
+        <div class="legend">
+          <div class="legendRow"><span class="sw" style="background:var(--pink)"></span> Bi A – ném ngang</div>
+          <div class="legendRow"><span class="sw" style="background:var(--blue)"></span> Bi B – rơi tự do</div>
+          <div class="legendRow"><span class="sw" style="background:var(--yellow)"></span> Véc tơ vận tốc đầu \(v_0\)</div>
+          <div class="legendRow"><span class="sw" style="background:#6a7890"></span> Đường ngang nối hai ảnh cùng thời điểm</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const scene = $('#scene');
+  const ballA=$('#ballA'), ballB=$('#ballB'), labelA=$('#labelA'), labelB=$('#labelB');
+  const ghostLayer=$('#ghostLayer');
+  const hRange=$('#hRange'), vRange=$('#vRange'), speedRange=$('#speedRange');
+  const hVal=$('#hVal'), vVal=$('#vVal'), speedVal=$('#speedVal');
+  const timeText=$('#timeText'), dropA=$('#dropA'), dropB=$('#dropB'), xA=$('#xA'), vyText=$('#vyText'), resultText=$('#resultText');
+  const pauseBtn=$('#pauseBtn'), strobeBtn=$('#strobeBtn');
+  const v0Vec=$('#v0Vec'), v0Text=$('#v0Text');
+  const apparatusSvg=$('#apparatusSvg');
+
+  const g=9.8;
+  let t=0, running=false, paused=false, strobe=true, raf=0, last=null;
+  let nextGhostTime=0;
+  const ghostDt=0.16;
+
+  // Hai viên bi bắt đầu cạnh nhau giống hình SGK
+  const geo={
+    startBX:170,
+    startAX:209,
+    startY:225,
+    floorY:595
+  };
+
+  function flightTime(){ return Math.sqrt(2*(+hRange.value)/g); }
+
+  function scale(){
+    const h=+hRange.value;
+    const T=flightTime();
+    const rangeX=(+vRange.value)*T;
+    const pxPerM_Y=(geo.floorY-geo.startY)/h;
+    const maxAvailable=scene.clientWidth-geo.startAX-80;
+    const pxPerM_X=Math.min(pxPerM_Y,maxAvailable/Math.max(0.5,rangeX));
+    return {pxPerM_Y,pxPerM_X};
+  }
+
+  function physicsAt(tt){
+    const h=+hRange.value, v0=+vRange.value;
+    const y=Math.min(h,0.5*g*tt*tt);
+    const x=v0*tt;
+    return {x,y,vy:g*tt};
+  }
+
+  function posFor(tt){
+    const p=physicsAt(tt), s=scale();
+    return {
+      ax:geo.startAX+p.x*s.pxPerM_X,
+      ay:geo.startY+p.y*s.pxPerM_Y,
+      bx:geo.startBX,
+      by:geo.startY+p.y*s.pxPerM_Y,
+      ...p
+    };
+  }
+
+  function setPos(el,x,y){el.style.left=x+'px';el.style.top=y+'px'}
+
+  function drawPaths(){
+    const T=flightTime();
+    const points=[];
+    for(let i=0;i<=50;i++){
+      const tt=T*i/50, p=posFor(tt);
+      points.push(`${i?'L':'M'} ${p.ax} ${p.ay}`);
+    }
+    $('#parabola').setAttribute('d',points.join(' '));
+    $('#freeFall').setAttribute('d',`M ${geo.startBX} ${geo.startY} L ${geo.startBX} ${geo.floorY}`);
+
+    const vg=$('#verticalGuide');
+    vg.style.left=geo.startBX+'px';
+    vg.style.top=geo.startY+'px';
+    vg.style.height=(geo.floorY-geo.startY)+'px';
+  }
+
+  function render(){
+    const T=flightTime();
+    if(t>T)t=T;
+    const p=posFor(t);
+
+    setPos(ballA,p.ax,p.ay); setPos(ballB,p.bx,p.by);
+    setPos(labelA,p.ax+2,p.ay-29); setPos(labelB,p.bx,p.by-29);
+
+    v0Vec.style.left=(p.ax+16)+'px';
+    v0Vec.style.top=(p.ay-1)+'px';
+    v0Vec.style.width=(24 + (+vRange.value)*10)+'px';
+    v0Text.style.left=(p.ax+31)+'px';
+    v0Text.style.top=(p.ay-25)+'px';
+
+    timeText.textContent=t.toFixed(3)+' s';
+    dropA.textContent=p.y.toFixed(2)+' m';
+    dropB.textContent=p.y.toFixed(2)+' m';
+    xA.textContent=p.x.toFixed(2)+' m';
+    vyText.textContent=p.vy.toFixed(2)+' m/s';
+
+    if(t>=T){
+      resultText.textContent='Hai bi chạm đất cùng lúc';
+    }else if(running){
+      resultText.textContent=paused?'Tạm dừng':'Đang chuyển động';
+    }else{
+      resultText.textContent='Sẵn sàng';
+    }
+    drawPaths();
+  }
+
+  function addGhost(tt){
+    const p=posFor(tt);
+    const ga=document.createElement('div');
+    ga.className='ghost ghostA';
+    setPos(ga,p.ax,p.ay);
+
+    const gb=document.createElement('div');
+    gb.className='ghost ghostB';
+    setPos(gb,p.bx,p.by);
+
+    const line=document.createElement('div');
+    line.className='sameY';
+    line.style.left=Math.min(p.ax,p.bx)+'px';
+    line.style.top=p.ay+'px';
+    line.style.width=Math.abs(p.ax-p.bx)+'px';
+
+    const stamp=document.createElement('div');
+    stamp.className='timeStamp';
+    stamp.textContent=tt.toFixed(2)+' s';
+    setPos(stamp,p.ax+18,p.ay+18);
+
+    ghostLayer.appendChild(line);
+    ghostLayer.appendChild(ga);
+    ghostLayer.appendChild(gb);
+    ghostLayer.appendChild(stamp);
+  }
+
+  function rebuildGhosts(){
+    ghostLayer.innerHTML='';
+    if(!strobe)return;
+    const upto=Math.min(t,flightTime());
+    for(let tt=0;tt<=upto+1e-9;tt+=ghostDt)addGhost(tt);
+    nextGhostTime=Math.ceil((upto+1e-9)/ghostDt)*ghostDt;
+  }
+
+  function triggerEffect(){
+    apparatusSvg.classList.remove('fire');
+    void apparatusSvg.getBoundingClientRect();
+    apparatusSvg.classList.add('fire');
+    setTimeout(()=>apparatusSvg.classList.remove('fire'),420);
+  }
+
+  function frame(ts){
+    if(!running)return;
+    if(paused){last=ts;raf=requestAnimationFrame(frame);return}
+    if(last==null)last=ts;
+
+    // tốc độ trình diễn độc lập với thông số vật lí
+    const presentationSpeed=+speedRange.value;
+    const dt=Math.min(.04,(ts-last)/1000)*presentationSpeed;
+    last=ts;
+    t+=dt;
+
+    if(strobe){
+      while(t>=nextGhostTime && nextGhostTime<=flightTime()){
+        addGhost(nextGhostTime);
+        nextGhostTime+=ghostDt;
+      }
+    }
+
+    if(t>=flightTime()){
+      t=flightTime();
+      running=false;
+    }
+    render();
+    if(running)raf=requestAnimationFrame(frame);
+  }
+
+  function start(){
+    if(t>=flightTime())reset();
+    running=true;paused=false;last=null;pauseBtn.textContent='⏸ Tạm dừng';
+    triggerEffect();
+    if(strobe && ghostLayer.children.length===0){addGhost(0);nextGhostTime=ghostDt}
+    raf=requestAnimationFrame(frame);
+  }
+
+  function reset(){
+    cancelAnimationFrame(raf);
+    t=0;running=false;paused=false;last=null;nextGhostTime=0;
+    ghostLayer.innerHTML='';
+    pauseBtn.textContent='⏸ Tạm dừng';
+    if(strobe){addGhost(0);nextGhostTime=ghostDt}
+    render();
+  }
+
+  $('#releaseBtn').addEventListener('click',start);
+
+  pauseBtn.addEventListener('click',()=>{
+    if(!running)return;
+    paused=!paused;
+    pauseBtn.textContent=paused?'▶ Tiếp tục':'⏸ Tạm dừng';
+    render();
+  });
+
+  $('#resetBtn').addEventListener('click',reset);
+
+  $('#stepBtn').addEventListener('click',()=>{
+    cancelAnimationFrame(raf);running=false;paused=false;
+    t=Math.min(flightTime(),t+ghostDt);
+    if(strobe)addGhost(t);
+    render();
+  });
+
+  strobeBtn.addEventListener('click',()=>{
+    strobe=!strobe;
+    strobeBtn.textContent=strobe?'✨ Hoạt nghiệm: Bật':'✨ Hoạt nghiệm: Tắt';
+    rebuildGhosts();
+  });
+
+  [hRange,vRange].forEach(el=>el.addEventListener('input',()=>{
+    hVal.textContent=(+hRange.value).toFixed(1)+' m';
+    vVal.textContent=(+vRange.value).toFixed(1)+' m/s';
+    reset();
+  }));
+
+  speedRange.addEventListener('input',()=>{
+    speedVal.textContent=(+speedRange.value).toFixed(2)+'×';
+  });
+
+  window.addEventListener('resize',()=>{rebuildGhosts();render()});
+
+  hVal.textContent=(+hRange.value).toFixed(1)+' m';
+  vVal.textContent=(+vRange.value).toFixed(1)+' m/s';
+  speedVal.textContent=(+speedRange.value).toFixed(2)+'×';
+  reset();
+})();
+<\/script>
+</body>
+</html>

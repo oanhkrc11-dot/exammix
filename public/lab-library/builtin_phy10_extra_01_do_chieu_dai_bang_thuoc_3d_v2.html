@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Đo chiều dài bằng thước</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#020812;--panel:#071725;--card:#0a1e30;--line:#244963;
+  --cyan:#64ddff;--yellow:#ffda69;--green:#7fffc2;--red:#ff8585;
+  --text:#eefaff;--muted:#9bb9ca;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#020812;color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:365px;min-width:340px;max-width:380px;height:100%;overflow:auto;padding:14px;
+  background:linear-gradient(180deg,#081a2a,#04101b);
+  border-right:1px solid rgba(100,221,255,.22);z-index:20
+}
+#view{position:relative;flex:1;height:100%;overflow:hidden;min-width:0}
+.title{font-weight:800;font-size:15px;letter-spacing:.04em}
+.kicker{font-size:11px;color:var(--muted);margin-top:4px}
+.simTitle{font-size:18px;color:var(--cyan);font-weight:800;margin:12px 0 7px;text-transform:uppercase}
+.desc{font-size:12px;line-height:1.45;color:#cfe5f2}
+.section{margin-top:11px;padding:11px;border:1px solid rgba(100,221,255,.18);border-radius:12px;background:linear-gradient(180deg,rgba(13,36,55,.95),rgba(6,21,34,.94))}
+.section h3{margin:0 0 10px;font-size:12px;color:#b7edff;text-transform:uppercase;letter-spacing:.06em}
+.control{margin:10px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.row label{font-size:12px;font-weight:700}
+.value{font-size:12px;color:var(--yellow);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:#55cffa}
+.check{display:flex;align-items:center;gap:8px;font-size:12px;margin:8px 0}
+.check input{accent-color:#55cffa}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+button{min-height:40px;border:1px solid rgba(120,220,255,.22);border-radius:10px;padding:8px 6px;background:#10314b;color:#fff;font-weight:700;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+#measureBtn{background:#17683f}
+#resetBtn{background:#593549}
+#recordBtn{background:#4a5520}
+.note{font-size:11px;line-height:1.48;color:#b7cede}
+#resultBox{padding:9px;border-radius:9px;background:#06131f;border:1px solid rgba(100,221,255,.15);font-size:12px;line-height:1.5}
+.good{color:var(--green);font-weight:700}
+.warn{color:var(--yellow);font-weight:700}
+.bad{color:var(--red);font-weight:700}
+#info{
+  position:absolute;top:14px;right:14px;width:300px;padding:11px 13px;border-radius:13px;
+  background:rgba(4,15,25,.93);border:1px solid rgba(100,221,255,.28);z-index:10;
+  backdrop-filter:blur(5px);font-size:12px;pointer-events:none
+}
+#info .head{font-size:11px;text-transform:uppercase;color:#b8efff;font-weight:800;margin-bottom:6px}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-variant-numeric:tabular-nums}
+#credit{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);color:#ffdc70;font-size:18px;font-weight:800;text-shadow:0 0 12px rgba(255,220,112,.28);z-index:7;pointer-events:none}
+#tooltip{position:absolute;display:none;z-index:30;pointer-events:none;padding:8px 10px;border-radius:9px;background:rgba(4,14,23,.96);border:1px solid rgba(100,219,255,.3);font-size:11px;line-height:1.4;color:#eefaff}
+.label3d{padding:4px 7px;border-radius:8px;background:rgba(4,14,23,.8);border:1px solid rgba(100,219,255,.25);font-size:11px;font-weight:700;color:#e8f8ff;white-space:nowrap}
+.tableWrap{max-height:185px;overflow:auto;border:1px solid rgba(100,221,255,.13);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th,td{padding:6px;border-bottom:1px solid rgba(100,221,255,.10);text-align:center}
+th{position:sticky;top:0;background:#0c263a;color:#bdeeff}
+@media(max-width:1100px){#panel{width:340px;min-width:340px}#info{width:260px}#credit{font-size:15px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+    <div class="kicker">ĐO LƯỜNG · SAI SỐ</div>
+    <div class="simTitle">01. Đo chiều dài bằng thước</div>
+    <div class="desc">
+      Mô phỏng cách đặt thước, đọc giới hạn đo và độ chia nhỏ nhất, xác định chiều dài vật
+      và minh họa <b>sai số thị sai</b> khi mắt quan sát không vuông góc với vạch cần đọc.
+    </div>
+
+    <div class="section">
+      <h3>Thiết lập vật đo</h3>
+      <div class="control">
+        <div class="row"><label>Chiều dài thật của vật</label><span class="value" id="lengthText">7.35 cm</span></div>
+        <input id="lengthSlider" type="range" min="2" max="14" step="0.05" value="7.35">
+      </div>
+      <div class="control">
+        <div class="row"><label>Vị trí đầu vật</label><span class="value" id="startText">1.20 cm</span></div>
+        <input id="startSlider" type="range" min="0" max="4" step="0.05" value="1.20">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Thước đo</h3>
+      <div class="control">
+        <div class="row"><label>Độ chia nhỏ nhất</label><span class="value" id="divisionText">1 mm</span></div>
+        <input id="divisionSlider" type="range" min="1" max="5" step="1" value="1">
+      </div>
+      <div class="check"><input type="checkbox" id="showLabels" checked><label for="showLabels">Hiện nhãn số trên thước</label></div>
+      <div class="check"><input type="checkbox" id="snapRead" checked><label for="snapRead">Đọc theo vạch chia gần nhất</label></div>
+    </div>
+
+    <div class="section">
+      <h3>Vị trí mắt quan sát</h3>
+      <div class="control">
+        <div class="row"><label>Góc lệch mắt</label><span class="value" id="eyeText">0°</span></div>
+        <input id="eyeSlider" type="range" min="-30" max="30" step="1" value="0">
+      </div>
+      <div class="note">
+        0°: mắt nhìn gần vuông góc với mặt thước. Khi lệch trái/phải, mô phỏng tạo sai lệch đọc do thị sai.
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Thao tác</h3>
+      <div class="buttons">
+        <button id="measureBtn">📏 Đo chiều dài</button>
+        <button id="recordBtn">＋ Ghi kết quả</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+        <button id="fitBtn">⛶ Fit toàn cảnh</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Kết quả đo</h3>
+      <div id="resultBox">
+        Chưa thực hiện phép đo.
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Bảng số liệu</h3>
+      <div class="tableWrap">
+        <table>
+          <thead><tr><th>Lần</th><th>L (cm)</th><th>Δ (cm)</th></tr></thead>
+          <tbody id="dataBody"></tbody>
+        </table>
+      </div>
+      <button id="clearData" style="width:100%;margin-top:8px">Xóa bảng số liệu</button>
+      <div class="note" id="statText" style="margin-top:8px">Chưa có dữ liệu.</div>
+    </div>
+
+    <div class="section">
+      <h3>Mô hình hóa</h3>
+      <div class="note">
+        Vật và thước được phóng đại để dễ quan sát. Sai số thị sai trong mô phỏng dùng mô hình hình học Δx = h·tanθ ở mép phải của vật.
+        Đầu trái được coi như đã căn đúng với vạch đầu, còn mép phải nằm cao hơn mặt chia của thước nên khi mắt lệch góc sẽ xuất hiện dịch chuyển biểu kiến.
+        Đây là mô hình giáo dục, không phải mô hình quang học chi tiết của mắt.
+        Với thước có ĐCNN 1 mm, phép đọc được làm tròn theo vạch gần nhất nếu chế độ “đọc theo vạch chia” được bật.
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="info">
+      <div class="head">Thông số tức thời</div>
+      <div class="infoGrid">
+        <span>GHĐ thước</span><b>15.0 cm</b>
+        <span>ĐCNN</span><b id="infoDiv">1 mm</b>
+        <span>Chiều dài thật</span><b id="infoTrue">7.35 cm</b>
+        <span>Góc quan sát</span><b id="infoEye">0°</b>
+        <span>Đầu vật</span><b id="infoStart">1.20 cm</b>
+        <span>Cuối vật thật</span><b id="infoEnd">8.55 cm</b>
+        <span>Cuối vật biểu kiến</span><b id="infoAppEnd">8.55 cm</b>
+      </div>
+    </div>
+    <div id="tooltip"></div>
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* =========================================================
+   1. DOM + STATE
+========================================================= */
+const $=id=>document.getElementById(id);
+const view=$('view');
+const lengthSlider=$('lengthSlider'), startSlider=$('startSlider'),
+      divisionSlider=$('divisionSlider'), eyeSlider=$('eyeSlider'),
+      showLabels=$('showLabels'), snapRead=$('snapRead');
+
+const state={
+  trueLength:7.35,
+  start:1.20,
+  divisionMM:1,
+  eyeAngle:0,
+  rulerMax:15,
+  lastMeasure:null,
+  records:[]
+};
+
+/* =========================================================
+   2. THREE.JS SCENE
+========================================================= */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x020812);
+scene.fog=new THREE.Fog(0x020812,18,42);
+
+const camera=new THREE.PerspectiveCamera(46,view.clientWidth/view.clientHeight,.1,100);
+camera.position.set(11,8,13);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.07;
+controls.minDistance=7;
+controls.maxDistance=28;
+controls.minPolarAngle=.10;
+controls.maxPolarAngle=Math.PI*.48;
+controls.target.set(0,0,0);
+
+/* =========================================================
+   3. LIGHTS + FLOOR
+========================================================= */
+scene.add(new THREE.HemisphereLight(0x8bdfff,0x102030,1.2));
+const key=new THREE.DirectionalLight(0xffffff,1.2);
+key.position.set(8,14,10);
+key.castShadow=true;
+scene.add(key);
+
+const fill=new THREE.PointLight(0x48d4ff,15,28,2);
+fill.position.set(-7,5,8);
+scene.add(fill);
+
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(36,24),
+  new THREE.MeshPhongMaterial({color:0x07131f,shininess:25})
+);
+floor.rotation.x=-Math.PI/2;
+floor.position.y=-2.15;
+floor.receiveShadow=true;
+scene.add(floor);
+
+const grid=new THREE.GridHelper(36,36,0x1e628b,0x123149);
+grid.position.y=-2.13;
+grid.material.transparent=true;
+grid.material.opacity=.30;
+scene.add(grid);
+
+/* =========================================================
+   4. RULER CONSTRUCTION
+   World scale: 1 cm = 0.8 world unit
+========================================================= */
+const SCALE=.8;
+const rulerGroup=new THREE.Group();
+scene.add(rulerGroup);
+
+const rulerBody=new THREE.Mesh(
+  new THREE.BoxGeometry(state.rulerMax*SCALE,.34,1.5),
+  new THREE.MeshPhongMaterial({color:0xd7c88f,shininess:35})
+);
+rulerBody.position.y=-.35;
+rulerBody.castShadow=true;
+rulerBody.receiveShadow=true;
+rulerGroup.add(rulerBody);
+
+const tickGroup=new THREE.Group();
+rulerGroup.add(tickGroup);
+const labelGroup=new THREE.Group();
+rulerGroup.add(labelGroup);
+
+function cmToX(cm){return -state.rulerMax*SCALE/2 + cm*SCALE;}
+
+function rebuildRuler(){
+  while(tickGroup.children.length){
+    const o=tickGroup.children.pop();
+    o.geometry?.dispose(); o.material?.dispose();
+  }
+  while(labelGroup.children.length) labelGroup.remove(labelGroup.children[0]);
+
+  const divCm=state.divisionMM/10;
+  const n=Math.round(state.rulerMax/divCm);
+
+  for(let i=0;i<=n;i++){
+    const cm=i*divCm;
+    const isCM=Math.abs(cm-Math.round(cm))<1e-6;
+    const isHalf=Math.abs((cm*2)-Math.round(cm*2))<1e-6;
+    const h=isCM?.48:(isHalf?.35:.24);
+    const geom=new THREE.BoxGeometry(.018,h,.035);
+    const mat=new THREE.MeshBasicMaterial({color:isCM?0x111111:0x303030});
+    const tick=new THREE.Mesh(geom,mat);
+    tick.position.set(cmToX(cm),-.17+h/2,.765);
+    tickGroup.add(tick);
+
+    if(isCM && showLabels.checked){
+      const div=document.createElement('div');
+      div.className='label3d';
+      div.style.background='rgba(255,255,255,.85)';
+      div.style.color='#101010';
+      div.style.border='none';
+      div.style.padding='2px 5px';
+      div.textContent=String(Math.round(cm));
+      const label=new CSS2DObject(div);
+      label.position.set(cmToX(cm),.35,.82);
+      labelGroup.add(label);
+    }
+  }
+}
+
+/* =========================================================
+   5. OBJECT TO MEASURE
+========================================================= */
+const objectGroup=new THREE.Group();
+scene.add(objectGroup);
+
+const objectMat=new THREE.MeshPhongMaterial({color:0x3cb6ff,emissive:0x073b55,shininess:90});
+let objectMesh=null;
+
+function rebuildObject(){
+  if(objectMesh){
+    objectGroup.remove(objectMesh);
+    objectMesh.geometry.dispose();
+  }
+  objectMesh=new THREE.Mesh(
+    new THREE.BoxGeometry(state.trueLength*SCALE,.72,.75),
+    objectMat
+  );
+  objectMesh.castShadow=true;
+  objectMesh.position.set(cmToX(state.start)+state.trueLength*SCALE/2,.48,0);
+  objectGroup.add(objectMesh);
+}
+
+/* =========================================================
+   6. MARKERS: START / END / READING LINE
+========================================================= */
+const markerGroup=new THREE.Group();
+scene.add(markerGroup);
+
+function makeMarker(color){
+  const g=new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0,-.15,-.8),
+    new THREE.Vector3(0,1.25,.8)
+  ]);
+  return new THREE.Line(g,new THREE.LineBasicMaterial({color}));
+}
+const startMarker=makeMarker(0x7fffc2);
+const endMarker=makeMarker(0xffda69);
+const readMarker=makeMarker(0xff8585);
+markerGroup.add(startMarker,endMarker,readMarker);
+
+function updateMarkers(){
+  startMarker.position.x=cmToX(state.start);
+  endMarker.position.x=cmToX(state.start+state.trueLength);
+  const apparentEnd=apparentEndReading();
+  readMarker.position.x=cmToX(apparentEnd);
+  readMarker.visible=Math.abs(state.eyeAngle)>0.1;
+}
+
+/* =========================================================
+   7. EYE / SIGHT LINE
+========================================================= */
+const eyeGroup=new THREE.Group();
+scene.add(eyeGroup);
+
+const eyeBall=new THREE.Mesh(
+  new THREE.SphereGeometry(.26,24,16),
+  new THREE.MeshPhongMaterial({color:0xf1f5ff,shininess:100})
+);
+eyeBall.castShadow=true;
+eyeGroup.add(eyeBall);
+
+const pupil=new THREE.Mesh(
+  new THREE.SphereGeometry(.105,20,14),
+  new THREE.MeshPhongMaterial({color:0x152b45,shininess:100})
+);
+pupil.position.z=.22;
+eyeBall.add(pupil);
+
+const sightMat=new THREE.LineDashedMaterial({color:0xff8d8d,dashSize:.22,gapSize:.14,transparent:true,opacity:.8});
+let sightLine=new THREE.Line(new THREE.BufferGeometry(),sightMat);
+scene.add(sightLine);
+
+function apparentShift(){
+  // Mô hình thị sai hình học:
+  // đầu trái của vật được coi như đã căn đúng với vạch đầu;
+  // đầu phải nằm cao hơn mặt thước một khoảng h nên khi mắt lệch góc theta,
+  // vị trí chiếu biểu kiến trên thước dịch đi Δx = h.tan(theta).
+  // h = 0,65 cm là chiều cao mô hình trực quan của mép vật so với mặt chia.
+  const angle=THREE.MathUtils.degToRad(state.eyeAngle);
+  const hCm=0.65;
+  return hCm*Math.tan(angle);
+}
+function apparentEndReading(){
+  return state.start+state.trueLength+apparentShift();
+}
+
+function updateEye(){
+  const endX=cmToX(state.start+state.trueLength);
+  const angle=THREE.MathUtils.degToRad(state.eyeAngle);
+  const radius=7.2;
+  eyeGroup.position.set(endX+Math.sin(angle)*radius,5.3,Math.cos(angle)*radius*.55);
+
+  const target=new THREE.Vector3(endX,.25,.78);
+  eyeGroup.lookAt(target);
+
+  const pts=[eyeGroup.position.clone(),target];
+  sightLine.geometry.dispose();
+  sightLine.geometry=new THREE.BufferGeometry().setFromPoints(pts);
+  sightLine.computeLineDistances();
+}
+
+/* =========================================================
+   8. MEASUREMENT MODEL
+========================================================= */
+function quantize(value){
+  if(!snapRead.checked) return value;
+  const d=state.divisionMM/10;
+  return Math.round(value/d)*d;
+}
+function performMeasure(){
+  // Giả thiết đầu trái đã được căn đúng với vạch đầu của thước;
+  // thị sai chủ yếu làm sai vị trí đọc ở mép phải.
+  const startSeen=quantize(state.start);
+  const endSeen=quantize(apparentEndReading());
+  const L=endSeen-startSeen;
+  const absErr=Math.abs(L-state.trueLength);
+  const signedErr=L-state.trueLength;
+
+  state.lastMeasure={L,absErr,startSeen,endSeen,signedErr};
+  $('resultBox').innerHTML=
+    `<b>Vạch đầu:</b> ${startSeen.toFixed(2)} cm (đã căn chuẩn)<br>`+
+    `<b>Vạch cuối biểu kiến:</b> ${endSeen.toFixed(2)} cm<br>`+
+    `<b>Chiều dài đo được:</b> <span class="${absErr<=state.divisionMM/20?'good':absErr<=state.divisionMM/10?'warn':'bad'}">${L.toFixed(2)} cm</span><br>`+
+    `<b>Sai lệch:</b> ${signedErr>=0?'+':''}${signedErr.toFixed(3)} cm<br>`+
+    `<b>Độ lệch thị sai hình học:</b> ${apparentShift()>=0?'+':''}${apparentShift().toFixed(3)} cm<br>`+
+    `<span class="${Math.abs(state.eyeAngle)<2?'good':'warn'}">${Math.abs(state.eyeAngle)<2?'Mắt gần vuông góc với thước → thị sai gần bằng 0.':'Mắt lệch khỏi phương vuông góc → vị trí mép phải bị dịch biểu kiến.'}</span>`;
+}
+
+/* =========================================================
+   9. TABLE / STATISTICS
+========================================================= */
+function renderTable(){
+  const body=$('dataBody');
+  body.innerHTML='';
+  state.records.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td><td>${r.L.toFixed(2)}</td><td>${r.absErr.toFixed(3)}</td>`;
+    body.appendChild(tr);
+  });
+
+  if(!state.records.length){
+    $('statText').textContent='Chưa có dữ liệu.';
+    return;
+  }
+  const avg=state.records.reduce((s,r)=>s+r.L,0)/state.records.length;
+  const meanAbs=state.records.reduce((s,r)=>s+Math.abs(r.L-avg),0)/state.records.length;
+  const rel=avg!==0?meanAbs/avg*100:0;
+  $('statText').innerHTML=
+    `Giá trị trung bình: <b>${avg.toFixed(3)} cm</b><br>`+
+    `Độ lệch tuyệt đối trung bình: <b>${meanAbs.toFixed(3)} cm</b><br>`+
+    `Sai số tỉ đối minh họa: <b>${rel.toFixed(2)}%</b>`;
+}
+
+/* =========================================================
+   10. UI / VISUAL UPDATE
+========================================================= */
+function syncState(){
+  state.trueLength=parseFloat(lengthSlider.value);
+  state.start=parseFloat(startSlider.value);
+  state.divisionMM=parseInt(divisionSlider.value,10);
+  state.eyeAngle=parseFloat(eyeSlider.value);
+
+  // keep object within ruler
+  const maxStart=Math.max(0,state.rulerMax-state.trueLength);
+  if(state.start>maxStart){
+    state.start=maxStart;
+    startSlider.value=state.start.toFixed(2);
+  }
+}
+
+function updateUI(){
+  $('lengthText').textContent=`${state.trueLength.toFixed(2)} cm`;
+  $('startText').textContent=`${state.start.toFixed(2)} cm`;
+  $('divisionText').textContent=`${state.divisionMM} mm`;
+  $('eyeText').textContent=`${state.eyeAngle.toFixed(0)}°`;
+
+  $('infoDiv').textContent=`${state.divisionMM} mm`;
+  $('infoTrue').textContent=`${state.trueLength.toFixed(2)} cm`;
+  $('infoEye').textContent=`${state.eyeAngle.toFixed(0)}°`;
+  $('infoStart').textContent=`${state.start.toFixed(2)} cm`;
+  $('infoEnd').textContent=`${(state.start+state.trueLength).toFixed(2)} cm`;
+  $('infoAppEnd').textContent=`${apparentEndReading().toFixed(2)} cm`;
+}
+
+function updateVisuals(){
+  rebuildObject();
+  updateMarkers();
+  updateEye();
+  updateUI();
+}
+
+/* =========================================================
+   11. EVENTS
+========================================================= */
+[lengthSlider,startSlider,divisionSlider,eyeSlider].forEach(el=>{
+  el.addEventListener('input',()=>{
+    syncState();
+    if(el===divisionSlider) rebuildRuler();
+    updateVisuals();
+    // Nếu đã đo một lần, cập nhật kết quả ngay khi thay đổi tham số
+    // để học sinh thấy trực tiếp ảnh hưởng của góc mắt, ĐCNN, chiều dài và vị trí.
+    if(state.lastMeasure) performMeasure();
+  });
+});
+showLabels.addEventListener('change',rebuildRuler);
+
+$('measureBtn').addEventListener('click',performMeasure);
+$('recordBtn').addEventListener('click',()=>{
+  if(!state.lastMeasure) performMeasure();
+  state.records.push({...state.lastMeasure});
+  renderTable();
+});
+$('clearData').addEventListener('click',()=>{
+  state.records=[];
+  renderTable();
+});
+$('fitBtn').addEventListener('click',fitScene);
+$('resetBtn').addEventListener('click',resetAll);
+
+/* =========================================================
+   12. TOOLTIP
+========================================================= */
+const raycaster=new THREE.Raycaster();
+const mouse=new THREE.Vector2();
+
+renderer.domElement.addEventListener('mousemove',e=>{
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+
+  const hits=raycaster.intersectObjects([rulerBody,objectMesh].filter(Boolean),false);
+  if(hits.length){
+    const isRuler=hits[0].object===rulerBody;
+    tooltip.style.display='block';
+    tooltip.style.left=`${e.offsetX+14}px`;
+    tooltip.style.top=`${e.offsetY+12}px`;
+    tooltip.innerHTML=isRuler
+      ? `<b>Thước đo</b><br>GHĐ: ${state.rulerMax} cm<br>ĐCNN: ${state.divisionMM} mm`
+      : `<b>Vật cần đo</b><br>Chiều dài thật: ${state.trueLength.toFixed(2)} cm`;
+  }else tooltip.style.display='none';
+});
+renderer.domElement.addEventListener('mouseleave',()=>tooltip.style.display='none');
+
+/* =========================================================
+   13. RESET / CAMERA / RESIZE
+========================================================= */
+function fitScene(){
+  camera.position.set(11,8,13);
+  controls.target.set(0,0,0);
+  controls.update();
+}
+
+function resetAll(){
+  lengthSlider.value='7.35';
+  startSlider.value='1.20';
+  divisionSlider.value='1';
+  eyeSlider.value='0';
+  showLabels.checked=true;
+  snapRead.checked=true;
+  state.records=[];
+  state.lastMeasure=null;
+  $('resultBox').textContent='Chưa thực hiện phép đo.';
+  syncState();
+  rebuildRuler();
+  updateVisuals();
+  renderTable();
+  fitScene();
+}
+
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
+  labelRenderer.setSize(w,h);
+}
+window.addEventListener('resize',resize);
+
+/* =========================================================
+   14. ANIMATION
+========================================================= */
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+resetAll();
+resize();
+animate();
+</script>
+</body>
+</html>

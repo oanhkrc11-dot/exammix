@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Tốc độ trung bình và vận tốc trung bình</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#10283b;--panel:#14344d;--cyan:#74e6ff;--yellow:#ffe47c;
+  --green:#93ffd2;--red:#ff9e9e;--text:#f7fcff;--muted:#bfd4df;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:282px;min-width:265px;max-width:292px;height:100%;overflow:auto;padding:9px;
+  background:linear-gradient(180deg,#173b57,#0f293d);
+  border-right:1px solid rgba(130,230,255,.28);z-index:20
+}
+#view{position:relative;flex:1;height:100%;overflow:hidden;min-width:0}
+.title{font-weight:800;font-size:12.5px}
+.kicker{font-size:9px;color:var(--muted);margin-top:2px}
+.simTitle{font-size:14.5px;color:var(--cyan);font-weight:800;margin:7px 0 4px;text-transform:uppercase}
+.section{margin-top:6px;padding:7px;border:1px solid rgba(120,225,255,.18);border-radius:8px;background:rgba(18,48,71,.88)}
+.section h3{margin:0 0 5px;font-size:9.5px;color:#d0f6ff;text-transform:uppercase}
+.control{margin:6px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:3px}
+.row label{font-size:10.2px;font-weight:700}
+.value{font-size:10.2px;color:var(--yellow);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:15px;accent-color:#65d9f6}
+select{width:100%;padding:5px 6px;border-radius:7px;background:#17435f;color:white;border:1px solid rgba(120,225,255,.22);font-size:10px}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}
+button{min-height:32px;border:1px solid rgba(130,225,255,.22);border-radius:7px;padding:5px;background:#17435f;color:#fff;font-weight:700;font-size:10px;cursor:pointer}
+button:hover{filter:brightness(1.08)}
+#runBtn{background:#1b7750}
+#resetBtn{background:#6a4053}
+#info{
+  position:absolute;top:12px;right:12px;width:270px;padding:8px 10px;border-radius:10px;
+  background:rgba(16,38,56,.86);border:1px solid rgba(120,225,255,.30);z-index:10;
+  backdrop-filter:blur(4px);font-size:10.5px;pointer-events:none
+}
+#info .head{font-size:9.5px;color:#d0f6ff;font-weight:800;margin-bottom:4px;text-transform:uppercase}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 9px;font-variant-numeric:tabular-nums}
+#credit{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);color:#ffe17a;font-size:15px;font-weight:800;z-index:7;pointer-events:none}
+.label3d{padding:3px 5px;border-radius:7px;background:rgba(18,40,58,.78);border:1px solid rgba(130,225,255,.24);font-size:10px;font-weight:700;color:#f5fbff;white-space:nowrap}
+#legend{
+  position:absolute;left:14px;top:12px;padding:7px 9px;border-radius:9px;background:rgba(18,42,60,.84);
+  border:1px solid rgba(120,225,255,.25);font-size:10px;line-height:1.45;z-index:8
+}
+.dot{display:inline-block;width:10px;height:3px;vertical-align:middle;margin-right:4px}
+#compare{
+  position:absolute;left:14px;bottom:42px;width:385px;max-width:44%;padding:9px 11px;border-radius:10px;
+  background:rgba(18,42,60,.84);border:1px solid rgba(120,225,255,.25);font-size:11px;z-index:8
+}
+.metric{display:grid;grid-template-columns:115px 1fr;gap:6px;margin:4px 0}
+.metric b{color:#ffe17a}
+@media(max-width:1000px){#panel{width:258px;min-width:258px}#info{width:235px}#compare{width:315px;max-width:42%}}
+</style>
+</head>
+
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+    <div class="kicker">CHUYỂN ĐỘNG MỘT CHIỀU</div>
+    <div class="simTitle">14. Tốc độ TB & vận tốc TB</div>
+
+    <div class="section">
+      <h3>Chặng 1</h3>
+      <select id="dir1">
+        <option value="1">Chiều dương</option>
+        <option value="-1">Chiều âm</option>
+      </select>
+      <div class="control">
+        <div class="row"><label>Quãng đường</label><span class="value" id="d1Text">6 m</span></div>
+        <input id="d1" type="range" min="1" max="10" step="1" value="6">
+      </div>
+      <div class="control">
+        <div class="row"><label>Tốc độ</label><span class="value" id="v1Text">2.0 m/s</span></div>
+        <input id="v1" type="range" min="0.5" max="4" step="0.5" value="2">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Chặng 2</h3>
+      <select id="dir2">
+        <option value="-1">Chiều âm</option>
+        <option value="1">Chiều dương</option>
+      </select>
+      <div class="control">
+        <div class="row"><label>Quãng đường</label><span class="value" id="d2Text">4 m</span></div>
+        <input id="d2" type="range" min="1" max="10" step="1" value="4">
+      </div>
+      <div class="control">
+        <div class="row"><label>Tốc độ</label><span class="value" id="v2Text">1.0 m/s</span></div>
+        <input id="v2" type="range" min="0.5" max="4" step="0.5" value="1">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Chặng 3</h3>
+      <select id="dir3">
+        <option value="1">Chiều dương</option>
+        <option value="-1">Chiều âm</option>
+      </select>
+      <div class="control">
+        <div class="row"><label>Quãng đường</label><span class="value" id="d3Text">3 m</span></div>
+        <input id="d3" type="range" min="0" max="10" step="1" value="3">
+      </div>
+      <div class="control">
+        <div class="row"><label>Tốc độ</label><span class="value" id="v3Text">3.0 m/s</span></div>
+        <input id="v3" type="range" min="0.5" max="4" step="0.5" value="3">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Điều khiển</h3>
+      <div class="buttons">
+        <button id="runBtn">▶ Bắt đầu</button>
+        <button id="pauseBtn">⏸ Dừng</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+        <button id="fitBtn">⛶ Fit</button>
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="legend">
+      <div><span class="dot" style="background:#ffe17a"></span>Quãng đường đã đi</div>
+      <div><span class="dot" style="background:#93ffd2"></span>Độ dịch chuyển</div>
+    </div>
+
+    <div id="info">
+      <div class="head">Số liệu tức thời</div>
+      <div class="infoGrid">
+        <span>t</span><b id="tInfo">0.00 s</b>
+        <span>x</span><b id="xInfo">0.00 m</b>
+        <span>s</span><b id="sInfo">0.00 m</b>
+        <span>Δx</span><b id="dxInfo">0.00 m</b>
+        <span>Tốc độ TB</span><b id="avgSpeedInfo">—</b>
+        <span>Vận tốc TB</span><b id="avgVelInfo">—</b>
+      </div>
+    </div>
+
+    <div id="compare">
+      <div class="metric"><span>Tốc độ TB</span><b id="avgSpeedText">—</b></div>
+      <div class="metric"><span>Vận tốc TB</span><b id="avgVelText">—</b></div>
+      <div class="metric"><span>Tổng thời gian</span><b id="totalTimeText">—</b></div>
+    </div>
+
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $=id=>document.getElementById(id);
+const view=$('view');
+const dirEls=[$('dir1'),$('dir2'),$('dir3')];
+const dEls=[$('d1'),$('d2'),$('d3')];
+const vEls=[$('v1'),$('v2'),$('v3')];
+
+const state={
+  dirs:[1,-1,1],
+  dists:[6,4,3],
+  speeds:[2,1,3],
+  segment:0,
+  segProgress:0,
+  running:false,
+  paused:true,
+  x:0,
+  s:0,
+  t:0,
+  lastStamp:performance.now()
+};
+
+/* SCENE */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x17384f);
+scene.fog=new THREE.Fog(0x17384f,24,56);
+
+const camera=new THREE.PerspectiveCamera(45,view.clientWidth/view.clientHeight,.1,100);
+camera.position.set(13,8,15);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.07;
+controls.minDistance=7;controls.maxDistance=30;
+controls.minPolarAngle=.1;controls.maxPolarAngle=Math.PI*.48;
+controls.target.set(3,0,0);
+
+scene.add(new THREE.HemisphereLight(0xe3faff,0x50687a,2.0));
+const sun=new THREE.DirectionalLight(0xffffff,2.0);
+sun.position.set(9,16,10);sun.castShadow=true;scene.add(sun);
+const fill=new THREE.PointLight(0x8cecff,26,35,2);
+fill.position.set(-8,7,8);scene.add(fill);
+
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(42,18),
+  new THREE.MeshPhongMaterial({color:0x2a5069,shininess:24})
+);
+floor.rotation.x=-Math.PI/2;floor.position.y=-1.6;floor.receiveShadow=true;scene.add(floor);
+
+const grid=new THREE.GridHelper(42,42,0x8bd4ef,0x496f84);
+grid.position.y=-1.58;grid.material.transparent=true;grid.material.opacity=.35;scene.add(grid);
+
+const road=new THREE.Mesh(
+  new THREE.BoxGeometry(34,.16,2.0),
+  new THREE.MeshPhongMaterial({color:0x455c6b,shininess:18})
+);
+road.position.y=-.70;road.receiveShadow=true;scene.add(road);
+
+const axis=new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-15,.06,0),new THREE.Vector3(15,.06,0)]),
+  new THREE.LineBasicMaterial({color:0xd7edf6})
+);
+scene.add(axis);
+
+for(let x=-14;x<=14;x++){
+  const h=x===0?.45:.26;
+  const t=new THREE.Mesh(
+    new THREE.BoxGeometry(.025,h,.025),
+    new THREE.MeshBasicMaterial({color:x===0?0xffe17a:0x9bc8d9})
+  );
+  t.position.set(x,-h/2+.06,0);scene.add(t);
+}
+
+/* car */
+const car=new THREE.Group();scene.add(car);
+const carBody=new THREE.Mesh(
+  new THREE.BoxGeometry(1.25,.46,.82),
+  new THREE.MeshPhongMaterial({color:0x4fd2ff,emissive:0x0a435d,shininess:110})
+);
+carBody.position.y=.40;carBody.castShadow=true;car.add(carBody);
+
+const cabin=new THREE.Mesh(
+  new THREE.BoxGeometry(.48,.29,.68),
+  new THREE.MeshPhongMaterial({color:0xe3f9ff,transparent:true,opacity:.84})
+);
+cabin.position.set(.1,.74,0);car.add(cabin);
+
+function wheel(x,z){
+  const w=new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.12,22),new THREE.MeshPhongMaterial({color:0x18252f}));
+  w.rotation.x=Math.PI/2;w.position.set(x,.15,z);return w;
+}
+car.add(wheel(-.38,.36),wheel(.38,.36),wheel(-.38,-.36),wheel(.38,-.36));
+
+const carLabelDiv=document.createElement('div');
+carLabelDiv.className='label3d';carLabelDiv.textContent='v = 0';
+const carLabel=new CSS2DObject(carLabelDiv);
+carLabel.position.set(0,1.25,0);car.add(carLabel);
+
+const velArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(0,.95,0),1.2,0x93ffd2,.24,.14);
+scene.add(velArrow);
+
+const trailGroup=new THREE.Group();scene.add(trailGroup);
+let dispArrow=null;
+
+function clearGroup(g){
+  while(g.children.length){
+    const o=g.children.pop();o.geometry?.dispose();o.material?.dispose();
+  }
+}
+
+function rebuildTrail(){
+  clearGroup(trailGroup);
+  let x=0;
+
+  for(let i=0;i<state.segment;i++){
+    const next=x+state.dirs[i]*state.dists[i];
+    const line=new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x,.12,.55),new THREE.Vector3(next,.12,.55)]),
+      new THREE.LineBasicMaterial({color:0xffe17a})
+    );
+    trailGroup.add(line);
+    x=next;
+  }
+
+  if(state.segment<3 && state.segProgress>0){
+    const next=x+state.dirs[state.segment]*state.segProgress;
+    const line=new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x,.12,.55),new THREE.Vector3(next,.12,.55)]),
+      new THREE.LineBasicMaterial({color:0xffe17a})
+    );
+    trailGroup.add(line);
+  }
+}
+
+function rebuildDisplacement(){
+  if(dispArrow){scene.remove(dispArrow);dispArrow=null;}
+  if(Math.abs(state.x)<1e-7)return;
+  dispArrow=new THREE.ArrowHelper(
+    new THREE.Vector3(Math.sign(state.x),0,0),
+    new THREE.Vector3(0,.18,-.55),
+    Math.abs(state.x),
+    0x93ffd2,.30,.17
+  );
+  scene.add(dispArrow);
+}
+
+/* calculations */
+function totalTimeTheoretical(){
+  let t=0;
+  for(let i=0;i<3;i++){
+    if(state.dists[i]>0)t+=state.dists[i]/state.speeds[i];
+  }
+  return t;
+}
+function totalDistance(){return state.dists.reduce((a,b)=>a+b,0);}
+function totalDisplacement(){
+  return state.dists.reduce((sum,d,i)=>sum+state.dirs[i]*d,0);
+}
+
+function updateVisual(){
+  car.position.x=state.x;
+
+  const curV=state.segment<3?state.dirs[state.segment]*state.speeds[state.segment]:0;
+  carLabelDiv.textContent=state.segment<3?`v = ${curV.toFixed(1)} m/s`:'Đích';
+
+  if(state.segment<3){
+    velArrow.setDirection(new THREE.Vector3(Math.sign(curV)||1,0,0));
+    velArrow.setLength(Math.max(.8,Math.abs(curV)*.65),.24,.14);
+    velArrow.visible=true;
+  }else velArrow.visible=false;
+  velArrow.position.set(state.x,.92,0);
+
+  rebuildTrail();
+  rebuildDisplacement();
+
+  const avgSpeed=state.t>1e-8?state.s/state.t:null;
+  const avgVel=state.t>1e-8?state.x/state.t:null;
+
+  $('tInfo').textContent=`${state.t.toFixed(2)} s`;
+  $('xInfo').textContent=`${state.x.toFixed(2)} m`;
+  $('sInfo').textContent=`${state.s.toFixed(2)} m`;
+  $('dxInfo').textContent=`${state.x.toFixed(2)} m`;
+  $('avgSpeedInfo').textContent=avgSpeed===null?'—':`${avgSpeed.toFixed(2)} m/s`;
+  $('avgVelInfo').textContent=avgVel===null?'—':`${avgVel.toFixed(2)} m/s`;
+}
+
+function updateSummary(){
+  const T=totalTimeTheoretical();
+  const S=totalDistance();
+  const dx=totalDisplacement();
+  const avgS=T>0?S/T:0;
+  const avgV=T>0?dx/T:0;
+  $('avgSpeedText').textContent=`${avgS.toFixed(2)} m/s`;
+  $('avgVelText').textContent=`${avgV.toFixed(2)} m/s`;
+  $('totalTimeText').textContent=`${T.toFixed(2)} s`;
+}
+
+function resetMotion(){
+  state.segment=0;state.segProgress=0;state.running=false;state.paused=true;
+  state.x=0;state.s=0;state.t=0;
+  $('runBtn').textContent='▶ Bắt đầu';$('pauseBtn').textContent='⏸ Dừng';
+  updateVisual();
+}
+
+function advance(dt){
+  if(!state.running||state.paused||state.segment>=3)return;
+
+  let timeLeft=dt;
+  while(timeLeft>0 && state.segment<3){
+    const v=state.speeds[state.segment];
+    const leftDist=state.dists[state.segment]-state.segProgress;
+    const maxStep=v*timeLeft;
+    const step=Math.min(maxStep,leftDist);
+    const usedTime=step/v;
+
+    state.segProgress+=step;
+    state.s+=step;
+    state.x+=state.dirs[state.segment]*step;
+    state.t+=usedTime;
+    timeLeft-=usedTime;
+
+    if(state.segProgress>=state.dists[state.segment]-1e-8){
+      state.segment++;
+      state.segProgress=0;
+    }
+  }
+
+  if(state.segment>=3){
+    state.running=false;state.paused=true;
+    $('runBtn').textContent='▶ Chạy lại';
+  }
+  updateVisual();
+}
+
+/* UI sync */
+function syncInputs(){
+  state.dirs=dirEls.map(e=>parseInt(e.value,10));
+  state.dists=dEls.map(e=>parseFloat(e.value));
+  state.speeds=vEls.map(e=>parseFloat(e.value));
+
+  $('d1Text').textContent=`${state.dists[0]} m`;
+  $('d2Text').textContent=`${state.dists[1]} m`;
+  $('d3Text').textContent=`${state.dists[2]} m`;
+  $('v1Text').textContent=`${state.speeds[0].toFixed(1)} m/s`;
+  $('v2Text').textContent=`${state.speeds[1].toFixed(1)} m/s`;
+  $('v3Text').textContent=`${state.speeds[2].toFixed(1)} m/s`;
+  updateSummary();
+}
+
+[...dirEls,...dEls,...vEls].forEach(el=>el.addEventListener('input',()=>{syncInputs();resetMotion();}));
+
+$('runBtn').addEventListener('click',()=>{
+  if(state.segment>=3)resetMotion();
+  state.running=true;state.paused=false;
+  $('runBtn').textContent='▶ Đang chạy';
+});
+$('pauseBtn').addEventListener('click',()=>{
+  if(!state.running)return;
+  state.paused=!state.paused;
+  $('pauseBtn').textContent=state.paused?'▶ Tiếp tục':'⏸ Dừng';
+});
+$('resetBtn').addEventListener('click',resetAll);
+$('fitBtn').addEventListener('click',fitScene);
+
+function fitScene(){
+  camera.position.set(13,8,15);
+  controls.target.set(3,0,0);
+  controls.update();
+}
+
+function resetAll(){
+  dirEls[0].value='1';
+  dirEls[1].value='-1';
+  dirEls[2].value='1';
+  dEls[0].value='6';
+  dEls[1].value='4';
+  dEls[2].value='3';
+  vEls[0].value='2';
+  vEls[1].value='1';
+  vEls[2].value='3';
+
+  syncInputs();
+  resetMotion();
+  fitScene();
+}
+
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);labelRenderer.setSize(w,h);
+}
+window.addEventListener('resize',resize);
+
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt=(now-state.lastStamp)/1000;state.lastStamp=now;
+  dt=Math.min(Math.max(dt,0),0.028);
+  advance(dt);
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+resetAll();
+resize();
+animate(performance.now());
+</script>
+</body>
+</html>

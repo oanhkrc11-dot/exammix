@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>076 - Định luật Ohm cho đoạn mạch</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07131e;color:#eef9ff;font-family:Inter,Segoe UI,system-ui,sans-serif}
+#app{position:fixed;inset:0}
+#panel{position:fixed;left:12px;top:12px;bottom:12px;width:372px;z-index:40;overflow:auto;padding:11px;border-radius:16px;background:rgba(8,18,28,.97);border:1px solid rgba(111,193,235,.22)}
+#panel.hide{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none}
+h1{font-size:14px;margin:0 0 3px}.sub{font-size:10.5px;color:#7bdcff;font-weight:800}
+.desc,.modeling{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(12,28,41,.72);font-size:10.3px;line-height:1.45;color:#cce1ee}.modeling{border-left:3px solid #d8a447}
+.section{margin:10px 0 6px;color:#75d8ff;font-weight:900;font-size:10.5px}
+label.control{display:block;margin:7px 0 9px;font-size:10.8px}label.control .value{float:right;color:#9fe9ff;font-weight:800}
+input[type=range]{width:100%;accent-color:#52c9ff;margin-top:4px}
+.buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+button{border:1px solid #355a73;background:#122332;color:#eef8ff;border-radius:9px;padding:7px 6px;font-size:10.4px;font-weight:800;cursor:pointer}.primary{border-color:#54d692;background:#1b5136}
+.checkrow{display:flex;gap:7px;align-items:center;margin:6px 0;font-size:10.4px}
+#formula{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:25;padding:8px 14px;border-radius:999px;background:rgba(6,16,25,.68);border:1px solid rgba(102,209,255,.2);font-weight:900}
+#hud{position:fixed;right:16px;top:16px;z-index:20;width:462px;padding:10px 11px;border-radius:13px;background:rgba(6,14,22,.70);border:1px solid rgba(116,193,234,.18);font-size:11px;line-height:1.55}#hud b{color:#ffd972}
+#probar{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:35;display:flex;gap:5px;padding:5px;border-radius:12px;background:rgba(6,14,22,.54);border:1px solid rgba(115,195,235,.16)}
+#credit{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:20;color:#ffe075;font-size:14px;font-weight:900}
+#legend{position:fixed;right:18px;bottom:18px;z-index:20;width:320px;padding:8px 10px;border-radius:10px;background:rgba(6,14,22,.66);border:1px solid rgba(116,193,234,.16);font-size:10px;line-height:1.5}
+#graph{width:100%;height:180px;background:#071019;border-radius:9px;border:1px solid rgba(104,186,225,.14);margin-top:8px}
+#recStatus{position:fixed;right:18px;bottom:155px;z-index:30;display:none;padding:7px 10px;border-radius:10px;background:rgba(125,0,0,.72);font-size:11px;font-weight:900}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"}}</script>
+</head><body>
+<div id="app"></div>
+<div id="formula">I = U/R &nbsp; · &nbsp; U = IR &nbsp; · &nbsp; P = UI = I²R = U²/R</div>
+<div id="probar"><button id="fullscreenBtn">⛶</button><button id="panelBtn">☰</button><button id="bgBtn">🌗</button><button id="lightBtn">💡</button><button id="camBtn">🎥</button><button id="autoCamBtn">🎬 Cam tự động</button><button id="recordBtn">🔴 Quay</button><button id="stopRecordBtn">⏹</button></div>
+
+<div id="panel">
+<h1>PHYSICS 11 LAB · 3D CINEMATIC</h1>
+<div class="sub">076 · ĐỊNH LUẬT OHM CHO ĐOẠN MẠCH</div>
+<div class="desc">Điều chỉnh hiệu điện thế hai đầu điện trở và giá trị R để quan sát trực tiếp <b>I=U/R</b>. Với điện trở thuần ở nhiệt độ không đổi, đặc tuyến <b>I(U)</b> là đường thẳng đi qua gốc tọa độ.</div>
+
+<div class="section">ĐIỀU KHIỂN</div>
+<label class="control">Tốc độ mô phỏng <span class="value" id="speedVal">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
+<label class="control">Hiệu điện thế đặt vào U <span class="value" id="emfVal">12.0 V</span><input id="emf" type="range" min="0" max="24" step=".5" value="12"></label>
+<label class="control">Điện trở thuần R <span class="value" id="rVal">6.0 Ω</span><input id="resistance" type="range" min="1" max="20" step=".5" value="6"></label>
+<label class="control">Điện trở trong nguồn r <span class="value" id="riVal">0.5 Ω</span><input id="internalR" type="range" min="0" max="2" step=".1" value="0"></label>
+<label class="control">Mật độ electron n (minh họa) <span class="value" id="nVal">8.5×10²⁸ m⁻³</span><input id="density" type="range" min="2" max="10" step=".5" value="8.5"></label>
+<label class="control">Tiết diện dây A (minh họa) <span class="value" id="aVal">2.0 mm²</span><input id="area" type="range" min=".5" max="6" step=".1" value="2"></label>
+<label class="control">Mức chuyển động nhiệt <span class="value" id="thermalVal">1.0×</span><input id="thermal" type="range" min=".3" max="2" step=".1" value="1"></label>
+
+<div class="section">NÚT NHANH</div><div class="buttons">
+<button id="start" class="primary">▶ Bắt đầu</button><button id="pause">⏸ Tạm dừng</button>
+<button id="reset">↻ Đặt lại</button><button id="fit">⛶ Fit</button>
+<button id="switchBtn">🔌 Đóng / mở K</button><button id="reverseBtn">↔ Đảo cực nguồn</button>
+<button id="doubleUBtn">U × 2</button><button id="doubleRBtn">R × 2</button>
+<button id="thermalOnlyBtn">U = 0</button><button id="clearGraphBtn">Xóa điểm đo</button>
+</div>
+
+<div class="section">HIỂN THỊ</div>
+<label class="checkrow"><input id="showE" type="checkbox" checked> Véc tơ điện trường</label>
+<label class="checkrow"><input id="showCurrent" type="checkbox" checked> Chiều dòng điện quy ước</label>
+<label class="checkrow"><input id="showDrift" type="checkbox" checked> Chiều electron trôi</label>
+<label class="checkrow"><input id="showLattice" type="checkbox" checked> Ion mạng tinh thể</label>
+<label class="checkrow"><input id="showGrid" type="checkbox" checked> Lưới</label>
+
+<canvas id="graph" width="330" height="180"></canvas>
+<div class="modeling"><b>Mô hình hóa:</b> điện trở thuần, nhiệt độ không đổi nên R không đổi. Dòng điện tuân theo <b>I=U/R</b>. Electron trong đoạn dây trong suốt chỉ là minh họa vi mô: chuyển động nhiệt nhanh + vận tốc trôi nhỏ ngược chiều dòng điện quy ước. Camera tự động tự chuyển toàn cảnh, cận điện trở, cận electron, góc cao và góc thấp kiểu quay phim.</div>
+</div>
+
+<div id="hud"><b>ĐỊNH LUẬT OHM · SỐ LIỆU TỨC THỜI</b><br>
+K = <b id="switchOut"></b><br>
+U nguồn = <b id="emfOut"></b> · r = <b id="riOut"></b> · R = <b id="rOut"></b><br>
+I = <b id="iOut"></b><br>
+U hai đầu R = <b id="uOut"></b><br>
+P = UI = <b id="pOut"></b><br>
+E trong dây ≈ U/L = <b id="eOut"></b><br>
+v<sub>d</sub> electron = <b id="vdOut"></b><br>
+Chiều I = <b id="idirOut"></b><br>
+Chiều electron trôi = <b id="edirOut"></b><br>
+Trạng thái = <b id="runOut"></b></div>
+
+<div id="legend"><b>Điểm cần nhớ</b><br>
+• Với R không đổi: U tăng bao nhiêu lần thì I tăng bấy nhiêu lần.<br>
+• Đồ thị I(U) là đường thẳng qua gốc, hệ số góc bằng 1/R.<br>
+• Dòng điện quy ước cùng chiều điện trường.<br>
+• Electron trôi ngược chiều dòng điện quy ước.</div>
+
+<div id="credit">Thầy Hùng vật lí</div><div id="recStatus">● ĐANG QUAY</div><canvas id="recordCanvas" width="1920" height="1080" style="display:none"></canvas>
+
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const QE=1.602176634e-19;
+const s={running:false,paused:false,time:0,speed:1,emf:12,R:6,r:0,n28:8.5,areaMm2:2,thermal:1,switchClosed:true,polarity:1,bg:0,light:0,cam:1,autoCam:false,graph:[]};
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('app').appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x06131e);
+const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,200);camera.position.set(10,6.6,12);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=5;controls.maxDistance=30;controls.minPolarAngle=.18;controls.maxPolarAngle=1.5;controls.target.set(0,.35,0);
+
+const hemi=new THREE.HemisphereLight(0xe3f7ff,0x10202d,1.7);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,1.9);key.position.set(7,10,8);scene.add(key);
+const rim=new THREE.PointLight(0x56d8ff,1.4,35,2);rim.position.set(-5,5,-5);scene.add(rim);
+
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(42,30),new THREE.MeshStandardMaterial({color:0x101c27,roughness:.92}));floor.rotation.x=-Math.PI/2;floor.position.y=-3.1;scene.add(floor);
+const grid=new THREE.GridHelper(42,42,0x2e5b72,0x173241);grid.position.y=-3.09;grid.material.transparent=true;grid.material.opacity=.14;scene.add(grid);
+
+const root=new THREE.Group();scene.add(root);
+const circuitG=new THREE.Group(),wireG=new THREE.Group(),electronG=new THREE.Group(),latticeG=new THREE.Group(),vectorG=new THREE.Group();
+root.add(circuitG,wireG,electronG,latticeG,vectorG);
+
+let electronMesh,latticeMesh;
+const edummy=new THREE.Object3D(),ldummy=new THREE.Object3D();
+let electrons=[],lattice=[],graphClock=0;
+
+const I=()=>s.switchClosed?s.polarity*s.emf/Math.max(.001,s.R+s.r):0;
+const Uload=()=>I()*s.R;
+const P=()=>Math.abs(Uload()*I());
+const area=()=>s.areaMm2*1e-6;
+const density=()=>s.n28*1e28;
+const vd=()=>-I()/(density()*QE*area()); // electron drift opposite conventional current
+const Ewire=()=>Uload()/8; // visual conductor length 8 m-equivalent for data display
+
+function clearGroup(g){while(g.children.length){const o=g.children.pop();o.traverse?.(x=>{x.geometry?.dispose?.();x.material?.dispose?.()})}}
+function seeded(i,k){const x=Math.sin(i*12.9898+k*78.233)*43758.5453;return x-Math.floor(x)}
+
+function buildCircuit(){
+ clearGroup(circuitG);clearGroup(wireG);
+ const copperMat=new THREE.MeshStandardMaterial({color:s.switchClosed?0xc77b3a:0x6d737b,metalness:.84,roughness:.24});
+ const metalMat=new THREE.MeshStandardMaterial({color:0xd7e5ef,metalness:.92,roughness:.18});
+ const resistorMat=new THREE.MeshStandardMaterial({color:0xd8c07a,metalness:.18,roughness:.56});
+ const darkMat=new THREE.MeshStandardMaterial({color:0x273746,roughness:.5});
+ const glassMat=new THREE.MeshPhysicalMaterial({color:0x97e7ff,transparent:true,opacity:.12,roughness:.08,transmission:.42,depthWrite:false});
+ const addTube=(arr,r=.08,seg=80)=>{
+  const curve=new THREE.CatmullRomCurve3(arr,false,'catmullrom',.08);
+  const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,seg,r,10,false),copperMat);
+  wireG.add(tube);
+  return tube;
+ };
+
+ // source
+ const battery=new THREE.Group();
+ const body=new THREE.Mesh(new THREE.BoxGeometry(1.5,2.8,1.5),darkMat);battery.add(body);
+ const plus=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.25,18),new THREE.MeshStandardMaterial({color:s.polarity>0?0xff8069:0x789cff}));plus.rotation.z=Math.PI/2;plus.position.set(0,.7,0);battery.add(plus);
+ const minus=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.16,18),new THREE.MeshStandardMaterial({color:s.polarity>0?0x789cff:0xff8069}));minus.rotation.z=Math.PI/2;minus.position.set(0,-.7,0);battery.add(minus);
+ battery.position.set(-6,0,0);circuitG.add(battery);
+
+ // resistor group, visibly connected to the observed metal section
+ const resistor=new THREE.Group();
+ const resistorBody=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,1.9,24),resistorMat);resistorBody.rotation.z=Math.PI/2;resistor.add(resistorBody);
+ const rCapL=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.28,12),metalMat);rCapL.rotation.z=Math.PI/2;rCapL.position.x=-1.09;resistor.add(rCapL);
+ const rCapR=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.28,12),metalMat);rCapR.rotation.z=Math.PI/2;rCapR.position.x=1.09;resistor.add(rCapR);
+ resistor.position.set(5.55,0,0);circuitG.add(resistor);
+
+ // switch
+ const switchBase=new THREE.Mesh(new THREE.BoxGeometry(1.4,.15,.8),new THREE.MeshStandardMaterial({color:0x304253}));switchBase.position.set(-3.7,2.2,0);circuitG.add(switchBase);
+ const lever=new THREE.Mesh(new THREE.BoxGeometry(1.0,.08,.12),new THREE.MeshStandardMaterial({color:0xf4d36a}));lever.geometry.translate(.45,0,0);lever.position.set(-4.15,2.32,0);lever.rotation.z=s.switchClosed?0:-.45;circuitG.add(lever);
+
+ // outer closed circuit wires
+ addTube([new THREE.Vector3(-6,.7,0),new THREE.Vector3(-6,2.3,0),new THREE.Vector3(-4.15,2.3,0)]);
+ addTube([new THREE.Vector3(-3.2,2.3,0),new THREE.Vector3(-4.65,2.3,0),new THREE.Vector3(-4.65,0,0),new THREE.Vector3(-4.18,0,0)]);
+ addTube([new THREE.Vector3(6.64,0,0),new THREE.Vector3(6.64,-2.0,0),new THREE.Vector3(-6,-2.0,0),new THREE.Vector3(-6,-.7,0)]);
+
+ // observation window: a true segment of the same conductor, not an isolated rod
+ const conductor=new THREE.Mesh(new THREE.CylinderGeometry(.75,.75,8,44),glassMat);
+ conductor.rotation.z=Math.PI/2;conductor.position.set(0,0,0);wireG.add(conductor);
+ const coreTint=new THREE.Mesh(new THREE.CylinderGeometry(.67,.67,7.85,36),new THREE.MeshBasicMaterial({color:0x84eaff,transparent:true,opacity:.04}));
+ coreTint.rotation.z=Math.PI/2;wireG.add(coreTint);
+
+ // metal end collars showing the transparent part is connected into the circuit
+ [-4,4].forEach(x=>{
+  const collar=new THREE.Mesh(new THREE.CylinderGeometry(.82,.82,.28,28),metalMat);collar.rotation.z=Math.PI/2;collar.position.set(x,0,0);wireG.add(collar);
+ });
+ const leftLead=new THREE.Mesh(new THREE.CylinderGeometry(.11,.11,.36,18),copperMat);leftLead.rotation.z=Math.PI/2;leftLead.position.set(-4.33,0,0);wireG.add(leftLead);
+ const rightLead=new THREE.Mesh(new THREE.CylinderGeometry(.11,.11,.72,18),copperMat);rightLead.rotation.z=Math.PI/2;rightLead.position.set(4.36,0,0);wireG.add(rightLead);
+
+ // terminal pads to make contact with the wire path visually explicit
+ const padGeom=new THREE.CylinderGeometry(.17,.17,.10,20);
+ const leftPad=new THREE.Mesh(padGeom,metalMat);leftPad.rotation.z=Math.PI/2;leftPad.position.set(-4.60,0,0);wireG.add(leftPad);
+ const rightPad=new THREE.Mesh(padGeom,metalMat);rightPad.rotation.z=Math.PI/2;rightPad.position.set(4.72,0,0);wireG.add(rightPad);
+}
+
+function spawnElectrons(){
+ clearGroup(electronG);electrons=[];
+ const N=120,geom=new THREE.SphereGeometry(.055,8,6),mat=new THREE.MeshBasicMaterial({color:0x75f2ff});
+ electronMesh=new THREE.InstancedMesh(geom,mat,N);electronMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);electronG.add(electronMesh);
+
+ for(let i=0;i<N;i++){
+  const rr=.62*Math.sqrt(seeded(i,1)),ang=seeded(i,2)*Math.PI*2;
+  electrons.push({
+   x:-3.9+7.8*seeded(i,3),
+   y:rr*Math.cos(ang),
+   z:rr*Math.sin(ang),
+   vx:(seeded(i,4)-.5)*1.8,
+   vy:(seeded(i,5)-.5)*1.8,
+   vz:(seeded(i,6)-.5)*1.8,
+   nextCollision:.04+.18*seeded(i,7),
+   seed:i
+  });
+ }
+ updateElectronInstances();
+}
+
+function buildLattice(){
+ clearGroup(latticeG);lattice=[];
+ if(!$('showLattice').checked)return;
+ const pts=[];
+ for(let ix=0;ix<18;ix++)for(let iy=-2;iy<=2;iy++)for(let iz=-2;iz<=2;iz++){
+  const y=iy*.25,z=iz*.25;if(y*y+z*z<.48*.48)pts.push(new THREE.Vector3(-3.8+ix*.45,y,z));
+ }
+ const geom=new THREE.SphereGeometry(.045,7,5),mat=new THREE.MeshStandardMaterial({color:0xffa069,emissive:0x8b361e,emissiveIntensity:.2});
+ latticeMesh=new THREE.InstancedMesh(geom,mat,pts.length);latticeMesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);latticeG.add(latticeMesh);
+ pts.forEach((p,i)=>{ldummy.position.copy(p);ldummy.updateMatrix();latticeMesh.setMatrixAt(i,ldummy.matrix)});
+ latticeMesh.instanceMatrix.needsUpdate=true;
+}
+
+function buildVectors(){
+ clearGroup(vectorG);
+ if($('showE').checked&&s.switchClosed&&Math.abs(Uload())>1e-9){
+  const dir=new THREE.Vector3(Math.sign(Uload()),0,0);
+  vectorG.add(new THREE.ArrowHelper(dir,new THREE.Vector3(-2.8,1.3,0),5.6,0x63dcff,.18,.1));
+ }
+ if($('showCurrent').checked&&s.switchClosed&&Math.abs(I())>1e-9){
+  const dir=new THREE.Vector3(Math.sign(I()),0,0);
+  vectorG.add(new THREE.ArrowHelper(dir,new THREE.Vector3(-2.8,1.8,0),5.6,0xffd45f,.18,.1));
+ }
+ if($('showDrift').checked&&s.switchClosed&&Math.abs(vd())>0){
+  const dir=new THREE.Vector3(Math.sign(vd()),0,0);
+  vectorG.add(new THREE.ArrowHelper(dir,new THREE.Vector3(-2.8,-1.3,0),5.6,0x7dffb2,.18,.1));
+ }
+}
+
+function updatePhysics(dt){
+ if(!s.running||s.paused)return;
+ s.time+=dt*s.speed;
+ const h=dt*s.speed;
+ const driftVisual=THREE.MathUtils.clamp(vd()*2.5e5,-1.4,1.4); // strong visual magnification only
+ const thermalScale=s.thermal;
+
+ electrons.forEach(e=>{
+  e.nextCollision-=h;
+  if(e.nextCollision<=0){
+   // deterministic collision reset based on time bucket + particle id
+   const k=Math.floor(s.time*13)+e.seed;
+   e.vx=(seeded(k,1)-.5)*2.0*thermalScale;
+   e.vy=(seeded(k,2)-.5)*2.0*thermalScale;
+   e.vz=(seeded(k,3)-.5)*2.0*thermalScale;
+   e.nextCollision=.035+.16*seeded(k,4);
+  }
+
+  e.x+=(e.vx+driftVisual)*h;
+  e.y+=e.vy*h;
+  e.z+=e.vz*h;
+
+  const rr=Math.hypot(e.y,e.z);
+  if(rr>.67){
+   const nx=e.y/rr,nz=e.z/rr;
+   const vn=e.vy*nx+e.vz*nz;
+   e.vy-=2*vn*nx;e.vz-=2*vn*nz;
+   e.y=nx*.66;e.z=nz*.66;
+  }
+
+  if(e.x>4)e.x=-4;
+  if(e.x<-4)e.x=4;
+ });
+
+ graphClock+=h;
+ if(graphClock>.08){
+  graphClock=0;
+  s.graph.push({U:Math.abs(Uload()),I:Math.abs(I())});
+  if(s.graph.length>180)s.graph.shift();
+ }
+ updateElectronInstances();
+}
+
+function updateElectronInstances(){
+ if(!electronMesh)return;
+ electrons.forEach((e,i)=>{edummy.position.set(e.x,e.y,e.z);edummy.updateMatrix();electronMesh.setMatrixAt(i,edummy.matrix)});
+ electronMesh.instanceMatrix.needsUpdate=true;
+}
+
+function drawGraph(){
+ const c=$('graph'),g=c.getContext('2d'),w=c.width,h=c.height;
+ g.fillStyle='#071019';g.fillRect(0,0,w,h);
+ const L=48,T=14,B=30,Rm=12,pw=w-L-Rm,ph=h-T-B;
+ g.strokeStyle='rgba(190,225,240,.28)';g.beginPath();g.moveTo(L,T);g.lineTo(L,T+ph);g.lineTo(L+pw,T+ph);g.stroke();
+
+ const umax=24;
+ const imax=Math.max(0.5,umax/Math.max(.1,s.R));
+ // theoretical Ohm line I = U/R
+ g.strokeStyle='#72e7ff';g.lineWidth=2;g.beginPath();
+ for(let k=0;k<=160;k++){
+   const u=k/160*umax,ii=u/Math.max(.1,s.R);
+   const x=L+u/umax*pw,y=T+ph*(1-ii/imax);
+   k?g.lineTo(x,y):g.moveTo(x,y);
+ }
+ g.stroke();
+
+ // current operating point
+ const u=Math.max(0,Uload()),ii=Math.abs(I());
+ const x=L+Math.min(1,u/umax)*pw,y=T+ph*(1-Math.min(1,ii/imax));
+ g.fillStyle='#ffd65f';g.beginPath();g.arc(x,y,4.5,0,Math.PI*2);g.fill();
+
+ // actual sampled points
+ g.fillStyle='#ff9c7a';
+ for(const p of s.graph){
+   const px=L+THREE.MathUtils.clamp(p.U/umax,0,1)*pw;
+   const py=T+ph*(1-THREE.MathUtils.clamp(Math.abs(p.I)/imax,0,1));
+   g.beginPath();g.arc(px,py,2.4,0,Math.PI*2);g.fill();
+ }
+ g.fillStyle='#91aabb';g.font='9px Segoe UI';
+ g.fillText('I (A)',8,13);g.fillText('U (V)',w-34,h-7);
+ g.fillText('0',L-12,T+ph+12);
+}
+
+const cinematicShots=[
+ {pos:new THREE.Vector3(10,6.6,12),tar:new THREE.Vector3(0,.35,0),dur:5.5},
+ {pos:new THREE.Vector3(4.8,2.0,5.6),tar:new THREE.Vector3(0,0,0),dur:4.5},
+ {pos:new THREE.Vector3(-1.5,1.15,6.2),tar:new THREE.Vector3(1.0,0,0),dur:4.5},
+ {pos:new THREE.Vector3(0,9.5,1.8),tar:new THREE.Vector3(0,0,0),dur:4.5},
+ {pos:new THREE.Vector3(1.8,.65,-7.2),tar:new THREE.Vector3(0,0,0),dur:4.5},
+ {pos:new THREE.Vector3(7.0,3.0,4.0),tar:new THREE.Vector3(4.5,.1,0),dur:4.0},
+ {pos:new THREE.Vector3(-7.2,3.4,4.2),tar:new THREE.Vector3(-4.0,.5,0),dur:4.0},
+ {pos:new THREE.Vector3(10,6.6,12),tar:new THREE.Vector3(0,.35,0),dur:5.0}
+];
+const cinematicTotal=cinematicShots.reduce((a,b)=>a+b.dur,0);
+function smoothstep01(x){x=THREE.MathUtils.clamp(x,0,1);return x*x*(3-2*x)}
+function updateCinematicCamera(){
+ if(!s.autoCam){controls.enabled=true;return;}
+ controls.enabled=false;
+ let t=(performance.now()/1000)%cinematicTotal,idx=0;
+ while(t>cinematicShots[idx].dur&&idx<cinematicShots.length-1){t-=cinematicShots[idx].dur;idx++}
+ const a=cinematicShots[idx],b=cinematicShots[(idx+1)%cinematicShots.length],k=smoothstep01(t/a.dur);
+ camera.position.lerpVectors(a.pos,b.pos,k);
+ const target=new THREE.Vector3().lerpVectors(a.tar,b.tar,k);
+ camera.position.y+=Math.sin(performance.now()/1800)*.10;
+ camera.lookAt(target);
+}
+function updateVisuals(){
+ grid.visible=$('showGrid').checked;buildVectors();
+ updateCinematicCamera();
+}
+
+function updateUI(){
+ $('speedVal').textContent=`${s.speed.toFixed(2)}×`;
+ $('emfVal').textContent=`${s.emf.toFixed(1)} V`;
+ $('rVal').textContent=`${s.R.toFixed(1)} Ω`;
+ $('riVal').textContent=`${s.r.toFixed(1)} Ω`;
+ $('nVal').textContent=`${s.n28.toFixed(1)}×10²⁸ m⁻³`;
+ $('aVal').textContent=`${s.areaMm2.toFixed(1)} mm²`;
+ $('thermalVal').textContent=`${s.thermal.toFixed(1)}×`;
+
+ $('switchOut').textContent=s.switchClosed?'ĐÓNG':'MỞ';
+ $('emfOut').textContent=`${(s.polarity*s.emf).toFixed(1)} V`;
+ $('riOut').textContent=`${s.r.toFixed(2)} Ω`;
+ $('rOut').textContent=`${s.R.toFixed(2)} Ω`;
+ $('iOut').textContent=`${I().toFixed(3)} A`;
+ $('uOut').textContent=`${Uload().toFixed(3)} V`;
+ $('pOut').textContent=`${P().toFixed(3)} W`;
+ $('eOut').textContent=`${Ewire().toFixed(3)} V/m`;
+ $('vdOut').textContent=`${vd().toExponential(3)} m/s`;
+ $('idirOut').textContent=I()>0?'trái → phải':I()<0?'phải → trái':'không có';
+ $('edirOut').textContent=vd()>0?'trái → phải':vd()<0?'phải → trái':'không có';
+ $('runOut').textContent=!s.running?'Dừng':(s.paused?'Tạm dừng':'Đang chạy');
+ drawGraph();
+}
+
+function rebuildCircuit(){buildCircuit();spawnElectrons();buildLattice();buildVectors();updateUI()}
+
+const bgs=[{b:0x06131e,f:0x101c27},{b:0xeaf2f6,f:0xd6e1e6},{b:0x06162a,f:0x0b2039}];
+function applyBg(){const mm=bgs[s.bg];scene.background.setHex(mm.b);floor.material.color.setHex(mm.f)}
+function applyLight(){if(s.light===0){hemi.intensity=1.7;key.intensity=1.9;rim.intensity=1.4}else if(s.light===1){hemi.intensity=2.2;key.intensity=2.3;rim.intensity=.6}else{hemi.intensity=1.05;key.intensity=1.2;rim.intensity=2.1}}
+function setCam(mm){s.cam=mm%4;s.autoCam=false;controls.enabled=true;if($('autoCamBtn'))$('autoCamBtn').textContent='🎬 Cam tự động';if(mm===0)camera.position.set(0,11,.01);else if(mm===1)camera.position.set(10,6.6,12);else if(mm===2)camera.position.set(0,4.8,14);else camera.position.set(5,3.6,6.6);controls.target.set(0,.35,0);camera.lookAt(controls.target);controls.update()}
+async function fs(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}}
+
+$('speed').oninput=e=>s.speed=+e.target.value;
+$('emf').oninput=e=>{s.emf=+e.target.value;s.graph.push({U:Math.abs(Uload()),I:Math.abs(I())});if(s.graph.length>120)s.graph.shift();updateUI()};
+$('resistance').oninput=e=>{s.R=+e.target.value;s.graph=[];updateUI()};
+$('internalR').oninput=e=>{s.r=+e.target.value;updateUI()};
+$('density').oninput=e=>{s.n28=+e.target.value;updateUI()};
+$('area').oninput=e=>{s.areaMm2=+e.target.value;updateUI()};
+$('thermal').oninput=e=>{s.thermal=+e.target.value;updateUI()};
+
+$('showE').onchange=buildVectors;
+$('showCurrent').onchange=buildVectors;
+$('showDrift').onchange=buildVectors;
+$('showLattice').onchange=buildLattice;
+
+$('start').onclick=()=>{s.running=true;s.paused=false};
+$('pause').onclick=()=>s.paused=!s.paused;
+$('fit').onclick=()=>setCam(1);
+$('switchBtn').onclick=()=>{s.switchClosed=!s.switchClosed;buildCircuit();buildVectors();updateUI()};
+$('reverseBtn').onclick=()=>{s.polarity*=-1;buildCircuit();buildVectors();updateUI()};
+$('doubleUBtn').onclick=()=>{s.emf=Math.min(24,s.emf*2);$('emf').value=s.emf;updateUI()};
+$('doubleRBtn').onclick=()=>{s.R=Math.min(20,s.R*2);$('resistance').value=s.R;updateUI()};
+$('thermalOnlyBtn').onclick=()=>{s.emf=0;$('emf').value=0;updateUI();buildVectors();};
+$('clearGraphBtn').onclick=()=>{s.graph=[];drawGraph()};
+
+$('reset').onclick=()=>{
+ Object.assign(s,{running:false,paused:false,time:0,speed:1,emf:12,R:6,r:0,n28:8.5,areaMm2:2,thermal:1,switchClosed:true,polarity:1,bg:0,light:0,cam:1,autoCam:false,graph:[]});
+ $('speed').value=1;$('emf').value=12;$('resistance').value=6;$('internalR').value=0;$('density').value=8.5;$('area').value=2;$('thermal').value=1;
+ applyBg();applyLight();setCam(1);rebuildCircuit();
+};
+
+$('fullscreenBtn').onclick=fs;
+$('panelBtn').onclick=()=>$('panel').classList.toggle('hide');
+$('bgBtn').onclick=()=>{s.bg=(s.bg+1)%3;applyBg()};
+$('lightBtn').onclick=()=>{s.light=(s.light+1)%3;applyLight()};
+$('camBtn').onclick=()=>setCam((s.cam+1)%4);
+$('autoCamBtn').onclick=()=>{s.autoCam=!s.autoCam;$('autoCamBtn').textContent=s.autoCam?'⏹ Dừng Cam':'🎬 Cam tự động';if(!s.autoCam)setCam(s.cam);};
+
+// recording
+const rc=$('recordCanvas'),ctx=rc.getContext('2d');let rec=null,chunks=[],mime='',rt=null;
+function bestMime(){for(const mm of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(mm))return mm;return ''}
+function drawRec(){
+ const sw=renderer.domElement.width,sh=renderer.domElement.height,dw=rc.width,dh=rc.height,k=Math.max(dw/sw,dh/sh),rw=sw*k,rh=sh*k;
+ ctx.fillStyle='#06131e';ctx.fillRect(0,0,dw,dh);ctx.drawImage(renderer.domElement,(dw-rw)/2,(dh-rh)/2,rw,rh);
+ ctx.fillStyle='rgba(4,12,20,.72)';ctx.fillRect(34,34,1600,115);
+ ctx.fillStyle='#fff';ctx.font='800 30px Segoe UI';ctx.fillText('076 · ĐỊNH LUẬT OHM CHO ĐOẠN MẠCH',58,76);
+ ctx.fillStyle='#ffe075';ctx.font='700 22px Segoe UI';ctx.fillText(`I=${I().toFixed(3)} A · U=${Uload().toFixed(3)} V · vd=${vd().toExponential(2)} m/s`,58,108);
+}
+function startRec(){if(rec&&rec.state==='recording')return;mime=bestMime();if(!mime){alert('Trình duyệt chưa hỗ trợ ghi video.');return}chunks=[];rec=new MediaRecorder(rc.captureStream(60),{mimeType:mime,videoBitsPerSecond:12000000});rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:mime}));a.download=`076_Dinh_luat_Ohm_cho_doan_mach.${mime.includes('mp4')?'mp4':'webm'}`;a.click();$('recStatus').style.display='none';clearInterval(rt);rt=null};rec.start(100);$('recStatus').style.display='block';drawRec();rt=setInterval(drawRec,1000/60)}
+$('recordBtn').onclick=startRec;$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);
+ const dt=THREE.MathUtils.clamp((now-last)/1000,0,.033);last=now;
+ updatePhysics(dt);updateVisuals();updateUI();controls.update();renderer.render(scene,camera);
+ if(rec&&rec.state==='recording')drawRec();
+}
+
+applyBg();applyLight();rebuildCircuit();setCam(1);requestAnimationFrame(animate);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body></html>

@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PHYSICS 10 LAB · 66–68 Véc tơ lực kiểu PPT V2</title>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#132937; --panel:#173445; --panel2:#112736; --line:#436679;
+  --text:#f4fbff; --muted:#b7cdd8; --cyan:#71defd; --yellow:#ffe27b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:290px;min-width:270px;max-width:300px;height:100%;overflow:auto;padding:10px;
+  background:linear-gradient(180deg,var(--panel),var(--panel2));border-right:1px solid var(--line)
+}
+#view{position:relative;flex:1;min-width:0;height:100%;overflow:hidden}
+.title{font-size:12.5px;font-weight:900}
+.kicker{font-size:9px;color:var(--muted);margin-top:2px}
+.simTitle{font-size:14px;font-weight:900;color:var(--cyan);margin:8px 0 5px;text-transform:uppercase}
+.section{margin-top:7px;padding:8px;border:1px solid var(--line);border-radius:10px;background:rgba(10,31,43,.35)}
+.section h3{margin:0 0 6px;font-size:9.5px;color:var(--cyan);text-transform:uppercase}
+.row{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px}
+.row span,label{font-size:10px;font-weight:700}
+.val{font-size:10px;color:var(--yellow);font-weight:800;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:#18a0c8}
+select,button{
+  width:100%;height:31px;border-radius:7px;border:1px solid var(--line);
+  background:#244b60;color:#fff;font-size:10px;font-weight:800
+}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+#playAll{background:#219265}
+#resetBtn{background:#6a4252}
+#recBtn{background:#a92e40}
+#badge,#info,#canvasWrap,#recHud{
+  position:absolute;z-index:5;background:rgba(10,29,41,.86);border:1px solid #446879;
+  border-radius:10px;backdrop-filter:blur(5px)
+}
+#badge{left:14px;top:12px;padding:8px 10px;font-size:11px;font-weight:900}
+#recHud{left:14px;top:50px;padding:5px 8px;font-size:10px;font-weight:900;display:none}
+#info{right:12px;top:12px;width:340px;padding:8px 10px;font-size:10px}
+#info .head{font-size:9px;color:var(--cyan);font-weight:900;margin-bottom:4px;text-transform:uppercase}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 8px}
+#canvasWrap{left:14px;bottom:40px;width:min(44%,590px);height:200px;padding:7px}
+#vec2d{width:100%;height:100%;display:block}
+#credit{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:15px;font-weight:900;color:var(--yellow)}
+.lab{
+  padding:3px 5px;border-radius:7px;background:#102d3e;border:1px solid #496b7c;color:#fff;
+  font-size:10px;font-weight:800;white-space:nowrap
+}
+.smallTip{font-size:9px;color:var(--muted);line-height:1.35}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+    <div class="kicker">TRÌNH DIỄN KIỂU PPT · HIỆN TỪNG BƯỚC</div>
+    <div class="simTitle">66–68. VÉC TƠ LỰC</div>
+
+    <div class="section">
+      <h3>Chế độ</h3>
+      <select id="mode">
+        <option value="resultant">67. Hợp lực hai lực đồng quy</option>
+        <option value="balance">66. Cân bằng ba lực đồng quy</option>
+        <option value="components">68. Phân tích một lực thành hai thành phần</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <h3>Thông số</h3>
+
+      <div id="twoForceControls">
+        <div class="row"><span>F₁</span><span class="val" id="f1Text">8.0 N</span></div>
+        <input id="f1" type="range" min="1" max="20" step="0.5" value="8">
+
+        <div class="row"><span>F₂</span><span class="val" id="f2Text">6.0 N</span></div>
+        <input id="f2" type="range" min="1" max="20" step="0.5" value="6">
+
+        <div class="row"><span>Góc giữa F₁, F₂</span><span class="val" id="angText">60°</span></div>
+        <input id="ang" type="range" min="10" max="170" step="1" value="60">
+      </div>
+
+      <div id="oneForceControls" style="display:none">
+        <div class="row"><span>Lực F</span><span class="val" id="fText">10.0 N</span></div>
+        <input id="force" type="range" min="1" max="20" step="0.5" value="10">
+
+        <div class="row"><span>Góc φ của F với Ox</span><span class="val" id="phiText">35°</span></div>
+        <input id="phi" type="range" min="0" max="90" step="1" value="35">
+      </div>
+
+      <div class="smallTip" style="margin-top:6px">
+        Ở chế độ tổng hợp lực, khi hiện R sẽ đồng thời xuất hiện hai cạnh còn lại để tạo hình bình hành lực.
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Trình diễn từng bước</h3>
+      <div class="grid3">
+        <button id="step1Btn">B1: F1 / F</button>
+        <button id="step2Btn">B2: F2</button>
+        <button id="step3Btn">B3: R / Fx,Fy</button>
+      </div>
+      <div class="grid2" style="margin-top:5px">
+        <button id="step4Btn">B4: F3</button>
+        <button id="playAll">▶ Tự chạy</button>
+      </div>
+      <div class="grid2" style="margin-top:5px">
+        <button id="prevBtn">◀ Lùi bước</button>
+        <button id="resetBtn">↻ Làm lại</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Góc nhìn</h3>
+      <select id="cameraMode">
+        <option value="all">Toàn cảnh</option>
+        <option value="top">Nhìn từ trên</option>
+        <option value="iso">Góc xiên</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <h3>Quay thí nghiệm</h3>
+      <div class="grid2">
+        <button id="recBtn">🎥 Bắt đầu quay</button>
+        <button id="stopRecBtn">⏹ Dừng quay</button>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <span>Thời gian quay</span><span class="val" id="recText">00:00</span>
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="badge">Bấm lần lượt F₁ → F₂ → R + hình bình hành</div>
+    <div id="recHud">● REC 00:00</div>
+
+    <div id="info">
+      <div class="head">Số liệu tức thời</div>
+      <div class="infoGrid">
+        <span>Chế độ</span><b id="modeInfo">Hợp lực</b>
+        <span>Độ lớn R</span><b id="rInfo">10.58 N</b>
+        <span>Góc của R</span><b id="thetaInfo">28.37°</b>
+        <span>Fx</span><b id="fxInfo">—</b>
+        <span>Fy</span><b id="fyInfo">—</b>
+        <span>Bước hiện tại</span><b id="stepInfo">0</b>
+        <span>Gợi ý sư phạm</span><b id="statusInfo">Bắt đầu với lực thứ nhất</b>
+      </div>
+    </div>
+
+    <div id="canvasWrap"><canvas id="vec2d"></canvas></div>
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $ = id => document.getElementById(id);
+const view = $('view');
+const rad = d => d*Math.PI/180;
+const deg = r => r*180/Math.PI;
+
+const state = {
+  mode:'resultant',
+  F1:8,
+  F2:6,
+  ang:60,
+  F:10,
+  phi:35,
+  step:0,
+  playTimer:null,
+  anim:{F1:0,F2:0,R:0,F3:0,F:0,Fx:0,Fy:0,para:0},
+  recording:false,
+  recordStart:0,
+  lastTime:performance.now()
+};
+
+function resultantData(){
+  const a = rad(state.ang);
+  const x = state.F1 + state.F2*Math.cos(a);
+  const y = state.F2*Math.sin(a);
+  const R = Math.hypot(x,y);
+  const theta = deg(Math.atan2(y,x));
+  return {x,y,R,theta};
+}
+function componentsData(){
+  const p = rad(state.phi);
+  return {x: state.F*Math.cos(p), y: state.F*Math.sin(p)};
+}
+function maxStepForMode(){
+  if(state.mode === 'balance') return 4;
+  return 3;
+}
+function visibleTargets(){
+  const t = {F1:0,F2:0,R:0,F3:0,F:0,Fx:0,Fy:0,para:0};
+  if(state.mode === 'resultant'){
+    if(state.step>=1) t.F1=1;
+    if(state.step>=2) t.F2=1;
+    if(state.step>=3){ t.R=1; t.para=1; }
+  }else if(state.mode === 'balance'){
+    if(state.step>=1) t.F1=1;
+    if(state.step>=2) t.F2=1;
+    if(state.step>=3){ t.R=1; t.para=1; }
+    if(state.step>=4) t.F3=1;
+  }else{
+    if(state.step>=1) t.F=1;
+    if(state.step>=2){ t.Fx=1; t.Fy=1; }
+    if(state.step>=3){ t.F=1; t.Fx=1; t.Fy=1; }
+  }
+  return t;
+}
+
+/* 3D scene */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x132937);
+scene.fog = new THREE.Fog(0x132937, 28, 90);
+
+const camera = new THREE.PerspectiveCamera(45, view.clientWidth/view.clientHeight, .1, 120);
+camera.position.set(9,8,10);
+
+const renderer = new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth, view.clientHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+view.prepend(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth, view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = .07;
+controls.target.set(0,0,0);
+controls.minDistance = 5;
+controls.maxDistance = 20;
+controls.maxPolarAngle = Math.PI * 0.49;
+
+scene.add(new THREE.HemisphereLight(0xe8f7ff,0x4e6874,2.2));
+const sun = new THREE.DirectionalLight(0xffffff,1.8);
+sun.position.set(8,12,10);
+scene.add(sun);
+
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(22,16),
+  new THREE.MeshPhongMaterial({color:0x304a58, shininess:18})
+);
+floor.rotation.x = -Math.PI/2;
+scene.add(floor);
+
+const grid = new THREE.GridHelper(16, 16, 0x6b8ea0, 0x3d5966);
+grid.position.y = 0.01;
+scene.add(grid);
+
+const origin = new THREE.Mesh(
+  new THREE.SphereGeometry(.23,20,16),
+  new THREE.MeshPhongMaterial({color:0xffe176, shininess:80})
+);
+origin.position.set(0,.18,0);
+scene.add(origin);
+
+const axisX = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,.05,0), 6.8, 0xaabfca, .22, .10);
+const axisY = new THREE.ArrowHelper(new THREE.Vector3(0,0,-1), new THREE.Vector3(0,.05,0), 5.8, 0xaabfca, .22, .10);
+scene.add(axisX, axisY);
+
+function makeLabel(text){
+  const div = document.createElement('div');
+  div.className = 'lab';
+  div.textContent = text;
+  return new CSS2DObject(div);
+}
+const oxLabel = makeLabel('Ox'); oxLabel.position.set(7.2,.18,0); scene.add(oxLabel);
+const oyLabel = makeLabel('Oy'); oyLabel.position.set(0,.18,-6.1); scene.add(oyLabel);
+
+function makeArrow(color, text){
+  const ah = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,.24,0), 1, color, .28, .16);
+  const lab = makeLabel(text);
+  scene.add(ah); scene.add(lab);
+  return {arrow:ah,label:lab};
+}
+const A1 = makeArrow(0x73ddff,'F₁');
+const A2 = makeArrow(0xffad76,'F₂');
+const AR = makeArrow(0x8ef2c4,'R');
+const A3 = makeArrow(0xff8f8f,'F₃');
+const AF = makeArrow(0x8ef2c4,'F');
+const AFX = makeArrow(0x73ddff,'Fx');
+const AFY = makeArrow(0xffad76,'Fy');
+
+function createHelperLine(color){
+  const geom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0.01,0,0)]);
+  const mat = new THREE.LineDashedMaterial({color, dashSize:0.22, gapSize:0.12, transparent:true, opacity:0.95});
+  const line = new THREE.Line(geom, mat);
+  line.visible = false;
+  scene.add(line);
+  return line;
+}
+const paraLine1 = createHelperLine(0xb7cdd8);
+const paraLine2 = createHelperLine(0xb7cdd8);
+
+function setHelperLine(line, x1, y1, x2, y2, progress){
+  if(progress <= 0.01){
+    line.visible = false;
+    return;
+  }
+  line.visible = true;
+  const ex = x1 + (x2-x1)*progress;
+  const ey = y1 + (y2-y1)*progress;
+  const p1 = new THREE.Vector3(x1*0.42, 0.07, -y1*0.42);
+  const p2 = new THREE.Vector3(ex*0.42, 0.07, -ey*0.42);
+  line.geometry.setFromPoints([p1,p2]);
+  line.computeLineDistances();
+}
+function setArrow(obj, x, y, mag, progress, labelText){
+  const len = Math.max(0.001, mag * 0.42 * progress);
+  const dir = new THREE.Vector3(x,0,-y).normalize();
+  obj.arrow.visible = progress > 0.01;
+  obj.label.visible = progress > 0.01;
+  obj.arrow.position.set(0,.24,0);
+  obj.arrow.setDirection(dir);
+  obj.arrow.setLength(len,.28,.16);
+  obj.label.element.textContent = labelText;
+  const p = dir.clone().multiplyScalar(len + 0.55);
+  p.y = .34;
+  obj.label.position.copy(p);
+}
+function updateArrows(){
+  const r = resultantData();
+  const c = componentsData();
+  const a = rad(state.ang);
+  const p = rad(state.phi);
+
+  [A1,A2,AR,A3,AF,AFX,AFY].forEach(o=>{o.arrow.visible=false;o.label.visible=false;});
+  paraLine1.visible = paraLine2.visible = false;
+
+  if(state.mode === 'resultant' || state.mode === 'balance'){
+    setArrow(A1, 1, 0, state.F1, state.anim.F1, 'F₁');
+    setArrow(A2, Math.cos(a), Math.sin(a), state.F2, state.anim.F2, 'F₂');
+    setArrow(AR, r.x, r.y, r.R, state.anim.R, 'R');
+
+    // Two remaining sides of the parallelogram
+    setHelperLine(paraLine1, state.F1, 0, r.x, r.y, state.anim.para);
+    setHelperLine(paraLine2, state.F2*Math.cos(a), state.F2*Math.sin(a), r.x, r.y, state.anim.para);
+
+    if(state.mode === 'balance'){
+      setArrow(A3, -r.x, -r.y, r.R, state.anim.F3, 'F₃ = −R');
+    }
+  }else{
+    setArrow(AF, Math.cos(p), Math.sin(p), state.F, state.anim.F, 'F');
+    setArrow(AFX, 1, 0, c.x, state.anim.Fx, 'Fx');
+    setArrow(AFY, 0, 1, c.y, state.anim.Fy, 'Fy');
+  }
+}
+
+/* 2D canvas */
+const vecCanvas = $('vec2d');
+const ctx = vecCanvas.getContext('2d');
+
+function resize2D(){
+  const rect = vecCanvas.getBoundingClientRect();
+  const dpr = Math.min(devicePixelRatio,2);
+  vecCanvas.width = Math.max(10, Math.floor(rect.width*dpr));
+  vecCanvas.height = Math.max(10, Math.floor(rect.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function draw2DLine(x1,y1,x2,y2,color,text){
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const ang = Math.atan2(y2-y1,x2-x1);
+  const hl = 11;
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2 - hl*Math.cos(ang-Math.PI/7), y2 - hl*Math.sin(ang-Math.PI/7));
+  ctx.lineTo(x2 - hl*Math.cos(ang+Math.PI/7), y2 - hl*Math.sin(ang+Math.PI/7));
+  ctx.closePath(); ctx.fill();
+  ctx.font = '11px Arial';
+  ctx.fillText(text, x2+5, y2-5);
+}
+function drawDashedLine(x1,y1,x2,y2,progress){
+  if(progress <= 0.01) return;
+  const ex = x1 + (x2-x1)*progress;
+  const ey = y1 + (y2-y1)*progress;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(220,235,244,.88)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([7,5]);
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(ex,ey);
+  ctx.stroke();
+  ctx.restore();
+}
+function draw2D(){
+  const W = vecCanvas.clientWidth, H = vecCanvas.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#173444';
+  ctx.fillRect(0,0,W,H);
+
+  const cx = W*0.5, cy = H*0.54, scale = 10;
+
+  ctx.strokeStyle = 'rgba(200,230,240,.18)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(20,cy); ctx.lineTo(W-15,cy);
+  ctx.moveTo(cx,15); ctx.lineTo(cx,H-18);
+  ctx.stroke();
+  ctx.fillStyle='#d5ecf5';
+  ctx.font='10px Arial';
+  ctx.fillText('Ox',W-25,cy-6);
+  ctx.fillText('Oy',cx+6,20);
+
+  const r = resultantData();
+  const c = componentsData();
+  const a = rad(state.ang);
+  const p = rad(state.phi);
+
+  if(state.mode === 'resultant' || state.mode === 'balance'){
+    const f1x = cx + state.F1*scale*state.anim.F1;
+    const f1y = cy;
+    const f2x = cx + state.F2*Math.cos(a)*scale*state.anim.F2;
+    const f2y = cy - state.F2*Math.sin(a)*scale*state.anim.F2;
+    const rx  = cx + r.x*scale*state.anim.R;
+    const ry  = cy - r.y*scale*state.anim.R;
+
+    if(state.anim.F1>0.01) draw2DLine(cx,cy,f1x,f1y,'#73ddff','F1');
+    if(state.anim.F2>0.01) draw2DLine(cx,cy,f2x,f2y,'#ffad76','F2');
+    if(state.anim.R>0.01) draw2DLine(cx,cy,rx,ry,'#8ef2c4','R');
+
+    drawDashedLine(f1x,f1y,rx,ry,state.anim.para);
+    drawDashedLine(f2x,f2y,rx,ry,state.anim.para);
+
+    if(state.mode==='balance' && state.anim.F3>0.01){
+      draw2DLine(cx,cy,cx-r.x*scale*state.anim.F3,cy+r.y*scale*state.anim.F3,'#ff8f8f','F3');
+    }
+  }else{
+    if(state.anim.F>0.01) draw2DLine(cx,cy,cx+state.F*Math.cos(p)*scale*state.anim.F,cy-state.F*Math.sin(p)*scale*state.anim.F,'#8ef2c4','F');
+    if(state.anim.Fx>0.01) draw2DLine(cx,cy,cx+c.x*scale*state.anim.Fx,cy,'#73ddff','Fx');
+    if(state.anim.Fy>0.01) draw2DLine(cx,cy,cx,cy-c.y*scale*state.anim.Fy,'#ffad76','Fy');
+  }
+}
+
+/* UI */
+function updateInfo(){
+  const r = resultantData();
+  const c = componentsData();
+
+  $('f1Text').textContent = state.F1.toFixed(1)+' N';
+  $('f2Text').textContent = state.F2.toFixed(1)+' N';
+  $('angText').textContent = state.ang.toFixed(0)+'°';
+  $('fText').textContent = state.F.toFixed(1)+' N';
+  $('phiText').textContent = state.phi.toFixed(0)+'°';
+
+  $('twoForceControls').style.display = state.mode === 'components' ? 'none' : 'block';
+  $('oneForceControls').style.display = state.mode === 'components' ? 'block' : 'none';
+  $('stepInfo').textContent = String(state.step);
+
+  if(state.mode === 'resultant'){
+    $('modeInfo').textContent = 'Hợp lực';
+    $('rInfo').textContent = r.R.toFixed(2)+' N';
+    $('thetaInfo').textContent = r.theta.toFixed(2)+'°';
+    $('fxInfo').textContent = '—';
+    $('fyInfo').textContent = '—';
+    $('badge').textContent = 'Bấm F₁ → F₂ → R + hai cạnh còn lại';
+    if(state.step===0) $('statusInfo').textContent='Bắt đầu với lực thứ nhất';
+    if(state.step===1) $('statusInfo').textContent='Đã có F₁, tiếp tục F₂';
+    if(state.step===2) $('statusInfo').textContent='Đã có hai lực, bấm để tạo hình bình hành và hợp lực R';
+    if(state.step>=3) $('statusInfo').textContent='R là đường chéo của hình bình hành lực';
+  }else if(state.mode === 'balance'){
+    $('modeInfo').textContent = 'Cân bằng ba lực';
+    $('rInfo').textContent = r.R.toFixed(2)+' N';
+    $('thetaInfo').textContent = r.theta.toFixed(2)+'°';
+    $('fxInfo').textContent = '—';
+    $('fyInfo').textContent = '—';
+    $('badge').textContent = 'F₁ → F₂ → R + hình bình hành → F₃ = −R';
+    if(state.step===0) $('statusInfo').textContent='Bắt đầu với F₁';
+    if(state.step===1) $('statusInfo').textContent='Đã có F₁, tiếp tục F₂';
+    if(state.step===2) $('statusInfo').textContent='Đã có hai lực, tạo hình bình hành và hợp lực R';
+    if(state.step===3) $('statusInfo').textContent='Thêm lực cân bằng F₃ ngược với R';
+    if(state.step>=4) $('statusInfo').textContent='Ba lực đồng quy cân bằng';
+  }else{
+    $('modeInfo').textContent = 'Phân tích lực';
+    $('rInfo').textContent = state.F.toFixed(2)+' N';
+    $('thetaInfo').textContent = state.phi.toFixed(2)+'°';
+    $('fxInfo').textContent = c.x.toFixed(2)+' N';
+    $('fyInfo').textContent = c.y.toFixed(2)+' N';
+    $('badge').textContent = 'Bấm F → Phân tích thành Fx, Fy';
+    if(state.step===0) $('statusInfo').textContent='Bắt đầu với lực F';
+    if(state.step===1) $('statusInfo').textContent='Đã hiện F, bấm để phân tích';
+    if(state.step>=2) $('statusInfo').textContent='F đã được phân tích thành Fx và Fy';
+  }
+}
+function stopAuto(){
+  if(state.playTimer){
+    clearInterval(state.playTimer);
+    state.playTimer = null;
+    $('playAll').textContent = '▶ Tự chạy';
+  }
+}
+function setStep(n){
+  state.step = Math.max(0, Math.min(maxStepForMode(), n));
+  updateInfo();
+}
+function applyMode(){
+  stopAuto();
+  state.step = 0;
+  updateInfo();
+}
+function playAll(){
+  if(state.playTimer){ stopAuto(); return; }
+  state.step = 0;
+  updateInfo();
+  $('playAll').textContent = '■ Dừng';
+  state.playTimer = setInterval(()=>{
+    if(state.step < maxStepForMode()) setStep(state.step + 1);
+    else stopAuto();
+  }, 1100);
+}
+
+/* record */
+const recCanvas = document.createElement('canvas');
+recCanvas.width = 1280; recCanvas.height = 720;
+const rctx = recCanvas.getContext('2d');
+let mediaRecorder = null, chunks = [], mime='';
+
+function chooseMime(){
+  for(const m of ['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']){
+    if(window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+  }
+  return '';
+}
+function startRecording(){
+  if(state.recording || !window.MediaRecorder || !recCanvas.captureStream) return;
+  mime = chooseMime();
+  const stream = recCanvas.captureStream(30);
+  try{
+    mediaRecorder = new MediaRecorder(stream, mime ? {mimeType:mime, videoBitsPerSecond:6000000} : {videoBitsPerSecond:6000000});
+  }catch(e){
+    mediaRecorder = new MediaRecorder(stream);
+    mime = mediaRecorder.mimeType || 'video/webm';
+  }
+  chunks = [];
+  mediaRecorder.ondataavailable = e => { if(e.data && e.data.size>0) chunks.push(e.data); };
+  mediaRecorder.onstop = ()=>{
+    const mt = mediaRecorder.mimeType || mime || 'video/webm';
+    const ext = mt.includes('mp4') ? 'mp4' : 'webm';
+    const url = URL.createObjectURL(new Blob(chunks, {type:mt}));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'Physics10_66_68_PPT_tung_buoc_V2_hinh_binh_hanh.' + ext;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1500);
+  };
+  mediaRecorder.start(250);
+  state.recording = true;
+  state.recordStart = performance.now();
+  $('recBtn').textContent = '● Đang quay';
+  $('recHud').style.display = 'block';
+}
+function stopRecording(){
+  if(!state.recording) return;
+  state.recording = false;
+  $('recBtn').textContent = '🎥 Bắt đầu quay';
+  $('recHud').style.display = 'none';
+  if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+}
+function drawRecord(now){
+  rctx.fillStyle = '#132937';
+  rctx.fillRect(0,0,1280,720);
+  rctx.drawImage(renderer.domElement,0,0,1280,720);
+  rctx.fillStyle='rgba(8,23,32,.68)';
+  rctx.fillRect(0,0,1280,52);
+  rctx.fillStyle='#fff';
+  rctx.font='bold 22px Arial';
+  rctx.fillText('PHYSICS 10 LAB · VÉC TƠ LỰC KIỂU PPT',22,33);
+  rctx.fillStyle='rgba(8,23,32,.78)';
+  rctx.fillRect(920,74,330,188);
+  rctx.fillStyle='#fff';
+  rctx.font='bold 17px Arial';
+  rctx.fillText('Bước: '+state.step,940,104);
+  rctx.fillText('Chế độ: '+$('modeInfo').textContent,940,134);
+  rctx.fillText('|R| / F = '+$('rInfo').textContent,940,164);
+  rctx.fillText('Góc = '+$('thetaInfo').textContent,940,194);
+  rctx.fillText('Fx = '+$('fxInfo').textContent,940,224);
+  rctx.fillStyle='rgba(8,23,32,.78)';
+  rctx.fillRect(18,510,520,190);
+  rctx.drawImage(vecCanvas,26,518,504,174);
+  const sec = Math.floor((now-state.recordStart)/1000);
+  const mm = String(Math.floor(sec/60)).padStart(2,'0');
+  const ss = String(sec%60).padStart(2,'0');
+  $('recText').textContent = mm+':'+ss;
+  $('recHud').textContent = '● REC '+mm+':'+ss;
+  rctx.fillStyle='#ffe27b';
+  rctx.font='bold 18px Arial';
+  rctx.fillText('Thầy Hùng vật lí',1080,696);
+}
+
+/* events */
+$('mode').addEventListener('change', e=>{ state.mode = e.target.value; applyMode(); });
+$('f1').addEventListener('input', e=>{ state.F1 = parseFloat(e.target.value); updateInfo(); });
+$('f2').addEventListener('input', e=>{ state.F2 = parseFloat(e.target.value); updateInfo(); });
+$('ang').addEventListener('input', e=>{ state.ang = parseFloat(e.target.value); updateInfo(); });
+$('force').addEventListener('input', e=>{ state.F = parseFloat(e.target.value); updateInfo(); });
+$('phi').addEventListener('input', e=>{ state.phi = parseFloat(e.target.value); updateInfo(); });
+
+$('step1Btn').addEventListener('click', ()=>setStep(1));
+$('step2Btn').addEventListener('click', ()=>setStep(2));
+$('step3Btn').addEventListener('click', ()=>setStep(3));
+$('step4Btn').addEventListener('click', ()=>setStep(4));
+$('prevBtn').addEventListener('click', ()=>setStep(state.step-1));
+$('resetBtn').addEventListener('click', ()=>{
+  state.F1=8; state.F2=6; state.ang=60; state.F=10; state.phi=35;
+  $('f1').value=8; $('f2').value=6; $('ang').value=60; $('force').value=10; $('phi').value=35;
+  applyMode();
+});
+$('playAll').addEventListener('click', playAll);
+
+$('cameraMode').addEventListener('change', e=>{
+  const m = e.target.value;
+  if(m==='all'){ camera.position.set(9,8,10); controls.target.set(0,0,0); }
+  if(m==='top'){ camera.position.set(0,13,0.01); controls.target.set(0,0,0); }
+  if(m==='iso'){ camera.position.set(11,5,8); controls.target.set(0,0,0); }
+  controls.update();
+});
+
+$('recBtn').addEventListener('click', startRecording);
+$('stopRecBtn').addEventListener('click', stopRecording);
+
+function resize(){
+  const w = view.clientWidth, h = view.clientHeight;
+  camera.aspect = w/h; camera.updateProjectionMatrix();
+  renderer.setSize(w,h); labelRenderer.setSize(w,h);
+  resize2D();
+}
+window.addEventListener('resize', resize);
+
+/* loop */
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt = Math.min(Math.max((now-state.lastTime)/1000,0),0.03);
+  state.lastTime = now;
+
+  const target = visibleTargets();
+  for(const k in state.anim){
+    state.anim[k] += (target[k]-state.anim[k]) * Math.min(1,dt*8);
+    if(Math.abs(state.anim[k]-target[k])<0.001) state.anim[k]=target[k];
+  }
+
+  updateArrows();
+  draw2D();
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+
+  if(state.recording) drawRecord(now);
+}
+
+applyMode();
+resize();
+animate(performance.now());
+</script>
+</body>
+</html>

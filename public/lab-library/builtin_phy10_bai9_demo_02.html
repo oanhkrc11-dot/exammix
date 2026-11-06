@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mô phỏng dạy học: Đồ thị v - t và độ dịch chuyển</title>
+<style>
+:root{
+  --bg:#f4f8ff; --card:#ffffff; --line:#d9e3f0; --ink:#223247; --muted:#697a90;
+  --blue:#1f6fd1; --cyan:#1ca3d7; --green:#16a06c; --orange:#ef9516; --red:#e34d59; --purple:#6a55da;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:Arial,Helvetica,sans-serif; color:var(--ink);
+  background:linear-gradient(180deg,#f8fbff,#eaf2fb);
+}
+.app{max-width:1420px; margin:auto; padding:16px}
+.header{
+  background:linear-gradient(135deg,#0e4f9c,#1e79cb);
+  color:#fff; border-radius:18px; padding:16px 18px;
+  box-shadow:0 12px 30px rgba(18,81,153,.16)
+}
+.header h1{margin:0; font-size:clamp(22px,2.6vw,34px)}
+.header p{margin:8px 0 0; line-height:1.55; opacity:.95}
+.layout{display:grid; grid-template-columns:minmax(0,1.55fr) minmax(350px,.85fr); gap:14px; margin-top:14px}
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:18px;
+  box-shadow:0 10px 28px rgba(36,63,101,.08)
+}
+.leftCard{padding:14px}
+.canvasWrap{
+  position:relative; height:650px; border:1px solid #d4dfec; border-radius:14px; overflow:hidden;
+  background:linear-gradient(#fcfeff,#f6faff);
+}
+.note{
+  position:absolute; left:14px; right:14px; top:12px; z-index:30;
+  background:#ffffffef; border:1px solid #d8e3ef; border-radius:12px; padding:10px 12px;
+  line-height:1.45; font-weight:600; color:#34506e
+}
+svg{display:block; width:100%; height:100%}
+.svgText{
+  paint-order:stroke fill;
+  stroke:#ffffff;
+  stroke-width:4px;
+  stroke-linejoin:round;
+  font-weight:600;
+}
+.svgTextSmall{
+  paint-order:stroke fill;
+  stroke:#ffffff;
+  stroke-width:3px;
+  stroke-linejoin:round;
+  font-weight:500;
+}
+.controlBar{margin-top:12px; display:grid; grid-template-columns:repeat(6,1fr); gap:8px}
+button{
+  border:0; border-radius:11px; padding:11px 8px; color:#fff; font-weight:700; cursor:pointer;
+  box-shadow:0 5px 12px rgba(0,0,0,.08)
+}
+.blue{background:var(--blue)} .green{background:var(--green)}
+.orange{background:var(--orange)} .purple{background:var(--purple)}
+.red{background:var(--red)} .gray{background:#677281}
+.side{display:flex; flex-direction:column; gap:14px}
+.panel{padding:13px}
+.panel h3{margin:0 0 10px; color:#204972}
+.status{
+  background:#edf6ff; border:1px solid #cee4fb; border-radius:12px; padding:10px 11px;
+  color:#24517d; font-weight:600; line-height:1.45
+}
+.steps{display:grid; gap:8px}
+.step{
+  display:flex; gap:9px; border:1px solid #dbe5f0; background:#fbfdff;
+  border-radius:11px; padding:9px
+}
+.stepNum{
+  min-width:28px; height:28px; border-radius:50%;
+  background:#dcecff; color:#14569e; display:grid; place-items:center; font-weight:700
+}
+.step.active{border-color:#72a9e8; background:#eef6ff}
+.step.done{border-color:#8ed8b8; background:#effbf6}
+.stepText{font-size:13px; line-height:1.42}
+.row{display:flex; align-items:center; gap:9px; flex-wrap:wrap}
+.row+.row{margin-top:10px}
+label{font-weight:600; color:#3b5673}
+input[type=range]{flex:1; min-width:140px; accent-color:var(--blue)}
+.value{
+  min-width:80px; text-align:center; padding:7px 9px; border-radius:10px;
+  background:#eef5ff; border:1px solid #cfe0f5; color:#1f5d9f; font-weight:700
+}
+.explain{
+  border:1px solid #ead79d; background:#fff9e8; border-radius:12px; padding:10px 11px; line-height:1.55
+}
+.calc{
+  border:1px solid #dce5ef; background:#f8fbff; border-radius:12px; padding:10px 11px; line-height:1.55
+}
+.formula{
+  display:inline-block; margin-top:6px; padding:5px 8px; border-radius:9px;
+  background:#eef5ff; border:1px solid #cee0f5; color:#1f5d9f; font-weight:700
+}
+.legend{display:grid; gap:7px; font-size:14px}
+.legendRow{display:flex; align-items:center; gap:8px}
+.sw{width:28px; height:8px; border-radius:8px}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}.controlBar{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:620px){.app{padding:8px}.canvasWrap{height:620px}.controlBar{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Mô phỏng dạy học: Sử dụng đồ thị \(v-t\) để tính độ dịch chuyển</h1>
+    <p>Thiết kế theo <b>từng bước dạy học</b>: từ việc đọc đồ thị vận tốc – thời gian, chọn khoảng thời gian rất nhỏ \(\Delta t\), nhận ra hình thang nhỏ dưới đồ thị, rồi suy ra độ dịch chuyển bằng diện tích hình giới hạn bởi đồ thị và trục thời gian.</p>
+  </div>
+
+  <div class="layout">
+    <section class="card leftCard">
+      <div class="canvasWrap">
+        <div class="note" id="topNote">Bước 1: Quan sát đồ thị \(v-t\) của chuyển động thẳng biến đổi đều. Độ dốc đường thẳng cho biết vận tốc thay đổi đều theo thời gian.</div>
+        <svg id="svg" viewBox="0 0 900 650" aria-label="Đồ thị vận tốc thời gian">
+          <defs>
+            <marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#1f6fd1"></path>
+            </marker>
+            <marker id="arrowOrange" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#ef9516"></path>
+            </marker>
+            <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(25)">
+              <line x1="0" y1="0" x2="0" y2="8" stroke="#1f6fd1" stroke-width="2.2"></line>
+            </pattern>
+          </defs>
+
+          <!-- Khu vực nền -->
+          <rect x="0" y="0" width="900" height="650" fill="transparent"></rect>
+
+          <!-- Vùng vẽ -->
+          <g id="plot">
+            <rect x="90" y="90" width="650" height="470" fill="#ffffff"></rect>
+
+            <!-- lưới -->
+            <g id="grid"></g>
+
+            <!-- Trục -->
+            <line x1="100" y1="550" x2="760" y2="550" stroke="#23364f" stroke-width="2.3" marker-end="url(#arrowBlue)"></line>
+            <line x1="100" y1="550" x2="100" y2="65" stroke="#23364f" stroke-width="2.3" marker-end="url(#arrowBlue)"></line>
+            <text x="777" y="560" class="svgText" font-size="20" fill="#20334a">t (s)</text>
+            <text x="52" y="72" class="svgText" font-size="20" fill="#20334a">v (m/s)</text>
+            <text x="83" y="574" class="svgText" font-size="16" fill="#20334a">O</text>
+
+            <!-- ticks labels -->
+            <g id="axisLabels"></g>
+
+            <!-- đường đồ thị -->
+            <path id="linePath" fill="none" stroke="#ec4fa2" stroke-width="4"></path>
+
+            <!-- vùng diện tích toàn phần -->
+            <path id="areaTotal" fill="#38bdf8" fill-opacity="0.13" stroke="none"></path>
+
+            <!-- khoảng nhỏ [tA, tB] -->
+            <path id="trapezoid" fill="url(#hatch)" fill-opacity="0.52" stroke="#1f6fd1" stroke-width="2" class="hidden"></path>
+
+            <!-- các đường phụ -->
+            <line id="lineTA" x1="0" y1="0" x2="0" y2="0" stroke="#1f6fd1" stroke-width="2.2"></line>
+            <line id="lineTB" x1="0" y1="0" x2="0" y2="0" stroke="#1f6fd1" stroke-width="2.2"></line>
+            <line id="lineVA" x1="0" y1="0" x2="0" y2="0" stroke="#16a06c" stroke-width="2" stroke-dasharray="7 6"></line>
+            <line id="lineVB" x1="0" y1="0" x2="0" y2="0" stroke="#16a06c" stroke-width="2" stroke-dasharray="7 6"></line>
+            <line id="lineVC" x1="0" y1="0" x2="0" y2="0" stroke="#ef9516" stroke-width="2" stroke-dasharray="7 6"></line>
+
+            <!-- điểm -->
+            <circle id="pointN" r="6" fill="#1f6fd1"></circle>
+            <circle id="pointM" r="6" fill="#1f6fd1"></circle>
+            <circle id="pointC" r="6" fill="#ef9516"></circle>
+
+            <!-- nhãn điểm -->
+            <text id="labelN" class="svgText" font-size="18" fill="#1f6fd1">N</text>
+            <text id="labelM" class="svgText" font-size="18" fill="#1f6fd1">M</text>
+            <text id="labelC" class="svgText" font-size="18" fill="#ef9516">C</text>
+
+            <!-- ký hiệu trên trục -->
+            <text id="labeltA" class="svgText" font-size="16" fill="#1f6fd1">tA</text>
+            <text id="labeltB" class="svgText" font-size="16" fill="#1f6fd1">tB</text>
+            <text id="labelvA" class="svgText" font-size="16" fill="#16a06c">vA</text>
+            <text id="labelvB" class="svgText" font-size="16" fill="#16a06c">vB</text>
+            <text id="labelvC" class="svgText" font-size="16" fill="#ef9516">vC</text>
+
+            <!-- hình chữ nhật thay thế -->
+            <rect id="rectApprox" x="0" y="0" width="0" height="0" fill="#f59e0b" fill-opacity="0.14" stroke="#ef9516" stroke-width="2"></rect>
+
+            <!-- ngoặc chỉ delta t -->
+            <line id="deltaArrow" x1="0" y1="0" x2="0" y2="0" stroke="#ef9516" stroke-width="2.2" marker-end="url(#arrowOrange)"></line>
+            <text id="deltaText" class="svgText" font-size="17" fill="#ef9516">Δt</text>
+
+            <!-- chú thích phải -->
+            <g id="summaryBox">
+              <rect x="770" y="95" width="115" height="170" rx="12" fill="#ffffff" stroke="#d8e3ef"></rect>
+              <text x="785" y="122" class="svgTextSmall" font-size="17" fill="#173a78">Dữ kiện</text>
+              <text id="boxV0" class="svgTextSmall" x="785" y="154" font-size="17" fill="#223247"></text>
+              <text id="boxA" class="svgTextSmall" x="785" y="182" font-size="17" fill="#223247"></text>
+              <text id="boxTA" class="svgTextSmall" x="785" y="210" font-size="17" fill="#223247"></text>
+              <text id="boxTB" class="svgTextSmall" x="785" y="238" font-size="17" fill="#223247"></text>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <div class="controlBar">
+        <button class="blue" id="prevBtn">⟵ Bước trước</button>
+        <button class="green" id="nextBtn">Bước tiếp ⟶</button>
+        <button class="orange" id="autoBtn">▶ Tự trình chiếu</button>
+        <button class="purple" id="playSliceBtn">✨ Chạy mô tả lát nhỏ</button>
+        <button class="gray" id="resetBtn">↻ Làm lại</button>
+        <button class="red" id="toggleAreaBtn">👁 Ẩn/hiện diện tích toàn phần</button>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="card panel">
+        <h3>Tiến trình dạy học</h3>
+        <div class="status" id="status">Đang ở Bước 1. Hướng dẫn học sinh quan sát đồ thị \(v-t\) và nhận xét đây là đường thẳng đi lên.</div>
+        <div class="steps" id="steps"></div>
+      </div>
+
+      <div class="card panel">
+        <h3>Điều chỉnh tham số</h3>
+        <div class="row">
+          <label for="v0Range">Vận tốc ban đầu \(v_0\)</label>
+          <input type="range" id="v0Range" min="1" max="5" step="0.5" value="2">
+          <div class="value" id="v0Val">2.0 m/s</div>
+        </div>
+        <div class="row">
+          <label for="aRange">Gia tốc \(a\)</label>
+          <input type="range" id="aRange" min="0.5" max="2.0" step="0.1" value="1.0">
+          <div class="value" id="aVal">1.0 m/s²</div>
+        </div>
+        <div class="row">
+          <label for="taRange">\(t_A\)</label>
+          <input type="range" id="taRange" min="0.5" max="4.0" step="0.1" value="2.0">
+          <div class="value" id="taVal">2.0 s</div>
+        </div>
+        <div class="row">
+          <label for="tbRange">\(t_B\)</label>
+          <input type="range" id="tbRange" min="0.8" max="4.8" step="0.1" value="3.0">
+          <div class="value" id="tbVal">3.0 s</div>
+        </div>
+      </div>
+
+      <div class="card panel">
+        <h3>Giải thích / tính toán</h3>
+        <div class="explain" id="explain">
+          Với chuyển động thẳng biến đổi đều, đồ thị \(v-t\) là một đường thẳng. Trong từng khoảng thời gian, <b>diện tích dưới đồ thị</b> biểu diễn <b>độ dịch chuyển</b>.
+        </div>
+        <div class="calc" id="calc">
+          Chưa tính toán.
+        </div>
+      </div>
+
+      <div class="card panel">
+        <h3>Chú thích màu</h3>
+        <div class="legend">
+          <div class="legendRow"><span class="sw" style="background:#ec4fa2"></span> Đồ thị \(v-t\)</div>
+          <div class="legendRow"><span class="sw" style="background:#16a06c"></span> Các mức vận tốc \(v_A,\ v_B\)</div>
+          <div class="legendRow"><span class="sw" style="background:#1f6fd1"></span> Hình thang nhỏ giữa \(t_A\) và \(t_B\)</div>
+          <div class="legendRow"><span class="sw" style="background:#ef9516"></span> Vận tốc trung bình \(v_C=\dfrac{v_A+v_B}{2}\)</div>
+          <div class="legendRow"><span class="sw" style="background:#38bdf8"></span> Diện tích toàn phần từ \(0\) đến \(t\)</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const stepsText = [
+    "Quan sát đồ thị v-t của chuyển động thẳng biến đổi đều: đường thẳng đi lên, nghĩa là vận tốc tăng đều theo thời gian.",
+    "Nhắc lại ý nghĩa vật lí: độ dịch chuyển trong một khoảng thời gian bằng diện tích phần hình giới hạn bởi đồ thị v-t, trục thời gian và hai đường thẳng đứng ở hai đầu khoảng.",
+    "Chọn một khoảng thời gian nhỏ từ t_A đến t_B. Dựng hai đường thẳng đứng và xác định hai điểm N, M trên đồ thị.",
+    "Từ N và M kẻ các đường song song trục thời gian để thấy hai mức vận tốc v_A và v_B. Phần diện tích dưới đồ thị trong khoảng này là một hình thang nhỏ.",
+    "Vì chuyển động biến đổi đều nên trong khoảng thời gian rất nhỏ này có thể coi vật chuyển động thẳng đều với vận tốc trung bình v_C = (v_A + v_B)/2.",
+    "Khi đó hình thang nhỏ có diện tích bằng hình chữ nhật có cùng đáy Δt và chiều cao v_C: s_nhỏ = v_C·Δt = ((v_A+v_B)/2)·Δt.",
+    "Cộng các hình thang nhỏ trên toàn khoảng thời gian, ta suy ra: độ dịch chuyển bằng diện tích dưới toàn bộ đồ thị v-t."
+  ];
+
+  const svg = document.getElementById('svg');
+  const topNote = document.getElementById('topNote');
+  const status = document.getElementById('status');
+  const stepsDiv = document.getElementById('steps');
+  const explain = document.getElementById('explain');
+  const calc = document.getElementById('calc');
+  const v0Range = document.getElementById('v0Range');
+  const aRange = document.getElementById('aRange');
+  const taRange = document.getElementById('taRange');
+  const tbRange = document.getElementById('tbRange');
+  const v0Val = document.getElementById('v0Val');
+  const aVal = document.getElementById('aVal');
+  const taVal = document.getElementById('taVal');
+  const tbVal = document.getElementById('tbVal');
+
+  const linePath = document.getElementById('linePath');
+  const areaTotal = document.getElementById('areaTotal');
+  const trapezoid = document.getElementById('trapezoid');
+  const rectApprox = document.getElementById('rectApprox');
+
+  const lineTA = document.getElementById('lineTA');
+  const lineTB = document.getElementById('lineTB');
+  const lineVA = document.getElementById('lineVA');
+  const lineVB = document.getElementById('lineVB');
+  const lineVC = document.getElementById('lineVC');
+  const pointN = document.getElementById('pointN');
+  const pointM = document.getElementById('pointM');
+  const pointC = document.getElementById('pointC');
+  const labelN = document.getElementById('labelN');
+  const labelM = document.getElementById('labelM');
+  const labelC = document.getElementById('labelC');
+  const labeltA = document.getElementById('labeltA');
+  const labeltB = document.getElementById('labeltB');
+  const labelvA = document.getElementById('labelvA');
+  const labelvB = document.getElementById('labelvB');
+  const labelvC = document.getElementById('labelvC');
+  const deltaArrow = document.getElementById('deltaArrow');
+  const deltaText = document.getElementById('deltaText');
+  const boxV0 = document.getElementById('boxV0');
+  const boxA = document.getElementById('boxA');
+  const boxTA = document.getElementById('boxTA');
+  const boxTB = document.getElementById('boxTB');
+
+  const plot = {
+    x0:100, y0:550,
+    width:650, height:460,
+    tMax:5, vMax:8
+  };
+
+  let step = 1;
+  let showTotalArea = true;
+  let autoTimer = null;
+  let sliceTimer = null;
+
+  function renderSteps(){
+    stepsDiv.innerHTML = '';
+    stepsText.forEach((txt,i)=>{
+      const d = document.createElement('div');
+      d.className = 'step ' + ((i+1)<step ? 'done' : (i+1)===step ? 'active' : '');
+      d.innerHTML = `<div class="stepNum">${i+1}</div><div class="stepText">${txt}</div>`;
+      stepsDiv.appendChild(d);
+    });
+  }
+
+  function tToX(t){ return plot.x0 + plot.width * (t/plot.tMax); }
+  function vToY(v){ return plot.y0 - plot.height * (v/plot.vMax); }
+  function velocity(t){
+    const v0 = +v0Range.value, a = +aRange.value;
+    return v0 + a*t;
+  }
+
+  function syncRanges(){
+    if(+tbRange.value <= +taRange.value + 0.05){
+      tbRange.value = Math.min(4.8, (+taRange.value + 0.2).toFixed(1));
+    }
+    if(+taRange.value >= +tbRange.value - 0.05){
+      taRange.value = Math.max(0.5, (+tbRange.value - 0.2).toFixed(1));
+    }
+    v0Val.textContent = (+v0Range.value).toFixed(1)+' m/s';
+    aVal.textContent = (+aRange.value).toFixed(1)+' m/s²';
+    taVal.textContent = (+taRange.value).toFixed(1)+' s';
+    tbVal.textContent = (+tbRange.value).toFixed(1)+' s';
+  }
+
+  function drawGrid(){
+    const grid = document.getElementById('grid');
+    const labels = document.getElementById('axisLabels');
+    grid.innerHTML=''; labels.innerHTML='';
+    for(let i=0;i<=10;i++){
+      const x = plot.x0 + plot.width*i/10;
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1',x); line.setAttribute('x2',x);
+      line.setAttribute('y1',90); line.setAttribute('y2',550);
+      line.setAttribute('stroke','#e9eef5'); line.setAttribute('stroke-width','1');
+      grid.appendChild(line);
+    }
+    for(let j=0;j<=8;j++){
+      const y = plot.y0 - plot.height*j/8;
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1',100); line.setAttribute('x2',750);
+      line.setAttribute('y1',y); line.setAttribute('y2',y);
+      line.setAttribute('stroke','#e9eef5'); line.setAttribute('stroke-width','1');
+      grid.appendChild(line);
+
+      if(j<8){
+        const tv = document.createElementNS('http://www.w3.org/2000/svg','text');
+        tv.setAttribute('x',76); tv.setAttribute('y',y+6);
+        tv.setAttribute('font-size','14'); tv.setAttribute('font-weight','500'); tv.setAttribute('fill','#4a596b');
+        tv.setAttribute('paint-order','stroke fill'); tv.setAttribute('stroke','#fff'); tv.setAttribute('stroke-width','3');
+        tv.textContent = j;
+        labels.appendChild(tv);
+      }
+    }
+    for(let i=1;i<=5;i++){
+      const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
+      tx.setAttribute('x',tToX(i)-4); tx.setAttribute('y',578);
+      tx.setAttribute('font-size','14'); tx.setAttribute('font-weight','500'); tx.setAttribute('fill','#4a596b');
+      tx.setAttribute('paint-order','stroke fill'); tx.setAttribute('stroke','#fff'); tx.setAttribute('stroke-width','3');
+      tx.textContent=i;
+      labels.appendChild(tx);
+    }
+  }
+
+  function graphPath(){
+    const v0 = +v0Range.value, a = +aRange.value;
+    const x1 = tToX(0), y1 = vToY(v0);
+    const x2 = tToX(plot.tMax), y2 = vToY(v0 + a*plot.tMax);
+    return `M ${x1} ${y1} L ${x2} ${y2}`;
+  }
+
+  function totalAreaPath(){
+    const v0 = +v0Range.value, a = +aRange.value;
+    const x1 = tToX(0), y1 = vToY(v0);
+    const x2 = tToX(plot.tMax), y2 = vToY(v0 + a*plot.tMax);
+    return `M ${plot.x0} ${plot.y0} L ${x1} ${y1} L ${x2} ${y2} L ${x2} ${plot.y0} Z`;
+  }
+
+  function updateDrawing(sliceFactor=1){
+    syncRanges();
+    drawGrid();
+
+    linePath.setAttribute('d', graphPath());
+    areaTotal.setAttribute('d', totalAreaPath());
+    areaTotal.style.display = showTotalArea ? 'block' : 'none';
+
+    const tA = +taRange.value;
+    const tB = +tbRange.value;
+    const vA = velocity(tA);
+    const vB = velocity(tB);
+    const vC = (vA+vB)/2;
+    const tMid = (tA+tB)/2;
+
+    const xA = tToX(tA), xB = tToX(tB);
+    const yA = vToY(vA), yB = vToY(vB), yC = vToY(vC), y0 = plot.y0;
+
+    const xBAnim = xA + (xB-xA)*sliceFactor;
+    const tBAnim = tA + (tB-tA)*sliceFactor;
+    const vBAnim = velocity(tBAnim);
+    const vCAnim = (vA+vBAnim)/2;
+    const yBAnim = vToY(vBAnim);
+    const yCAnim = vToY(vCAnim);
+
+    boxV0.textContent = `v₀ = ${(+v0Range.value).toFixed(1)} m/s`;
+    boxA.textContent = `a = ${(+aRange.value).toFixed(1)} m/s²`;
+    boxTA.textContent = `t_A = ${tA.toFixed(1)} s`;
+    boxTB.textContent = `t_B = ${tB.toFixed(1)} s`;
+
+    // Mặc định ẩn
+    const allElems = [trapezoid, rectApprox, lineTA, lineTB, lineVA, lineVB, lineVC, pointN, pointM, pointC, labelN, labelM, labelC, labeltA, labeltB, labelvA, labelvB, labelvC, deltaArrow, deltaText];
+    allElems.forEach(el=>el.style.display='none');
+
+    if(step>=3){
+      lineTA.style.display='block';
+      lineTB.style.display='block';
+      lineTA.setAttribute('x1',xA); lineTA.setAttribute('x2',xA); lineTA.setAttribute('y1',plot.y0); lineTA.setAttribute('y2',yA);
+      lineTB.setAttribute('x1',xBAnim); lineTB.setAttribute('x2',xBAnim); lineTB.setAttribute('y1',plot.y0); lineTB.setAttribute('y2',yBAnim);
+
+      labeltA.style.display='block'; labeltB.style.display='block';
+      labeltA.setAttribute('x',xA-9); labeltA.setAttribute('y',582);
+      labeltB.setAttribute('x',xBAnim-9); labeltB.setAttribute('y',582);
+      labeltA.textContent='tA'; labeltB.textContent='tB';
+
+      pointN.style.display='block'; pointM.style.display='block';
+      pointN.setAttribute('cx',xA); pointN.setAttribute('cy',yA);
+      pointM.setAttribute('cx',xBAnim); pointM.setAttribute('cy',yBAnim);
+
+      labelN.style.display='block'; labelM.style.display='block';
+      labelN.setAttribute('x',xA-24); labelN.setAttribute('y',yA-14);
+      labelM.setAttribute('x',xBAnim+12); labelM.setAttribute('y',yBAnim-13);
+    }
+
+    if(step>=4){
+      lineVA.style.display='block'; lineVB.style.display='block'; trapezoid.style.display='block';
+      lineVA.setAttribute('x1',plot.x0); lineVA.setAttribute('x2',xA); lineVA.setAttribute('y1',yA); lineVA.setAttribute('y2',yA);
+      lineVB.setAttribute('x1',plot.x0); lineVB.setAttribute('x2',xBAnim); lineVB.setAttribute('y1',yBAnim); lineVB.setAttribute('y2',yBAnim);
+
+      labelvA.style.display='block'; labelvB.style.display='block';
+      labelvA.setAttribute('x',61); labelvA.setAttribute('y',yA-7);
+      labelvB.setAttribute('x',61); labelvB.setAttribute('y',yBAnim-7);
+      labelvA.textContent='vA'; labelvB.textContent='vB';
+
+      trapezoid.setAttribute('d', `M ${xA} ${y0} L ${xA} ${yA} L ${xBAnim} ${yBAnim} L ${xBAnim} ${y0} Z`);
+    }
+
+    if(step>=5){
+      lineVC.style.display='block'; pointC.style.display='block'; labelC.style.display='block'; labelvC.style.display='block'; deltaArrow.style.display='block'; deltaText.style.display='block';
+      const xMid = (xA+xBAnim)/2;
+      lineVC.setAttribute('x1',plot.x0); lineVC.setAttribute('x2',xMid); lineVC.setAttribute('y1',yCAnim); lineVC.setAttribute('y2',yCAnim);
+      pointC.setAttribute('cx',xMid); pointC.setAttribute('cy',yCAnim);
+      labelC.setAttribute('x',xMid+10); labelC.setAttribute('y',yCAnim-13);
+      labelvC.setAttribute('x',61); labelvC.setAttribute('y',yCAnim+18);
+      labelvC.textContent='vC';
+      deltaArrow.setAttribute('x1',xA); deltaArrow.setAttribute('y1',plot.y0+28);
+      deltaArrow.setAttribute('x2',xBAnim); deltaArrow.setAttribute('y2',plot.y0+28);
+      deltaText.setAttribute('x',(xA+xBAnim)/2 - 10); deltaText.setAttribute('y',plot.y0+52);
+    }
+
+    if(step>=6){
+      rectApprox.style.display='block';
+      rectApprox.setAttribute('x',xA);
+      rectApprox.setAttribute('y',yC);
+      rectApprox.setAttribute('width',xB-xA);
+      rectApprox.setAttribute('height',y0-yC);
+    } else {
+      rectApprox.style.display='none';
+    }
+
+    updateTexts(vA,vB,vC,tA,tB);
+  }
+
+  function updateTexts(vA,vB,vC,tA,tB){
+    const dt = tB - tA;
+    const sSmall = ((vA+vB)/2)*dt;
+    const v0 = +v0Range.value, a = +aRange.value;
+    const t = plot.tMax;
+    const sTotal = v0*t + 0.5*a*t*t;
+
+    topNote.textContent = stepsText[step-1];
+    status.textContent = `Đang ở Bước ${step}. ${stepsText[step-1]}`;
+
+    if(step===1){
+      explain.innerHTML = `Đồ thị \(v-t\) là <b>đường thẳng đi lên</b>, chứng tỏ vận tốc tăng đều theo thời gian. Đây là đặc trưng của <b>chuyển động thẳng biến đổi đều</b>.`;
+      calc.innerHTML = `Công thức vận tốc: <span class="formula">v = v₀ + at</span><br>
+      Với tham số hiện tại: \(v_0=${v0.toFixed(1)}\) m/s, \(a=${a.toFixed(1)}\) m/s².`;
+    } else if(step===2){
+      explain.innerHTML = `Muốn tính độ dịch chuyển trong một khoảng thời gian, ta xét <b>diện tích dưới đồ thị \(v-t\)</b>. Trên toàn khoảng từ 0 đến 5 s, độ dịch chuyển bằng diện tích phần tô màu xanh nhạt.`;
+      calc.innerHTML = `Độ dịch chuyển trên toàn khoảng \(0 \to 5s\):<br>
+      <span class="formula">s = v_0 t + \\dfrac{1}{2}at^2 = ${sTotal.toFixed(2)} m</span>`;
+    } else if(step===3){
+      explain.innerHTML = `Chọn một khoảng thời gian nhỏ từ <b>\(t_A\)</b> đến <b>\(t_B\)</b>. Trên đồ thị, hai điểm tương ứng là <b>N</b> và <b>M</b>. Hai đường thẳng đứng giúp tách ra một lát nhỏ của đồ thị.`;
+      calc.innerHTML = `Hiện tại: \(t_A=${tA.toFixed(1)}\) s, \(t_B=${tB.toFixed(1)}\) s, nên <span class="formula">Δt = ${dt.toFixed(2)} s</span>.`;
+    } else if(step===4){
+      explain.innerHTML = `Trong khoảng nhỏ ấy, phần diện tích dưới đồ thị là <b>một hình thang nhỏ</b>. Hai đáy của hình thang có độ dài lần lượt là \(v_A\) và \(v_B\).`;
+      calc.innerHTML = `Giá trị tại hai đầu khoảng:<br>
+      \(v_A = v(t_A) = ${vA.toFixed(2)}\) m/s<br>
+      \(v_B = v(t_B) = ${vB.toFixed(2)}\) m/s<br>
+      <span class="formula">S_{hình\ thang} = \\dfrac{v_A+v_B}{2}·Δt</span>`;
+    } else if(step===5){
+      explain.innerHTML = `Vì chuyển động biến đổi đều nên trong khoảng thời gian rất nhỏ này, có thể coi vật chuyển động thẳng đều với vận tốc trung bình <b>\(v_C\)</b>, trong đó C nằm giữa A và B trên đoạn MN.`;
+      calc.innerHTML = `Vận tốc trung bình trên khoảng nhỏ:<br>
+      <span class="formula">v_C = \\dfrac{v_A+v_B}{2} = ${vC.toFixed(2)} m/s</span>`;
+    } else if(step===6){
+      explain.innerHTML = `Khi đó diện tích hình thang nhỏ bằng diện tích hình chữ nhật có cùng đáy \(Δt\) và chiều cao \(v_C\). Đây là bước trung gian rất quan trọng để học sinh hiểu vì sao có thể tính độ dịch chuyển bằng \(v_{tb}·Δt\).`;
+      calc.innerHTML = `Ta có:<br>
+      \(Δt = ${dt.toFixed(2)}\) s<br>
+      \(v_C = ${vC.toFixed(2)}\) m/s<br>
+      <span class="formula">s_{nhỏ} = v_C·Δt = ${vC.toFixed(2)}×${dt.toFixed(2)} = ${sSmall.toFixed(2)} m</span><br>
+      Đồng thời cũng bằng \(\\dfrac{v_A+v_B}{2}·Δt\).`;
+    } else {
+      explain.innerHTML = `Nếu chia toàn bộ diện tích dưới đồ thị thành rất nhiều hình thang nhỏ rồi cộng lại, ta thu được độ dịch chuyển của vật trong cả quãng thời gian xét. Đây chính là ý nghĩa vật lí cơ bản của đồ thị \(v-t\).`;
+      calc.innerHTML = `Kết luận tổng quát:<br>
+      <span class="formula">Độ dịch chuyển = diện tích dưới đồ thị \(v-t\)</span><br>
+      Với ví dụ hiện tại trên toàn khoảng 0 → 5 s:<br>
+      <span class="formula">s = ${sTotal.toFixed(2)} m</span>`;
+    }
+  }
+
+  function nextStep(){ if(step<7){ step++; updateDrawing(); renderSteps(); } }
+  function prevStep(){ if(step>1){ step--; updateDrawing(); renderSteps(); } }
+  function resetAll(){
+    step=1;
+    v0Range.value=2; aRange.value=1.0; taRange.value=2.0; tbRange.value=3.0;
+    clearInterval(autoTimer); autoTimer=null;
+    clearInterval(sliceTimer); sliceTimer=null;
+    updateDrawing(); renderSteps();
+  }
+
+  function autoPlay(){
+    clearInterval(autoTimer);
+    autoTimer = setInterval(()=>{
+      if(step<7){ step++; updateDrawing(); renderSteps(); }
+      else { clearInterval(autoTimer); autoTimer=null; }
+    }, 1700);
+  }
+
+  function playSlice(){
+    clearInterval(sliceTimer);
+    if(step<3){ step=3; renderSteps(); }
+    let f=0;
+    sliceTimer = setInterval(()=>{
+      f += 0.05;
+      if(f>=1){ f=1; clearInterval(sliceTimer); sliceTimer=null; }
+      updateDrawing(f);
+    }, 45);
+  }
+
+  document.getElementById('nextBtn').addEventListener('click', nextStep);
+  document.getElementById('prevBtn').addEventListener('click', prevStep);
+  document.getElementById('resetBtn').addEventListener('click', resetAll);
+  document.getElementById('autoBtn').addEventListener('click', autoPlay);
+  document.getElementById('playSliceBtn').addEventListener('click', playSlice);
+  document.getElementById('toggleAreaBtn').addEventListener('click', ()=>{ showTotalArea=!showTotalArea; updateDrawing(); });
+
+  [v0Range,aRange,taRange,tbRange].forEach(el=>el.addEventListener('input', ()=>{
+    syncRanges();
+    updateDrawing();
+  }));
+
+  renderSteps();
+  updateDrawing();
+})();
+</script>
+</body>
+</html>

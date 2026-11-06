@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-120 Cảm biến mức chất lỏng bằng siêu âm 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#020912;color:#eef8fb}
+#app{display:grid;grid-template-columns:270px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800}.desc{font-size:10.2px;color:#a9c2cd;line-height:1.35}h1{font-size:17px;margin:4px 0 6px;line-height:1.1}
+.model{font-size:9.4px;color:#d7e8ef;background:#0b2230;border:1px solid #204758;border-radius:8px;padding:6px;margin:6px 0}
+.ctl{display:grid;grid-template-columns:80px 1fr 70px;gap:5px;align-items:center;margin:5px 0}.ctl label{font-size:9.3px}.ctl output{font-size:8.9px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 55% 32%,#123d58 0,#0a263b 38%,#061725 70%,#030b13 100%)}#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label{position:absolute;transform:translate(-50%,-50%);background:rgba(244,250,252,.95);color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9.1px;white-space:nowrap}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10.2px;font-weight:700}
+#hud{position:absolute;right:12px;top:12px;z-index:7;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:8px 10px;min-width:190px}
+.hrow{display:flex;justify-content:space-between;gap:14px;font-size:9px;margin:3px 0}.hrow span{color:#9fc0cd}.hrow b{color:#fff}
+#note{position:absolute;left:12px;bottom:12px;z-index:7;width:540px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700}.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style></head>
+<body>
+<div id="app"><aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D CINEMATIC</div><h1>120 · Cảm biến mức chất lỏng bằng siêu âm</h1>
+<p class="desc">Cảm biến phát xung siêu âm xuống mặt thoáng. Xung phản xạ trở lại đầu thu; từ thời gian bay suy ra khoảng cách đến mặt chất lỏng và mức chất lỏng trong bồn.</p>
+<div class="model"><b>Mô hình hóa:</b> không khí đồng nhất, mặt thoáng phẳng, phản xạ vuông góc. Bỏ qua hấp thụ, nhiễu và độ rộng chùm siêu âm thực.</div>
+
+<div class="ctl"><label>Tốc độ mô phỏng</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Chiều cao bồn H</label><input id="tankH" type="range" min="1.5" max="5" step=".1" value="3.5"><output id="tankHOut"></output></div>
+<div class="ctl"><label>Mức chất lỏng h</label><input id="level" type="range" min=".2" max="3.3" step=".05" value="2.2"><output id="levelOut"></output></div>
+<div class="ctl"><label>Vận tốc âm v</label><input id="soundV" type="range" min="300" max="360" step="1" value="343"><output id="soundVOut"></output></div>
+<div class="ctl"><label>Tần số xung</label><input id="freq" type="range" min="20" max="60" step="1" value="40"><output id="freqOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showPulse" type="checkbox" checked> Xung siêu âm</label>
+<label class="check"><input id="showPath" type="checkbox" checked> Đường truyền</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Bắt đầu / chạy lại</button><button id="pauseBtn" class="btn">⏸ Tạm dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Fit toàn cảnh</button>
+<button id="lowBtn" class="btn">Mức thấp</button><button id="highBtn" class="btn">Mức cao</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div><div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view"><div id="three"></div><div id="labels"></div>
+<div id="formula">d = vΔt/2 &nbsp; · &nbsp; h = H − d</div>
+<div id="hud">
+<div class="hrow"><span>Khoảng cách d</span><b id="dHud"></b></div>
+<div class="hrow"><span>Δt lý thuyết</span><b id="dtHud"></b></div>
+<div class="hrow"><span>Δt đo</span><b id="dtMeasHud"></b></div>
+<div class="hrow"><span>Mức suy ra h</span><b id="hCalcHud"></b></div>
+<div class="hrow"><span>Trạng thái</span><b id="statusHud"></b></div>
+</div>
+<div id="note">Xung siêu âm được kéo chậm trực quan để nhìn rõ đường đi; số liệu Δt vẫn tính theo thời gian vật lí thật. Ứng dụng thực tế: cảm biến đo khoảng cách từ đầu dò đến mặt thoáng rồi suy ra mức chất lỏng. Ngoài phạm vi mô phỏng: nhiệt độ/độ ẩm biến thiên theo không gian, bọt khí, mặt thoáng nghiêng, phản xạ đa đường và hiệu chỉnh điện tử.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id),view=$('view');
+const state={running:false,t:0,speed:1,H:3.5,h:2.2,v:343,f:40,pulsePhase:0,echo:false,measured:null,visualDuration:2.4};
+const d=()=>Math.max(.05,state.H-state.h),tof=()=>2*d()/state.v;
+
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=7;controls.maxDistance=25;controls.minPolarAngle=.35;controls.maxPolarAngle=1.75;
+scene.add(new THREE.HemisphereLight(0xffffff,0x172832,4.3));const dl=new THREE.DirectionalLight(0xffffff,4.1);dl.position.set(6,10,8);scene.add(dl);
+
+const lab=new THREE.Group();scene.add(lab);lab.position.set(0,-.3,0);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(18,13),new THREE.MeshStandardMaterial({color:0x0a1c28,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-3.2;lab.add(floor);
+const grid=new THREE.GridHelper(18,26,0x2e586a,0x123345);grid.position.y=-3.19;lab.add(grid);
+
+// tank
+const glassMat=new THREE.MeshPhysicalMaterial({color:0x8fdcff,transparent:true,opacity:.18,roughness:.15,metalness:.05,side:THREE.DoubleSide});
+const tank=new THREE.Mesh(new THREE.CylinderGeometry(2.15,2.15,4.8,48,1,true),glassMat);tank.position.y=-.4;lab.add(tank);
+const rimTop=new THREE.Mesh(new THREE.TorusGeometry(2.15,.07,12,48),new THREE.MeshStandardMaterial({color:0x8aa8b6,metalness:.55,roughness:.3}));rimTop.rotation.x=Math.PI/2;rimTop.position.y=2.0;lab.add(rimTop);
+const rimBot=rimTop.clone();rimBot.position.y=-2.8;lab.add(rimBot);
+
+// liquid
+const liquidMat=new THREE.MeshPhysicalMaterial({color:0x1598d1,transparent:true,opacity:.72,roughness:.18,metalness:.05});
+const liquid=new THREE.Mesh(new THREE.CylinderGeometry(2.05,2.05,1,48),liquidMat);lab.add(liquid);
+const surface=new THREE.Mesh(new THREE.CylinderGeometry(2.06,2.06,.05,48),new THREE.MeshBasicMaterial({color:0x7be7ff,transparent:true,opacity:.85}));lab.add(surface);
+
+// sensor
+const sensorG=new THREE.Group();lab.add(sensorG);
+const body=new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,.55,32),new THREE.MeshStandardMaterial({color:0xf0a84d,emissive:0x6f3f08,emissiveIntensity:.45,metalness:.35,roughness:.3}));
+body.rotation.x=Math.PI/2;sensorG.add(body);
+const face=new THREE.Mesh(new THREE.CylinderGeometry(.31,.31,.10,32),new THREE.MeshStandardMaterial({color:0x172c38,metalness:.5,roughness:.25}));face.rotation.x=Math.PI/2;face.position.z=.31;sensorG.add(face);
+
+// pulse rings
+const pulseOut=new THREE.Mesh(new THREE.RingGeometry(.08,.12,48),new THREE.MeshBasicMaterial({color:0x63dcff,side:THREE.DoubleSide,transparent:true,opacity:.9}));
+pulseOut.rotation.x=Math.PI/2;lab.add(pulseOut);
+const pulseBack=new THREE.Mesh(new THREE.RingGeometry(.08,.12,48),new THREE.MeshBasicMaterial({color:0xffb45a,side:THREE.DoubleSide,transparent:true,opacity:.9}));
+pulseBack.rotation.x=Math.PI/2;lab.add(pulseBack);
+
+// path
+const pathLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineDashedMaterial({color:0xffffff,dashSize:.15,gapSize:.10,transparent:true,opacity:.6}));lab.add(pathLine);
+
+// gauge rod
+const gauge=new THREE.Mesh(new THREE.BoxGeometry(.10,4.8,.10),new THREE.MeshStandardMaterial({color:0xe6f1f5}));gauge.position.set(2.65,-.4,0);lab.add(gauge);
+const levelMarker=new THREE.Mesh(new THREE.BoxGeometry(.38,.08,.18),new THREE.MeshStandardMaterial({color:0x69e3a6,emissive:0x1d704d,emissiveIntensity:.6}));levelMarker.position.x=2.65;lab.add(levelMarker);
+
+function sceneYFromPhysical(y){ return -2.8 + y/state.H*4.8; }
+function updateGeometry(){
+ const liquidHeight=Math.max(.05,state.h/state.H*4.8);
+ liquid.scale.set(1,liquidHeight,1);liquid.position.y=-2.8+liquidHeight/2;
+ surface.position.y=-2.8+liquidHeight;
+ sensorG.position.set(0,2.35,0);sensorG.rotation.x=Math.PI/2;
+ levelMarker.position.y=surface.position.y;
+ const a=new THREE.Vector3(0,2.06,0),b=new THREE.Vector3(0,surface.position.y+.03,0);
+ pathLine.geometry.dispose();pathLine.geometry=new THREE.BufferGeometry().setFromPoints([a,b]);pathLine.computeLineDistances();
+}
+
+function restartPulse(){state.t=0;state.pulsePhase=0;state.echo=false;state.measured=null;state.running=true}
+function updatePhysics(dt){
+ if(!state.running)return;
+ state.t+=dt*state.speed;
+ state.pulsePhase+=dt*state.speed;
+
+ // Thời gian thật của siêu âm chỉ vài ms nên nếu dùng trực tiếp sẽ không nhìn thấy.
+ // Hoạt ảnh được kéo chậm trực quan, còn số đo vật lí vẫn dùng Δt = 2d/v.
+ const halfVisual=state.visualDuration/2;
+ if(!state.echo && state.pulsePhase>=state.visualDuration){
+   state.echo=true;
+   state.measured=tof(); // giữ đúng thời gian bay vật lí
+ }
+ if(state.pulsePhase>state.visualDuration+.45)state.running=false;
+}
+function updateVisuals(){
+ updateGeometry();
+ const half=state.visualDuration/2,topY=2.05,surfY=surface.position.y;
+ pulseOut.visible=pulseBack.visible=false;
+ if(state.running||state.pulsePhase>0){
+   if(state.pulsePhase<=half){
+     const u=Math.max(0,Math.min(1,state.pulsePhase/half)),y=topY+(surfY-topY)*u;
+     pulseOut.position.set(0,y,0);
+     pulseOut.scale.setScalar(.8+2.6*u);
+     pulseOut.material.opacity=.95-.35*u;
+     pulseOut.visible=$('showPulse').checked;
+   }else if(state.pulsePhase<=state.visualDuration){
+     const u=Math.max(0,Math.min(1,(state.pulsePhase-half)/half)),y=surfY+(topY-surfY)*u;
+     pulseBack.position.set(0,y,0);
+     pulseBack.scale.setScalar(3.3-2.2*u);
+     pulseBack.material.opacity=.95-.35*u;
+     pulseBack.visible=$('showPulse').checked;
+   }
+ }
+ pathLine.visible=$('showPath').checked;grid.visible=$('showGrid').checked;
+}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('tankHOut').value=state.H.toFixed(1)+' m';$('levelOut').value=state.h.toFixed(2)+' m';$('soundVOut').value=state.v.toFixed(0)+' m/s';$('freqOut').value=state.f.toFixed(0)+' kHz';
+ $('dHud').textContent=d().toFixed(3)+' m';$('dtHud').textContent=(tof()*1000).toFixed(2)+' ms';$('dtMeasHud').textContent=state.measured===null?'—':(state.measured*1000).toFixed(2)+' ms';
+ $('hCalcHud').textContent=state.measured===null?'—':(state.H-state.v*state.measured/2).toFixed(3)+' m';
+ let s='Sẵn sàng';if(state.running&&state.pulsePhase<state.visualDuration/2)s='Xung đang đi xuống';else if(state.running&&!state.echo)s='Xung phản xạ đang về';else if(state.echo)s='Đã nhận tiếng vọng';$('statusHud').textContent=s
+}
+function sync(reset=true){
+ state.speed=+$('speed').value;state.H=+$('tankH').value;state.h=Math.min(+$('level').value,state.H-.1);state.v=+$('soundV').value;state.f=+$('freq').value;
+ $('level').max=(state.H-.2).toFixed(2);$('level').value=state.h;
+ if(reset){state.running=false;state.pulsePhase=0;state.echo=false;state.measured=null}
+ updateGeometry();updateUI()
+}
+['tankH','level','soundV','freq'].forEach(id=>$(id).addEventListener('input',()=>sync(true)));$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=restartPulse;$('pauseBtn').onclick=()=>state.running=false;
+$('lowBtn').onclick=()=>{$('level').value=Math.max(.3,state.H*.28);sync(true)};
+$('highBtn').onclick=()=>{$('level').value=Math.max(.3,state.H*.78);sync(true)};
+$('resetBtn').onclick=()=>{Object.assign(state,{running:false,t:0,speed:1,H:3.5,h:2.2,v:343,f:40,pulsePhase:0,echo:false,measured:null,visualDuration:2.4});for(const [id,v] of [['speed',1],['tankH',3.5],['level',2.2],['soundV',343],['freq',40]])$(id).value=v;sync(true);fit()};
+$('fitBtn').onclick=fit;
+$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fit()},80));
+
+const labels=$('labels');function mk(t){const e=document.createElement('div');e.className='label';e.textContent=t;labels.appendChild(e);return e}
+const lSensor=mk('Cảm biến siêu âm'),lSurf=mk('Mặt thoáng phản xạ'),lTank=mk('Bồn chứa');
+function project(el,p){const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=(q.z>1||!$('showLabels').checked)?'none':'block'}
+function fit(){controls.target.set(.4,-.3,0);camera.position.set(10.8,6.4,14.8);camera.lookAt(controls.target);controls.update()}
+function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}
+window.addEventListener('resize',()=>{resize();fit()});
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!renderer.domElement.captureStream||!window.MediaRecorder)return;const m=mime();rec=new MediaRecorder(renderer.domElement.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`120_Cam_bien_muc_chat_long_sieu_am_3D.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+updateGeometry();resize();fit();updateUI();
+let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);const dt=Math.min(.033,(now-last)/1000);last=now;
+ updatePhysics(dt);updateVisuals();updateUI();
+ project(lSensor,new THREE.Vector3(0,2.9,.5));project(lSurf,new THREE.Vector3(0,surface.position.y+.5,1.8));project(lTank,new THREE.Vector3(-2.8,-.2,0));
+ controls.update();renderer.render(scene,camera)
+}
+requestAnimationFrame(animate);
+</script></body></html>

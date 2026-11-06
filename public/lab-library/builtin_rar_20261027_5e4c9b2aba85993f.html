@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-54 Lực Coulomb giữa hai điện tích 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#020912;color:#eef8fb}
+#app{display:grid;grid-template-columns:254px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800}.desc{font-size:10.4px;color:#a9c2cd;line-height:1.35}h1{font-size:17px;margin:4px 0 6px;line-height:1.08}
+.ctl{display:grid;grid-template-columns:70px 1fr 66px;gap:5px;align-items:center;margin:5px 0}.ctl label{font-size:9.5px}.ctl output{font-size:9px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9.1px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 55% 32%,#123d58 0,#0a263b 38%,#061725 70%,#030b13 100%)}#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label{position:absolute;transform:translate(-50%,-50%);background:rgba(244,250,252,.95);color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9.2px;white-space:nowrap}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10.2px;font-weight:700}
+#hud{position:absolute;right:12px;bottom:12px;z-index:7;display:flex;gap:9px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:7px 9px}.hud span{display:block;font-size:8px;color:#98bac8}.hud b{font-size:10.2px}
+#note{position:absolute;left:12px;bottom:12px;z-index:7;width:500px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.1px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700}.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style></head>
+<body>
+<div id="app"><aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D</div><h1>54 · Lực Coulomb giữa hai điện tích</h1>
+<p class="desc">Hai điện tích điểm tương tác bằng lực Coulomb. Cùng dấu đẩy nhau, trái dấu hút nhau.</p>
+
+<div class="ctl"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>q₁</label><input id="q1" type="range" min="-10" max="10" step=".5" value="5"><output id="q1Out"></output></div>
+<div class="ctl"><label>q₂</label><input id="q2" type="range" min="-10" max="10" step=".5" value="-4"><output id="q2Out"></output></div>
+<div class="ctl"><label>Khoảng cách r</label><input id="distance" type="range" min="1" max="8" step=".1" value="4"><output id="distanceOut"></output></div>
+<div class="ctl"><label>Góc hệ</label><input id="angle" type="range" min="0" max="180" step="1" value="15"><output id="angleOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showForces" type="checkbox" checked> Vectơ lực</label>
+<label class="check"><input id="showAxis" type="checkbox" checked> Đường nối q₁q₂</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị F(r)</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+<label class="check"><input id="showFieldHint" type="checkbox"> Gợi ý điện trường</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Căn giữa</button>
+<button id="sameBtn" class="btn">Cùng dấu</button><button id="oppBtn" class="btn">Trái dấu</button>
+<button id="doubleRBtn" class="btn">r × 2</button><button id="halfRBtn" class="btn">r ÷ 2</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div><div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view"><div id="three"></div><div id="labels"></div>
+<div id="formula">F = k|q₁q₂|/r² &nbsp; · &nbsp; F⃗₁₂ = −F⃗₂₁</div>
+<div id="hud">
+<div class="hud"><span>|F₁₂|</span><b id="F1Hud"></b></div>
+<div class="hud"><span>|F₂₁|</span><b id="F2Hud"></b></div>
+<div class="hud"><span>r</span><b id="rHud"></b></div>
+<div class="hud"><span>Kiểu tương tác</span><b id="typeHud"></b></div>
+<div class="hud"><span>F·r²</span><b id="constHud"></b></div>
+</div>
+<div id="note">Hai lực Coulomb luôn nằm trên đường nối hai điện tích, có cùng độ lớn và ngược chiều. Nếu q₁q₂&gt;0: lực đẩy; nếu q₁q₂&lt;0: lực hút. Độ dài mũi tên được chuẩn hóa để dễ nhìn, số liệu lực tính đúng theo công thức Coulomb.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id),view=$('view'),K=9e9;
+const state={running:true,t:0,speed:1,q1:5,q2:-4,r:4,angleDeg:15};
+
+const q1C=()=>state.q1*1e-6,q2C=()=>state.q2*1e-6;
+const force=()=>K*Math.abs(q1C()*q2C())/(state.r*state.r);
+const type=()=>state.q1*state.q2>0?'Đẩy':state.q1*state.q2<0?'Hút':'Không tương tác';
+const ang=()=>THREE.MathUtils.degToRad(state.angleDeg);
+
+function positions(){
+ const d=new THREE.Vector3(Math.cos(ang()),0,Math.sin(ang())).multiplyScalar(state.r/2);
+ return [d.clone().multiplyScalar(-1),d.clone()];
+}
+
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=7;controls.maxDistance=24;controls.minPolarAngle=.4;controls.maxPolarAngle=2.1;
+scene.add(new THREE.HemisphereLight(0xffffff,0x172832,4.2));const dl=new THREE.DirectionalLight(0xffffff,4.2);dl.position.set(5,9,8);scene.add(dl);
+
+const lab=new THREE.Group();scene.add(lab);lab.position.set(0,-.45,0);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(18,13),new THREE.MeshStandardMaterial({color:0x0a1c28,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.7;lab.add(floor);
+const grid=new THREE.GridHelper(18,26,0x2e586a,0x123345);grid.position.y=-2.69;lab.add(grid);
+
+function matFor(q){return new THREE.MeshStandardMaterial({color:q>=0?0xff625f:0x4aa8ff,emissive:q>=0?0x7b1818:0x173d7e,emissiveIntensity:.75,roughness:.3})}
+const q1Mesh=new THREE.Mesh(new THREE.SphereGeometry(.5,30,20),matFor(state.q1));
+const q2Mesh=new THREE.Mesh(new THREE.SphereGeometry(.5,30,20),matFor(state.q2));lab.add(q1Mesh,q2Mesh);
+
+function signMark(){
+ const g=new THREE.Group();lab.add(g);return g
+}
+const mark1=signMark(),mark2=signMark();
+function updateMark(g,q){
+ g.clear();if(Math.abs(q)<1e-12)return;
+ const m=new THREE.MeshBasicMaterial({color:0xffffff});
+ g.add(new THREE.Mesh(new THREE.BoxGeometry(.46,.09,.07),m));
+ if(q>0)g.add(new THREE.Mesh(new THREE.BoxGeometry(.09,.46,.07),m))
+}
+
+const axisLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineDashedMaterial({color:0xffffff,dashSize:.18,gapSize:.13,transparent:true,opacity:.55}));lab.add(axisLine);
+
+const f1Arrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1,0x63dcff,.28,.14);
+const f2Arrow=new THREE.ArrowHelper(new THREE.Vector3(-1,0,0),new THREE.Vector3(),1,0xffb45a,.28,.14);lab.add(f1Arrow,f2Arrow);
+
+// optional field hint arrows at the opposite charge positions
+const fieldHint1=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1,0x8bdcff,.18,.09);
+const fieldHint2=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1,0xd971ff,.18,.09);lab.add(fieldHint1,fieldHint2);
+
+// graph F(r)
+const gc=document.createElement('canvas');gc.width=820;gc.height=350;const gctx=gc.getContext('2d'),gtex=new THREE.CanvasTexture(gc);
+const graphFrame=new THREE.Mesh(new THREE.BoxGeometry(5.3,2.5,.12),new THREE.MeshStandardMaterial({color:0xeaf3f6,roughness:.48}));graphFrame.position.set(4.3,2.55,-2.7);lab.add(graphFrame);
+const graphPlane=new THREE.Mesh(new THREE.PlaneGeometry(5.05,2.27),new THREE.MeshBasicMaterial({map:gtex,side:THREE.DoubleSide}));graphPlane.position.set(4.3,2.55,-2.62);lab.add(graphPlane);
+
+function normLen(F){return .7+2.2*Math.min(1,Math.log10(1+F/.02)/2.0)}
+function drawGraph(){
+ gctx.fillStyle='#f8fafb';gctx.fillRect(0,0,gc.width,gc.height);
+ gctx.fillStyle='#263b45';gctx.font='bold 25px Segoe UI';gctx.fillText('LỰC COULOMB F(r)',280,31);
+ gctx.strokeStyle='#d2dee3';gctx.lineWidth=1;
+ for(let i=0;i<=10;i++){const x=55+i*70;gctx.beginPath();gctx.moveTo(x,50);gctx.lineTo(x,300);gctx.stroke()}
+ for(let j=0;j<=5;j++){const y=55+j*49;gctx.beginPath();gctx.moveTo(55,y);gctx.lineTo(755,y);gctx.stroke()}
+ const maxF=K*Math.abs(q1C()*q2C())/(1*1);
+ gctx.strokeStyle='#1677c8';gctx.lineWidth=4;gctx.beginPath();
+ for(let i=0;i<=500;i++){
+   const r=1+7*i/500,F=K*Math.abs(q1C()*q2C())/(r*r),px=55+700*i/500,py=300-245*(maxF>0?F/maxF:0);
+   i?gctx.lineTo(px,py):gctx.moveTo(px,py)
+ }gctx.stroke();
+ const F=force(),px=55+700*(state.r-1)/7,py=300-245*(maxF>0?F/maxF:0);
+ gctx.fillStyle='#ff5d5d';gctx.beginPath();gctx.arc(px,py,8,0,Math.PI*2);gctx.fill();
+ gctx.fillStyle='#50656f';gctx.font='17px Segoe UI';gctx.fillText('r (m)',735,330);gctx.fillText('F',18,58);
+ gtex.needsUpdate=true
+}
+
+function updatePhysics(dt){if(state.running)state.t+=dt*state.speed}
+
+function updateVisuals(){
+ const [p1,p2]=positions(),axis=p2.clone().sub(p1).normalize();
+ q1Mesh.position.copy(p1);q2Mesh.position.copy(p2);
+ q1Mesh.material.dispose();q2Mesh.material.dispose();q1Mesh.material=matFor(state.q1);q2Mesh.material=matFor(state.q2);
+ q1Mesh.visible=Math.abs(state.q1)>1e-12;q2Mesh.visible=Math.abs(state.q2)>1e-12;
+ updateMark(mark1,state.q1);updateMark(mark2,state.q2);mark1.position.set(p1.x,0,p1.z+.51);mark2.position.set(p2.x,0,p2.z+.51);
+
+ axisLine.geometry.dispose();axisLine.geometry=new THREE.BufferGeometry().setFromPoints([p1,p2]);axisLine.computeLineDistances();axisLine.visible=$('showAxis').checked;
+
+ const F=force(),L=normLen(F),same=state.q1*state.q2>0,zero=Math.abs(state.q1*state.q2)<1e-12;
+ const dir1=same?axis.clone().multiplyScalar(-1):axis.clone();
+ const dir2=dir1.clone().multiplyScalar(-1);
+
+ f1Arrow.position.copy(p1);f2Arrow.position.copy(p2);
+ if(!zero){f1Arrow.setDirection(dir1);f2Arrow.setDirection(dir2);f1Arrow.setLength(L,.27,.14);f2Arrow.setLength(L,.27,.14)}
+ f1Arrow.visible=f2Arrow.visible=$('showForces').checked&&!zero;
+
+ // field at each charge due to the other, for optional comparison
+ const eAt1Dir=state.q2>0?p1.clone().sub(p2).normalize():p2.clone().sub(p1).normalize();
+ const eAt2Dir=state.q1>0?p2.clone().sub(p1).normalize():p1.clone().sub(p2).normalize();
+ fieldHint1.position.copy(p1).add(new THREE.Vector3(0,.75,0));fieldHint2.position.copy(p2).add(new THREE.Vector3(0,.75,0));
+ fieldHint1.setDirection(eAt1Dir);fieldHint2.setDirection(eAt2Dir);fieldHint1.setLength(1.0,.17,.08);fieldHint2.setLength(1.0,.17,.08);
+ fieldHint1.visible=fieldHint2.visible=$('showFieldHint').checked&&!zero;
+
+ graphFrame.visible=graphPlane.visible=$('showGraph').checked;grid.visible=$('showGrid').checked;drawGraph()
+}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('q1Out').value=state.q1.toFixed(1)+' μC';$('q2Out').value=state.q2.toFixed(1)+' μC';$('distanceOut').value=state.r.toFixed(1)+' m';$('angleOut').value=state.angleDeg.toFixed(0)+'°';
+ $('F1Hud').textContent=force().toExponential(2)+' N';$('F2Hud').textContent=force().toExponential(2)+' N';$('rHud').textContent=state.r.toFixed(2)+' m';$('typeHud').textContent=type();$('constHud').textContent=(force()*state.r*state.r).toExponential(2)+' N·m²'
+}
+function sync(reset=false){
+ state.speed=+$('speed').value;state.q1=+$('q1').value;state.q2=+$('q2').value;state.r=+$('distance').value;state.angleDeg=+$('angle').value;if(reset)state.t=0;updateUI()
+}
+['q1','q2','distance','angle'].forEach(id=>$(id).addEventListener('input',()=>sync(false)));$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;
+$('sameBtn').onclick=()=>{$('q1').value=5;$('q2').value=4;sync(true)};
+$('oppBtn').onclick=()=>{$('q1').value=5;$('q2').value=-4;sync(true)};
+$('doubleRBtn').onclick=()=>{$('distance').value=Math.min(8,state.r*2);sync(false)};
+$('halfRBtn').onclick=()=>{$('distance').value=Math.max(1,state.r/2);sync(false)};
+$('resetBtn').onclick=()=>{Object.assign(state,{running:true,t:0,speed:1,q1:5,q2:-4,r:4,angleDeg:15});for(const [id,v] of [['speed',1],['q1',5],['q2',-4],['distance',4],['angle',15]])$(id).value=v;fit();updateUI()};
+$('fitBtn').onclick=fit;
+$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fit()},80));
+
+const labels=$('labels');function mk(t){const e=document.createElement('div');e.className='label';e.textContent=t;labels.appendChild(e);return e}
+const l1=mk('q₁'),l2=mk('q₂'),lF1=mk('F₁₂'),lF2=mk('F₂₁');
+function project(el,p){const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=(q.z>1||!$('showLabels').checked)?'none':'block'}
+
+function fit(){controls.target.set(.2,.2,0);camera.position.set(11.8,7.0,15.8);camera.lookAt(controls.target);controls.update()}
+function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}
+window.addEventListener('resize',()=>{resize();fit()});
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{
+ if(!renderer.domElement.captureStream||!window.MediaRecorder)return;
+ const m=mime();rec=new MediaRecorder(renderer.domElement.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});
+ chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`054_Luc_Coulomb_giua_hai_dien_tich_3D.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};
+ rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false
+};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+resize();fit();updateUI();
+let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);const dt=Math.min(.033,(now-last)/1000);last=now;
+ updatePhysics(dt);updateVisuals();updateUI();
+ const [p1,p2]=positions(),axis=p2.clone().sub(p1).normalize(),same=state.q1*state.q2>0;
+ const d1=same?axis.clone().multiplyScalar(-1):axis.clone(),d2=d1.clone().multiplyScalar(-1);
+ project(l1,p1.clone().add(new THREE.Vector3(0,.85,.4)));project(l2,p2.clone().add(new THREE.Vector3(0,.85,.4)));
+ project(lF1,p1.clone().addScaledVector(d1,1.5).add(new THREE.Vector3(0,.35,0)));project(lF2,p2.clone().addScaledVector(d2,1.5).add(new THREE.Vector3(0,.35,0)));
+ controls.update();renderer.render(scene,camera)
+}
+requestAnimationFrame(animate);
+</script></body></html>

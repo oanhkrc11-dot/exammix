@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>052 - Điện trường lưỡng cực điện</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07131e;color:#eef9ff;font-family:Inter,Segoe UI,system-ui,sans-serif}
+#app{position:fixed;inset:0}
+#panel{position:fixed;left:12px;top:12px;bottom:12px;width:286px;z-index:40;overflow:auto;padding:11px;border-radius:16px;background:rgba(8,18,28,.96);border:1px solid rgba(111,193,235,.22);box-shadow:0 18px 52px rgba(0,0,0,.42)}
+#panel.hide{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none}
+h1{font-size:14px;margin:0 0 3px;font-weight:900}.sub{font-size:10.5px;color:#7bdcff;font-weight:800}
+.desc{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(12,28,41,.72);font-size:10.3px;line-height:1.45;color:#cce1ee}
+.section{margin:10px 0 6px;color:#75d8ff;font-weight:900;font-size:10.5px}
+label.control{display:block;margin:7px 0 9px;font-size:10.8px}label.control .value{float:right;color:#9fe9ff;font-weight:800}
+input[type=range]{width:100%;accent-color:#52c9ff;margin-top:4px}
+.buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:7px}
+button{border:1px solid #355a73;background:#122332;color:#eef8ff;border-radius:9px;padding:7px 6px;font-size:10.5px;font-weight:800;cursor:pointer}
+button.primary{border-color:#54d692;background:#1b5136}
+.checkrow{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:10.4px;color:#cfe2ee}
+.modeling{margin-top:9px;padding:8px 9px;border-radius:10px;background:rgba(21,28,38,.72);border-left:3px solid #d8a447;font-size:10px;line-height:1.42;color:#c8d4dd}
+#graph{width:100%;height:145px;background:#071019;border-radius:9px;margin-top:8px;border:1px solid rgba(104,186,225,.14)}
+#formula{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:28;padding:8px 14px;border-radius:999px;background:rgba(6,16,25,.66);border:1px solid rgba(102,209,255,.2);font-size:14.5px;font-weight:900}
+#hud{position:fixed;right:16px;top:16px;z-index:20;width:332px;padding:10px 11px;border-radius:13px;background:rgba(6,14,22,.68);border:1px solid rgba(116,193,234,.18);font-size:11px;line-height:1.55}
+#hud b{color:#ffd972}
+#probar{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:35;display:flex;gap:5px;padding:5px;border-radius:12px;background:rgba(6,14,22,.54);border:1px solid rgba(115,195,235,.16)}
+#probar button{padding:6px 8px;font-size:10.3px}
+#credit{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:18;color:#ffe075;font-size:14px;font-weight:900}
+#note{position:fixed;left:304px;bottom:16px;z-index:18;color:#a9bfce;font-size:10px;background:rgba(6,14,22,.5);border:1px solid rgba(116,193,234,.11);border-radius:9px;padding:6px 8px}
+#recStatus{position:fixed;right:18px;bottom:84px;z-index:30;display:none;padding:7px 10px;border-radius:10px;background:rgba(125,0,0,.72);font-size:11px;font-weight:900}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="formula">E⃗ = E⃗₊ + E⃗₋ · đường sức: (+) → (−)</div>
+<div id="probar">
+<button id="fullscreenBtn">⛶</button><button id="panelBtn">☰</button>
+<button id="bgBtn">🌗</button><button id="lightBtn">💡</button>
+<button id="camBtn">🎥</button><button id="autoCamBtn">↻ Cam</button>
+<button id="recordBtn">🔴 Quay</button><button id="stopRecordBtn">⏹</button>
+</div>
+
+<div id="panel">
+<h1>PHYSICS 11 LAB · 3D PRO</h1>
+<div class="sub">052 · ĐIỆN TRƯỜNG CỦA HAI ĐIỆN TÍCH TRÁI DẤU – LƯỠNG CỰC ĐIỆN</div>
+<div class="desc">
+Một lưỡng cực gồm hai điện tích trái dấu đặt gần nhau. Đường sức điện <b>đi ra từ điện tích dương và đi vào điện tích âm</b>. Trong không gian, hệ đường sức có đối xứng tròn xoay quanh trục nối hai điện tích.
+</div>
+
+<div class="section">ĐIỀU KHIỂN</div>
+<label class="control">Tốc độ mô phỏng <span id="speedVal" class="value">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
+<label class="control">Độ lớn |q₊| <span id="qpVal" class="value">4.0 nC</span><input id="qp" type="range" min=".5" max="10" step=".1" value="4"></label>
+<label class="control">Độ lớn |q₋| <span id="qmVal" class="value">4.0 nC</span><input id="qm" type="range" min=".5" max="10" step=".1" value="4"></label>
+<label class="control">Khoảng cách hai điện tích d <span id="dVal" class="value">4.0 m</span><input id="distance" type="range" min="2" max="8" step=".1" value="4"></label>
+<label class="control">Điểm khảo sát x <span id="pxVal" class="value">0.0 m</span><input id="px" type="range" min="-5" max="5" step=".1" value="0"></label>
+<label class="control">Điểm khảo sát z <span id="pzVal" class="value">1.8 m</span><input id="pz" type="range" min="-4" max="4" step=".1" value="1.8"></label>
+
+<div class="section">NÚT NHANH</div>
+<div class="buttons">
+<button id="start" class="primary">▶ Bắt đầu</button><button id="pause">⏸ Tạm dừng</button>
+<button id="reset">↻ Đặt lại</button><button id="fit">⛶ Fit</button>
+</div>
+<div class="buttons">
+<button id="equalBtn">|q₊| = |q₋|</button><button id="unequalBtn">|q₋| = 1.5|q₊|</button>
+<button id="axisBtn">Điểm trên trục</button><button id="equatorBtn">Điểm trung trực</button>
+</div>
+
+<div class="section">HIỂN THỊ</div>
+<label class="checkrow"><input id="showField" type="checkbox" checked> Hiện đường sức 3D</label>
+<label class="checkrow"><input id="showVectors" type="checkbox" checked> Hiện E₊, E₋, E</label>
+<label class="checkrow"><input id="showEquip" type="checkbox" checked> Hiện mặt đẳng thế gợi ý</label>
+<label class="checkrow"><input id="showAxis" type="checkbox" checked> Hiện trục lưỡng cực</label>
+<label class="checkrow"><input id="showGrid" type="checkbox" checked> Hiện lưới</label>
+
+<canvas id="graph" width="258" height="145"></canvas>
+
+<div class="modeling">
+<b>Mô hình hóa:</b> hai điện tích điểm đứng yên trong chân không. Đường sức được dựng trên nhiều mặt phẳng kinh tuyến quay quanh trục lưỡng cực để thể hiện đúng cấu trúc 3D. Độ dài véc tơ được chuẩn hóa để dễ nhìn, còn số liệu tính từ công thức thật.
+</div>
+</div>
+
+<div id="hud">
+<b>LƯỠNG CỰC ĐIỆN · TRƯỜNG 3D</b><br>
+q₊ = <b id="qpOut">+4.0 nC</b> · q₋ = <b id="qmOut">−4.0 nC</b><br>
+d = <b id="dOut">4.0 m</b><br>
+E₊ = <b id="epOut">...</b><br>
+E₋ = <b id="emOut">...</b><br>
+E tổng = <b id="eOut">...</b><br>
+V = <b id="vOut">...</b><br>
+Mômen lưỡng cực p = qd = <b id="dipOut">...</b><br>
+Trạng thái = <b id="runOut">ĐỨNG YÊN</b>
+</div>
+
+<div id="note">đỏ: q+ · xanh: q− · cyan: đường sức (+→−) · đỏ hồng: E tổng</div>
+<div id="credit">Thầy Hùng vật lí</div>
+<div id="recStatus">● ĐANG QUAY 00:00</div>
+<canvas id="recordCanvas" width="1920" height="1080" style="display:none"></canvas>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const K=8.9875517923e9;
+const state={running:false,paused:false,time:0,speed:1,qp:4e-9,qm:-4e-9,d:4,px:0,pz:1.8,backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false,pulse:0};
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('app').appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x06131e);
+const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,200);camera.position.set(8.8,7.0,10.8);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=4.5;controls.maxDistance=28;controls.minPolarAngle=.18;controls.maxPolarAngle=1.5;controls.target.set(0,.45,0);
+
+const hemi=new THREE.HemisphereLight(0xe3f7ff,0x10202d,1.7);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,1.8);key.position.set(7,10,8);scene.add(key);
+const rim=new THREE.PointLight(0x56d8ff,1.1,30,2);rim.position.set(-5,5,-5);scene.add(rim);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(38,30),new THREE.MeshStandardMaterial({color:0x101c27,roughness:.92}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.5;scene.add(floor);
+const grid=new THREE.GridHelper(38,38,0x2e5b72,0x173241);grid.position.y=-2.49;grid.material.transparent=true;grid.material.opacity=.14;scene.add(grid);
+
+const model=new THREE.Group();scene.add(model);
+const chargeGroup=new THREE.Group(),fieldGroup=new THREE.Group(),vectorGroup=new THREE.Group(),equipGroup=new THREE.Group(),axisGroup=new THREE.Group();
+model.add(chargeGroup,fieldGroup,vectorGroup,equipGroup,axisGroup);
+
+function clearGroup(g){while(g.children.length){const o=g.children.pop();o.traverse?.(q=>{q.geometry?.dispose?.();q.material?.dispose?.()})}}
+function pPos(){return new THREE.Vector3(-state.d/2,.45,0)}
+function mPos(){return new THREE.Vector3( state.d/2,.45,0)}
+function probePos(){return new THREE.Vector3(state.px,.45,state.pz)}
+function eFrom(q,qpos,p){const r=p.clone().sub(qpos),rr=Math.max(.12,r.length());return r.normalize().multiplyScalar(K*q/(rr*rr))}
+function fieldAt(p){const ep=eFrom(state.qp,pPos(),p),em=eFrom(state.qm,mPos(),p);return {ep,em,e:ep.clone().add(em)}}
+function potentialAt(p){const rp=Math.max(.12,p.distanceTo(pPos())),rm=Math.max(.12,p.distanceTo(mPos()));return K*state.qp/rp+K*state.qm/rm}
+function dipoleMoment(){return Math.abs(state.qp)*state.d}
+
+function buildCharges(){
+ clearGroup(chargeGroup);
+ for(const [p,c] of [[pPos(),0xff5f53],[mPos(),0x5180ff]]){
+  const s=new THREE.Mesh(new THREE.SphereGeometry(.38,28,22),new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.20,roughness:.35}));
+  s.position.copy(p);chargeGroup.add(s);
+ }
+}
+
+function buildAxis(){
+ clearGroup(axisGroup);if(!$('showAxis').checked)return;
+ const pts=[new THREE.Vector3(-state.d/2-1,.45,0),new THREE.Vector3(state.d/2+1,.45,0)];
+ const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineDashedMaterial({color:0xffffff,dashSize:.18,gapSize:.12,transparent:true,opacity:.35}));l.computeLineDistances();axisGroup.add(l);
+ const dir=mPos().clone().sub(pPos()).normalize();
+ axisGroup.add(new THREE.ArrowHelper(dir,pPos(),state.d,0x8be6ff,.15,.08));
+}
+
+function buildField(){
+ clearGroup(fieldGroup);if(!$('showField').checked)return;
+
+ // Điện trường lưỡng cực có đối xứng tròn xoay quanh trục x.
+ const meridians=10;
+ const thetaList=[18,28,38,50,64,78,96,116,136,152,164];
+
+ for(let m=0;m<meridians;m++){
+  const phi=2*Math.PI*m/meridians;
+
+  for(const thetaDeg of thetaList){
+   const th=THREE.MathUtils.degToRad(thetaDeg);
+   const seed=new THREE.Vector3(
+    Math.cos(th),
+    Math.sin(th)*Math.cos(phi),
+    Math.sin(th)*Math.sin(phi)
+   ).normalize();
+
+   let p=pPos().clone().add(seed.multiplyScalar(.47));
+   const pts=[p.clone()];
+
+   for(let i=0;i<180;i++){
+    const ef=fieldAt(p).e;
+    if(ef.length()<1e-10)break;
+
+    p=p.clone().add(ef.normalize().multiplyScalar(.06));
+    pts.push(p.clone());
+
+    if(p.distanceTo(mPos())<.39)break;
+    if(Math.abs(p.x)>8 || Math.hypot(p.y-.45,p.z)>6.5)break;
+   }
+
+   if(pts.length>6){
+    fieldGroup.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({color:0x6fe5ff,transparent:true,opacity:.28})
+    ));
+
+    const idx=Math.min(pts.length-2,Math.max(2,Math.floor(pts.length*.52)));
+    const dir=pts[idx+1].clone().sub(pts[idx]).normalize();
+    fieldGroup.add(new THREE.ArrowHelper(dir,pts[idx],.32,0xc0f6ff,.085,.045));
+   }
+  }
+ }
+}
+
+function buildVectors(){
+ clearGroup(vectorGroup);if(!$('showVectors').checked)return;
+ const p=probePos();
+ const dot=new THREE.Mesh(new THREE.SphereGeometry(.13,18,14),new THREE.MeshBasicMaterial({color:0xffffff}));dot.position.copy(p);vectorGroup.add(dot);
+ const {ep,em,e}=fieldAt(p);
+
+ const add=(v,c,b)=>{if(v.length()<1e-12)return;const l=THREE.MathUtils.clamp(b+.36*Math.log10(1+v.length()),.65,2.8);vectorGroup.add(new THREE.ArrowHelper(v.clone().normalize(),p,l,c,.16,.09))};
+ add(ep,0xffaa66,.55);add(em,0x5f9cff,.55);add(e,0xff6174,.75);
+}
+
+function buildEquip(){
+ clearGroup(equipGroup);if(!$('showEquip').checked)return;
+
+ // Gợi ý các mặt đẳng thế quanh từng điện tích; không coi là bề mặt đẳng thế chính xác của toàn hệ.
+ for(const [pos,color] of [[pPos(),0xff766b],[mPos(),0x6793ff]])for(const r of [.85,1.45,2.15]){
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(r,22,14),new THREE.MeshBasicMaterial({color,wireframe:true,transparent:true,opacity:.035,depthWrite:false}));
+  mesh.position.copy(pos);equipGroup.add(mesh);
+ }
+}
+
+function drawGraph(){
+ const c=$('graph'),g=c.getContext('2d'),w=c.width,h=c.height;g.fillStyle='#071019';g.fillRect(0,0,w,h);
+ const L=38,T=12,B=24,R=8,pw=w-L-R,ph=h-T-B;
+ g.strokeStyle='rgba(190,225,240,.28)';g.beginPath();g.moveTo(L,T);g.lineTo(L,T+ph);g.lineTo(L+pw,T+ph);g.stroke();
+
+ const xmin=-5,xmax=5,vals=[];let maxE=1;
+ for(let i=0;i<=180;i++){
+  const x=xmin+i/180*(xmax-xmin);
+  if(Math.abs(x+state.d/2)<.16||Math.abs(x-state.d/2)<.16){vals.push([x,null]);continue}
+  const E=fieldAt(new THREE.Vector3(x,.45,0)).e.x;
+  vals.push([x,E]);maxE=Math.max(maxE,Math.abs(E));
+ }
+
+ g.strokeStyle='#77e7ff';g.lineWidth=2;g.beginPath();
+ let pen=false;
+ vals.forEach(([x,E])=>{
+  if(E===null){pen=false;return}
+  const gx=L+(x-xmin)/(xmax-xmin)*pw,gy=T+ph/2-(E/maxE)*(ph*.44);
+  if(pen)g.lineTo(gx,gy);else{g.moveTo(gx,gy);pen=true}
+ });
+ g.stroke();
+
+ g.strokeStyle='rgba(255,255,255,.18)';g.beginPath();g.moveTo(L,T+ph/2);g.lineTo(L+pw,T+ph/2);g.stroke();
+ g.fillStyle='#91aabb';g.font='9px Segoe UI';g.fillText('Eₓ',8,12);g.fillText('x',w-16,h-6);
+}
+
+function updatePhysics(dt){if(!state.running||state.paused)return;state.time+=dt*state.speed;state.pulse+=dt*state.speed*2.1}
+function updateVisuals(){
+ const sc=1+.04*Math.sin(state.pulse);chargeGroup.children.forEach(o=>o.scale.setScalar(sc));
+ grid.visible=$('showGrid').checked;
+ if(state.autoCamera){const a=state.time*.13;camera.position.set(Math.cos(a)*10,5.6,Math.sin(a)*10);camera.lookAt(controls.target)}
+}
+function updateUI(){
+ const p=probePos(),{ep,em,e}=fieldAt(p);
+ $('speedVal').textContent=`${state.speed.toFixed(2)}×`;$('qpVal').textContent=`${(state.qp*1e9).toFixed(1)} nC`;$('qmVal').textContent=`${Math.abs(state.qm*1e9).toFixed(1)} nC`;$('dVal').textContent=`${state.d.toFixed(1)} m`;$('pxVal').textContent=`${state.px.toFixed(1)} m`;$('pzVal').textContent=`${state.pz.toFixed(1)} m`;
+ $('qpOut').textContent=`+${(state.qp*1e9).toFixed(1)} nC`;$('qmOut').textContent=`−${Math.abs(state.qm*1e9).toFixed(1)} nC`;$('dOut').textContent=`${state.d.toFixed(1)} m`;$('epOut').textContent=`${ep.length().toFixed(2)} N/C`;$('emOut').textContent=`${em.length().toFixed(2)} N/C`;$('eOut').textContent=`${e.length().toFixed(2)} N/C`;$('vOut').textContent=`${potentialAt(p).toFixed(2)} V`;$('dipOut').textContent=`${(dipoleMoment()*1e9).toFixed(2)} nC·m`;$('runOut').textContent=state.running&&!state.paused?'ĐANG CHẠY':state.paused?'TẠM DỪNG':'ĐỨNG YÊN';drawGraph();
+}
+
+const bgModes=[{b:0x06131e,f:0x101c27},{b:0xeaf2f6,f:0xd6e1e6},{b:0x06162a,f:0x0b2039}];
+function applyBackground(){const m=bgModes[state.backgroundIndex];scene.background.setHex(m.b);floor.material.color.setHex(m.f)}
+function applyLighting(){if(state.lightMode===0){hemi.intensity=1.7;key.intensity=1.8;rim.intensity=1.1}else if(state.lightMode===1){hemi.intensity=2.2;key.intensity=2.3;rim.intensity=.5}else{hemi.intensity=1.05;key.intensity=1.15;rim.intensity=1.9}}
+function setCamera(m){state.cameraMode=m%4;state.autoCamera=false;if(m===0)camera.position.set(0,9,.01);else if(m===1)camera.position.set(8.8,7.0,10.8);else if(m===2)camera.position.set(0,3.8,12);else camera.position.set(5,3.4,5);controls.target.set(0,.45,0);camera.lookAt(controls.target);controls.update()}
+async function toggleFullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}}
+function rebuild(){buildCharges();buildAxis();buildField();buildVectors();buildEquip();drawGraph()}
+
+$('speed').oninput=e=>state.speed=+e.target.value;
+$('qp').oninput=e=>{state.qp=Math.abs(+e.target.value)*1e-9;rebuild()};
+$('qm').oninput=e=>{state.qm=-Math.abs(+e.target.value)*1e-9;rebuild()};
+$('distance').oninput=e=>{state.d=+e.target.value;rebuild()};
+$('px').oninput=e=>{state.px=+e.target.value;buildVectors();updateUI()};
+$('pz').oninput=e=>{state.pz=+e.target.value;buildVectors();updateUI()};
+$('showField').onchange=buildField;$('showVectors').onchange=buildVectors;$('showEquip').onchange=buildEquip;$('showAxis').onchange=buildAxis;
+
+$('start').onclick=()=>{state.running=true;state.paused=false};
+$('pause').onclick=()=>state.paused=!state.paused;
+$('fit').onclick=()=>setCamera(1);
+
+$('equalBtn').onclick=()=>{state.qm=-state.qp;$('qm').value=Math.abs(state.qm)*1e9;rebuild()};
+$('unequalBtn').onclick=()=>{state.qm=-Math.min(10e-9,1.5*state.qp);$('qm').value=Math.abs(state.qm)*1e9;rebuild()};
+$('axisBtn').onclick=()=>{state.px=0;state.pz=0;$('px').value=0;$('pz').value=0;buildVectors();updateUI()};
+$('equatorBtn').onclick=()=>{state.px=0;state.pz=2.2;$('px').value=0;$('pz').value=2.2;buildVectors();updateUI()};
+
+$('reset').onclick=()=>{
+ Object.assign(state,{running:false,paused:false,time:0,speed:1,qp:4e-9,qm:-4e-9,d:4,px:0,pz:1.8,backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false,pulse:0});
+ $('speed').value=1;$('qp').value=4;$('qm').value=4;$('distance').value=4;$('px').value=0;$('pz').value=1.8;
+ applyBackground();applyLighting();setCamera(1);rebuild();updateUI();
+};
+
+$('fullscreenBtn').onclick=toggleFullscreen;$('panelBtn').onclick=()=>$('panel').classList.toggle('hide');
+$('bgBtn').onclick=()=>{state.backgroundIndex=(state.backgroundIndex+1)%3;applyBackground()};
+$('lightBtn').onclick=()=>{state.lightMode=(state.lightMode+1)%3;applyLighting()};
+$('camBtn').onclick=()=>setCamera((state.cameraMode+1)%4);$('autoCamBtn').onclick=()=>state.autoCamera=!state.autoCamera;
+
+// Recording
+const rc=$('recordCanvas'),rctx=rc.getContext('2d');let rec=null,chunks=[],mime='',recStart=0,recTimer=null;
+function bestMime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function drawRec(){const sw=renderer.domElement.width,sh=renderer.domElement.height,dw=rc.width,dh=rc.height,s=Math.max(dw/sw,dh/sh),rw=sw*s,rh=sh*s;rctx.fillStyle='#06131e';rctx.fillRect(0,0,dw,dh);rctx.drawImage(renderer.domElement,(dw-rw)/2,(dh-rh)/2,rw,rh);rctx.fillStyle='rgba(4,12,20,.72)';rctx.fillRect(34,34,1200,115);rctx.fillStyle='#fff';rctx.font='800 30px Segoe UI';rctx.fillText('052 · ĐIỆN TRƯỜNG LƯỠNG CỰC ĐIỆN',58,76);rctx.fillStyle='#ffe075';rctx.font='700 23px Segoe UI';const E=fieldAt(probePos()).e.length();rctx.fillText(`q₊=+${(state.qp*1e9).toFixed(1)} nC · q₋=−${Math.abs(state.qm*1e9).toFixed(1)} nC · d=${state.d.toFixed(1)} m · E=${E.toFixed(2)} N/C`,58,118);rctx.textAlign='center';rctx.font='800 27px Segoe UI';rctx.fillText('Thầy Hùng vật lí',dw/2,dh-34);rctx.textAlign='left'}
+function startRec(){if(rec&&rec.state==='recording')return;mime=bestMime();if(!mime){alert('Trình duyệt chưa hỗ trợ ghi video.');return}chunks=[];const stream=rc.captureStream(60);rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12000000});rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{const ext=mime.includes('mp4')?'mp4':'webm',a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:mime}));a.download=`052_Dien_truong_luong_cuc_dien.${ext}`;a.click();$('recStatus').style.display='none';clearInterval(recTimer)};rec.start(1000);recStart=performance.now();$('recStatus').style.display='block';recTimer=setInterval(()=>{$('recStatus').textContent=`● ĐANG QUAY ${Math.floor((performance.now()-recStart)/1000)} s`},500)}
+$('recordBtn').onclick=startRec;$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=THREE.MathUtils.clamp((now-last)/1000,0,.033);last=now;updatePhysics(dt);updateVisuals();updateUI();controls.update();renderer.render(scene,camera);if(rec&&rec.state==='recording')drawRec()}
+applyBackground();applyLighting();rebuild();setCamera(1);updateUI();requestAnimationFrame(animate);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>

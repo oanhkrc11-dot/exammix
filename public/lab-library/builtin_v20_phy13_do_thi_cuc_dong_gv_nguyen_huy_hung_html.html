@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Đồ thị cực động - GV Nguyễn Huy Hùng</title>
+<style>
+  :root{
+    --bg:#050505;
+    --panel:rgba(15,15,18,.82);
+    --line:#2b2f35;
+    --text:#f5f7fb;
+    --muted:#9ba3ad;
+    --accent:#ff2ea6;
+    --accent2:#3cf2ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--text)}
+  #app{width:100vw;height:100vh;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;padding:14px;background:
+    radial-gradient(circle at 45% 42%,rgba(36,36,44,.34),transparent 40%),
+    linear-gradient(#030303,#070708);}
+  .stage{position:relative;border:1px solid #17191d;border-radius:24px;overflow:hidden;background:#000;box-shadow:0 18px 60px rgba(0,0,0,.5)}
+  canvas{position:absolute;inset:0;width:100%;height:100%}
+  .formula{
+    position:absolute;left:50%;bottom:24px;transform:translateX(-50%);
+    min-width:300px;text-align:center;padding:12px 22px;border:1px solid #6d7580;border-radius:16px;
+    background:rgba(0,0,0,.58);backdrop-filter:blur(10px);font-size:clamp(24px,2.3vw,38px);
+    font-family:"Times New Roman",serif;letter-spacing:.5px;box-shadow:0 10px 30px rgba(0,0,0,.45)
+  }
+  .formula .r{color:var(--accent)}
+  .formula .theta{color:#fff}
+  .badge{
+    position:absolute;left:18px;top:18px;padding:8px 12px;border-radius:999px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);font-size:13px;color:#cbd1d8
+  }
+  .panel{
+    border:1px solid #1a1d22;border-radius:24px;background:var(--panel);padding:18px;
+    display:flex;flex-direction:column;gap:16px;box-shadow:0 18px 50px rgba(0,0,0,.3)
+  }
+  h1{font-size:21px;margin:0 0 2px}
+  .sub{font-size:13px;color:var(--muted);margin:0}
+  .group{padding:14px;border:1px solid #242830;border-radius:18px;background:rgba(255,255,255,.025)}
+  .row{display:grid;grid-template-columns:1fr 72px;gap:10px;align-items:center;margin:10px 0}
+  .row label{font-size:14px;color:#dce1e7}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  input[type=number],select{
+    width:100%;background:#0d0f12;color:#fff;border:1px solid #343944;border-radius:10px;padding:10px 9px;font-size:15px;outline:none
+  }
+  select{margin-top:10px}
+  .buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  button{
+    border:none;border-radius:14px;padding:12px 10px;font-weight:700;font-size:14px;cursor:pointer;color:#fff;
+    background:#171a1f;border:1px solid #30353d;transition:.18s transform,.18s background
+  }
+  button:hover{transform:translateY(-1px);background:#20242a}
+  button.primary{background:linear-gradient(135deg,#ff2ea6,#d7147f);border-color:#ff2ea6}
+  button.cyan{background:linear-gradient(135deg,#18cad7,#1687ff);border-color:#22c9d9}
+  .switches{display:grid;gap:10px}
+  .switch{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+  .switch input{width:18px;height:18px;accent-color:var(--accent)}
+  .tiny{font-size:12px;color:#737b86;margin-top:auto;line-height:1.4}
+  .value{color:#fff;text-align:right;font-variant-numeric:tabular-nums}
+  .live{
+    position:absolute;right:18px;top:18px;padding:8px 12px;border-radius:999px;
+    background:rgba(0,0,0,.5);border:1px solid #2d3138;font-size:13px;color:#dce1e7
+  }
+  @media(max-width:900px){
+    #app{grid-template-columns:1fr;padding:8px}
+    .panel{position:absolute;right:12px;top:12px;width:min(310px,calc(100vw - 24px));z-index:20;max-height:calc(100vh - 24px);overflow:auto}
+    .stage{grid-column:1/-1}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <section class="stage" id="stage">
+    <canvas id="canvas"></canvas>
+    <div class="badge">POLAR MOTION</div>
+    <div class="live" id="live">θ = 0.00 rad</div>
+    <div class="formula"><span class="r" id="formulaText">r = 3 cos(2θ)</span></div>
+  </section>
+
+  <aside class="panel">
+    <div>
+      <h1>Đồ thị cực động</h1>
+      <p class="sub">Vẽ theo thời gian • điểm sáng chạy theo θ</p>
+    </div>
+
+    <div class="group">
+      <label style="font-size:14px;color:#dce1e7">Dạng hàm</label>
+      <select id="mode">
+        <option value="cos">r = a cos(nθ)</option>
+        <option value="sin">r = a sin(nθ)</option>
+      </select>
+
+      <div class="row">
+        <label>Biên độ a</label>
+        <input id="aNum" type="number" min="0.5" max="8" step="0.1" value="3">
+      </div>
+      <input id="aRange" type="range" min="0.5" max="8" step="0.1" value="3">
+
+      <div class="row">
+        <label>Số cánh n</label>
+        <input id="nNum" type="number" min="1" max="12" step="1" value="2">
+      </div>
+      <input id="nRange" type="range" min="1" max="12" step="1" value="2">
+
+      <div class="row">
+        <label>Tốc độ</label>
+        <div class="value" id="speedValue">1.0×</div>
+      </div>
+      <input id="speed" type="range" min="0.2" max="4" step="0.1" value="1">
+    </div>
+
+    <div class="group switches">
+      <div class="switch"><span>Lưới cực</span><input id="gridToggle" type="checkbox" checked></div>
+      <div class="switch"><span>Vệt phát sáng</span><input id="glowToggle" type="checkbox" checked></div>
+      <div class="switch"><span>Đuôi chuyển động</span><input id="tailToggle" type="checkbox" checked></div>
+    </div>
+
+    <div class="buttons">
+      <button class="primary" id="play">Tạm dừng</button>
+      <button id="reset">Vẽ lại</button>
+      <button class="cyan" id="random">Khám phá</button>
+      <button id="full">Toàn màn hình</button>
+    </div>
+
+    <div class="tiny">GV: Nguyễn Huy Hùng<br>Phím Space: chạy/dừng • R: vẽ lại • F: toàn màn hình</div>
+  </aside>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const stage = document.getElementById('stage');
+
+const mode = document.getElementById('mode');
+const aNum = document.getElementById('aNum');
+const aRange = document.getElementById('aRange');
+const nNum = document.getElementById('nNum');
+const nRange = document.getElementById('nRange');
+const speed = document.getElementById('speed');
+const speedValue = document.getElementById('speedValue');
+const gridToggle = document.getElementById('gridToggle');
+const glowToggle = document.getElementById('glowToggle');
+const tailToggle = document.getElementById('tailToggle');
+const playBtn = document.getElementById('play');
+const resetBtn = document.getElementById('reset');
+const randomBtn = document.getElementById('random');
+const fullBtn = document.getElementById('full');
+const formulaText = document.getElementById('formulaText');
+const live = document.getElementById('live');
+
+let W=0,H=0,DPR=1,cx=0,cy=0,scale=1;
+let theta=0;
+let running=true;
+let last=performance.now();
+let points=[];
+
+function resize(){
+  const r=stage.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=Math.floor(r.width); H=Math.floor(r.height);
+  canvas.width=Math.floor(W*DPR); canvas.height=Math.floor(H*DPR);
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  cx=W/2; cy=H/2-10;
+  scale=Math.min(W,H)*0.32/Math.max(parseFloat(aNum.value),1);
+}
+window.addEventListener('resize',resize);
+
+function fn(t){
+  const a=parseFloat(aNum.value);
+  const n=parseInt(nNum.value);
+  return mode.value==='cos' ? a*Math.cos(n*t) : a*Math.sin(n*t);
+}
+function toXY(t){
+  const r=fn(t);
+  return {x:cx+r*Math.cos(t)*scale,y:cy-r*Math.sin(t)*scale};
+}
+function fmtPi(v){
+  const k=Math.round(v*10/Math.PI);
+  if(k===0) return '0';
+  if(k===10) return 'π';
+  if(k===-10) return '-π';
+  const sign=k<0?'-':'';
+  const ak=Math.abs(k);
+  const g=gcd(ak,10);
+  const num=ak/g, den=10/g;
+  if(den===1) return sign+(num===1?'π':num+'π');
+  return sign+(num===1?'π':num+'π')+'/'+den;
+}
+function gcd(a,b){while(b){[a,b]=[b,a%b]}return a||1}
+
+function drawGrid(){
+  if(!gridToggle.checked) return;
+  ctx.save();
+  ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(185,195,210,.18)';
+  ctx.fillStyle='rgba(225,230,238,.65)';
+  ctx.font='12px Segoe UI, Arial';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+
+  const R=Math.min(W,H)*0.32;
+  for(let i=1;i<=4;i++){
+    ctx.beginPath(); ctx.arc(cx,cy,R*i/4,0,Math.PI*2); ctx.stroke();
+  }
+  for(let i=0;i<20;i++){
+    const ang=i*Math.PI/10;
+    const x=cx+R*Math.cos(ang), y=cy-R*Math.sin(ang);
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y); ctx.stroke();
+    const tx=cx+(R+24)*Math.cos(ang), ty=cy-(R+24)*Math.sin(ang);
+    const label=fmtPi(ang<=Math.PI?ang:ang-2*Math.PI);
+    ctx.fillText(label,tx,ty);
+  }
+  ctx.restore();
+}
+
+function drawCurve(){
+  if(points.length<2) return;
+  ctx.save();
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  if(glowToggle.checked){
+    ctx.shadowColor='#ff2ea6';
+    ctx.shadowBlur=18;
+  }
+  ctx.strokeStyle='#ff2ea6';
+  ctx.lineWidth=2.4;
+  ctx.beginPath();
+  const start = tailToggle.checked ? Math.max(0,points.length-1800) : 0;
+  ctx.moveTo(points[start].x,points[start].y);
+  for(let i=start+1;i<points.length;i++) ctx.lineTo(points[i].x,points[i].y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawHead(){
+  const p=toXY(theta);
+  ctx.save();
+  ctx.fillStyle='#ff3aad';
+  ctx.shadowColor='#ff2ea6';
+  ctx.shadowBlur=22;
+  ctx.beginPath(); ctx.arc(p.x,p.y,5.5,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,.16)';
+  ctx.setLineDash([5,7]);
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(p.x,p.y); ctx.stroke();
+  ctx.restore();
+}
+
+function updateFormula(){
+  const a=parseFloat(aNum.value);
+  const n=parseInt(nNum.value);
+  formulaText.textContent=`r = ${a%1===0?a.toFixed(0):a.toFixed(1)} ${mode.value}( ${n}θ )`.replace('( ','(');
+}
+function reset(){
+  theta=0; points=[]; last=performance.now(); updateFormula(); resize();
+}
+function syncA(v){aNum.value=v;aRange.value=v;reset();}
+function syncN(v){nNum.value=v;nRange.value=v;reset();}
+aRange.oninput=()=>syncA(aRange.value);
+aNum.oninput=()=>syncA(aNum.value);
+nRange.oninput=()=>syncN(nRange.value);
+nNum.oninput=()=>syncN(nNum.value);
+mode.onchange=reset;
+speed.oninput=()=>speedValue.textContent=parseFloat(speed.value).toFixed(1)+'×';
+
+playBtn.onclick=()=>{
+  running=!running;
+  playBtn.textContent=running?'Tạm dừng':'Tiếp tục';
+  last=performance.now();
+};
+resetBtn.onclick=reset;
+randomBtn.onclick=()=>{
+  mode.value=Math.random()>.5?'cos':'sin';
+  const n=1+Math.floor(Math.random()*7);
+  const a=(1.5+Math.random()*3.5).toFixed(1);
+  syncN(n); syncA(a); updateFormula();
+};
+fullBtn.onclick=()=>{
+  if(!document.fullscreenElement) stage.requestFullscreen?.();
+  else document.exitFullscreen?.();
+};
+
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();playBtn.click()}
+  if(e.key.toLowerCase()==='r') reset();
+  if(e.key.toLowerCase()==='f') fullBtn.click();
+});
+
+function animate(now){
+  const dt=Math.min((now-last)/1000,.05); last=now;
+  if(running){
+    const omega=1.15*parseFloat(speed.value);
+    const old=theta;
+    theta += omega*dt;
+    const step=.008;
+    for(let t=old;t<=theta;t+=step) points.push(toXY(t));
+    if(points.length>30000) points.splice(0,1000);
+    if(theta>=Math.PI*2){
+      theta=0;
+      points=[];
+    }
+  }
+  ctx.clearRect(0,0,W,H);
+  drawGrid();
+  drawCurve();
+  drawHead();
+  live.textContent=`θ = ${theta.toFixed(2)} rad`;
+  requestAnimationFrame(animate);
+}
+resize(); updateFormula(); requestAnimationFrame(animate);
+</script>
+</body>
+</html>

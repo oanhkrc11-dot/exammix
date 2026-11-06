@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-47 Phản xạ âm - tiếng vang 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#020912;color:#eef8fb}
+#app{display:grid;grid-template-columns:252px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800}.desc{font-size:10.4px;color:#a9c2cd;line-height:1.35}h1{font-size:17px;margin:4px 0 6px;line-height:1.1}
+.ctl{display:grid;grid-template-columns:72px 1fr 64px;gap:5px;align-items:center;margin:5px 0}.ctl label{font-size:9.6px}.ctl output{font-size:9.1px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9.2px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 55% 32%,#123d58 0,#0a263b 38%,#061725 70%,#030b13 100%)}#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label{position:absolute;transform:translate(-50%,-50%);background:rgba(244,250,252,.95);color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9.3px;white-space:nowrap}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10.4px;font-weight:700}
+#hud{position:absolute;right:12px;bottom:12px;z-index:7;display:flex;gap:9px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:7px 9px}.hud span{display:block;font-size:8px;color:#98bac8}.hud b{font-size:10.3px}
+#note{position:absolute;left:12px;bottom:12px;z-index:7;width:480px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.2px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700}.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style></head>
+<body>
+<div id="app"><aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D</div><h1>47 · Phản xạ âm – tiếng vang</h1>
+<p class="desc">Phát một xung âm về phía vách. Xung phản xạ trở lại người quan sát sau một khoảng trễ, từ đó xác định khoảng cách tới vách.</p>
+
+<div class="ctl"><label>Tốc độ mô phỏng</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Biên độ A</label><input id="amp" type="range" min=".2" max="1.2" step=".05" value=".8"><output id="ampOut"></output></div>
+<div class="ctl"><label>Tần số f</label><input id="freq" type="range" min="100" max="1000" step="10" value="400"><output id="freqOut"></output></div>
+<div class="ctl"><label>Vận tốc âm v</label><input id="waveV" type="range" min="300" max="360" step="1" value="343"><output id="waveVOut"></output></div>
+<div class="ctl"><label>Khoảng cách d</label><input id="distance" type="range" min="5" max="80" step="1" value="30"><output id="distanceOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showIncident" type="checkbox" checked> Xung tới</label>
+<label class="check"><input id="showReflected" type="checkbox" checked> Xung phản xạ</label>
+<label class="check"><input id="showPath" type="checkbox" checked> Đường truyền</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị thu</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+</div>
+
+<div class="btns">
+<button id="pulseBtn" class="btn primary">🔊 Phát xung</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resumeBtn" class="btn">▶ Chạy tiếp</button><button id="resetBtn" class="btn">↻ Đặt lại</button>
+<button id="fitBtn" class="btn">⛶ Căn giữa</button><button id="d17Btn" class="btn">d=17 m</button>
+<button id="d34Btn" class="btn">d=34 m</button><button id="d50Btn" class="btn">d=50 m</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div><div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view"><div id="three"></div><div id="labels"></div>
+<div id="formula">Δt = 2d/v &nbsp; · &nbsp; d = vΔt/2</div>
+<div id="hud">
+<div class="hud"><span>d thật</span><b id="dHud"></b></div>
+<div class="hud"><span>Δt dự kiến</span><b id="dtHud"></b></div>
+<div class="hud"><span>Δt đo</span><b id="dtMeasHud"></b></div>
+<div class="hud"><span>d suy ra</span><b id="dCalcHud"></b></div>
+<div class="hud"><span>Trạng thái</span><b id="statusHud"></b></div>
+</div>
+<div id="note">Xung tới màu cyan, xung phản xạ màu cam. Mô hình dùng thời gian truyền khứ hồi của âm trong môi trường đồng nhất: d=vΔt/2. Tiếng vang chỉ được nghe tách biệt khi khoảng trễ đủ lớn; trong mô phỏng, mốc 0,1 s được dùng để minh họa.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id),view=$('view');
+const state={running:true,pulseActive:false,t:0,pulseT:0,speed:1,A:.8,f:400,v:343,d:30,echoArrived:false,measuredDt:null};
+
+const expectedDt=()=>2*state.d/state.v;
+const echoSeparate=()=>expectedDt()>=0.1;
+
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=7;controls.maxDistance=28;controls.minPolarAngle=.4;controls.maxPolarAngle=1.6;
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x172832,4.2));const dl=new THREE.DirectionalLight(0xffffff,4.2);dl.position.set(6,10,8);scene.add(dl);
+const lab=new THREE.Group();scene.add(lab);lab.position.set(0,-.8,0);
+
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(22,12),new THREE.MeshStandardMaterial({color:0x0a1c28,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.65;lab.add(floor);
+const grid=new THREE.GridHelper(22,28,0x2e586a,0x123345);grid.position.y=-2.64;lab.add(grid);
+
+// source/listener at same station
+const stationX=-6;
+const speaker=new THREE.Mesh(new THREE.CylinderGeometry(.48,.65,.55,28),new THREE.MeshStandardMaterial({color:0x61d4ff,emissive:0x174f65,emissiveIntensity:.55,metalness:.15,roughness:.35}));
+speaker.rotation.z=Math.PI/2;speaker.position.set(stationX,0,0);lab.add(speaker);
+
+const listener=new THREE.Group();lab.add(listener);listener.position.set(stationX,-.1,1.0);
+const body=new THREE.Mesh(new THREE.CapsuleGeometry(.25,.8,6,12),new THREE.MeshStandardMaterial({color:0x69e3a6,emissive:0x174b39,emissiveIntensity:.4}));listener.add(body);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.25,18,14),new THREE.MeshStandardMaterial({color:0xf0c79d,roughness:.5}));head.position.y=.78;listener.add(head);
+
+// wall mapped to scene x=+6
+const wall=new THREE.Mesh(new THREE.BoxGeometry(.5,5.5,8),new THREE.MeshStandardMaterial({color:0x6e7d84,metalness:.25,roughness:.7,emissive:0x17262d,emissiveIntensity:.25}));
+wall.position.set(6,0,0);lab.add(wall);
+
+// path
+const pathLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(stationX,.2,0),new THREE.Vector3(6,.2,0)]),new THREE.LineDashedMaterial({color:0xffffff,dashSize:.25,gapSize:.18,transparent:true,opacity:.6}));
+pathLine.computeLineDistances();lab.add(pathLine);
+
+// pulse spheres
+const incident=new THREE.Mesh(new THREE.SphereGeometry(1,36,20),new THREE.MeshBasicMaterial({color:0x63dcff,wireframe:true,transparent:true,opacity:.65}));
+incident.position.set(stationX,0,0);incident.visible=false;lab.add(incident);
+const reflected=new THREE.Mesh(new THREE.SphereGeometry(1,36,20),new THREE.MeshBasicMaterial({color:0xffb45a,wireframe:true,transparent:true,opacity:.65}));
+reflected.position.set(6,0,0);reflected.visible=false;lab.add(reflected);
+
+// graph
+const gc=document.createElement('canvas');gc.width=820;gc.height=340;const gctx=gc.getContext('2d'),gtex=new THREE.CanvasTexture(gc);
+const graphFrame=new THREE.Mesh(new THREE.BoxGeometry(5.2,2.35,.12),new THREE.MeshStandardMaterial({color:0xeaf3f6,roughness:.48}));graphFrame.position.set(3.7,2.35,-2.55);lab.add(graphFrame);
+const graphPlane=new THREE.Mesh(new THREE.PlaneGeometry(4.95,2.12),new THREE.MeshBasicMaterial({map:gtex,side:THREE.DoubleSide}));graphPlane.position.set(3.7,2.35,-2.47);lab.add(graphPlane);
+
+function drawGraph(){
+ gctx.fillStyle='#f8fafb';gctx.fillRect(0,0,gc.width,gc.height);
+ gctx.fillStyle='#263b45';gctx.font='bold 25px Segoe UI';gctx.fillText('TÍN HIỆU TẠI NGƯỜI QUAN SÁT',200,31);
+ gctx.strokeStyle='#d4dfe4';gctx.lineWidth=1;
+ for(let i=0;i<=10;i++){const x=55+i*70;gctx.beginPath();gctx.moveTo(x,50);gctx.lineTo(x,295);gctx.stroke()}
+ gctx.strokeStyle='#667b84';gctx.lineWidth=2;gctx.beginPath();gctx.moveTo(55,190);gctx.lineTo(760,190);gctx.stroke();
+ const Tmax=Math.max(.5,expectedDt()*1.35);
+ const xOf=t=>55+700*Math.min(1,t/Tmax);
+ function pulse(t0,color,amp){
+   const x=xOf(t0),w=18;
+   gctx.strokeStyle=color;gctx.lineWidth=4;gctx.beginPath();
+   for(let k=-40;k<=40;k++){const xx=x+k*.7,yy=190-amp*Math.exp(-k*k/100)*Math.sin(k*.55);k===-40?gctx.moveTo(xx,yy):gctx.lineTo(xx,yy)}gctx.stroke()
+ }
+ pulse(0.02,'#169bd5',70);
+ pulse(expectedDt(),'#e8842f',58);
+ gctx.fillStyle='#50656f';gctx.font='17px Segoe UI';gctx.fillText('t (s)',740,322);
+ gctx.fillText('xung phát',70,85);gctx.fillText('xung vang',xOf(expectedDt())-40,85);
+ gtex.needsUpdate=true
+}
+
+function updatePhysics(dt){
+ if(state.running){state.t+=dt*state.speed;if(state.pulseActive)state.pulseT+=dt*state.speed}
+ if(state.pulseActive && !state.echoArrived && state.pulseT>=expectedDt()){
+   state.echoArrived=true;state.measuredDt=state.pulseT;
+ }
+ if(state.pulseActive && state.pulseT>expectedDt()+.5)state.pulseActive=false;
+}
+
+function updateVisuals(){
+ const total=expectedDt(),half=total/2;
+ if(state.pulseActive || state.pulseT>0){
+   if(state.pulseT<=half){
+     const frac=Math.max(0,Math.min(1,state.pulseT/half));
+     const r=12*frac;
+     incident.scale.setScalar(Math.max(.05,r));incident.material.opacity=.65*(1-.45*frac);
+     incident.visible=$('showIncident').checked;
+     reflected.visible=false;
+   }else{
+     incident.visible=false;
+     const frac=Math.max(0,Math.min(1,(state.pulseT-half)/half));
+     const r=12*frac;
+     reflected.scale.setScalar(Math.max(.05,r));reflected.material.opacity=.65*(1-.45*frac);
+     reflected.visible=$('showReflected').checked;
+   }
+ }else{incident.visible=false;reflected.visible=false}
+ pathLine.visible=$('showPath').checked;grid.visible=$('showGrid').checked;
+ graphFrame.visible=graphPlane.visible=$('showGraph').checked;
+ drawGraph();
+}
+
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('ampOut').value=state.A.toFixed(2);$('freqOut').value=state.f.toFixed(0)+' Hz';$('waveVOut').value=state.v.toFixed(0)+' m/s';$('distanceOut').value=state.d.toFixed(0)+' m';
+ $('dHud').textContent=state.d.toFixed(1)+' m';$('dtHud').textContent=expectedDt().toFixed(3)+' s';
+ $('dtMeasHud').textContent=state.measuredDt===null?'—':state.measuredDt.toFixed(3)+' s';
+ $('dCalcHud').textContent=state.measuredDt===null?'—':(state.v*state.measuredDt/2).toFixed(1)+' m';
+ let s='Chưa phát';
+ if(state.pulseActive && state.pulseT<expectedDt()/2)s='Xung đang tới vách';
+ else if(state.pulseActive && !state.echoArrived)s='Xung phản xạ đang về';
+ else if(state.echoArrived)s=echoSeparate()?'Đã nhận tiếng vang':'Phản xạ chồng gần âm gốc';
+ $('statusHud').textContent=s;
+}
+
+function sync(resetPulse=true){
+ state.speed=+$('speed').value;state.A=+$('amp').value;state.f=+$('freq').value;state.v=+$('waveV').value;state.d=+$('distance').value;
+ if(resetPulse){state.pulseActive=false;state.pulseT=0;state.echoArrived=false;state.measuredDt=null}
+ updateUI()
+}
+['amp','freq','waveV','distance'].forEach(id=>$(id).addEventListener('input',()=>sync(true)));
+$('speed').addEventListener('input',()=>sync(false));
+
+$('pulseBtn').onclick=()=>{state.running=true;state.pulseActive=true;state.pulseT=0;state.echoArrived=false;state.measuredDt=null};
+$('pauseBtn').onclick=()=>state.running=false;$('resumeBtn').onclick=()=>state.running=true;
+function setD(d){$('distance').value=d;sync(true)}
+$('d17Btn').onclick=()=>setD(17);$('d34Btn').onclick=()=>setD(34);$('d50Btn').onclick=()=>setD(50);
+$('resetBtn').onclick=()=>{
+ Object.assign(state,{running:true,pulseActive:false,t:0,pulseT:0,speed:1,A:.8,f:400,v:343,d:30,echoArrived:false,measuredDt:null});
+ for(const [id,v] of [['speed',1],['amp',.8],['freq',400],['waveV',343],['distance',30]])$(id).value=v;
+ fit();updateUI()
+};
+$('fitBtn').onclick=fit;
+$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fit()},80));
+
+const labels=$('labels');function mk(t){const e=document.createElement('div');e.className='label';e.textContent=t;labels.appendChild(e);return e}
+const lSource=mk('Nguồn + người quan sát'),lWall=mk('Vách phản xạ'),lEcho=mk('Đường đi khứ hồi 2d');
+function project(el,p){const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=(q.z>1||!$('showLabels').checked)?'none':'block'}
+
+function fit(){controls.target.set(.2,.1,0);camera.position.set(13.2,6.3,17.5);camera.lookAt(controls.target);controls.update()}
+function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}
+window.addEventListener('resize',()=>{resize();fit()});
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{
+ if(!renderer.domElement.captureStream||!window.MediaRecorder)return;
+ const m=mime();rec=new MediaRecorder(renderer.domElement.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});
+ chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`047_Phan_xa_am_tieng_vang_3D.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};
+ rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false
+};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+resize();fit();updateUI();
+let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);
+ const dt=Math.min(.033,(now-last)/1000);last=now;
+ updatePhysics(dt);updateVisuals();updateUI();
+ project(lSource,new THREE.Vector3(stationX,1.5,.8));project(lWall,new THREE.Vector3(6,2.0,.5));project(lEcho,new THREE.Vector3(0,1.0,-.6));
+ controls.update();renderer.render(scene,camera)
+}
+requestAnimationFrame(animate);
+</script></body></html>

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mô phỏng 4 thí nghiệm rơi trong không khí</title>
+<style>
+:root{
+  --bg:#06080d;
+  --panel:#0d1320;
+  --panel2:#121a2b;
+  --line:#283349;
+  --text:#e9eef9;
+  --muted:#9fb0ce;
+  --accent:#60a5fa;
+  --green:#34d399;
+  --orange:#f59e0b;
+  --red:#f87171;
+  --purple:#a78bfa;
+  --yellow:#facc15;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:radial-gradient(circle at top,#10182a 0%, #080b12 45%, #04060a 100%);
+  color:var(--text);
+}
+.app{max-width:1500px;margin:auto;padding:16px}
+.header{
+  background:linear-gradient(135deg,#0f172a,#1d2740);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:16px 18px;
+  box-shadow:0 10px 28px rgba(0,0,0,.35);
+}
+.header h1{margin:0;font-size:clamp(22px,2.5vw,34px)}
+.header p{margin:8px 0 0;color:#c7d3ea;line-height:1.55}
+.toolbar{
+  margin-top:14px;
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;
+}
+button{
+  border:0;border-radius:12px;padding:11px 10px;
+  color:white;font-weight:800;cursor:pointer;
+  box-shadow:0 6px 12px rgba(0,0,0,.24);
+}
+.blue{background:#2563eb}.green{background:#059669}.orange{background:#d97706}.purple{background:#7c3aed}.gray{background:#475569}
+.infoBar{
+  margin-top:12px;
+  background:rgba(13,19,32,.92);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px 14px;
+  color:#d6e0f2;
+  line-height:1.55;
+}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-top:14px;
+}
+.card{
+  background:linear-gradient(180deg,var(--panel),var(--panel2));
+  border:1px solid var(--line);
+  border-radius:18px;
+  box-shadow:0 12px 28px rgba(0,0,0,.28);
+  overflow:hidden;
+}
+.cardHead{
+  padding:12px 14px;
+  border-bottom:1px solid var(--line);
+}
+.cardHead h3{margin:0;color:#e8eefb;font-size:19px}
+.cardHead p{margin:6px 0 0;color:var(--muted);line-height:1.45;font-size:13px}
+.dropZone{
+  position:relative;
+  height:560px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
+    repeating-linear-gradient(180deg, rgba(255,255,255,.035) 0 1px, transparent 1px 56px),
+    linear-gradient(180deg,#020407,#03060d 60%,#0a0f18 100%);
+  overflow:hidden;
+}
+.dropZone::before{
+  content:"";
+  position:absolute;left:0;right:0;top:36px;height:2px;
+  background:linear-gradient(90deg,transparent,#8fb7ff 10%,#8fb7ff 90%,transparent);
+  opacity:.75;
+}
+.dropZone::after{
+  content:"";
+  position:absolute;left:0;right:0;bottom:28px;height:4px;
+  background:linear-gradient(90deg,transparent,#9aa4b2 8%,#9aa4b2 92%,transparent);
+  box-shadow:0 0 16px rgba(255,255,255,.12);
+}
+.scaleMark{
+  position:absolute;left:8px;color:#8ea2c6;font-size:11px;font-weight:700;opacity:.8;
+}
+.labelTop{
+  position:absolute;top:8px;right:10px;
+  background:#0f172ae6;border:1px solid #364155;border-radius:999px;
+  padding:5px 9px;font-size:12px;color:#dce7fa;font-weight:800
+}
+.localDropBtn{
+  position:absolute;
+  top:54px;
+  transform:translateX(-50%);
+  z-index:6;
+  border:1px solid #35507d;
+  border-radius:999px;
+  padding:8px 12px;
+  font-size:12px;
+  font-weight:800;
+  color:#fff;
+  background:linear-gradient(135deg,#1d4ed8,#2563eb);
+  box-shadow:0 8px 16px rgba(0,0,0,.28);
+  cursor:pointer;
+}
+.localDropBtn:hover{filter:brightness(1.08)}
+.localDropBtn:active{transform:translateX(-50%) scale(.98)}
+.object{
+  position:absolute;
+  transform:translate(-50%,-50%);
+  z-index:3;
+}
+.objLabel{
+  position:absolute;
+  transform:translate(-50%,-50%);
+  white-space:nowrap;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#ffffff0d;
+  border:1px solid #334155;
+  color:#e8eefb;
+  font-size:12px;
+  font-weight:700;
+  backdrop-filter:blur(2px);
+}
+.trail{
+  position:absolute;
+  width:3px;
+  border-radius:999px;
+  background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.42),rgba(255,255,255,0));
+  opacity:.5;
+  pointer-events:none;
+}
+.status{
+  padding:10px 14px;
+  border-top:1px solid var(--line);
+  color:#d7e0f2;
+  line-height:1.5;
+  font-size:14px;
+}
+.badge{
+  display:inline-block;margin-right:8px;margin-bottom:6px;
+  padding:4px 9px;border-radius:999px;font-size:12px;font-weight:800;
+  background:#172033;border:1px solid #34415a;color:#dce8fc;
+}
+.legend{
+  display:flex;flex-wrap:wrap;gap:7px;margin-top:8px
+}
+.legend span{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 8px;border-radius:999px;background:#ffffff08;border:1px solid #334155;
+  font-size:12px;color:#dce7fa
+}
+.dot{width:12px;height:12px;border-radius:50%}
+.conclusion{
+  margin-top:14px;
+  background:#0d1320;border:1px solid var(--line);border-radius:16px;padding:13px 14px;line-height:1.6
+}
+.conclusion h3{margin:0 0 8px}
+@media(max-width:980px){
+  .grid{grid-template-columns:1fr}
+  .toolbar{grid-template-columns:1fr 1fr}
+}
+@media(max-width:560px){
+  .toolbar{grid-template-columns:1fr}
+  .app{padding:8px}
+  .dropZone{height:520px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Mô phỏng 4 khung thí nghiệm rơi trong không khí</h1>
+    <p>Nền đen, độ cao đủ lớn để quan sát rõ sự khác nhau khi rơi. Gồm 3 thí nghiệm đúng theo nội dung bài học và 1 khung tổng hợp để so sánh trực quan.</p>
+  </div>
+
+  <div class="toolbar">
+    <button class="blue" id="playAllBtn">▶ Chạy tất cả</button>
+    <button class="green" id="pauseBtn">⏸ Tạm dừng</button>
+    <button class="orange" id="resetBtn">↻ Làm lại</button>
+    <button class="purple" id="replayBtn">🔁 Chạy lại từ đầu</button>
+    <button class="gray" id="dropOneBtn">⏭ Thả từng giây</button>
+  </div>
+
+  <div class="infoBar">
+    <b>Lưu ý sư phạm:</b> Các vật được thả từ <b>cùng độ cao</b>. Mô phỏng có xét <b>lực cản không khí</b> theo mức độ khác nhau để học sinh quan sát:
+    lá và giấy phẳng rơi chậm hơn nhiều; giấy vo tròn rơi nhanh hơn giấy phẳng; hai viên bi cùng kích thước nhưng khác chất liệu rơi gần như giống nhau.
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="conclusion">
+    <h3>Nhận xét rút ra</h3>
+    <div>• <b>TN1:</b> Viên bi rơi nhanh hơn chiếc lá vì lực cản không khí tác dụng lên lá tương đối lớn hơn nhiều.</div>
+    <div>• <b>TN2:</b> Tờ giấy vo tròn rơi nhanh hơn tờ giấy để nguyên vì diện tích cản gió nhỏ hơn.</div>
+    <div>• <b>TN3:</b> Hai viên bi cùng kích thước (sắt và thủy tinh) rơi gần như giống nhau trong không khí; chênh lệch rất nhỏ.</div>
+    <div>• <b>Kết luận chung:</b> Trong không khí, sự rơi của vật phụ thuộc mạnh vào <b>hình dạng</b> và <b>mức độ cản không khí</b>. Với các vật gọn, cùng kích thước, lực cản không khí ít ảnh hưởng hơn nên chúng rơi gần giống nhau.</div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const cardData = [
+    {
+      title: "TN1: Viên bi và chiếc lá",
+      desc: "Thả một viên bi và một chiếc lá từ cùng độ cao.",
+      id: "exp1",
+      summary: "Quan sát: viên bi chạm đất trước, lá rơi chậm và lượn.",
+      items: [
+        {name:"Viên bi", type:"ball", color:"#60a5fa", x:34, size:18, terminal:17.5, flutter:0, startDelay:0},
+        {name:"Chiếc lá", type:"leaf", color:"#34d399", x:66, size:30, terminal:3.6, flutter:20, startDelay:0}
+      ]
+    },
+    {
+      title: "TN2: Giấy vo tròn và giấy để nguyên",
+      desc: "Hai tờ giấy giống nhau: một tờ vo tròn, một tờ để nguyên.",
+      id: "exp2",
+      summary: "Quan sát: giấy vo tròn rơi nhanh hơn giấy phẳng.",
+      items: [
+        {name:"Giấy vo tròn", type:"crumpled", color:"#f59e0b", x:34, size:20, terminal:12.5, flutter:4, startDelay:0},
+        {name:"Giấy để nguyên", type:"flatpaper", color:"#f87171", x:66, size:34, terminal:4.6, flutter:17, startDelay:0}
+      ]
+    },
+    {
+      title: "TN3: Bi sắt và bi thủy tinh",
+      desc: "Hai viên bi có cùng kích thước: một bằng sắt, một bằng thủy tinh.",
+      id: "exp3",
+      summary: "Quan sát: hai viên bi rơi gần như đồng thời.",
+      items: [
+        {name:"Bi sắt", type:"iron", color:"#cbd5e1", x:34, size:20, terminal:18.0, flutter:0, startDelay:0},
+        {name:"Bi thủy tinh", type:"glass", color:"#a78bfa", x:66, size:20, terminal:16.9, flutter:0, startDelay:0}
+      ]
+    },
+    {
+      title: "Khung 4: Tổng hợp cả ba thí nghiệm",
+      desc: "So sánh nhanh cả 6 vật trong cùng một khung quan sát.",
+      id: "exp4",
+      summary: "Quan sát tổng hợp: vật gọn rơi nhanh hơn vật có diện tích cản lớn.",
+      items: [
+        {name:"Bi", type:"ball", color:"#60a5fa", x:12, size:15, terminal:17.5, flutter:0, startDelay:0},
+        {name:"Lá", type:"leaf", color:"#34d399", x:27, size:26, terminal:3.6, flutter:18, startDelay:0},
+        {name:"Giấy vo", type:"crumpled", color:"#f59e0b", x:42, size:17, terminal:12.5, flutter:3, startDelay:0},
+        {name:"Giấy phẳng", type:"flatpaper", color:"#f87171", x:57, size:28, terminal:4.6, flutter:15, startDelay:0},
+        {name:"Sắt", type:"iron", color:"#cbd5e1", x:72, size:16, terminal:18.0, flutter:0, startDelay:0},
+        {name:"Thủy tinh", type:"glass", color:"#a78bfa", x:87, size:16, terminal:16.9, flutter:0, startDelay:0}
+      ]
+    }
+  ];
+
+  const grid = document.getElementById('grid');
+  const state = {
+    running:false,
+    paused:false,
+    lastTime:null,
+    raf:null,
+    stepMode:false,
+    stepCounter:0,
+    singleExperiment:null
+  };
+
+  function makeShape(item){
+    const wrap = document.createElement('div');
+    wrap.className = 'object';
+    wrap.style.width = (item.size+10) + 'px';
+    wrap.style.height = (item.size+10) + 'px';
+    let svg = '';
+    if(item.type === 'ball' || item.type === 'iron' || item.type === 'glass'){
+      const fill = item.type==='iron'
+        ? 'url(#ironGrad)'
+        : item.type==='glass'
+          ? 'url(#glassGrad)'
+          : 'url(#ballGrad)';
+      svg = `
+      <svg viewBox="0 0 60 60" width="100%" height="100%">
+        <defs>
+          <radialGradient id="ballGrad" cx="35%" cy="30%">
+            <stop offset="0%" stop-color="#d7ebff"/>
+            <stop offset="38%" stop-color="${item.color}"/>
+            <stop offset="100%" stop-color="#1e3a5f"/>
+          </radialGradient>
+          <radialGradient id="ironGrad" cx="35%" cy="30%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="35%" stop-color="#d7dee7"/>
+            <stop offset="100%" stop-color="#3f4b58"/>
+          </radialGradient>
+          <radialGradient id="glassGrad" cx="35%" cy="30%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="35%" stop-color="#dac9ff"/>
+            <stop offset="100%" stop-color="#5c4d86"/>
+          </radialGradient>
+        </defs>
+        <circle cx="30" cy="30" r="21" fill="${fill}" stroke="rgba(255,255,255,.45)" stroke-width="2"></circle>
+      </svg>`;
+    } else if(item.type === 'leaf'){
+      svg = `
+      <svg viewBox="0 0 90 90" width="100%" height="100%">
+        <path d="M45 12 C67 18, 79 40, 73 58 C67 75, 48 79, 36 70 C19 57, 17 29, 45 12Z" fill="#22c55e" stroke="#14532d" stroke-width="3"></path>
+        <path d="M45 16 C45 33, 42 46, 33 67" stroke="#14532d" stroke-width="3" fill="none"></path>
+      </svg>`;
+    } else if(item.type === 'crumpled'){
+      svg = `
+      <svg viewBox="0 0 70 70" width="100%" height="100%">
+        <path d="M19 18 L37 12 L52 20 L57 37 L47 54 L28 57 L14 46 L12 30 Z" fill="#fde68a" stroke="#a16207" stroke-width="3"></path>
+        <path d="M24 21 L37 34 L50 24 M20 39 L37 34 L45 49 M30 54 L30 29" stroke="#ca8a04" stroke-width="2.5" fill="none"></path>
+      </svg>`;
+    } else if(item.type === 'flatpaper'){
+      svg = `
+      <svg viewBox="0 0 95 95" width="100%" height="100%">
+        <rect x="18" y="18" width="58" height="46" rx="5" fill="#fecaca" stroke="#991b1b" stroke-width="3" transform="rotate(-10 47 41)"></rect>
+        <line x1="28" y1="30" x2="62" y2="24" stroke="#b91c1c" stroke-width="2"></line>
+        <line x1="30" y1="40" x2="64" y2="34" stroke="#b91c1c" stroke-width="2"></line>
+      </svg>`;
+    }
+    wrap.innerHTML = svg;
+    return wrap;
+  }
+
+  function createCard(data){
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="cardHead">
+        <h3>${data.title}</h3>
+        <p>${data.desc}</p>
+        <div class="legend"></div>
+      </div>
+      <div class="dropZone" id="${data.id}">
+        <div class="labelTop">Thả từ cùng độ cao</div>
+        <button class="localDropBtn">Thả riêng thí nghiệm này</button>
+      </div>
+      <div class="status">
+        <div class="badge">Đủ độ cao để quan sát</div>
+        <div class="badge">Nền đen</div>
+        ${data.summary}
+      </div>
+    `;
+
+    const legend = card.querySelector('.legend');
+    const zone = card.querySelector('.dropZone');
+    const localBtn = card.querySelector('.localDropBtn');
+
+    for(let i=0;i<9;i++){
+      const m = document.createElement('div');
+      m.className = 'scaleMark';
+      m.style.top = (36 + i*56 - 7) + 'px';
+      m.textContent = (8-i) + ' m';
+      zone.appendChild(m);
+    }
+
+    data.items = data.items.map((item, idx) => {
+      const obj = makeShape(item);
+      const label = document.createElement('div');
+      label.className = 'objLabel';
+      label.textContent = item.name;
+
+      const trail = document.createElement('div');
+      trail.className = 'trail';
+      trail.style.left = item.x + '%';
+
+      zone.appendChild(trail);
+      zone.appendChild(obj);
+      zone.appendChild(label);
+
+      const lg = document.createElement('span');
+      lg.innerHTML = `<span class="dot" style="background:${item.color}"></span>${item.name}`;
+      legend.appendChild(lg);
+
+      return {
+        ...item,
+        el: obj,
+        labelEl: label,
+        trailEl: trail,
+        y: 36,
+        vy: 0,
+        done:false,
+        angle:0,
+        idx
+      };
+    });
+
+    data.zone = zone;
+    data.localBtn = localBtn;
+    data.height = 560;
+
+    // đặt nút thả ở gần vị trí 2 vật (hoặc giữa các vật trong khung tổng hợp)
+    const avgX = data.items.reduce((s,it)=>s+it.x,0)/data.items.length;
+    data.localBtn.style.left = avgX + '%';
+
+    data.localBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetExperiment(data);
+      playOneExperiment(data);
+    });
+
+    resetExperiment(data);
+    return card;
+  }
+
+  function resetExperiment(exp){
+    exp.items.forEach(item => {
+      item.y = 36;
+      item.vy = 0;
+      item.done = false;
+      item.angle = 0;
+      placeItem(exp, item);
+    });
+  }
+
+  function placeItem(exp,item){
+    const zoneH = exp.zone.clientHeight || exp.height;
+    const ground = zoneH - 34;
+    const xPx = exp.zone.clientWidth * item.x / 100;
+    const flutterOffset = item.flutter ? Math.sin(item.angle) * item.flutter : 0;
+    const rot = item.flutter ? Math.sin(item.angle*0.8) * 18 : 0;
+    item.el.style.left = `calc(${item.x}% + ${flutterOffset}px)`;
+    item.el.style.top = `${item.y}px`;
+    item.el.style.transform = `translate(-50%,-50%) rotate(${rot}deg)`;
+
+    item.labelEl.style.left = `calc(${item.x}% + ${flutterOffset}px)`;
+    item.labelEl.style.top = `${Math.max(18, item.y - 28)}px`;
+
+    const trailTop = Math.max(40, item.y - 70);
+    item.trailEl.style.left = `${xPx + flutterOffset}px`;
+    item.trailEl.style.top = `${trailTop}px`;
+    item.trailEl.style.height = `${Math.max(0, Math.min(80, item.y - 40))}px`;
+
+    if(item.y >= ground){
+      item.done = true;
+      item.y = ground;
+      item.vy = 0;
+      item.labelEl.style.top = `${ground - 24}px`;
+    }
+  }
+
+  function updateExperiment(exp, dt){
+    const zoneH = exp.zone.clientHeight || exp.height;
+    const ground = zoneH - 34;
+    const g = 14; // gia tốc mô phỏng
+    exp.items.forEach(item => {
+      if(item.done) return;
+      // cản không khí đơn giản: tiến gần vận tốc giới hạn
+      item.vy += (g * (1 - item.vy / item.terminal)) * dt;
+      item.y += item.vy * 38 * dt;
+      item.angle += dt * (2.2 + item.flutter*0.07);
+      if(item.y >= ground){ item.y = ground; item.done = true; item.vy = 0; }
+      placeItem(exp, item);
+    });
+  }
+
+  const experiments = cardData.map(data => {
+    const card = createCard(data);
+    grid.appendChild(card);
+    return data;
+  });
+
+  function playOneExperiment(exp){
+    exp.items.forEach(item => {
+      item.done = false;
+    });
+    state.running = true;
+    state.paused = false;
+    state.lastTime = null;
+    state.stepMode = false;
+    state.stepCounter = 0;
+    state.singleExperiment = null;
+    state.singleExperiment = exp;
+    document.getElementById('pauseBtn').textContent = '⏸ Tạm dừng';
+    if(state.raf) cancelAnimationFrame(state.raf);
+    state.raf = requestAnimationFrame(animate);
+  }
+
+  function resetAll(){
+    experiments.forEach(resetExperiment);
+    state.running = false;
+    state.paused = false;
+    state.lastTime = null;
+    state.stepMode = false;
+    state.stepCounter = 0;
+    state.singleExperiment = null;
+    document.getElementById('pauseBtn').textContent = '⏸ Tạm dừng';
+    if(state.raf) cancelAnimationFrame(state.raf);
+    state.raf = null;
+  }
+
+  function animate(ts){
+    if(!state.running) return;
+    if(state.paused){
+      state.lastTime = ts;
+      state.raf = requestAnimationFrame(animate);
+      return;
+    }
+    if(state.lastTime == null) state.lastTime = ts;
+    const dt = Math.min(0.035, (ts - state.lastTime)/1000);
+    state.lastTime = ts;
+
+    const targetList = state.singleExperiment ? [state.singleExperiment] : experiments;
+    targetList.forEach(exp => updateExperiment(exp, dt));
+
+    if(state.stepMode){
+      state.stepCounter += dt;
+      if(state.stepCounter >= 1){
+        state.running = false;
+        state.stepMode = false;
+        state.stepCounter = 0;
+        return;
+      }
+    }
+
+    const checkList = state.singleExperiment ? [state.singleExperiment] : experiments;
+    const allDone = checkList.every(exp => exp.items.every(it => it.done));
+    if(!allDone){
+      state.raf = requestAnimationFrame(animate);
+    } else {
+      state.running = false;
+    }
+  }
+
+  function playAll(stepMode=false){
+    state.singleExperiment = null;
+    state.running = true;
+    state.paused = false;
+    state.lastTime = null;
+    state.stepMode = stepMode;
+    state.stepCounter = 0;
+    document.getElementById('pauseBtn').textContent = '⏸ Tạm dừng';
+    if(state.raf) cancelAnimationFrame(state.raf);
+    state.raf = requestAnimationFrame(animate);
+  }
+
+  document.getElementById('playAllBtn').addEventListener('click', () => playAll(false));
+  document.getElementById('replayBtn').addEventListener('click', () => { resetAll(); playAll(false); });
+  document.getElementById('resetBtn').addEventListener('click', resetAll);
+  document.getElementById('dropOneBtn').addEventListener('click', () => playAll(true));
+  document.getElementById('pauseBtn').addEventListener('click', () => {
+    if(!state.running){
+      playAll(false);
+      return;
+    }
+    state.paused = !state.paused;
+    document.getElementById('pauseBtn').textContent = state.paused ? '▶ Tiếp tục' : '⏸ Tạm dừng';
+  });
+
+  window.addEventListener('resize', () => experiments.forEach(exp => exp.items.forEach(item => placeItem(exp,item))));
+})();
+<\/script>
+</body>
+</html>

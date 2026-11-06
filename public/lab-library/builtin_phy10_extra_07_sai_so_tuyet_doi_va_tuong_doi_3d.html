@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Sai số tuyệt đối và sai số tương đối</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#020812;--panel:#071725;--cyan:#64ddff;--yellow:#ffda69;
+  --green:#7fffc2;--red:#ff8585;--text:#eefaff;--muted:#9bb9ca;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#020812;color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:288px;min-width:270px;max-width:300px;height:100%;overflow:auto;padding:10px;
+  background:linear-gradient(180deg,#081a2a,#04101b);
+  border-right:1px solid rgba(100,221,255,.22);z-index:20
+}
+#view{position:relative;flex:1;height:100%;overflow:hidden;min-width:0}
+.title{font-weight:800;font-size:13px;letter-spacing:.035em}
+.kicker{font-size:9px;color:var(--muted);margin-top:3px}
+.simTitle{font-size:15px;color:var(--cyan);font-weight:800;margin:8px 0 5px;text-transform:uppercase}
+.desc{font-size:10.5px;line-height:1.34;color:#cfe5f2}
+.section{margin-top:7px;padding:8px;border:1px solid rgba(100,221,255,.16);border-radius:9px;background:linear-gradient(180deg,rgba(13,36,55,.92),rgba(6,21,34,.92))}
+.section h3{margin:0 0 6px;font-size:10px;color:#b7edff;text-transform:uppercase;letter-spacing:.05em}
+.control{margin:7px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px}
+.row label{font-size:10.5px;font-weight:700}
+.value{font-size:10.5px;color:var(--yellow);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:16px;accent-color:#55cffa}
+.check{display:flex;align-items:center;gap:6px;font-size:10.5px;margin:5px 0}
+.check input{accent-color:#55cffa}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}
+button{min-height:34px;border:1px solid rgba(120,220,255,.20);border-radius:8px;padding:6px 5px;background:#10314b;color:#fff;font-weight:700;font-size:10.5px;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+#measureBtn{background:#17683f}
+#batchBtn{background:#4a5520}
+#resetBtn{background:#593549}
+.note{font-size:9.5px;line-height:1.38;color:#b7cede}
+#resultBox{padding:7px;border-radius:8px;background:#06131f;border:1px solid rgba(100,221,255,.13);font-size:10.5px;line-height:1.42}
+.good{color:var(--green);font-weight:700}
+.warn{color:var(--yellow);font-weight:700}
+.bad{color:var(--red);font-weight:700}
+#info{
+  position:absolute;top:12px;right:12px;width:280px;padding:9px 11px;border-radius:11px;
+  background:rgba(4,15,25,.92);border:1px solid rgba(100,221,255,.26);z-index:10;
+  backdrop-filter:blur(4px);font-size:11px;pointer-events:none
+}
+#info .head{font-size:10px;text-transform:uppercase;color:#b8efff;font-weight:800;margin-bottom:5px}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-variant-numeric:tabular-nums}
+#credit{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);color:#ffdc70;font-size:16px;font-weight:800;text-shadow:0 0 12px rgba(255,220,112,.28);z-index:7;pointer-events:none}
+#tooltip{position:absolute;display:none;z-index:30;pointer-events:none;padding:7px 9px;border-radius:8px;background:rgba(4,14,23,.96);border:1px solid rgba(100,219,255,.3);font-size:10px;line-height:1.35;color:#eefaff}
+.label3d{padding:3px 5px;border-radius:7px;background:rgba(4,14,23,.8);border:1px solid rgba(100,219,255,.22);font-size:10px;font-weight:700;color:#e8f8ff;white-space:nowrap}
+.tableWrap{max-height:165px;overflow:auto;border:1px solid rgba(100,221,255,.13);border-radius:7px}
+table{width:100%;border-collapse:collapse;font-size:9.5px}
+th,td{padding:5px;border-bottom:1px solid rgba(100,221,255,.10);text-align:center}
+th{position:sticky;top:0;background:#0c263a;color:#bdeeff}
+#chart{width:100%;height:128px;display:block;background:#06131f;border-radius:7px}
+@media(max-width:1000px){#panel{width:265px;min-width:265px}#info{width:245px}#credit{font-size:14px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+    <div class="kicker">ĐO LƯỜNG · SAI SỐ</div>
+    <div class="simTitle">07. Sai số tuyệt đối & tương đối</div>
+    <div class="desc">
+      Thực hiện nhiều phép đo cùng một đại lượng, tính giá trị trung bình,
+      sai số tuyệt đối trung bình và sai số tương đối.
+    </div>
+
+    <div class="section">
+      <h3>Thiết lập</h3>
+      <div class="control">
+        <div class="row"><label>Giá trị thật</label><span class="value" id="trueText">10.00 cm</span></div>
+        <input id="trueSlider" type="range" min="5.00" max="20.00" step="0.05" value="10.00">
+      </div>
+      <div class="control">
+        <div class="row"><label>Mức nhiễu</label><span class="value" id="noiseText">0.20 cm</span></div>
+        <input id="noiseSlider" type="range" min="0.02" max="0.80" step="0.01" value="0.20">
+      </div>
+      <div class="control">
+        <div class="row"><label>ĐCNN</label><span class="value" id="resText">0.10 cm</span></div>
+        <input id="resSlider" type="range" min="0" max="2" step="1" value="1">
+      </div>
+      <div class="check"><input id="includeInstrument" type="checkbox" checked><label for="includeInstrument">Cộng sai số dụng cụ</label></div>
+    </div>
+
+    <div class="section">
+      <h3>Thao tác</h3>
+      <div class="buttons">
+        <button id="measureBtn">📏 Đo 1 lần</button>
+        <button id="batchBtn">⚡ Đo 5 lần</button>
+        <button id="undoBtn">↶ Xóa lần cuối</button>
+        <button id="clearBtn">Xóa số liệu</button>
+        <button id="fitBtn">⛶ Fit</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Kết quả</h3>
+      <div id="resultBox">Chưa có số liệu.</div>
+    </div>
+
+    <div class="section">
+      <h3>Đồ thị sai lệch</h3>
+      <canvas id="chart"></canvas>
+    </div>
+
+    <div class="section">
+      <h3>Bảng số liệu</h3>
+      <div class="tableWrap">
+        <table>
+          <thead><tr><th>Lần</th><th>xᵢ</th><th>|xᵢ−x̄|</th></tr></thead>
+          <tbody id="dataBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Công thức</h3>
+      <div class="note">
+        x̄ = (x₁ + x₂ + ... + xₙ)/n<br>
+        Δx̄ = (Σ|xᵢ − x̄|)/n<br>
+        Δx = Δx̄ + Δdc (nếu tính sai số dụng cụ)<br>
+        δ = Δx/|x̄| × 100%
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="info">
+      <div class="head">Thông số tức thời</div>
+      <div class="infoGrid">
+        <span>Số lần đo</span><b id="nInfo">0</b>
+        <span>Giá trị thật</span><b id="trueInfo">10.00 cm</b>
+        <span>Giá trị TB x̄</span><b id="meanInfo">—</b>
+        <span>Δx̄</span><b id="madInfo">—</b>
+        <span>Δdc</span><b id="instInfo">0.05 cm</b>
+        <span>Δx</span><b id="absInfo">—</b>
+        <span>δ</span><b id="relInfo">—</b>
+      </div>
+    </div>
+    <div id="tooltip"></div>
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $=id=>document.getElementById(id);
+const view=$('view');
+const trueSlider=$('trueSlider'),noiseSlider=$('noiseSlider'),resSlider=$('resSlider');
+const includeInstrument=$('includeInstrument');
+const RES=[0.01,0.10,0.50];
+
+const state={
+  trueValue:10,
+  noise:.20,
+  resolution:.10,
+  data:[]
+};
+
+function gaussian(){
+  let u=0,v=0;
+  while(u===0)u=Math.random();
+  while(v===0)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function quantize(x){return Math.round(x/state.resolution)*state.resolution;}
+function mean(){
+  if(!state.data.length)return NaN;
+  return state.data.reduce((s,x)=>s+x,0)/state.data.length;
+}
+function mad(){
+  const m=mean();
+  if(!Number.isFinite(m))return NaN;
+  return state.data.reduce((s,x)=>s+Math.abs(x-m),0)/state.data.length;
+}
+function instErr(){return state.resolution/2;}
+function absErr(){
+  const m=mad();
+  if(!Number.isFinite(m))return NaN;
+  return m+(includeInstrument.checked?instErr():0);
+}
+function relErr(){
+  const m=mean(),a=absErr();
+  return Number.isFinite(m)&&m!==0 ? a/Math.abs(m)*100 : NaN;
+}
+
+/* Scene */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x020812);
+scene.fog=new THREE.Fog(0x020812,18,42);
+
+const camera=new THREE.PerspectiveCamera(45,view.clientWidth/view.clientHeight,.1,100);
+camera.position.set(11,7,14);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.07;
+controls.minDistance=7;
+controls.maxDistance=30;
+controls.minPolarAngle=.10;
+controls.maxPolarAngle=Math.PI*.48;
+controls.target.set(0,.2,0);
+
+scene.add(new THREE.HemisphereLight(0xa8e7ff,0x142331,1.25));
+const light=new THREE.DirectionalLight(0xffffff,1.3);
+light.position.set(8,14,10);light.castShadow=true;scene.add(light);
+
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(38,24),
+  new THREE.MeshPhongMaterial({color:0x07131f,shininess:20})
+);
+floor.rotation.x=-Math.PI/2;floor.position.y=-2.1;floor.receiveShadow=true;scene.add(floor);
+
+const grid=new THREE.GridHelper(38,38,0x1e628b,0x123149);
+grid.position.y=-2.08;grid.material.transparent=true;grid.material.opacity=.22;scene.add(grid);
+
+/* Measurement ruler */
+const SCALE=.55,x0=-6.5;
+function xMap(v){return x0+v*SCALE;}
+
+const ruler=new THREE.Mesh(
+  new THREE.BoxGeometry(13.4,.38,1.25),
+  new THREE.MeshPhongMaterial({color:0xd5c990,shininess:35})
+);
+ruler.position.y=-.45;scene.add(ruler);
+
+const ticks=new THREE.Group();scene.add(ticks);
+for(let i=0;i<=240;i++){
+  const v=i*.1;
+  if(v>24)break;
+  const major=i%10===0,half=i%5===0;
+  const h=major?.42:(half?.30:.20);
+  const t=new THREE.Mesh(
+    new THREE.BoxGeometry(.012,h,.025),
+    new THREE.MeshBasicMaterial({color:major?0x101820:0x343c42})
+  );
+  t.position.set(xMap(v),-.25+h/2,.64);ticks.add(t);
+}
+
+const trueLine=new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-.1,-.8),new THREE.Vector3(0,1.2,.8)]),
+  new THREE.LineBasicMaterial({color:0x7fffc2})
+);scene.add(trueLine);
+
+const meanLine=new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-.1,-.8),new THREE.Vector3(0,1.5,.8)]),
+  new THREE.LineBasicMaterial({color:0xffda69})
+);scene.add(meanLine);
+
+const errBand=new THREE.Mesh(
+  new THREE.BoxGeometry(1,1.0,.6),
+  new THREE.MeshBasicMaterial({color:0xff8585,transparent:true,opacity:.18,depthWrite:false})
+);
+errBand.position.y=.25;scene.add(errBand);
+
+const pins=new THREE.Group();scene.add(pins);
+
+function update3D(){
+  trueLine.position.x=xMap(state.trueValue);
+  const m=mean(),a=absErr();
+  meanLine.visible=Number.isFinite(m);
+  errBand.visible=Number.isFinite(m)&&Number.isFinite(a);
+
+  if(Number.isFinite(m)){
+    meanLine.position.x=xMap(m);
+    errBand.position.x=xMap(m);
+  }
+  if(Number.isFinite(a)){
+    errBand.scale.x=Math.max(.02,2*a*SCALE);
+  }
+
+  while(pins.children.length){
+    const o=pins.children.pop();o.geometry?.dispose();o.material?.dispose();
+  }
+  state.data.slice(-40).forEach((x,i)=>{
+    const p=new THREE.Mesh(
+      new THREE.SphereGeometry(.07,12,10),
+      new THREE.MeshPhongMaterial({color:0x65dfff,emissive:0x07344a})
+    );
+    p.position.set(xMap(x),.8+(i%4)*.10,0);
+    pins.add(p);
+  });
+}
+
+/* Measurement */
+function takeOne(){
+  state.data.push(quantize(state.trueValue+gaussian()*state.noise));
+  refresh();
+}
+function takeMany(n){
+  for(let i=0;i<n;i++) state.data.push(quantize(state.trueValue+gaussian()*state.noise));
+  refresh();
+}
+
+/* Chart */
+const chart=$('chart'),ctx=chart.getContext('2d');
+function resizeChart(){
+  const dpr=Math.min(devicePixelRatio,2),r=chart.getBoundingClientRect();
+  chart.width=Math.max(10,Math.floor(r.width*dpr));
+  chart.height=Math.max(10,Math.floor(r.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  drawChart();
+}
+function drawChart(){
+  const W=chart.clientWidth,H=chart.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#06131f';ctx.fillRect(0,0,W,H);
+
+  const L=28,R=8,T=10,B=22,w=W-L-R,h=H-T-B;
+  ctx.strokeStyle='rgba(150,195,220,.14)';
+  for(let i=0;i<=4;i++){
+    const y=T+h*i/4;ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(L+w,y);ctx.stroke();
+  }
+
+  if(!state.data.length){
+    ctx.fillStyle='#9fb9c8';ctx.font='9px Arial';ctx.fillText('Chưa có dữ liệu',L+8,T+16);return;
+  }
+
+  const m=mean();
+  const maxDev=Math.max(.3,...state.data.map(x=>Math.abs(x-m)));
+  const ymin=-maxDev*1.2,ymax=maxDev*1.2;
+
+  function xx(i){return L+(state.data.length===1?.5:i/(state.data.length-1))*w;}
+  function yy(v){return T+h-(v-ymin)/(ymax-ymin)*h;}
+
+  ctx.strokeStyle='#ffda69';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(L,yy(0));ctx.lineTo(L+w,yy(0));ctx.stroke();
+
+  state.data.forEach((x,i)=>{
+    const d=x-m;
+    ctx.fillStyle=d>=0?'rgba(100,221,255,.85)':'rgba(255,133,133,.85)';
+    ctx.beginPath();ctx.arc(xx(i),yy(d),3,0,Math.PI*2);ctx.fill();
+  });
+
+  ctx.fillStyle='#9fb9c8';ctx.font='9px Arial';
+  ctx.fillText('xᵢ − x̄',4,12);
+  ctx.fillText('Lần đo',W/2-18,H-6);
+}
+
+/* Table / UI */
+function renderTable(){
+  const body=$('dataBody');body.innerHTML='';
+  const m=mean();
+  state.data.forEach((x,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td><td>${x.toFixed(2)}</td><td>${Math.abs(x-m).toFixed(3)}</td>`;
+    body.appendChild(tr);
+  });
+}
+function updateUI(){
+  $('trueText').textContent=`${state.trueValue.toFixed(2)} cm`;
+  $('noiseText').textContent=`${state.noise.toFixed(2)} cm`;
+  $('resText').textContent=`${state.resolution.toFixed(2)} cm`;
+
+  $('nInfo').textContent=state.data.length;
+  $('trueInfo').textContent=`${state.trueValue.toFixed(2)} cm`;
+  $('instInfo').textContent=`${instErr().toFixed(3)} cm`;
+
+  const m=mean(),md=mad(),ae=absErr(),re=relErr();
+  $('meanInfo').textContent=Number.isFinite(m)?`${m.toFixed(3)} cm`:'—';
+  $('madInfo').textContent=Number.isFinite(md)?`${md.toFixed(3)} cm`:'—';
+  $('absInfo').textContent=Number.isFinite(ae)?`${ae.toFixed(3)} cm`:'—';
+  $('relInfo').textContent=Number.isFinite(re)?`${re.toFixed(2)}%`:'—';
+
+  if(!state.data.length){
+    $('resultBox').textContent='Chưa có số liệu.';
+  }else{
+    $('resultBox').innerHTML=
+      `<b>x̄ =</b> ${m.toFixed(3)} cm<br>`+
+      `<b>Δx̄ =</b> ${md.toFixed(3)} cm<br>`+
+      `<b>Δdc =</b> ${includeInstrument.checked?instErr().toFixed(3):'0.000'} cm<br>`+
+      `<b>Δx =</b> <span class="good">${ae.toFixed(3)} cm</span><br>`+
+      `<b>δ =</b> ${re.toFixed(2)}%<br>`+
+      `<b>Viết kết quả:</b> x = (${m.toFixed(3)} ± ${ae.toFixed(3)}) cm`;
+  }
+}
+function refresh(){
+  updateUI();renderTable();drawChart();update3D();
+}
+
+/* Events */
+trueSlider.addEventListener('input',()=>{state.trueValue=parseFloat(trueSlider.value);refresh();});
+noiseSlider.addEventListener('input',()=>{state.noise=parseFloat(noiseSlider.value);refresh();});
+resSlider.addEventListener('input',()=>{state.resolution=RES[parseInt(resSlider.value,10)];refresh();});
+includeInstrument.addEventListener('change',refresh);
+
+$('measureBtn').addEventListener('click',takeOne);
+$('batchBtn').addEventListener('click',()=>takeMany(5));
+$('undoBtn').addEventListener('click',()=>{state.data.pop();refresh();});
+$('clearBtn').addEventListener('click',()=>{state.data=[];refresh();});
+$('fitBtn').addEventListener('click',fitScene);
+$('resetBtn').addEventListener('click',resetAll);
+
+/* Tooltip */
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();
+renderer.domElement.addEventListener('mousemove',e=>{
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const hits=raycaster.intersectObject(errBand,false);
+  if(hits.length && errBand.visible){
+    tooltip.style.display='block';
+    tooltip.style.left=`${e.offsetX+12}px`;
+    tooltip.style.top=`${e.offsetY+10}px`;
+    tooltip.innerHTML=`<b>Khoảng sai số tuyệt đối</b><br>x̄ ± Δx`;
+  }else tooltip.style.display='none';
+});
+renderer.domElement.addEventListener('mouseleave',()=>tooltip.style.display='none');
+
+/* Camera / reset */
+function fitScene(){
+  camera.position.set(11,7,14);
+  controls.target.set(0,.15,0);
+  controls.update();
+}
+function resetAll(){
+  trueSlider.value='10.00';
+  noiseSlider.value='0.20';
+  resSlider.value='1';
+  includeInstrument.checked=true;
+  state.trueValue=10;
+  state.noise=.20;
+  state.resolution=.10;
+  state.data=[];
+  refresh();
+  fitScene();
+}
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);labelRenderer.setSize(w,h);resizeChart();
+}
+window.addEventListener('resize',resize);
+
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+resetAll();
+resize();
+animate();
+</script>
+</body>
+</html>

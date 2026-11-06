@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mô phỏng ảnh hoạt nghiệm – chuyển động nhảy xa</title>
+<style>
+:root{
+  --bg:#f6f8fc; --card:#fff; --text:#1f2937; --muted:#667085;
+  --blue:#2563eb; --green:#16a34a; --orange:#f59e0b; --red:#dc2626;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text)}
+.wrap{max-width:1220px;margin:auto;padding:18px}
+h1{margin:0 0 8px;color:#173a78;font-size:clamp(22px,3vw,34px)}
+.sub{margin:0 0 15px;color:var(--muted);line-height:1.6}
+.grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(320px,.8fr);gap:16px}
+.card{background:var(--card);border:1px solid #e4e7ec;border-radius:18px;padding:14px}
+.panel{border:1px solid #d5dbe5;border-radius:14px;overflow:hidden;background:#f8fbff}
+.panelHead{display:flex;justify-content:space-between;gap:12px;align-items:center;background:#fff;padding:9px 12px;border-bottom:1px solid #e4e7ec}
+.panelHead b{color:#173a78}
+.stage{
+  position:relative;height:430px;overflow:hidden;
+  background:linear-gradient(#e8f6ff 0 66%,#f5eddc 66% 100%)
+}
+.ground{position:absolute;left:0;right:0;bottom:54px;height:7px;background:#7597bb}
+.runway{
+  position:absolute;left:30px;width:43%;bottom:61px;height:12px;border-radius:4px;
+  background:linear-gradient(#8fb3d5,#6d96be)
+}
+.board{
+  position:absolute;left:43%;bottom:58px;width:10px;height:19px;background:#fff;border:1px solid #9aa7b5
+}
+.sand{
+  position:absolute;left:calc(43% + 10px);right:28px;bottom:61px;height:54px;border-radius:0 8px 8px 0;
+  background:repeating-linear-gradient(45deg,#ead5aa 0 9px,#f1dfba 9px 18px)
+}
+.flashline{position:absolute;left:0;right:0;bottom:43px;height:2px;background:#c7d3df}
+.athlete{
+  position:absolute;width:64px;height:104px;
+  transform:translate(-50%,-50%);
+  will-change:left,top;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.16));
+}
+.athlete svg{width:100%;height:100%;display:block;overflow:visible}
+.ghost{
+  position:absolute;width:64px;height:104px;
+  transform:translate(-50%,-50%);
+  opacity:.32;pointer-events:none;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.08));
+}
+.ghost svg{width:100%;height:100%;display:block;overflow:visible}
+.trace{position:absolute;inset:0;pointer-events:none}
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+button{border:0;border-radius:10px;padding:10px 12px;font:inherit;font-weight:800;cursor:pointer}
+.primary{background:var(--blue);color:#fff}.green{background:var(--green);color:#fff}.orange{background:var(--orange);color:#fff}.gray{background:#eef2f6;color:#1f2937}
+.status{background:#edf6ff;border:1px solid #cee4fb;border-radius:12px;padding:12px;line-height:1.55;color:#174a7f;font-weight:700}
+.info{background:#fff9e9;border:1px solid #f0dc9b;border-radius:12px;padding:12px;line-height:1.6;margin-top:10px}
+.step{display:grid;gap:9px;margin-top:10px}
+.item{border:1px solid #e4e7ec;border-radius:12px;padding:10px;background:#fafcff;line-height:1.5}
+.item strong{color:#173a78}
+.legend{font-size:13px;color:#667085;margin-top:7px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mô phỏng ảnh hoạt nghiệm – chuyển động nhảy xa</h1>
+  <p class="sub">
+    Giống mô phỏng ô tô bạn gửi: vận động viên chuyển động liên tục và cứ sau
+    <b>những khoảng thời gian bằng nhau</b> sẽ giữ lại một “ảnh” mờ.
+    Nhờ đó có thể nhìn thấy toàn bộ các tư thế từ <b>chạy đà → giậm nhảy → bay → tiếp đất</b>.
+  </p>
+
+  <div class="grid">
+    <section class="card">
+      <div class="panel">
+        <div class="panelHead">
+          <b>Nhảy xa – chuỗi ảnh hoạt nghiệm</b>
+          <span>Các bóng mờ là vị trí tại các thời điểm cách đều nhau</span>
+        </div>
+        <div class="stage" id="stage">
+          <div class="runway"></div>
+          <div class="board"></div>
+          <div class="sand"></div>
+          <div class="ground"></div>
+          <div class="flashline"></div>
+          <svg class="trace" viewBox="0 0 900 430" preserveAspectRatio="none">
+            <polyline id="traceLine" points="" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-dasharray="8 7" opacity=".58"/>
+          </svg>
+          <div class="athlete" id="athlete"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="primary" id="run">▶ Chạy mô phỏng</button>
+        <button class="green" id="ghostBtn">👁 Ẩn/hiện ảnh mờ</button>
+        <button class="orange" id="slowBtn">🐢 Chạy chậm</button>
+        <button class="gray" id="pause">⏸ Tạm dừng</button>
+        <button class="gray" id="reset">↺ Làm lại</button>
+      </div>
+      <div class="legend">Ảnh mờ được chụp ở các khoảng thời gian bằng nhau, giống nguyên tắc của ảnh hoạt nghiệm trong SGK.</div>
+    </section>
+
+    <aside class="card">
+      <div class="status" id="status">Sẵn sàng. Hãy bấm “Chạy mô phỏng”.</div>
+
+      <div class="step">
+        <div class="item"><strong>Chạy đà:</strong> vận động viên tăng tốc theo phương ngang.</div>
+        <div class="item"><strong>Giậm nhảy:</strong> vận động viên rời mặt đất tại ván giậm.</div>
+        <div class="item"><strong>Bay trên không:</strong> trọng tâm chuyển động theo một quỹ đạo cong giống chuyển động ném xiên.</div>
+        <div class="item"><strong>Tiếp đất:</strong> chân đưa ra trước và cơ thể gập về phía trước để đạt thành tích tốt.</div>
+      </div>
+
+      <div class="info">
+        Khi các ảnh được giữ lại ở <b>những khoảng thời gian bằng nhau</b>, ta có thể quan sát trực tiếp
+        sự thay đổi vị trí, tư thế và quỹ đạo của vận động viên trong toàn bộ cú nhảy.
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const stage = document.getElementById('stage');
+  const athlete = document.getElementById('athlete');
+  const traceLine = document.getElementById('traceLine');
+  const status = document.getElementById('status');
+  const pauseBtn = document.getElementById('pause');
+  const slowBtn = document.getElementById('slowBtn');
+  const ghostBtn = document.getElementById('ghostBtn');
+
+  let raf=0, running=false, paused=false, last=null, elapsed=0;
+  let ghosts=[], nextGhost=0, showGhosts=true, slow=false;
+
+  const duration=5.1;
+  const sampleDt=0.48;
+
+  function clamp(n,a,b){return Math.min(b,Math.max(a,n))}
+
+  function poseSVG(phase, i=0){
+    let c;
+    if(phase==='run'){
+      c = i%2===0
+        ? {lean:8, armL:-38, armR:42, thighL:28, thighR:-24, shinL:14, shinR:-8}
+        : {lean:7, armL:42, armR:-38, thighL:-24, thighR:30, shinL:-8, shinR:14};
+    }else if(phase==='take'){
+      c={lean:-6,armL:108,armR:122,thighL:30,thighR:12,shinL:14,shinR:4};
+    }else if(phase==='flight1'){
+      c={lean:-4,armL:118,armR:108,thighL:16,thighR:24,shinL:4,shinR:8};
+    }else if(phase==='flight2'){
+      c={lean:8,armL:72,armR:58,thighL:-4,thighR:8,shinL:18,shinR:15};
+    }else if(phase==='flight3'){
+      c={lean:18,armL:26,armR:12,thighL:30,thighR:38,shinL:12,shinR:15};
+    }else{
+      c={lean:28,armL:-16,armR:-28,thighL:58,thighR:52,shinL:8,shinR:6};
+    }
+
+    return `
+    <svg viewBox="0 0 74 118" aria-hidden="true">
+      <!-- đầu -->
+      <circle cx="37" cy="14" r="7.5" fill="#f2bf88" stroke="#b97846" stroke-width="1"/>
+      <path d="M31 10 Q37 4 43 10" fill="#3f2d22"/>
+
+      <g transform="rotate(${c.lean} 37 49)">
+        <!-- thân áo -->
+        <path d="M30 24 Q37 21 44 24 L46 53 Q37 57 28 53 Z"
+              fill="#facc15" stroke="#c89c0b" stroke-width="1.4"/>
+        <!-- quần -->
+        <path d="M28 52 Q37 56 46 52 L47 71 Q37 75 27 71 Z"
+              fill="#0ea5e9" stroke="#0b78ad" stroke-width="1.4"/>
+
+        <!-- tay trái -->
+        <g transform="rotate(${c.armL} 30 30)">
+          <path d="M30 30 L21 43 L17 55" fill="none"
+                stroke="#f2bf88" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        <!-- tay phải -->
+        <g transform="rotate(${c.armR} 44 30)">
+          <path d="M44 30 L53 43 L57 55" fill="none"
+                stroke="#f2bf88" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+
+        <!-- chân trái -->
+        <g transform="rotate(${c.thighL} 33 69)">
+          <path d="M33 69 L29 88" fill="none" stroke="#f2bf88" stroke-width="5" stroke-linecap="round"/>
+          <g transform="rotate(${c.shinL} 29 88)">
+            <path d="M29 88 L24 104" fill="none" stroke="#f2bf88" stroke-width="4.8" stroke-linecap="round"/>
+            <path d="M19 106 H29" stroke="#ef4444" stroke-width="4.5" stroke-linecap="round"/>
+          </g>
+        </g>
+
+        <!-- chân phải -->
+        <g transform="rotate(${c.thighR} 41 69)">
+          <path d="M41 69 L45 88" fill="none" stroke="#f2bf88" stroke-width="5" stroke-linecap="round"/>
+          <g transform="rotate(${c.shinR} 45 88)">
+            <path d="M45 88 L50 104" fill="none" stroke="#f2bf88" stroke-width="4.8" stroke-linecap="round"/>
+            <path d="M46 106 H56" stroke="#ef4444" stroke-width="4.5" stroke-linecap="round"/>
+          </g>
+        </g>
+      </g>
+    </svg>`;
+  }
+  function stateAt(u){
+    // u 0..1
+    const W = stage.clientWidth;
+    const H = stage.clientHeight;
+    const boardX = W*0.43;
+    const startX = W*0.10;
+    const groundY = H-109;
+
+    if(u < 0.30){
+      const p=u/0.30;
+      const x=startX+(boardX-startX)*p;
+      const y=groundY + Math.sin(p*Math.PI*6)*4;
+      return {x,y,phase:'run',poseIndex:Math.floor(p*8)};
+    }
+
+    if(u < 0.38){
+      const p=(u-0.30)/0.08;
+      const x=boardX+15*p;
+      const y=groundY-38*p;
+      return {x,y,phase:'take',poseIndex:0};
+    }
+
+    if(u < 0.88){
+      const p=(u-0.38)/0.50;
+      const x=boardX+15 + (W*0.42)*p;
+      const arc=Math.sin(Math.PI*p);
+      const y=groundY-38 - arc*(H*0.33) + p*20;
+      const phase=p<0.33?'flight1':(p<0.67?'flight2':'flight3');
+      return {x,y,phase,poseIndex:0};
+    }
+
+    const p=(u-0.88)/0.12;
+    const x=boardX+15+W*0.42 + W*0.05*p;
+    const y=groundY-18 + 18*p;
+    return {x,y,phase:'land',poseIndex:0};
+  }
+
+  function render(){
+    const u=clamp(elapsed/duration,0,1);
+    const s=stateAt(u);
+    athlete.style.left=s.x+'px';
+    athlete.style.top=s.y+'px';
+    athlete.innerHTML=poseSVG(s.phase,s.poseIndex);
+
+    // quỹ đạo bay
+    const pts=[];
+    for(let k=0;k<=40;k++){
+      const uu=0.38+(0.50*k/40);
+      const q=stateAt(uu);
+      pts.push(`${q.x},${q.y}`);
+    }
+    traceLine.setAttribute('points',pts.join(' '));
+
+    let label='Chạy đà';
+    if(s.phase==='take') label='Giậm nhảy';
+    if(s.phase.startsWith('flight')) label='Bay trên không';
+    if(s.phase==='land') label='Tiếp đất';
+    status.innerHTML='Đang mô phỏng: <b>'+label+'</b>. Các ảnh mờ được giữ lại theo khoảng thời gian bằng nhau.';
+  }
+
+  function addGhost(){
+    const u=clamp(elapsed/duration,0,1);
+    const s=stateAt(u);
+    const g=document.createElement('div');
+    g.className='ghost';
+    g.style.left=s.x+'px';
+    g.style.top=s.y+'px';
+    g.innerHTML=poseSVG(s.phase,s.poseIndex);
+    g.style.display=showGhosts?'block':'none';
+    stage.appendChild(g);
+    ghosts.push(g);
+  }
+
+  function clearGhosts(){
+    ghosts.forEach(g=>g.remove());
+    ghosts=[];
+  }
+
+  function stop(){
+    cancelAnimationFrame(raf);
+    running=false;paused=false;last=null;
+    pauseBtn.textContent='⏸ Tạm dừng';
+  }
+
+  function start(){
+    stop();
+    clearGhosts();
+    elapsed=0;nextGhost=0;running=true;paused=false;last=null;
+    addGhost();
+    nextGhost=sampleDt;
+    raf=requestAnimationFrame(step);
+  }
+
+  function step(ts){
+    if(!running)return;
+    if(paused){last=ts;raf=requestAnimationFrame(step);return;}
+    if(last===null)last=ts;
+    const dt=Math.min((ts-last)/1000,0.05);
+    last=ts;
+    elapsed += dt*(slow?0.45:1);
+
+    while(elapsed>=nextGhost && nextGhost<duration){
+      const save=elapsed;
+      elapsed=nextGhost;
+      addGhost();
+      elapsed=save;
+      nextGhost+=sampleDt;
+    }
+
+    render();
+
+    if(elapsed>=duration){
+      elapsed=duration;
+      render();
+      addGhost();
+      running=false;
+      status.innerHTML='Đã hoàn thành cú nhảy. Hãy quan sát chuỗi ảnh mờ từ <b>chạy đà → giậm nhảy → bay → tiếp đất</b>.';
+      return;
+    }
+    raf=requestAnimationFrame(step);
+  }
+
+  document.getElementById('run').onclick=start;
+
+  pauseBtn.onclick=()=>{
+    if(!running)return;
+    paused=!paused;
+    pauseBtn.textContent=paused?'▶ Tiếp tục':'⏸ Tạm dừng';
+  };
+
+  slowBtn.onclick=()=>{
+    slow=!slow;
+    slowBtn.textContent=slow?'🐇 Chạy thường':'🐢 Chạy chậm';
+  };
+
+  ghostBtn.onclick=()=>{
+    showGhosts=!showGhosts;
+    ghosts.forEach(g=>g.style.display=showGhosts?'block':'none');
+    ghostBtn.textContent=showGhosts?'👁 Ẩn/hiện ảnh mờ':'👁 Hiện lại ảnh mờ';
+  };
+
+  document.getElementById('reset').onclick=()=>{
+    stop();clearGhosts();elapsed=0;
+    const s=stateAt(0);
+    athlete.style.left=s.x+'px';
+    athlete.style.top=s.y+'px';
+    athlete.innerHTML=poseSVG('run',0);
+    status.textContent='Đã làm lại. Hãy bấm “Chạy mô phỏng”.';
+  };
+
+  window.addEventListener('resize',()=>render());
+
+  const init=stateAt(0);
+  athlete.style.left=init.x+'px';
+  athlete.style.top=init.y+'px';
+  athlete.innerHTML=poseSVG('run',0);
+  render();
+})();
+<\/script>
+</body>
+</html>

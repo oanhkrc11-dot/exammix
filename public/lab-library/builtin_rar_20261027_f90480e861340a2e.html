@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-114 Ống sáo và cột khí cộng hưởng 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#020912;color:#eef8fb}
+#app{display:grid;grid-template-columns:270px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800}.desc{font-size:10.1px;color:#a9c2cd;line-height:1.35}h1{font-size:17px;margin:4px 0 6px;line-height:1.08}.model{font-size:9.3px;color:#d9edf5;background:#0b2230;border:1px solid #21495a;border-radius:8px;padding:6px;margin:6px 0}
+.ctl{display:grid;grid-template-columns:82px 1fr 70px;gap:5px;align-items:center;margin:5px 0}.ctl label{font-size:9.3px}.ctl output{font-size:8.9px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 52% 28%,#173f58 0,#0a263b 40%,#061725 72%,#030b13 100%)}#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label{position:absolute;transform:translate(-50%,-50%);background:rgba(244,250,252,.96);color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9px;white-space:nowrap}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10px;font-weight:700}
+#hud{position:absolute;right:12px;top:12px;z-index:7;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:8px 10px;min-width:220px}.hrow{display:flex;justify-content:space-between;gap:14px;font-size:9px;margin:3px 0}.hrow span{color:#9fc0cd}.hrow b{color:#fff}
+#note{position:absolute;left:12px;bottom:12px;z-index:7;width:610px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700}.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style></head>
+<body>
+<div id="app"><aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D CINEMATIC</div><h1>114 · Ống sáo và cột khí cộng hưởng</h1>
+<p class="desc">Mở các lỗ bấm làm điểm hở hiệu dụng dịch chuyển về gần miệng thổi, khiến cột khí ngắn lại và tần số cộng hưởng tăng.</p>
+<div class="model"><b>Mô hình hóa:</b> ống sáo là cột khí hai đầu hở lý tưởng; lỗ mở đầu tiên theo chiều truyền được xem như đầu hở hiệu dụng. Bỏ qua hiệu chỉnh đầu ống, đường kính lỗ và tổn hao thực.</div>
+
+<div class="ctl"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Chiều dài ống</label><input id="length" type="range" min=".45" max=".90" step=".01" value=".70"><output id="lengthOut"></output></div>
+<div class="ctl"><label>Vận tốc âm</label><input id="soundV" type="range" min="320" max="360" step="1" value="343"><output id="soundVOut"></output></div>
+<div class="ctl"><label>Họa âm n</label><input id="mode" type="range" min="1" max="4" step="1" value="1"><output id="modeOut"></output></div>
+<div class="ctl"><label>Lỗ mở</label><input id="hole" type="range" min="0" max="6" step="1" value="0"><output id="holeOut"></output></div>
+<div class="ctl"><label>Biên độ</label><input id="amp" type="range" min=".2" max="1" step=".05" value=".75"><output id="ampOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showPressure" type="checkbox" checked> Áp suất</label>
+<label class="check"><input id="showDisp" type="checkbox" checked> Dao động khí</label>
+<label class="check"><input id="showNodes" type="checkbox" checked> Nút / bụng</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Bắt đầu</button><button id="pauseBtn" class="btn">⏸ Tạm dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Fit toàn cảnh</button>
+<button id="allClosedBtn" class="btn">Đóng các lỗ</button><button id="highNoteBtn" class="btn">Mở lỗ 5</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div><div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view"><div id="three"></div><div id="labels"></div>
+<div id="formula">fₙ = nv/(2L<sub>hiệu dụng</sub>) &nbsp; · &nbsp; λₙ = 2L<sub>hiệu dụng</sub>/n</div>
+<div id="hud">
+<div class="hrow"><span>L hiệu dụng</span><b id="LeffHud"></b></div>
+<div class="hrow"><span>Tần số fₙ</span><b id="fHud"></b></div>
+<div class="hrow"><span>Bước sóng λ</span><b id="lamHud"></b></div>
+<div class="hrow"><span>Điều kiện biên</span><b>hai đầu hở</b></div>
+<div class="hrow"><span>Trạng thái</span><b id="statusHud"></b></div>
+</div>
+<div id="note">Trong ống hở–hở: tại đầu hở là <b>nút áp suất</b> và <b>bụng li độ</b>. Khi mở một lỗ, lỗ đó đóng vai trò gần như đầu hở mới nên L hiệu dụng giảm và âm cao hơn. Hình học ống và biên độ dao động được phóng đại để dễ quan sát.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three'; import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const $=id=>document.getElementById(id),view=$('view');
+const state={running:true,t:0,speed:1,L:.70,v:343,n:1,hole:0,A:.75};
+const holeFrac=[1,.86,.76,.66,.56,.46,.36]; // 0=all closed -> full tube; hole 1..6 shortens Leff
+const Leff=()=>state.L*holeFrac[state.hole];
+const freq=()=>state.n*state.v/(2*Leff());
+const lambda=()=>2*Leff()/state.n;
+const phase=()=>2*Math.PI*freq()*state.t;
+
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=7;controls.maxDistance=27;controls.minPolarAngle=.35;controls.maxPolarAngle=1.8;
+scene.add(new THREE.HemisphereLight(0xffffff,0x172832,4.3));const dl=new THREE.DirectionalLight(0xffffff,4.2);dl.position.set(6,10,8);scene.add(dl);
+const lab=new THREE.Group();scene.add(lab);lab.position.set(0,-.35,0);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(17,11),new THREE.MeshStandardMaterial({color:0x102530,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.7;lab.add(floor);
+const grid=new THREE.GridHelper(17,28,0x2e586a,0x123345);grid.position.y=-2.69;lab.add(grid);
+
+// flute body
+const fluteG=new THREE.Group();lab.add(fluteG);
+const tubeMat=new THREE.MeshStandardMaterial({color:0xbfcbd0,metalness:.78,roughness:.22,transparent:true,opacity:.86});
+const tube=new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,9.0,40,1,true),tubeMat);tube.rotation.z=Math.PI/2;fluteG.add(tube);
+const ringMat=new THREE.MeshStandardMaterial({color:0x526c78,metalness:.65,roughness:.28});
+for(const x of [-4.45,4.45]){const r=new THREE.Mesh(new THREE.TorusGeometry(.48,.055,10,36),ringMat);r.rotation.y=Math.PI/2;r.position.x=x;fluteG.add(r)}
+// embouchure
+const emb=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.12,28),new THREE.MeshStandardMaterial({color:0x1d3039}));emb.position.set(-3.65,.47,0);fluteG.add(emb);
+
+// finger holes
+const holes=[];const hx=[-2.55,-1.55,-.55,.45,1.45,2.45];
+for(let i=0;i<6;i++){const h=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,.10,24),new THREE.MeshStandardMaterial({color:0x15272f,emissive:0x000000}));h.position.set(hx[i],.48,0);fluteG.add(h);holes.push(h)}
+
+// effective end marker
+const endMarker=new THREE.Mesh(new THREE.RingGeometry(.40,.52,44),new THREE.MeshBasicMaterial({color:0x69e3a6,transparent:true,opacity:.9,side:THREE.DoubleSide}));endMarker.rotation.y=Math.PI/2;lab.add(endMarker);
+
+// pressure line in tube
+const pressureLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xffb45a,linewidth:2}));lab.add(pressureLine);
+// displacement particles
+const partG=new THREE.Group();lab.add(partG);const parts=[];
+for(let i=0;i<45;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.055,10,8),new THREE.MeshBasicMaterial({color:0x8ee8ff}));m.userData.u=i/44;partG.add(m);parts.push(m)}
+const markerG=new THREE.Group();lab.add(markerG);
+
+function sceneXFromPhysical(s){return -4.25+8.5*(s/state.L)}
+function effectiveEndX(){return sceneXFromPhysical(Leff())}
+
+function rebuildMarkers(){
+ markerG.clear();
+ // pressure nodes for open-open mode: x = j Leff/n, j=0..n
+ for(let j=0;j<=state.n;j++){
+   const s=j*Leff()/state.n,x=sceneXFromPhysical(s);
+   const p=new THREE.Mesh(new THREE.RingGeometry(.54,.60,36),new THREE.MeshBasicMaterial({color:0x69e3a6,transparent:true,opacity:.65,side:THREE.DoubleSide}));
+   p.rotation.y=Math.PI/2;p.position.set(x,0,0);markerG.add(p)
+ }
+ // pressure antinodes halfway
+ for(let j=0;j<state.n;j++){
+   const s=(j+.5)*Leff()/state.n,x=sceneXFromPhysical(s);
+   const p=new THREE.Mesh(new THREE.RingGeometry(.55,.61,36),new THREE.MeshBasicMaterial({color:0xffb45a,transparent:true,opacity:.55,side:THREE.DoubleSide}));
+   p.rotation.y=Math.PI/2;p.position.set(x,0,0);markerG.add(p)
+ }
+}
+
+function updateGeometry(){
+ const ex=effectiveEndX();endMarker.position.set(ex,0,0);
+ holes.forEach((h,i)=>{
+   const opened=state.hole>0 && i===state.hole-1;
+   h.material.color.set(opened?0x69e3a6:0x15272f);
+   h.material.emissive.set(opened?0x1d704d:0x000000);
+ });
+ rebuildMarkers();
+}
+
+function pShape(s){return Math.sin(state.n*Math.PI*s/Leff())}
+function uShape(s){return Math.cos(state.n*Math.PI*s/Leff())}
+
+function drawGraph(){
+ gctx.fillStyle='#f8fafb';gctx.fillRect(0,0,820,350);
+ gctx.fillStyle='#263b45';gctx.font='bold 24px Segoe UI';gctx.fillText('SÓNG DỪNG TRONG CỘT KHÍ',250,30);
+ gctx.strokeStyle='#687b84';gctx.lineWidth=2;gctx.beginPath();gctx.moveTo(55,175);gctx.lineTo(755,175);gctx.stroke();
+ const ph=Math.cos(phase());
+ const traces=[['#e8842f',s=>state.A*pShape(s)*ph],['#1677c8',s=>state.A*uShape(s)*Math.sin(phase())]];
+ traces.forEach(([c,fn])=>{gctx.strokeStyle=c;gctx.lineWidth=3;gctx.beginPath();for(let i=0;i<=500;i++){const s=Leff()*i/500,x=55+700*i/500,y=175-105*fn(s);i?gctx.lineTo(x,y):gctx.moveTo(x,y)}gctx.stroke()});
+ gctx.fillStyle='#50656f';gctx.font='17px Segoe UI';gctx.fillText('0',45,330);gctx.fillText('L hiệu dụng',665,330);gctx.fillText('cam: áp suất',65,65);gctx.fillText('xanh: li độ khí',220,65);gtex.needsUpdate=true
+}
+
+function updatePhysics(dt){if(state.running)state.t+=dt*state.speed*.003}
+function updateVisuals(){
+ const pts=[],ph=Math.cos(phase()),ex=effectiveEndX();
+ for(let i=0;i<=180;i++){const s=Leff()*i/180,x=sceneXFromPhysical(s),y=.62*state.A*pShape(s)*ph;pts.push(new THREE.Vector3(x,y,0))}
+ pressureLine.geometry.dispose();pressureLine.geometry=new THREE.BufferGeometry().setFromPoints(pts);pressureLine.visible=$('showPressure').checked;
+
+ parts.forEach(m=>{
+   const s=m.userData.u*Leff(),x0=sceneXFromPhysical(s),dx=.18*state.A*uShape(s)*Math.sin(phase());
+   m.position.set(x0+dx,-.30+0.10*Math.sin(m.userData.u*14),0);
+   m.visible=s<=Leff()+1e-6
+ });
+ partG.visible=$('showDisp').checked;markerG.visible=$('showNodes').checked;grid.visible=$('showGrid').checked;
+ graphFrame.visible=graphPlane.visible=$('showGraph').checked;drawGraph();
+
+ // dim inactive part of tube beyond effective opening
+ endMarker.material.opacity=.65+.25*Math.abs(Math.sin(phase()));
+}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('lengthOut').value=state.L.toFixed(2)+' m';$('soundVOut').value=state.v.toFixed(0)+' m/s';$('modeOut').value='n='+state.n;$('holeOut').value=state.hole===0?'đóng hết':'lỗ '+state.hole;$('ampOut').value=state.A.toFixed(2);
+ $('LeffHud').textContent=Leff().toFixed(3)+' m';$('fHud').textContent=freq().toFixed(1)+' Hz';$('lamHud').textContent=lambda().toFixed(3)+' m';$('statusHud').textContent=state.running?'Đang cộng hưởng':'Tạm dừng'
+}
+function sync(resetT=true){
+ state.speed=+$('speed').value;state.L=+$('length').value;state.v=+$('soundV').value;state.n=+$('mode').value;state.hole=+$('hole').value;state.A=+$('amp').value;if(resetT)state.t=0;updateGeometry();updateUI()
+}
+['length','soundV','mode','hole','amp'].forEach(id=>$(id).addEventListener('input',()=>sync(true)));$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;
+$('allClosedBtn').onclick=()=>{$('hole').value=0;sync(true)};$('highNoteBtn').onclick=()=>{$('hole').value=5;sync(true)};
+$('resetBtn').onclick=()=>{Object.assign(state,{running:true,t:0,speed:1,L:.70,v:343,n:1,hole:0,A:.75});for(const [id,v] of [['speed',1],['length',.70],['soundV',343],['mode',1],['hole',0],['amp',.75]])$(id).value=v;sync(true);fit()};
+$('fitBtn').onclick=fit;$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fit()},80));
+
+// graph
+const gc=document.createElement('canvas');gc.width=820;gc.height=350;const gctx=gc.getContext('2d'),gtex=new THREE.CanvasTexture(gc);
+const graphFrame=new THREE.Mesh(new THREE.BoxGeometry(5.25,2.45,.12),new THREE.MeshStandardMaterial({color:0xeaf3f6}));graphFrame.position.set(4.4,2.45,-2.85);lab.add(graphFrame);
+const graphPlane=new THREE.Mesh(new THREE.PlaneGeometry(5,2.22),new THREE.MeshBasicMaterial({map:gtex,side:THREE.DoubleSide}));graphPlane.position.set(4.4,2.45,-2.77);lab.add(graphPlane);
+
+const labels=$('labels');function mk(t){const e=document.createElement('div');e.className='label';e.textContent=t;labels.appendChild(e);return e}
+const lEmb=mk('Miệng thổi'),lEnd=mk('Đầu hở hiệu dụng'),lNode=mk('Nút áp suất'),lAnti=mk('Bụng li độ');
+function project(el,p){const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=(q.z>1||!$('showLabels').checked)?'none':'block'}
+function fit(){controls.target.set(.4,0,0);camera.position.set(12.7,6.6,15.8);camera.lookAt(controls.target);controls.update()}
+function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}
+window.addEventListener('resize',()=>{resize();fit()});
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!renderer.domElement.captureStream||!window.MediaRecorder)return;const m=mime();rec=new MediaRecorder(renderer.domElement.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{clearInterval(timer);const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`114_Ong_sao_cot_khi_cong_huong_3D.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false};$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+sync(true);resize();fit();let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);const dt=Math.min(.033,(now-last)/1000);last=now;updatePhysics(dt);updateVisuals();updateUI();
+ project(lEmb,new THREE.Vector3(-3.65,1.35,0));project(lEnd,new THREE.Vector3(effectiveEndX(),1.25,0));
+ project(lNode,new THREE.Vector3(sceneXFromPhysical(0),-1.0,0));project(lAnti,new THREE.Vector3(sceneXFromPhysical(Leff()/(2*state.n)),1.15,0));
+ controls.update();renderer.render(scene,camera)
+}
+requestAnimationFrame(animate);
+</script></body></html>

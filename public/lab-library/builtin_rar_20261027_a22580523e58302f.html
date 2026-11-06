@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-34 Sóng dừng trên dây hai đầu cố định</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#030b14;color:#eef8fb}
+#app{display:grid;grid-template-columns:248px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800;letter-spacing:1px}h1{font-size:17px;margin:4px 0 6px}.desc{font-size:10.5px;color:#aac3cd;line-height:1.35;margin:0 0 8px}
+.ctl{display:grid;grid-template-columns:68px 1fr 58px;gap:5px;align-items:center;margin:5px 0}.ctl label{font-size:9.7px}.ctl output{font-size:9.2px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9.4px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800;cursor:pointer}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 50% 35%,#123d58 0%,#0a263b 42%,#061725 75%,#030b13 100%)}#sim{position:absolute;inset:0;width:100%;height:100%}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10.5px;font-weight:700}
+#hud{position:absolute;right:12px;bottom:12px;display:flex;gap:10px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:7px 9px}.hud span{display:block;font-size:8px;color:#98bac8}.hud b{font-size:10.3px}
+#note{position:absolute;left:12px;bottom:12px;width:420px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.2px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);font-size:10px;font-weight:700}.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="ey">PHYSICS 11 LAB · STABLE</div>
+<h1>34 · Sóng dừng trên dây hai đầu cố định</h1>
+<p class="desc">Hai đầu dây luôn là nút. Thay đổi mode n để quan sát số bó sóng, số nút và số bụng thay đổi.</p>
+
+<div class="ctl"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Biên độ A</label><input id="amp" type="range" min=".01" max=".08" step=".005" value=".04"><output id="ampOut"></output></div>
+<div class="ctl"><label>Chiều dài L</label><input id="length" type="range" min=".5" max="2.0" step=".05" value="1.2"><output id="lengthOut"></output></div>
+<div class="ctl"><label>Tần số f</label><input id="freq" type="range" min="5" max="200" step="1" value="50"><output id="freqOut"></output></div>
+<div class="ctl"><label>Mode n</label><input id="mode" type="range" min="1" max="6" step="1" value="3"><output id="modeOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showNodes" type="checkbox" checked> Nút</label>
+<label class="check"><input id="showAntinodes" type="checkbox" checked> Bụng</label>
+<label class="check"><input id="showEnvelope" type="checkbox" checked> Biên dạng</label>
+<label class="check"><input id="showPersistence" type="checkbox" checked> Lưu ảnh dao động</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="mode1Btn" class="btn">n=1</button>
+<button id="mode2Btn" class="btn">n=2</button><button id="mode3Btn" class="btn">n=3</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+<div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view">
+<canvas id="sim"></canvas>
+<div id="formula">L = nλ/2 &nbsp; · &nbsp; λ = 2L/n &nbsp; · &nbsp; v = fλ = 2Lf/n</div>
+<div id="hud">
+<div class="hud"><span>n</span><b id="nHud"></b></div>
+<div class="hud"><span>λ</span><b id="lambdaHud"></b></div>
+<div class="hud"><span>f</span><b id="fHud"></b></div>
+<div class="hud"><span>v</span><b id="vHud"></b></div>
+<div class="hud"><span>Số nút</span><b id="nodesHud"></b></div>
+<div class="hud"><span>Số bụng</span><b id="antiHud"></b></div>
+</div>
+<div id="note">Hai đầu cố định luôn là nút. Tần số có thể tăng tới 200 Hz như thí nghiệm dây rung thực tế. Bật “Lưu ảnh dao động” để thấy các bó sóng liên tục ở tần số cao; mô phỏng vẫn giữ đúng v=2Lf/n.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id),canvas=$('sim'),ctx=canvas.getContext('2d'),view=$('view');
+const state={running:true,t:0,speed:1,A:.04,L:1.2,f:50,n:3,last:performance.now()};
+function resize(){const r=view.getBoundingClientRect();canvas.width=Math.floor(r.width*devicePixelRatio);canvas.height=Math.floor(r.height*devicePixelRatio);canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+window.addEventListener('resize',resize);resize();
+
+function lambda(){return 2*state.L/state.n}
+function freq(){return state.f}
+function waveV(){return 2*state.L*state.f/state.n}
+function omega(){return 2*Math.PI*state.f}
+function yAt(x,t=state.t){return state.A*Math.sin(state.n*Math.PI*x/state.L)*Math.cos(omega()*t)}
+function ampEnvelope(x){return Math.abs(state.A*Math.sin(state.n*Math.PI*x/state.L))}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('ampOut').value=(state.A*100).toFixed(1)+' cm';$('lengthOut').value=state.L.toFixed(1)+' m';$('freqOut').value=state.f.toFixed(2)+' Hz';$('modeOut').value=state.n;
+ $('nHud').textContent=state.n;$('lambdaHud').textContent=lambda().toFixed(2)+' m';$('fHud').textContent=state.f.toFixed(2)+' Hz';$('vHud').textContent=waveV().toFixed(2)+' m/s';$('nodesHud').textContent=state.n+1;$('antiHud').textContent=state.n
+}
+function sync(resetTime=false){state.speed=+$('speed').value;state.A=+$('amp').value;state.L=+$('length').value;state.f=+$('freq').value;state.n=+$('mode').value;if(resetTime)state.t=0;updateUI()}
+['amp','length','freq','mode'].forEach(id=>$(id).addEventListener('input',()=>sync(true)));$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;
+function setMode(n){$('mode').value=n;sync(true)}$('mode1Btn').onclick=()=>setMode(1);$('mode2Btn').onclick=()=>setMode(2);$('mode3Btn').onclick=()=>setMode(3);
+$('resetBtn').onclick=()=>{Object.assign(state,{running:true,t:0,speed:1,A:.04,L:1.2,f:50,n:3});for(const [id,val] of [['speed',1],['amp',.04],['length',1.2],['freq',50],['mode',3]])$(id).value=val;updateUI()};
+$('fullscreenBtn').onclick=async()=>{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()};
+
+function line(x1,y1,x2,y2,c,w=1,d=[]){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=w;ctx.setLineDash(d);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore()}
+function circle(x,y,r,f,s=null){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=f;ctx.fill();if(s){ctx.strokeStyle=s;ctx.lineWidth=2;ctx.stroke()}}
+function text(t,x,y,s=12,c='#fff',a='left',w='normal'){ctx.font=`${w} ${s}px Segoe UI`;ctx.fillStyle=c;ctx.textAlign=a;ctx.fillText(t,x,y)}
+
+function draw(){
+ const W=view.clientWidth,H=view.clientHeight;ctx.clearRect(0,0,W,H);
+ if($('showGrid').checked){for(let x=0;x<W;x+=40)line(x,0,x,H,'rgba(60,120,145,.17)');for(let y=0;y<H;y+=40)line(0,y,W,y,'rgba(60,120,145,.17)')}
+ const left=95,right=W-95,mid=H*.50,ampPix=Math.min(130,H*.18),mapX=x=>left+(right-left)*x/state.L;
+ line(left,mid,right,mid,'rgba(190,230,242,.35)',1.5,[7,7]);
+
+ // fixed supports
+ ctx.fillStyle='#6d8793';ctx.fillRect(left-24,mid-110,18,220);ctx.fillRect(right+6,mid-110,18,220);
+ for(let y=mid-105;y<mid+110;y+=18){line(left-24,y,left-42,y+14,'#405b67',3);line(right+24,y,right+42,y+14,'#405b67',3)}
+ text('CỐ ĐỊNH',left,mid-135,11,'#d7edf5','center','bold');text('CỐ ĐỊNH',right,mid-135,11,'#d7edf5','center','bold');
+
+ // envelope
+ if($('showEnvelope').checked){
+  ctx.save();ctx.setLineDash([7,6]);ctx.lineWidth=1.7;
+  ctx.strokeStyle='rgba(255,209,102,.65)';ctx.beginPath();
+  for(let i=0;i<=360;i++){const x=state.L*i/360,X=mapX(x),Y=mid-ampEnvelope(x)/state.A*ampPix;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)}ctx.stroke();
+  ctx.beginPath();for(let i=0;i<=360;i++){const x=state.L*i/360,X=mapX(x),Y=mid+ampEnvelope(x)/state.A*ampPix;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)}ctx.stroke();ctx.restore()
+ }
+
+ // persistence: nhiều pha chồng mờ để mô phỏng cảm giác "bó sóng liên tục" ở tần số cao
+ if($('showPersistence').checked){
+   ctx.save();
+   const samples=18;
+   for(let p=0;p<samples;p++){
+     const ph=2*Math.PI*p/(samples-1);
+     ctx.strokeStyle=`rgba(99,220,255,${0.035 + 0.018*p/samples})`;
+     ctx.lineWidth=1.2;
+     ctx.beginPath();
+     for(let i=0;i<=360;i++){
+       const x=state.L*i/360,X=mapX(x);
+       const y=state.A*Math.sin(state.n*Math.PI*x/state.L)*Math.cos(ph);
+       const Y=mid-y/state.A*ampPix;
+       i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);
+     }
+     ctx.stroke();
+   }
+   ctx.restore();
+ }
+
+ // standing wave
+ ctx.strokeStyle='#63dcff';ctx.lineWidth=4;ctx.shadowColor='#63dcff';ctx.shadowBlur=9;ctx.beginPath();
+ for(let i=0;i<=420;i++){const x=state.L*i/420,X=mapX(x),Y=mid-yAt(x)/state.A*ampPix;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)}ctx.stroke();ctx.shadowBlur=0;
+
+ // material points
+ for(let i=0;i<=60;i++){const x=state.L*i/60;circle(mapX(x),mid-yAt(x)/state.A*ampPix,2.5,'#d9f6ff')}
+
+ // nodes
+ if($('showNodes').checked){
+  for(let j=0;j<=state.n;j++){const x=state.L*j/state.n,X=mapX(x);circle(X,mid,6,'#ff6b6b','#fff');text('N',X,mid+22,10,'#ffaaaa','center','bold')}
+ }
+ // antinodes
+ if($('showAntinodes').checked){
+  for(let j=0;j<state.n;j++){const x=state.L*(j+.5)/state.n,X=mapX(x),sign=Math.sin(state.n*Math.PI*x/state.L),Y=mid-sign*Math.cos(omega()*state.t)*ampPix;circle(X,Y,6,'#ffd166','#fff');text('B',X,mid-ampPix-16,10,'#ffe69a','center','bold')}
+ }
+
+ // segment count braces
+ for(let j=0;j<state.n;j++){const x1=mapX(state.L*j/state.n),x2=mapX(state.L*(j+1)/state.n),yb=mid+ampPix+60;line(x1,yb,x2,yb,'rgba(255,255,255,.55)',1.5);line(x1,yb-6,x1,yb+6,'#fff',1.5);line(x2,yb-6,x2,yb+6,'#fff',1.5);text('λ/2',(x1+x2)/2,yb+18,10,'#fff','center','bold')}
+
+ // info card
+ const bx=left+10,by=90,bw=260,bh=82;ctx.fillStyle='rgba(7,20,28,.78)';ctx.fillRect(bx,by,bw,bh);ctx.strokeStyle='#315d70';ctx.strokeRect(bx,by,bw,bh);
+ text(`MODE n = ${state.n}`,bx+14,by+24,13,'#ffd166','left','bold');
+ text(`L = ${state.L.toFixed(1)} m = ${state.n}·λ/2`,bx+14,by+49,11,'#dff6ff','left','bold');
+ text(`f = ${state.f.toFixed(0)} Hz   ·   v = ${waveV().toFixed(1)} m/s`,bx+14,by+69,11,'#9feaff','left','bold')
+}
+function tick(now){requestAnimationFrame(tick);const dt=Math.min(.033,(now-state.last)/1000);state.last=now;if(state.running)state.t+=dt*state.speed;draw();updateUI()}
+updateUI();requestAnimationFrame(tick);
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!canvas.captureStream||!window.MediaRecorder)return;const m=mime();rec=new MediaRecorder(canvas.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`034_Song_dung_day_hai_dau_co_dinh.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+</script>
+</body></html>

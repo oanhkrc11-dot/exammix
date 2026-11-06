@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-26 Phản xạ sóng trên đầu cố định</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#030b14;color:#eef8fb}
+#app{display:grid;grid-template-columns:245px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800;letter-spacing:1px}h1{font-size:17px;margin:4px 0 6px}
+.desc{font-size:10.5px;color:#aac3cd;line-height:1.35;margin:0 0 8px}
+.ctl{display:grid;grid-template-columns:64px 1fr 58px;gap:5px;align-items:center;margin:5px 0}
+.ctl label{font-size:9.8px}.ctl output{font-size:9.4px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}
+.check,.btn{font-size:9.5px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}
+.btn{font-weight:800;cursor:pointer}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 50% 35%,#123d58 0%,#0a263b 42%,#061725 75%,#030b13 100%)}
+#sim{position:absolute;inset:0;width:100%;height:100%}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(245,250,252,.95);color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:11px;font-weight:700;z-index:3}
+#hud{position:absolute;right:12px;bottom:12px;display:flex;gap:10px;background:rgba(7,20,28,.88);border:1px solid #316376;border-radius:10px;padding:7px 9px;z-index:3}
+.hud span{display:block;font-size:8px;color:#98bac8}.hud b{font-size:10.4px}
+#note{position:absolute;left:12px;bottom:12px;width:365px;background:rgba(7,20,28,.88);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.3px;color:#d8edf6;z-index:3}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);font-size:10px;font-weight:700;z-index:3}
+.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="ey">PHYSICS 11 LAB · STABLE</div>
+<h1>26 · Phản xạ sóng trên đầu cố định</h1>
+<p class="desc">Xung truyền đến đầu cố định rồi phản xạ trở lại với dấu ngược lại, tương ứng đổi pha π.</p>
+
+<div class="ctl"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Biên độ A</label><input id="amp" type="range" min=".20" max="1.20" step=".05" value=".75"><output id="ampOut"></output></div>
+<div class="ctl"><label>Vận tốc v</label><input id="waveV" type="range" min=".50" max="4.00" step=".10" value="1.80"><output id="waveVOut"></output></div>
+<div class="ctl"><label>Độ rộng xung</label><input id="width" type="range" min=".30" max="1.50" step=".05" value=".70"><output id="widthOut"></output></div>
+<div class="ctl"><label>Vị trí M</label><input id="probeX" type="range" min="1" max="10.5" step=".1" value="7"><output id="probeXOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showIncident" type="checkbox" checked> Xung tới</label>
+<label class="check"><input id="showReflected" type="checkbox" checked> Xung phản xạ</label>
+<label class="check"><input id="showResult" type="checkbox" checked> Tổng hợp</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="pulseBtn" class="btn">⚡ Phát xung lại</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+<div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view">
+<canvas id="sim"></canvas>
+<div id="formula">Đầu cố định: xung phản xạ đổi dấu ⇒ Δφ = π</div>
+<div id="hud">
+<div class="hud"><span>t</span><b id="tHud"></b></div>
+<div class="hud"><span>v</span><b id="vHud"></b></div>
+<div class="hud"><span>u(M)</span><b id="uHud"></b></div>
+<div class="hud"><span>Trạng thái</span><b id="stateHud"></b></div>
+</div>
+<div id="note">Xung xanh truyền sang phải. Khi chạm đầu cố định, xung phản xạ màu cam quay lại với dấu ngược: đỉnh trở thành lõm. Điểm cố định luôn có li độ bằng 0.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const canvas=$('sim'),ctx=canvas.getContext('2d'),view=$('view');
+const state={running:true,t:0,speed:1,A:.75,v:1.8,w:.70,probeX:7,last:performance.now()};
+const L=12;
+function resize(){const r=view.getBoundingClientRect();canvas.width=Math.max(1,Math.floor(r.width*devicePixelRatio));canvas.height=Math.max(1,Math.floor(r.height*devicePixelRatio));canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+window.addEventListener('resize',resize);resize();
+
+function gauss(z){return Math.exp(-(z*z)/(2*state.w*state.w))}
+function inc(x){const xc=1.6+state.v*state.t;return state.A*gauss(x-xc)}
+function refl(x){const xc=2*L-(1.6+state.v*state.t);return -state.A*gauss(x-xc)}
+function total(x){return inc(x)+refl(x)}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('ampOut').value=state.A.toFixed(2)+' m';$('waveVOut').value=state.v.toFixed(2)+' m/s';$('widthOut').value=state.w.toFixed(2)+' m';$('probeXOut').value=state.probeX.toFixed(1)+' m';
+ $('tHud').textContent=state.t.toFixed(2)+' s';$('vHud').textContent=state.v.toFixed(2)+' m/s';$('uHud').textContent=total(state.probeX).toFixed(2)+' m';
+ const arrive=(L-1.6)/state.v;
+ $('stateHud').textContent=state.t<arrive?'Xung tới':(state.t<arrive+2.5/state.v?'Đang phản xạ':'Xung phản xạ')
+}
+function sync(){state.speed=+$('speed').value;state.A=+$('amp').value;state.v=+$('waveV').value;state.w=+$('width').value;state.probeX=+$('probeX').value;state.t=0;updateUI()}
+['amp','waveV','width','probeX'].forEach(id=>$(id).addEventListener('input',sync));$('speed').addEventListener('input',()=>{state.speed=+$('speed').value;updateUI()});
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;$('pulseBtn').onclick=()=>{state.t=0;state.running=true};
+$('resetBtn').onclick=()=>{Object.assign(state,{running:true,t:0,speed:1,A:.75,v:1.8,w:.70,probeX:7});for(const [id,val] of [['speed',1],['amp',.75],['waveV',1.8],['width',.7],['probeX',7]])$(id).value=val;updateUI()};
+$('fullscreenBtn').onclick=async()=>{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()};
+
+function line(x1,y1,x2,y2,color,width=1,dash=[]){ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore()}
+function circle(x,y,r,fill,stroke=null){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke()}}
+function text(t,x,y,size=12,color='#fff',align='left',weight='normal'){ctx.font=`${weight} ${size}px Segoe UI`;ctx.fillStyle=color;ctx.textAlign=align;ctx.fillText(t,x,y)}
+
+function drawCurve(fn,color,width,left,right,midY,ampPix,mapX){
+ ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();let first=true;
+ for(let i=0;i<=360;i++){const x=L*i/360,X=mapX(x),Y=midY-fn(x)/state.A*ampPix;if(first){ctx.moveTo(X,Y);first=false}else ctx.lineTo(X,Y)}ctx.stroke()
+}
+function draw(){
+ const W=view.clientWidth,H=view.clientHeight;ctx.clearRect(0,0,W,H);
+ if($('showGrid').checked){for(let x=0;x<W;x+=40)line(x,0,x,H,'rgba(60,120,145,.17)');for(let y=0;y<H;y+=40)line(0,y,W,y,'rgba(60,120,145,.17)')}
+ const left=80,right=W*.83,midY=H*.48,ampPix=Math.min(115,H*.17),mapX=x=>left+(right-left)*x/L;
+
+ line(left,midY,right,midY,'rgba(180,225,240,.35)',1.5,[6,6]);
+ // fixed end wall
+ ctx.fillStyle='#8ea8b3';ctx.fillRect(right,midY-135,18,270);
+ for(let yy=midY-130;yy<midY+135;yy+=18)line(right+18,yy,right+42,yy-14,'#526a75',3);
+ text('ĐẦU CỐ ĐỊNH',right-8,midY-155,12,'#d7edf5','right','bold');
+ circle(right,midY,6,'#ffffff');
+
+ // arrows
+ line(left+70,midY-155,left+190,midY-155,'#63dcff',4);ctx.fillStyle='#63dcff';ctx.beginPath();ctx.moveTo(left+190,midY-155);ctx.lineTo(left+172,midY-165);ctx.lineTo(left+172,midY-145);ctx.closePath();ctx.fill();text('xung tới',left+130,midY-172,11,'#9feaff','center','bold');
+ line(right-70,midY+155,right-190,midY+155,'#ffb45a',4);ctx.fillStyle='#ffb45a';ctx.beginPath();ctx.moveTo(right-190,midY+155);ctx.lineTo(right-172,midY+145);ctx.lineTo(right-172,midY+165);ctx.closePath();ctx.fill();text('xung phản xạ',right-130,midY+180,11,'#ffd09a','center','bold');
+
+ if($('showIncident').checked)drawCurve(inc,'#63dcff',3,left,right,midY,ampPix,mapX);
+ if($('showReflected').checked)drawCurve(refl,'#ff9f43',3,left,right,midY,ampPix,mapX);
+ if($('showResult').checked){ctx.shadowColor='#ffffff';ctx.shadowBlur=6;drawCurve(total,'#f1f6f8',4,left,right,midY,ampPix,mapX);ctx.shadowBlur=0}
+
+ // particles on resulting string
+ for(let i=0;i<=44;i++){const x=L*i/44;circle(mapX(x),midY-total(x)/state.A*ampPix,2.7,'#d9f6ff')}
+
+ // probe
+ const Xm=mapX(state.probeX),Ym=midY-total(state.probeX)/state.A*ampPix;circle(Xm,Ym,8,'#ff6b6b','#fff');text('M',Xm,Ym-18,12,'#ffaaaa','center','bold');
+
+ // boundary condition label
+ line(right-110,midY-50,right,midY-50,'rgba(255,255,255,.55)',1.5,[5,5]);
+ text('u = 0 tại đầu cố định',right-115,midY-58,11,'#ffffff','right','bold');
+
+ // phase flip panel
+ const bx=W*.08,by=H*.14,bw=220,bh=92;
+ ctx.fillStyle='rgba(7,20,28,.78)';ctx.fillRect(bx,by,bw,bh);
+ ctx.strokeStyle='#315d70';ctx.strokeRect(bx,by,bw,bh);
+ text('QUY TẮC PHẢN XẠ',bx+bw/2,by+22,12,'#dff6ff','center','bold');
+ text('Đỉnh tới  →  lõm phản xạ',bx+12,by+49,11,'#ffd166','left','bold');
+ text('Đổi dấu  ⇒  lệch pha π',bx+12,by+72,11,'#ffb45a','left','bold');
+}
+function tick(now){
+ requestAnimationFrame(tick);
+ const dt=Math.min(.033,(now-state.last)/1000);state.last=now;
+ if(state.running)state.t+=dt*state.speed;
+ draw();updateUI()
+}
+updateUI();requestAnimationFrame(tick);
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;
+function pickMime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!canvas.captureStream||!window.MediaRecorder)return;const mime=pickMime();rec=new MediaRecorder(canvas.captureStream(30),mime?{mimeType:mime,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||mime||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`026_Phan_xa_song_dau_co_dinh.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+</script>
+</body>
+</html>

@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Đo đường kính bằng thước cặp</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#020812;--panel:#071725;--card:#0a1e30;--line:#244963;
+  --cyan:#64ddff;--yellow:#ffda69;--green:#7fffc2;--red:#ff8585;
+  --text:#eefaff;--muted:#9bb9ca;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#020812;color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:370px;min-width:345px;max-width:385px;height:100%;overflow:auto;padding:14px;
+  background:linear-gradient(180deg,#081a2a,#04101b);
+  border-right:1px solid rgba(100,221,255,.22);z-index:20
+}
+#view{position:relative;flex:1;height:100%;overflow:hidden;min-width:0}
+.title{font-weight:800;font-size:15px;letter-spacing:.04em}
+.kicker{font-size:11px;color:var(--muted);margin-top:4px}
+.simTitle{font-size:18px;color:var(--cyan);font-weight:800;margin:12px 0 7px;text-transform:uppercase}
+.desc{font-size:12px;line-height:1.45;color:#cfe5f2}
+.section{margin-top:11px;padding:11px;border:1px solid rgba(100,221,255,.18);border-radius:12px;background:linear-gradient(180deg,rgba(13,36,55,.95),rgba(6,21,34,.94))}
+.section h3{margin:0 0 10px;font-size:12px;color:#b7edff;text-transform:uppercase;letter-spacing:.06em}
+.control{margin:10px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.row label{font-size:12px;font-weight:700}
+.value{font-size:12px;color:var(--yellow);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:#55cffa}
+.check{display:flex;align-items:center;gap:8px;font-size:12px;margin:8px 0}
+.check input{accent-color:#55cffa}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+button{min-height:40px;border:1px solid rgba(120,220,255,.22);border-radius:10px;padding:8px 6px;background:#10314b;color:#fff;font-weight:700;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+#measureBtn{background:#17683f}
+#closeBtn{background:#4a5520}
+#resetBtn{background:#593549}
+.note{font-size:11px;line-height:1.48;color:#b7cede}
+#resultBox{padding:9px;border-radius:9px;background:#06131f;border:1px solid rgba(100,221,255,.15);font-size:12px;line-height:1.5}
+.good{color:var(--green);font-weight:700}
+.warn{color:var(--yellow);font-weight:700}
+.bad{color:var(--red);font-weight:700}
+#info{
+  position:absolute;top:14px;right:14px;width:315px;padding:11px 13px;border-radius:13px;
+  background:rgba(4,15,25,.93);border:1px solid rgba(100,221,255,.28);z-index:10;
+  backdrop-filter:blur(5px);font-size:12px;pointer-events:none
+}
+#info .head{font-size:11px;text-transform:uppercase;color:#b8efff;font-weight:800;margin-bottom:6px}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-variant-numeric:tabular-nums}
+#credit{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);color:#ffdc70;font-size:18px;font-weight:800;text-shadow:0 0 12px rgba(255,220,112,.28);z-index:7;pointer-events:none}
+#tooltip{position:absolute;display:none;z-index:30;pointer-events:none;padding:8px 10px;border-radius:9px;background:rgba(4,14,23,.96);border:1px solid rgba(100,219,255,.3);font-size:11px;line-height:1.4;color:#eefaff}
+.label3d{padding:4px 7px;border-radius:8px;background:rgba(4,14,23,.8);border:1px solid rgba(100,219,255,.25);font-size:11px;font-weight:700;color:#e8f8ff;white-space:nowrap}
+.tableWrap{max-height:180px;overflow:auto;border:1px solid rgba(100,221,255,.13);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th,td{padding:6px;border-bottom:1px solid rgba(100,221,255,.10);text-align:center}
+th{position:sticky;top:0;background:#0c263a;color:#bdeeff}
+.readingCard{display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-size:12px;padding:8px;border-radius:8px;background:#06131f}
+@media(max-width:1100px){#panel{width:345px;min-width:345px}#info{width:270px}#credit{font-size:15px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+    <div class="kicker">ĐO LƯỜNG · THƯỚC CẶP</div>
+    <div class="simTitle">03. Đo đường kính bằng thước cặp</div>
+    <div class="desc">
+      Mô phỏng thước cặp 3D để đo <b>đường kính ngoài</b> của vật hình trụ.
+      Học sinh quan sát vị trí hàm động, đọc <b>thang chính</b>, tìm <b>vạch du xích trùng nhau</b>,
+      rồi tính số đo cuối cùng.
+    </div>
+
+    <div class="section">
+      <h3>Vật cần đo</h3>
+      <div class="control">
+        <div class="row"><label>Đường kính thật</label><span class="value" id="diamText">24.36 mm</span></div>
+        <input id="diamSlider" type="range" min="8.00" max="45.00" step="0.02" value="24.36">
+      </div>
+      <div class="check">
+        <input type="checkbox" id="showTrue" checked>
+        <label for="showTrue">Hiện đường kính thật trong hộp thông số</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Thước cặp</h3>
+      <div class="control">
+        <div class="row"><label>Độ chính xác du xích</label><span class="value" id="leastText">0.02 mm</span></div>
+        <input id="leastSlider" type="range" min="0" max="2" step="1" value="1">
+      </div>
+      <div class="control">
+        <div class="row"><label>Độ mở hàm động</label><span class="value" id="jawText">27.00 mm</span></div>
+        <input id="jawSlider" type="range" min="8.00" max="50.00" step="0.02" value="27.00">
+      </div>
+      <div class="check">
+        <input type="checkbox" id="snapContact" checked>
+        <label for="snapContact">Tự dừng hàm khi vừa chạm vật</label>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="showVernier" checked>
+        <label for="showVernier">Hiện số vạch du xích</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Thao tác</h3>
+      <div class="buttons">
+        <button id="closeBtn">⇥ Khép hàm đo</button>
+        <button id="measureBtn">📏 Đọc thước</button>
+        <button id="recordBtn">＋ Ghi kết quả</button>
+        <button id="fitBtn">⛶ Fit toàn cảnh</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+        <button id="clearData">Xóa bảng</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Cách đọc hiện tại</h3>
+      <div class="readingCard">
+        <span>Thang chính:</span><b id="mainRead">—</b>
+        <span>Vạch du xích trùng:</span><b id="vernierIndex">—</b>
+        <span>Phần du xích:</span><b id="vernierRead">—</b>
+        <span>Số đo:</span><b id="totalRead">—</b>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Kết quả đo</h3>
+      <div id="resultBox">Hãy khép hàm cho tới khi chạm vật rồi bấm “Đọc thước”.</div>
+    </div>
+
+    <div class="section">
+      <h3>Bảng số liệu</h3>
+      <div class="tableWrap">
+        <table>
+          <thead><tr><th>Lần</th><th>D đo (mm)</th><th>Δ (mm)</th></tr></thead>
+          <tbody id="dataBody"></tbody>
+        </table>
+      </div>
+      <div class="note" id="statText" style="margin-top:8px">Chưa có dữ liệu.</div>
+    </div>
+
+    <div class="section">
+      <h3>Mô hình hóa</h3>
+      <div class="note">
+        Thước cặp được mô hình hóa với thang chính chia theo mm và du xích có độ chính xác
+        0,10 mm; 0,02 mm hoặc 0,01 mm. Khi hai hàm vừa chạm vật, độ mở hàm bằng đường kính vật.
+        Số đo được lượng tử hóa theo độ chính xác du xích.
+        Kích thước hình học đã phóng đại để dễ nhìn trên màn hình.
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="info">
+      <div class="head">Thông số tức thời</div>
+      <div class="infoGrid">
+        <span>Đường kính thật</span><b id="trueInfo">24.36 mm</b>
+        <span>Độ mở hàm</span><b id="jawInfo">27.00 mm</b>
+        <span>Độ chính xác</span><b id="leastInfo">0.02 mm</b>
+        <span>Trạng thái tiếp xúc</span><b id="contactInfo">Chưa chạm</b>
+        <span>Thang chính</span><b id="mainInfo">—</b>
+        <span>Du xích</span><b id="vernierInfo">—</b>
+      </div>
+    </div>
+    <div id="tooltip"></div>
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* =========================================================
+   1. DOM + STATE
+========================================================= */
+const $=id=>document.getElementById(id);
+const view=$('view');
+const diamSlider=$('diamSlider'), leastSlider=$('leastSlider'), jawSlider=$('jawSlider');
+const snapContact=$('snapContact'), showTrue=$('showTrue'), showVernier=$('showVernier');
+
+const LEASTS=[0.10,0.02,0.01];
+
+const state={
+  diameter:24.36,
+  least:0.02,
+  jaw:27.00,
+  rulerMax:50,
+  touching:false,
+  lastMeasure:null,
+  records:[],
+  closing:false,
+  lastStamp:performance.now()
+};
+
+/* =========================================================
+   2. THREE SCENE
+========================================================= */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x020812);
+scene.fog=new THREE.Fog(0x020812,20,48);
+
+const camera=new THREE.PerspectiveCamera(44,view.clientWidth/view.clientHeight,.1,100);
+camera.position.set(10,7,13);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.07;
+controls.minDistance=7;
+controls.maxDistance=28;
+controls.minPolarAngle=.1;
+controls.maxPolarAngle=Math.PI*.49;
+controls.target.set(1,0,0);
+
+/* =========================================================
+   3. LIGHTING / FLOOR
+========================================================= */
+scene.add(new THREE.HemisphereLight(0xa8e7ff,0x142331,1.25));
+const key=new THREE.DirectionalLight(0xffffff,1.35);
+key.position.set(8,14,9);
+key.castShadow=true;
+scene.add(key);
+
+const fill=new THREE.PointLight(0x45cfff,16,30,2);
+fill.position.set(-8,5,8);
+scene.add(fill);
+
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(40,24),
+  new THREE.MeshPhongMaterial({color:0x07131f,shininess:20})
+);
+floor.rotation.x=-Math.PI/2;
+floor.position.y=-2.2;
+floor.receiveShadow=true;
+scene.add(floor);
+
+const grid=new THREE.GridHelper(40,40,0x1e628b,0x123149);
+grid.position.y=-2.18;
+grid.material.transparent=true;
+grid.material.opacity=.25;
+scene.add(grid);
+
+/* =========================================================
+   4. CALIPER GEOMETRY
+   scale: 10 mm = 1 world unit
+========================================================= */
+const SCALE=.10;
+function mmToX(mm){ return -2.5 + mm*SCALE; }
+
+const caliper=new THREE.Group();
+scene.add(caliper);
+
+// main beam
+const beam=new THREE.Mesh(
+  new THREE.BoxGeometry(7.0,.42,.50),
+  new THREE.MeshPhongMaterial({color:0xc5d0d7,shininess:90})
+);
+beam.position.set(.5,-.35,0);
+beam.castShadow=true;
+beam.receiveShadow=true;
+caliper.add(beam);
+
+// fixed jaw
+const metalMat=new THREE.MeshPhongMaterial({color:0xd8e0e5,shininess:100});
+const darkMat=new THREE.MeshPhongMaterial({color:0x55636c,shininess:70});
+
+const fixedJaw=new THREE.Group();
+const fj1=new THREE.Mesh(new THREE.BoxGeometry(.34,2.3,.65),metalMat);
+fj1.position.set(-2.5,.62,0);
+const fjTip=new THREE.Mesh(new THREE.BoxGeometry(.70,.34,.65),metalMat);
+fjTip.position.set(-2.18,1.60,0);
+fixedJaw.add(fj1,fjTip);
+caliper.add(fixedJaw);
+
+// slider + moving jaw
+const sliderGroup=new THREE.Group();
+caliper.add(sliderGroup);
+
+const sliderBlock=new THREE.Mesh(new THREE.BoxGeometry(2.2,.95,.70),darkMat);
+sliderBlock.position.y=-.08;
+sliderGroup.add(sliderBlock);
+
+const mj1=new THREE.Mesh(new THREE.BoxGeometry(.34,2.05,.65),metalMat);
+mj1.position.set(0,.72,0);
+const mjTip=new THREE.Mesh(new THREE.BoxGeometry(.72,.34,.65),metalMat);
+mjTip.position.set(-.34,1.60,0);
+sliderGroup.add(mj1,mjTip);
+
+// main scale ticks
+const mainTicks=new THREE.Group();
+caliper.add(mainTicks);
+const mainLabels=new THREE.Group();
+caliper.add(mainLabels);
+
+function buildMainScale(){
+  while(mainTicks.children.length){
+    const o=mainTicks.children.pop(); o.geometry?.dispose(); o.material?.dispose();
+  }
+  while(mainLabels.children.length) mainLabels.remove(mainLabels.children[0]);
+
+  for(let mm=0;mm<=50;mm++){
+    const major=mm%10===0;
+    const mid=mm%5===0;
+    const h=major?.44:(mid?.32:.22);
+    const tick=new THREE.Mesh(
+      new THREE.BoxGeometry(.014,h,.03),
+      new THREE.MeshBasicMaterial({color:0x111820})
+    );
+    tick.position.set(mmToX(mm),.05+h/2,.265);
+    mainTicks.add(tick);
+
+    if(major){
+      const d=document.createElement('div');
+      d.className='label3d';
+      d.style.background='rgba(240,245,248,.88)';
+      d.style.color='#101820';
+      d.style.border='none';
+      d.style.padding='1px 4px';
+      d.textContent=String(mm);
+      const lab=new CSS2DObject(d);
+      lab.position.set(mmToX(mm),.75,.34);
+      mainLabels.add(lab);
+    }
+  }
+}
+buildMainScale();
+
+// vernier scale
+const vernierTicks=new THREE.Group();
+sliderGroup.add(vernierTicks);
+const vernierLabels=new THREE.Group();
+sliderGroup.add(vernierLabels);
+
+function vernierDivisionCount(){
+  if(state.least===0.10) return 10;
+  if(state.least===0.02) return 50;
+  return 100;
+}
+
+function buildVernier(){
+  while(vernierTicks.children.length){
+    const o=vernierTicks.children.pop(); o.geometry?.dispose(); o.material?.dispose();
+  }
+  while(vernierLabels.children.length) vernierLabels.remove(vernierLabels.children[0]);
+
+  const n=vernierDivisionCount();
+  // Render a visually manageable subset if 100 divisions; still calculate accurately.
+  const shown=Math.min(n,50);
+  const lengthWorld=1.8;
+  for(let i=0;i<=shown;i++){
+    const major=(i%(shown===50?10:5)===0);
+    const x=-.92 + lengthWorld*(i/shown);
+    const h=major?.27:.17;
+    const tick=new THREE.Mesh(
+      new THREE.BoxGeometry(.012,h,.03),
+      new THREE.MeshBasicMaterial({color:0xffdb67})
+    );
+    tick.position.set(x,-.62+h/2,.37);
+    vernierTicks.add(tick);
+
+    if(major && showVernier.checked){
+      const d=document.createElement('div');
+      d.className='label3d';
+      d.style.background='rgba(40,38,20,.85)';
+      d.style.color='#ffdf70';
+      d.style.padding='1px 4px';
+      d.textContent=String(Math.round(i*n/shown));
+      const lab=new CSS2DObject(d);
+      lab.position.set(x,-.86,.40);
+      vernierLabels.add(lab);
+    }
+  }
+}
+
+/* =========================================================
+   5. OBJECT
+========================================================= */
+const objectGroup=new THREE.Group();
+scene.add(objectGroup);
+let cylinder=null;
+
+function rebuildObject(){
+  if(cylinder){
+    objectGroup.remove(cylinder);
+    cylinder.geometry.dispose();
+  }
+  const r=state.diameter*SCALE/2;
+  cylinder=new THREE.Mesh(
+    new THREE.CylinderGeometry(r,r,1.35,48),
+    new THREE.MeshPhongMaterial({color:0x3fb9ff,emissive:0x07374e,shininess:90})
+  );
+  cylinder.rotation.x=Math.PI/2;
+  cylinder.position.set(mmToX(state.diameter/2),.98,0);
+  cylinder.castShadow=true;
+  objectGroup.add(cylinder);
+}
+
+/* =========================================================
+   6. POSITION MOVING JAW
+========================================================= */
+function updateJawGeometry(){
+  // inner face of fixed jaw is at x = mmToX(0)
+  // inner face of moving jaw follows jaw opening
+  sliderGroup.position.x=mmToX(state.jaw);
+  state.touching=Math.abs(state.jaw-state.diameter)<=state.least/2 + 0.001;
+  $('contactInfo').textContent=state.touching?'Vừa chạm vật':(state.jaw>state.diameter?'Chưa chạm':'Ép vào vật');
+  $('contactInfo').style.color=state.touching?'#7fffc2':(state.jaw>state.diameter?'#ffda69':'#ff8585');
+}
+
+/* =========================================================
+   7. VERNIER READING
+========================================================= */
+function quantizedReading(){
+  return Math.round(state.jaw/state.least)*state.least;
+}
+function readingParts(){
+  const total=quantizedReading();
+  const main=Math.floor(total); // mm on main scale immediately before vernier zero
+  let frac=total-main;
+  // avoid floating artifacts
+  let index=Math.round(frac/state.least);
+  const n=vernierDivisionCount();
+  if(index>=n){
+    return {main:main+1,index:0,vern:0,total};
+  }
+  return {main,index,vern:index*state.least,total};
+}
+
+function updateReadingPreview(){
+  if(!state.touching){
+    $('mainRead').textContent='—';
+    $('vernierIndex').textContent='—';
+    $('vernierRead').textContent='—';
+    $('totalRead').textContent='—';
+    $('mainInfo').textContent='—';
+    $('vernierInfo').textContent='—';
+    return;
+  }
+  const r=readingParts();
+  $('mainRead').textContent=`${r.main} mm`;
+  $('vernierIndex').textContent=`vạch ${r.index}`;
+  $('vernierRead').textContent=`${r.vern.toFixed(2)} mm`;
+  $('totalRead').textContent=`${r.total.toFixed(2)} mm`;
+  $('mainInfo').textContent=`${r.main} mm`;
+  $('vernierInfo').textContent=`${r.index} × ${state.least.toFixed(2)} mm`;
+}
+
+function performMeasure(){
+  if(!state.touching){
+    $('resultBox').innerHTML=
+      `<span class="warn">Hàm đo chưa vừa chạm vật.</span><br>`+
+      `Độ mở hiện tại: <b>${state.jaw.toFixed(2)} mm</b><br>`+
+      `Hãy khép/mở hàm đến gần đường kính vật rồi đọc lại.`;
+    state.lastMeasure=null;
+    return;
+  }
+  const r=readingParts();
+  const err=r.total-state.diameter;
+  state.lastMeasure={D:r.total,err};
+  $('resultBox').innerHTML=
+    `<b>Thang chính:</b> ${r.main} mm<br>`+
+    `<b>Du xích:</b> vạch ${r.index} × ${state.least.toFixed(2)} mm = ${r.vern.toFixed(2)} mm<br>`+
+    `<b>Đường kính đo được:</b> <span class="${Math.abs(err)<=state.least/2?'good':'warn'}">${r.total.toFixed(2)} mm</span><br>`+
+    `<b>Sai lệch so với giá trị thật:</b> ${err>=0?'+':''}${err.toFixed(3)} mm`;
+}
+
+/* =========================================================
+   8. AUTO CLOSE JAW
+========================================================= */
+function startClosing(){
+  state.closing=true;
+}
+function updateClosing(dt){
+  if(!state.closing) return;
+  const closeRate=12; // mm/s
+  state.jaw -= closeRate*dt;
+
+  if(snapContact.checked && state.jaw<=state.diameter){
+    state.jaw=state.diameter;
+    state.closing=false;
+  }else if(state.jaw<=8){
+    state.jaw=8;
+    state.closing=false;
+  }
+  jawSlider.value=state.jaw.toFixed(2);
+  updateJawGeometry();
+  updateReadingPreview();
+  updateUI();
+}
+
+/* =========================================================
+   9. DATA TABLE
+========================================================= */
+function renderTable(){
+  const body=$('dataBody');
+  body.innerHTML='';
+  state.records.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td><td>${r.D.toFixed(2)}</td><td>${r.err>=0?'+':''}${r.err.toFixed(3)}</td>`;
+    body.appendChild(tr);
+  });
+  if(!state.records.length){
+    $('statText').textContent='Chưa có dữ liệu.';
+    return;
+  }
+  const avg=state.records.reduce((s,r)=>s+r.D,0)/state.records.length;
+  const meanAbs=state.records.reduce((s,r)=>s+Math.abs(r.D-avg),0)/state.records.length;
+  $('statText').innerHTML=
+    `Giá trị trung bình: <b>${avg.toFixed(3)} mm</b><br>`+
+    `Độ lệch tuyệt đối trung bình: <b>${meanAbs.toFixed(3)} mm</b><br>`+
+    `Sai lệch trung bình so với giá trị thật hiện tại: <b>${(avg-state.diameter>=0?'+':'')+(avg-state.diameter).toFixed(3)} mm</b>`;
+}
+
+/* =========================================================
+   10. UI
+========================================================= */
+function updateUI(){
+  $('diamText').textContent=`${state.diameter.toFixed(2)} mm`;
+  $('leastText').textContent=`${state.least.toFixed(2)} mm`;
+  $('jawText').textContent=`${state.jaw.toFixed(2)} mm`;
+
+  $('trueInfo').textContent=showTrue.checked?`${state.diameter.toFixed(2)} mm`:'Ẩn';
+  $('jawInfo').textContent=`${state.jaw.toFixed(2)} mm`;
+  $('leastInfo').textContent=`${state.least.toFixed(2)} mm`;
+}
+
+/* =========================================================
+   11. EVENTS
+========================================================= */
+diamSlider.addEventListener('input',()=>{
+  state.diameter=parseFloat(diamSlider.value);
+  rebuildObject();
+
+  if(snapContact.checked && state.jaw<state.diameter){
+    state.jaw=state.diameter;
+    jawSlider.value=state.jaw.toFixed(2);
+  }
+  updateJawGeometry();
+  updateReadingPreview();
+  updateUI();
+  if(state.lastMeasure) performMeasure();
+});
+
+leastSlider.addEventListener('input',()=>{
+  state.least=LEASTS[parseInt(leastSlider.value,10)];
+  buildVernier();
+  updateJawGeometry();
+  updateReadingPreview();
+  updateUI();
+  if(state.lastMeasure) performMeasure();
+});
+
+jawSlider.addEventListener('input',()=>{
+  state.closing=false;
+  state.jaw=parseFloat(jawSlider.value);
+
+  if(snapContact.checked && state.jaw<state.diameter){
+    state.jaw=state.diameter;
+    jawSlider.value=state.jaw.toFixed(2);
+  }
+
+  updateJawGeometry();
+  updateReadingPreview();
+  updateUI();
+});
+
+showTrue.addEventListener('change',updateUI);
+showVernier.addEventListener('change',buildVernier);
+
+$('closeBtn').addEventListener('click',startClosing);
+$('measureBtn').addEventListener('click',performMeasure);
+$('recordBtn').addEventListener('click',()=>{
+  if(!state.lastMeasure) performMeasure();
+  if(!state.lastMeasure) return;
+  state.records.push({...state.lastMeasure});
+  renderTable();
+});
+$('clearData').addEventListener('click',()=>{
+  state.records=[];
+  renderTable();
+});
+$('resetBtn').addEventListener('click',resetAll);
+$('fitBtn').addEventListener('click',fitScene);
+
+/* =========================================================
+   12. TOOLTIP
+========================================================= */
+const raycaster=new THREE.Raycaster();
+const mouse=new THREE.Vector2();
+
+renderer.domElement.addEventListener('mousemove',e=>{
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+
+  const objs=[beam,sliderBlock,cylinder].filter(Boolean);
+  const hits=raycaster.intersectObjects(objs,false);
+  if(hits.length){
+    tooltip.style.display='block';
+    tooltip.style.left=`${e.offsetX+14}px`;
+    tooltip.style.top=`${e.offsetY+12}px`;
+    const o=hits[0].object;
+    if(o===cylinder){
+      tooltip.innerHTML=`<b>Vật hình trụ</b><br>D thật = ${state.diameter.toFixed(2)} mm`;
+    }else if(o===sliderBlock){
+      tooltip.innerHTML=`<b>Hàm động + du xích</b><br>Độ mở = ${state.jaw.toFixed(2)} mm`;
+    }else{
+      tooltip.innerHTML=`<b>Thang chính</b><br>GHĐ mô phỏng: 50 mm`;
+    }
+  }else tooltip.style.display='none';
+});
+renderer.domElement.addEventListener('mouseleave',()=>tooltip.style.display='none');
+
+/* =========================================================
+   13. CAMERA / RESET / RESIZE
+========================================================= */
+function fitScene(){
+  camera.position.set(10,7,13);
+  controls.target.set(0,.2,0);
+  controls.update();
+}
+function resetAll(){
+  diamSlider.value='24.36';
+  leastSlider.value='1';
+  jawSlider.value='27.00';
+  snapContact.checked=true;
+  showTrue.checked=true;
+  showVernier.checked=true;
+
+  state.diameter=24.36;
+  state.least=0.02;
+  state.jaw=27.00;
+  state.touching=false;
+  state.lastMeasure=null;
+  state.records=[];
+  state.closing=false;
+
+  $('resultBox').textContent='Hãy khép hàm cho tới khi chạm vật rồi bấm “Đọc thước”.';
+
+  rebuildObject();
+  buildVernier();
+  updateJawGeometry();
+  updateReadingPreview();
+  updateUI();
+  renderTable();
+  fitScene();
+}
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
+  labelRenderer.setSize(w,h);
+}
+window.addEventListener('resize',resize);
+
+/* =========================================================
+   14. ANIMATION
+========================================================= */
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt=(now-state.lastStamp)/1000;
+  state.lastStamp=now;
+  dt=Math.min(Math.max(dt,0),0.03);
+
+  updateClosing(dt);
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+resetAll();
+resize();
+animate(performance.now());
+</script>
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sóng âm trong ống khí</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#eef4ff;color:#0f172a}
+.app{width:min(1220px,96vw);margin:18px auto;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #dbe5f2;box-shadow:0 14px 36px rgba(15,23,42,.15)}
+header{background:#0b3b78;color:#fff;padding:18px 24px}
+header h1{margin:0 0 6px;font-size:32px}
+header p{margin:0;font-size:16px;opacity:.96}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid #e5e7eb}
+button{border:0;border-radius:12px;padding:11px 16px;font-size:15px;font-weight:700;color:white;cursor:pointer}
+#startBtn{background:#16a34a}
+#stopBtn{background:#dc2626}
+#pulseBtn{background:#7c3aed}
+#endBtn{background:#0ea5e9}
+#resetBtn{background:#2563eb}
+.box{display:flex;align-items:center;gap:9px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;font-size:14px}
+input[type=range]{width:140px;accent-color:#2563eb}
+.main{display:grid;grid-template-columns:1.5fr .8fr;gap:16px;padding:18px}
+.card{border:1px solid #dbe5f2;border-radius:16px;overflow:hidden;background:#fff}
+canvas{display:block;width:100%;height:auto;background:#fff}
+.info{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:0 18px 18px}
+.note{border:1px solid #e2e8f0;border-radius:14px;padding:14px;background:#f8fafc;line-height:1.5;font-size:15px}
+.note b{color:#0b3b78}
+@media(max-width:920px){.main{grid-template-columns:1fr}.info{grid-template-columns:1fr}header h1{font-size:25px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>Sóng âm trong ống khí</h1>
+  <p>Loa dao động làm các phần tử không khí dao động qua lại, tạo vùng nén – dãn truyền dọc theo ống.</p>
+</header>
+
+<div class="controls">
+  <button id="startBtn">▶ Phát âm liên tục</button>
+  <button id="pulseBtn">⚡ Phát một xung</button>
+  <button id="stopBtn">⏹ Ngừng loa</button>
+  <button id="endBtn">Đầu phải: HỞ</button>
+  <button id="resetBtn">↻ Đặt lại</button>
+
+  <label class="box">Tần số:
+    <input id="freqSlider" type="range" min="0.5" max="5" step="0.1" value="1.5">
+    <b><span id="freqValue">1.5</span> Hz</b>
+  </label>
+
+  <label class="box">Biên độ:
+    <input id="ampSlider" type="range" min="4" max="22" step="1" value="12">
+    <b><span id="ampValue">12</span> px</b>
+  </label>
+
+  <label class="box">Tốc độ truyền:
+    <input id="speedSlider" type="range" min="120" max="280" step="10" value="200">
+    <b><span id="speedValue">200</span> px/s</b>
+  </label>
+</div>
+
+<div class="main">
+  <div class="card"><canvas id="tubeCanvas" width="860" height="520"></canvas></div>
+  <div class="card"><canvas id="infoCanvas" width="430" height="520"></canvas></div>
+</div>
+
+<div class="info">
+  <div class="note"><b>Sóng âm là sóng dọc:</b> phần tử không khí dao động song song với phương truyền sóng.</div>
+  <div class="note"><b>Vùng nén:</b> mật độ và áp suất không khí lớn hơn bình thường. <b>Vùng dãn:</b> mật độ và áp suất nhỏ hơn.</div>
+  <div class="note"><b>Điều kiện biên:</b> đầu hở và đầu kín cho phản xạ khác nhau, là cơ sở hình thành cộng hưởng trong cột khí.</div>
+</div>
+</div>
+
+<script>
+const tubeCanvas=document.getElementById('tubeCanvas');
+const ctx=tubeCanvas.getContext('2d');
+const infoCanvas=document.getElementById('infoCanvas');
+const ictx=infoCanvas.getContext('2d');
+
+const startBtn=document.getElementById('startBtn');
+const pulseBtn=document.getElementById('pulseBtn');
+const stopBtn=document.getElementById('stopBtn');
+const endBtn=document.getElementById('endBtn');
+const resetBtn=document.getElementById('resetBtn');
+
+const freqSlider=document.getElementById('freqSlider');
+const ampSlider=document.getElementById('ampSlider');
+const speedSlider=document.getElementById('speedSlider');
+
+const freqValue=document.getElementById('freqValue');
+const ampValue=document.getElementById('ampValue');
+const speedValue=document.getElementById('speedValue');
+
+const W=tubeCanvas.width,H=tubeCanvas.height;
+const xL=120,xR=785,midY=255,L=xR-xL;
+const yTop=155,yBottom=355;
+
+let f=1.5,A=12,v=200;
+let mode='off'; // off | continuous | pulse
+let t=0,lastTs=null;
+let running=true;
+let endType='open';
+let driveStart=0;
+const pulseDuration=0.8;
+const particles=[];
+const cols=44,rows=7;
+
+for(let j=0;j<rows;j++){
+  for(let i=0;i<cols;i++){
+    const x=xL+15+i*(L-30)/(cols-1);
+    const y=yTop+22+j*(yBottom-yTop-44)/(rows-1);
+    particles.push({x0:x,y0:y,phase:(i%3)*0.05});
+  }
+}
+
+function updateParams(){
+  f=Number(freqSlider.value);
+  A=Number(ampSlider.value);
+  v=Number(speedSlider.value);
+  freqValue.textContent=f.toFixed(1);
+  ampValue.textContent=A;
+  speedValue.textContent=v;
+}
+
+function smoothRamp(z){
+  if(z<=0)return 0;
+  if(z>=1)return 1;
+  return z*z*(3-2*z);
+}
+
+function sourceEnvelope(tt){
+  if(mode==='off') return 0;
+  const td=tt-driveStart;
+  if(td<=0)return 0;
+  if(mode==='continuous') return smoothRamp(td/1.1);
+  if(mode==='pulse'){
+    if(td>=pulseDuration)return 0;
+    const s=Math.sin(Math.PI*td/pulseDuration);
+    return s*s;
+  }
+  return 0;
+}
+
+function incident(x,tt){
+  const tau=tt-(x-xL)/v;
+  if(tau<=driveStart)return 0;
+  const env=(mode==='continuous')
+    ? smoothRamp((tau-driveStart)/1.1)
+    : sourceEnvelope(tau);
+  if(env<=0)return 0;
+  return A*env*Math.sin(2*Math.PI*f*(tau-driveStart));
+}
+
+function reflected(x,tt){
+  const travel=L/v;
+  const tau=tt-driveStart-travel-(xR-x)/v;
+  if(tau<=0)return 0;
+
+  let env;
+  if(mode==='continuous'){
+    env=smoothRamp(tau/1.1);
+  }else if(mode==='pulse'){
+    if(tau>=pulseDuration)return 0;
+    const s=Math.sin(Math.PI*tau/pulseDuration);
+    env=s*s;
+  }else return 0;
+
+  // Với li độ phần tử không khí:
+  // đầu kín: phản xạ đảo pha li độ; đầu hở: phản xạ cùng pha li độ.
+  const sign=endType==='closed' ? -1 : 1;
+  return sign*A*env*Math.sin(2*Math.PI*f*tau);
+}
+
+function displacement(x,tt){
+  return incident(x,tt)+reflected(x,tt);
+}
+
+function localStrain(x,tt){
+  const dx=2;
+  return (displacement(Math.min(xR,x+dx),tt)-displacement(Math.max(xL,x-dx),tt))/(2*dx);
+}
+
+function drawTube(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f8fbff';
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle='#0b3b78';
+  ctx.font='bold 30px Arial';
+  ctx.textAlign='center';
+  ctx.fillText('Sóng âm truyền trong ống khí',W/2,46);
+
+  // tube body
+  ctx.fillStyle='#eef6ff';
+  ctx.fillRect(xL,yTop,xR-xL,yBottom-yTop);
+  ctx.strokeStyle='#334155';
+  ctx.lineWidth=4;
+  ctx.beginPath();
+  ctx.moveTo(xL,yTop);ctx.lineTo(xR,yTop);
+  ctx.moveTo(xL,yBottom);ctx.lineTo(xR,yBottom);
+  ctx.stroke();
+
+  // compression/rarefaction bands
+  for(let x=xL+5;x<xR-5;x+=8){
+    const e=localStrain(x,t);
+    if(Math.abs(e)<0.015)continue;
+    ctx.fillStyle=e<0?'rgba(239,68,68,.12)':'rgba(34,197,94,.10)';
+    ctx.fillRect(x-4,yTop+3,8,yBottom-yTop-6);
+  }
+
+  // particles
+  for(const p of particles){
+    const dx=displacement(p.x0,t);
+    ctx.beginPath();
+    ctx.arc(p.x0+dx,p.y0,3.4,0,Math.PI*2);
+    const e=localStrain(p.x0,t);
+    if(e<-.025) ctx.fillStyle='#dc2626';
+    else if(e>.025) ctx.fillStyle='#16a34a';
+    else ctx.fillStyle='#334155';
+    ctx.fill();
+  }
+
+  drawSpeaker();
+  drawRightEnd();
+
+  ctx.fillStyle='#475569';
+  ctx.font='16px Arial';
+  ctx.textAlign='left';
+
+  if(mode==='off'){
+    ctx.fillText('Loa đang dừng. Không khí chỉ còn dao động nếu trước đó đã nhận năng lượng.',70,430);
+  }else if(mode==='continuous'){
+    ctx.fillText('Loa đang dao động liên tục, tạo chuỗi vùng nén – dãn truyền sang phải.',70,430);
+  }else{
+    ctx.fillText('Loa phát một xung ngắn; gói nén – dãn đang truyền trong ống.',70,430);
+  }
+
+  ctx.fillText(
+    endType==='open'
+      ? 'Đầu phải hở: phần tử khí ở miệng ống có thể dao động mạnh.'
+      : 'Đầu phải kín: phần tử khí sát thành kín có li độ xấp xỉ bằng 0.',
+    70,458
+  );
+}
+
+function drawSpeaker(){
+  const sx=xL;
+  const faceX=sx+displacement(xL,t);
+  ctx.fillStyle='#475569';
+  ctx.fillRect(55,midY-70,45,140);
+  ctx.fillStyle='#64748b';
+  ctx.beginPath();
+  ctx.moveTo(100,midY-55);
+  ctx.lineTo(faceX,midY-28);
+  ctx.lineTo(faceX,midY+28);
+  ctx.lineTo(100,midY+55);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle='#0f172a';ctx.lineWidth=2;ctx.stroke();
+
+  ctx.fillStyle='#111827';
+  ctx.font='bold 18px Arial';
+  ctx.textAlign='center';
+  ctx.fillText('Loa',78,midY-92);
+}
+
+function drawRightEnd(){
+  if(endType==='closed'){
+    ctx.fillStyle='#cbd5e1';
+    ctx.fillRect(xR-4,yTop-5,28,yBottom-yTop+10);
+    ctx.strokeStyle='#475569';
+    ctx.lineWidth=2;
+    ctx.strokeRect(xR-4,yTop-5,28,yBottom-yTop+10);
+    ctx.fillStyle='#111827';
+    ctx.font='bold 18px Arial';
+    ctx.textAlign='center';
+    ctx.fillText('Đầu kín',xR+10,yTop-22);
+  }else{
+    ctx.strokeStyle='#0ea5e9';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(xR,yTop);ctx.lineTo(xR,yBottom);
+    ctx.stroke();
+    ctx.fillStyle='#111827';
+    ctx.font='bold 18px Arial';
+    ctx.textAlign='center';
+    ctx.fillText('Đầu hở',xR,yTop-22);
+  }
+}
+
+function box(x,y,w,h,fill,stroke){
+  ictx.fillStyle=fill;
+  ictx.strokeStyle=stroke;
+  ictx.lineWidth=2;
+  ictx.beginPath();
+  ictx.roundRect(x,y,w,h,14);
+  ictx.fill();
+  ictx.stroke();
+}
+
+function drawInfo(){
+  ictx.clearRect(0,0,430,520);
+  ictx.fillStyle='#fff';
+  ictx.fillRect(0,0,430,520);
+
+  ictx.fillStyle='#0b3b78';
+  ictx.font='bold 28px Arial';
+  ictx.textAlign='center';
+  ictx.fillText('Bản chất sóng âm',215,42);
+
+  box(18,72,394,108,'#f8fafc','#dbe5f2');
+  ictx.fillStyle='#111827';
+  ictx.textAlign='left';
+  ictx.font='bold 19px Arial';
+  ictx.fillText('Phần tử không khí',36,104);
+  ictx.font='16px Arial';
+  ictx.fillText('Dao động qua lại quanh vị trí cân bằng.',36,134);
+  ictx.fillText('Không chuyển động theo sóng.',36,160);
+
+  box(18,202,394,116,'#fff1f2','#fecdd3');
+  ictx.fillStyle='#b91c1c';
+  ictx.font='bold 19px Arial';
+  ictx.fillText('Vùng nén',36,236);
+  ictx.fillStyle='#111827';
+  ictx.font='16px Arial';
+  ictx.fillText('Các phần tử khí gần nhau hơn.',36,266);
+  ictx.fillText('Áp suất và mật độ lớn hơn.',36,294);
+
+  box(18,340,394,116,'#f0fdf4','#bbf7d0');
+  ictx.fillStyle='#15803d';
+  ictx.font='bold 19px Arial';
+  ictx.fillText('Vùng dãn',36,374);
+  ictx.fillStyle='#111827';
+  ictx.font='16px Arial';
+  ictx.fillText('Các phần tử khí xa nhau hơn.',36,404);
+  ictx.fillText('Áp suất và mật độ nhỏ hơn.',36,432);
+
+  ictx.fillStyle='#0f172a';
+  ictx.font='bold 16px Arial';
+  const lambda=v/f;
+  ictx.fillText(`λ ≈ ${lambda.toFixed(1)} px`,36,482);
+  ictx.fillText(`t = ${t.toFixed(2)} s`,230,482);
+}
+
+function animate(ts){
+  updateParams();
+  if(lastTs===null)lastTs=ts;
+  const dt=Math.min((ts-lastTs)/1000,.04);
+  lastTs=ts;
+  if(running)t+=dt;
+  drawTube();
+  drawInfo();
+  requestAnimationFrame(animate);
+}
+
+startBtn.addEventListener('click',()=>{
+  mode='continuous';
+  driveStart=t;
+  running=true;
+  lastTs=null;
+});
+pulseBtn.addEventListener('click',()=>{
+  mode='pulse';
+  driveStart=t;
+  running=true;
+  lastTs=null;
+});
+stopBtn.addEventListener('click',()=>{
+  mode='off';
+  running=true;
+  lastTs=null;
+});
+endBtn.addEventListener('click',()=>{
+  endType=endType==='open'?'closed':'open';
+  endBtn.textContent=`Đầu phải: ${endType==='open'?'HỞ':'KÍN'}`;
+});
+resetBtn.addEventListener('click',()=>{
+  mode='off';
+  t=0;
+  lastTs=null;
+  running=true;
+});
+
+[freqSlider,ampSlider,speedSlider].forEach(el=>el.addEventListener('input',updateParams));
+
+updateParams();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

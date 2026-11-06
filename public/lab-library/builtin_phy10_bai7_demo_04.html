@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mô phỏng vẽ đồ thị độ dịch chuyển - thời gian</title>
+<style>
+  :root{
+    --bg:#f6f8fc; --card:#ffffff; --text:#1f2937; --muted:#667085; --line:#d0d5dd;
+    --blue:#2563eb; --green:#16a34a; --orange:#f59e0b; --red:#dc2626; --purple:#7c3aed;
+    --soft:#eef4ff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text);
+  }
+  .wrap{max-width:1280px; margin:0 auto; padding:18px}
+  h1{margin:0 0 8px; font-size:clamp(22px,3vw,34px); color:#173a78}
+  .sub{margin:0 0 16px; color:var(--muted); line-height:1.6}
+  .layout{display:grid; grid-template-columns:minmax(0,1.45fr) minmax(320px,.95fr); gap:16px; align-items:start}
+  .card{background:var(--card); border:1px solid #e4e7ec; border-radius:18px; padding:14px}
+  .tableWrap{overflow:auto}
+  table{border-collapse:collapse; width:100%; min-width:620px; margin-top:10px}
+  th,td{border:2px solid #98a2b3; text-align:center; padding:10px 8px; font-size:16px}
+  th.label, td.label{font-weight:800; background:#f8fafc; min-width:145px}
+  .hiddenRow{opacity:.15; transition:.35s}
+  .shownRow{opacity:1}
+  .graphWrap{border-radius:14px; overflow:hidden; border:1px solid #dbe2ea; background:white}
+  svg{display:block; width:100%; height:auto}
+  .controls{display:grid; gap:10px}
+  .btns{display:grid; grid-template-columns:repeat(2,1fr); gap:8px}
+  button{
+    border:0; border-radius:10px; padding:10px 12px; cursor:pointer;
+    font-weight:800; font-size:14px;
+  }
+  .primary{background:var(--blue); color:white}
+  .secondary{background:#eef2f6; color:#1f2937}
+  .accent{background:var(--green); color:white}
+  .warn{background:var(--orange); color:white}
+  .purple{background:var(--purple); color:white}
+  .danger{background:var(--red); color:white}
+  .stepList{display:grid; gap:7px}
+  .stepItem{
+    border:1px solid #e4e7ec; border-radius:12px; padding:9px 10px; background:#fafcff; font-size:14px;
+  }
+  .stepItem.active{border-color:#84adff; background:#eef4ff}
+  .stepItem.done{border-color:#abefc6; background:#ecfdf3}
+  .status{background:#edf6ff; border:1px solid #cee4fb; color:#174a7f; font-weight:700; border-radius:12px; padding:12px; line-height:1.6}
+  .info{background:#fff9e9; border:1px solid #f0dc9b; color:#5c4b1e; border-radius:12px; padding:12px; line-height:1.6}
+  .legend{display:flex; flex-wrap:wrap; gap:12px; margin-top:8px; font-size:14px; color:#475467}
+  .dot{display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; vertical-align:middle}
+  .small{font-size:13px; color:var(--muted)}
+  .pill{display:inline-block; padding:4px 8px; border-radius:999px; background:#eef4ff; color:#173a78; font-weight:700; font-size:13px}
+  @media (max-width:960px){.layout{grid-template-columns:1fr}}
+  @media (max-width:560px){.btns{grid-template-columns:1fr}.wrap{padding:10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mô phỏng vẽ đồ thị độ dịch chuyển – thời gian</h1>
+  <p class="sub">
+    Dữ liệu theo đề bài: độ dịch chuyển (m) lần lượt là
+    <b>0, 200, 400, 600, 800, 1000, 800</b> ứng với thời gian (s)
+    <b>0, 50, 100, 150, 200, 250, 300</b>.
+    Mô phỏng này sẽ <b>vẽ theo đúng từng bước</b> như yêu cầu trong bài.
+  </p>
+
+  <div class="layout">
+    <section class="card">
+      <div class="tableWrap">
+        <div class="pill">Bước 1: Lập bảng số liệu</div>
+        <table>
+          <tr id="rowDisp" class="hiddenRow">
+            <td class="label">Độ dịch chuyển (m)</td>
+            <td>0</td><td>200</td><td>400</td><td>600</td><td>800</td><td>1000</td><td>800</td>
+          </tr>
+          <tr id="rowTime" class="hiddenRow">
+            <td class="label">Thời gian (s)</td>
+            <td>0</td><td>50</td><td>100</td><td>150</td><td>200</td><td>250</td><td>300</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="height:14px"></div>
+
+      <div class="graphWrap">
+        <svg id="svg" viewBox="0 0 940 650" role="img" aria-label="Đồ thị độ dịch chuyển theo thời gian">
+          <rect x="0" y="0" width="940" height="650" fill="#ffffff"/>
+
+          <!-- Vùng vẽ -->
+          <rect x="90" y="40" width="760" height="520" fill="#fcfdff" stroke="#e4e7ec"/>
+
+          <!-- grid -->
+          <g id="gridGroup" opacity="0"></g>
+
+          <!-- trục -->
+          <g id="axisGroup" opacity="0">
+            <line x1="90" y1="560" x2="850" y2="560" stroke="#111827" stroke-width="3"/>
+            <line x1="90" y1="560" x2="90" y2="40" stroke="#111827" stroke-width="3"/>
+            <polygon points="860,560 846,553 846,567" fill="#111827"/>
+            <polygon points="90,28 83,42 97,42" fill="#111827"/>
+            <text x="875" y="566" font-size="22" font-weight="800" fill="#111827">t (s)</text>
+            <text x="40" y="30" font-size="22" font-weight="800" fill="#111827">d (m)</text>
+            <text x="76" y="579" font-size="18" font-weight="800" fill="#111827">O</text>
+          </g>
+
+          <!-- chia độ và nhãn -->
+          <g id="ticksGroup" opacity="0"></g>
+
+          <!-- từng điểm -->
+          <g id="pointsGroup"></g>
+
+          <!-- đoạn nối -->
+          <g id="segmentsGroup"></g>
+
+          <!-- bảng chú thích nhỏ -->
+          <g id="guideText" opacity="0">
+            <rect x="118" y="56" width="250" height="70" rx="12" fill="#eef4ff" stroke="#bfd3ff"/>
+            <text x="136" y="82" font-size="17" font-weight="800" fill="#173a78">Tỉ lệ:</text>
+            <text x="136" y="103" font-size="15" fill="#173a78">• Trục thời gian: 1 cm ứng với 50 s</text>
+            <text x="136" y="123" font-size="15" fill="#173a78">• Trục độ dịch chuyển: 1 cm ứng với 200 m</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <span><span class="dot" style="background:#2563eb"></span>Các điểm dữ liệu</span>
+        <span><span class="dot" style="background:#16a34a"></span>Đường nối biểu diễn đồ thị</span>
+      </div>
+    </section>
+
+    <aside class="controls">
+      <section class="card">
+        <div class="btns">
+          <button class="primary" id="nextBtn">▶ Vẽ bước tiếp theo</button>
+          <button class="secondary" id="prevBtn">◀ Lùi 1 bước</button>
+          <button class="accent" id="autoBtn">⏯ Tự động vẽ</button>
+          <button class="danger" id="resetBtn">↺ Làm lại từ đầu</button>
+        </div>
+        <div class="btns" style="margin-top:8px">
+          <button class="secondary" id="step1Btn">B1. Hiện bảng số liệu</button>
+          <button class="secondary" id="step2Btn">B2. Vẽ trục tọa độ</button>
+          <button class="secondary" id="step3Btn">B3. Chia tỉ lệ</button>
+          <button class="secondary" id="step4Btn">B4. Chấm các điểm</button>
+          <button class="secondary" id="step5Btn">B5. Nối thành đồ thị</button>
+          <button class="warn" id="finishBtn">Hoàn thành ngay</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="status" id="status">
+          <b>Trạng thái:</b> Chưa bắt đầu. Hãy nhấn <b>“Vẽ bước tiếp theo”</b> hoặc chọn từng bước.
+        </div>
+      </section>
+
+      <section class="card">
+        <h3 style="margin:0 0 10px;color:#173a78">Các bước thực hiện</h3>
+        <div class="stepList" id="stepList">
+          <div class="stepItem" data-step="1"><b>Bước 1.</b> Lập bảng số liệu từ đề bài.</div>
+          <div class="stepItem" data-step="2"><b>Bước 2.</b> Vẽ trục hoành t và trục tung d.</div>
+          <div class="stepItem" data-step="3"><b>Bước 3.</b> Chia tỉ lệ: 50 s mỗi ô ngang, 200 m mỗi ô dọc.</div>
+          <div class="stepItem" data-step="4"><b>Bước 4.</b> Chấm lần lượt 7 điểm dữ liệu lên hệ trục.</div>
+          <div class="stepItem" data-step="5"><b>Bước 5.</b> Nối các điểm theo thứ tự thời gian để được đồ thị.</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="info" id="explain">
+          Khi đồ thị hoàn thành, đoạn cuối từ <b>(250 s; 1000 m)</b> đến <b>(300 s; 800 m)</b>
+          đi xuống, cho thấy độ dịch chuyển giảm từ 1000 m xuống 800 m.
+        </div>
+        <div class="small" style="margin-top:10px">
+          Gợi ý quan sát: đồ thị gồm các đoạn thẳng nối các điểm:
+          (0;0), (50;200), (100;400), (150;600), (200;800), (250;1000), (300;800).
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const data = [
+    {t:0, d:0},
+    {t:50, d:200},
+    {t:100, d:400},
+    {t:150, d:600},
+    {t:200, d:800},
+    {t:250, d:1000},
+    {t:300, d:800}
+  ];
+
+  const svg = document.getElementById('svg');
+  const gridGroup = document.getElementById('gridGroup');
+  const axisGroup = document.getElementById('axisGroup');
+  const ticksGroup = document.getElementById('ticksGroup');
+  const pointsGroup = document.getElementById('pointsGroup');
+  const segmentsGroup = document.getElementById('segmentsGroup');
+  const guideText = document.getElementById('guideText');
+
+  const rowDisp = document.getElementById('rowDisp');
+  const rowTime = document.getElementById('rowTime');
+  const statusEl = document.getElementById('status');
+  const explainEl = document.getElementById('explain');
+
+  const x0 = 90, y0 = 560, width = 760, height = 520;
+  const xStep = width / 6;     // mỗi 50 s
+  const yStep = height / 5;    // mỗi 200 m
+
+  // currentStep:
+  // 0 nothing
+  // 1 table
+  // 2 axes
+  // 3 scales/ticks
+  // 4..10 points 1..7
+  // 11 connect graph
+  let currentStep = 0;
+  let autoTimer = null;
+
+  function toX(t){ return x0 + (t / 50) * xStep; }
+  function toY(d){ return y0 - (d / 200) * yStep; }
+
+  function clearChildren(node){
+    while(node.firstChild) node.removeChild(node.firstChild);
+  }
+
+  function makeSvg(tag, attrs={}){
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for(const [k,v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+  }
+
+  function drawGridAndTicks(){
+    clearChildren(gridGroup);
+    clearChildren(ticksGroup);
+
+    // vertical lines and x ticks
+    for(let i=0;i<=6;i++){
+      const x = x0 + i*xStep;
+      const grid = makeSvg('line', {
+        x1:x, y1:40, x2:x, y2:560,
+        stroke:'#e4e7ec', 'stroke-width':1
+      });
+      gridGroup.appendChild(grid);
+
+      const tick = makeSvg('line', {
+        x1:x, y1:560, x2:x, y2:570,
+        stroke:'#111827', 'stroke-width':2
+      });
+      ticksGroup.appendChild(tick);
+
+      if(i>0){
+        const label = makeSvg('text', {
+          x:x, y:595, 'text-anchor':'middle',
+          'font-size':18, 'font-weight':700, fill:'#111827'
+        });
+        label.textContent = i*50;
+        ticksGroup.appendChild(label);
+      }
+    }
+
+    // horizontal lines and y ticks
+    for(let j=0;j<=5;j++){
+      const y = y0 - j*yStep;
+      const grid = makeSvg('line', {
+        x1:90, y1:y, x2:850, y2:y,
+        stroke:'#e4e7ec', 'stroke-width':1
+      });
+      gridGroup.appendChild(grid);
+
+      const tick = makeSvg('line', {
+        x1:80, y1:y, x2:90, y2:y,
+        stroke:'#111827', 'stroke-width':2
+      });
+      ticksGroup.appendChild(tick);
+
+      if(j>0){
+        const label = makeSvg('text', {
+          x:70, y:y+6, 'text-anchor':'end',
+          'font-size':18, 'font-weight':700, fill:'#111827'
+        });
+        label.textContent = j*200;
+        ticksGroup.appendChild(label);
+      }
+    }
+  }
+
+  function drawPoints(n){
+    clearChildren(pointsGroup);
+    for(let i=0;i<n;i++){
+      const p = data[i];
+      const x = toX(p.t), y = toY(p.d);
+
+      const halo = makeSvg('circle', {
+        cx:x, cy:y, r:10, fill:'#dbeafe'
+      });
+      const circle = makeSvg('circle', {
+        cx:x, cy:y, r:6, fill:'#2563eb', stroke:'white', 'stroke-width':3
+      });
+
+      // Đặt nhãn theo từng vị trí để tránh chồng lấn vào trục và đường đồ thị
+      let dx = 12, dy = -10, anchor = 'start';
+      if(i === 0){ dx = 10; dy = -8; anchor = 'start'; }          // (0;0)
+      if(i >= 1 && i <= 4){ dx = 10; dy = -8; anchor = 'start'; } // các điểm tăng đều
+      if(i === 5){ dx = 0; dy = -18; anchor = 'middle'; }         // đỉnh (250;1000)
+      if(i === 6){ dx = -8; dy = -10; anchor = 'start'; }         // (300;800), kéo ra phải vừa đủ
+
+      const label = makeSvg('text', {
+        x:x+dx, y:y+dy, 'text-anchor':anchor,
+        'font-size':14, 'font-weight':700, fill:'#173a78'
+      });
+      label.textContent = `(${p.t}; ${p.d})`;
+
+      pointsGroup.appendChild(halo);
+      pointsGroup.appendChild(circle);
+      pointsGroup.appendChild(label);
+    }
+  }
+
+  function drawSegments(show){
+    clearChildren(segmentsGroup);
+    if(!show) return;
+
+    for(let i=0;i<data.length-1;i++){
+      const p1 = data[i], p2 = data[i+1];
+      const seg = makeSvg('line', {
+        x1:toX(p1.t), y1:toY(p1.d), x2:toX(p2.t), y2:toY(p2.d),
+        stroke:'#16a34a', 'stroke-width':4
+      });
+      segmentsGroup.appendChild(seg);
+    }
+  }
+
+  function setStepStyles(){
+    document.querySelectorAll('.stepItem').forEach(item => {
+      const step = Number(item.dataset.step);
+      item.classList.remove('active','done');
+      if(step === 1){
+        if(currentStep === 1) item.classList.add('active');
+        if(currentStep > 1) item.classList.add('done');
+      }else if(step === 2){
+        if(currentStep === 2) item.classList.add('active');
+        if(currentStep > 2) item.classList.add('done');
+      }else if(step === 3){
+        if(currentStep === 3) item.classList.add('active');
+        if(currentStep > 3) item.classList.add('done');
+      }else if(step === 4){
+        if(currentStep >= 4 && currentStep <= 10) item.classList.add('active');
+        if(currentStep > 10) item.classList.add('done');
+      }else if(step === 5){
+        if(currentStep === 11) item.classList.add('active','done');
+      }
+    });
+  }
+
+  function updateStatus(){
+    if(currentStep === 0){
+      statusEl.innerHTML = '<b>Trạng thái:</b> Chưa bắt đầu. Hãy nhấn <b>“Vẽ bước tiếp theo”</b> hoặc chọn từng bước.';
+      explainEl.innerHTML = 'Khi đồ thị hoàn thành, đoạn cuối từ <b>(250 s; 1000 m)</b> đến <b>(300 s; 800 m)</b> đi xuống, cho thấy độ dịch chuyển giảm từ 1000 m xuống 800 m.';
+    } else if(currentStep === 1){
+      statusEl.innerHTML = '<b>Bước 1:</b> Đã lập bảng số liệu gồm 7 cặp giá trị thời gian – độ dịch chuyển.';
+      explainEl.innerHTML = 'Từ bảng số liệu, ta sẽ đưa từng cặp giá trị <b>(t; d)</b> lên hệ trục tọa độ.';
+    } else if(currentStep === 2){
+      statusEl.innerHTML = '<b>Bước 2:</b> Đã vẽ trục hoành <b>t (s)</b> và trục tung <b>d (m)</b>.';
+      explainEl.innerHTML = 'Trục hoành biểu diễn <b>thời gian</b>, trục tung biểu diễn <b>độ dịch chuyển</b>.';
+    } else if(currentStep === 3){
+      statusEl.innerHTML = '<b>Bước 3:</b> Đã chia tỉ lệ trên hai trục: mỗi 50 s theo trục ngang, mỗi 200 m theo trục dọc.';
+      explainEl.innerHTML = 'Cụ thể: <b>1 cm ứng với 50 s</b> trên trục thời gian và <b>1 cm ứng với 200 m</b> trên trục độ dịch chuyển.';
+    } else if(currentStep >= 4 && currentStep <= 10){
+      const i = currentStep - 4;
+      const p = data[i];
+      statusEl.innerHTML = `<b>Bước 4:</b> Đang chấm điểm thứ ${i+1}: <b>(${p.t}; ${p.d})</b>.`;
+      explainEl.innerHTML = `Điểm này có hoành độ <b>${p.t} s</b> và tung độ <b>${p.d} m</b>. Sau khi chấm đủ 7 điểm, ta sẽ nối các điểm lại.`;
+    } else if(currentStep === 11){
+      statusEl.innerHTML = '<b>Bước 5:</b> Đã nối các điểm theo thứ tự thời gian và thu được đồ thị hoàn chỉnh.';
+      explainEl.innerHTML = 'Đồ thị tăng đều từ 0 s đến 250 s, sau đó <b>giảm</b> từ 1000 m xuống 800 m ở 300 s.';
+    }
+  }
+
+  function render(){
+    // table
+    rowDisp.className = currentStep >= 1 ? 'shownRow' : 'hiddenRow';
+    rowTime.className = currentStep >= 1 ? 'shownRow' : 'hiddenRow';
+
+    // axes
+    axisGroup.setAttribute('opacity', currentStep >= 2 ? '1' : '0');
+
+    // grid/ticks
+    gridGroup.setAttribute('opacity', currentStep >= 3 ? '1' : '0');
+    ticksGroup.setAttribute('opacity', currentStep >= 3 ? '1' : '0');
+    guideText.setAttribute('opacity', currentStep >= 3 ? '1' : '0');
+
+    // points
+    if(currentStep >= 4){
+      const n = Math.min(currentStep - 3, data.length);
+      drawPoints(n);
+    } else {
+      drawPoints(0);
+    }
+
+    // segments
+    drawSegments(currentStep >= 11);
+
+    setStepStyles();
+    updateStatus();
+  }
+
+  function gotoStep(step){
+    currentStep = Math.max(0, Math.min(11, step));
+    render();
+  }
+
+  function nextStep(){
+    if(currentStep < 11) gotoStep(currentStep + 1);
+  }
+
+  function prevStep(){
+    if(currentStep > 0) gotoStep(currentStep - 1);
+  }
+
+  function stopAuto(){
+    if(autoTimer){
+      clearInterval(autoTimer);
+      autoTimer = null;
+      document.getElementById('autoBtn').textContent = '⏯ Tự động vẽ';
+    }
+  }
+
+  function autoDraw(){
+    if(autoTimer){
+      stopAuto();
+      return;
+    }
+    document.getElementById('autoBtn').textContent = '⏸ Dừng tự động';
+    autoTimer = setInterval(() => {
+      if(currentStep >= 11){
+        stopAuto();
+      } else {
+        nextStep();
+      }
+    }, 1300);
+  }
+
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    stopAuto();
+    nextStep();
+  });
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    stopAuto();
+    prevStep();
+  });
+  document.getElementById('autoBtn').addEventListener('click', autoDraw);
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    stopAuto();
+    gotoStep(0);
+  });
+
+  document.getElementById('step1Btn').addEventListener('click', () => { stopAuto(); gotoStep(1); });
+  document.getElementById('step2Btn').addEventListener('click', () => { stopAuto(); gotoStep(2); });
+  document.getElementById('step3Btn').addEventListener('click', () => { stopAuto(); gotoStep(3); });
+  document.getElementById('step4Btn').addEventListener('click', () => { stopAuto(); gotoStep(10); });
+  document.getElementById('step5Btn').addEventListener('click', () => { stopAuto(); gotoStep(11); });
+  document.getElementById('finishBtn').addEventListener('click', () => { stopAuto(); gotoStep(11); });
+
+  drawGridAndTicks();
+  gotoStep(0);
+})();
+</script>
+</body>
+</html>

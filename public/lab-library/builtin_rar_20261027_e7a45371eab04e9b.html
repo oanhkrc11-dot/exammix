@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-107 Màn hình cảm ứng điện dung 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#06111b;color:#eef8fb}
+#app{display:grid;grid-template-columns:285px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#57dcff;font-weight:800}.desc{font-size:10px;color:#abc4cf;line-height:1.4}h1{font-size:17px;margin:4px 0 7px;line-height:1.08}
+.model{font-size:9px;background:#0b2230;border:1px solid #21495a;border-radius:9px;padding:7px;color:#d9edf5;line-height:1.35}
+.ctrl{display:grid;grid-template-columns:92px 1fr 74px;gap:5px;align-items:center;margin:5px 0}.ctrl label,.ctrl output{font-size:9px}.ctrl output{color:#75ebff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9px;padding:7px 5px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800;cursor:pointer}.primary{background:#0f7da7}.warn{background:#a13b3b}
+#view{position:relative;background:radial-gradient(circle at 52% 28%,#173f58 0,#0a263b 40%,#061725 72%,#030b13 100%)}#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label{position:absolute;transform:translate(-50%,-50%);background:#f4fafcf0;color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9px;white-space:nowrap}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10px;font-weight:700}
+#hud{position:absolute;right:12px;top:12px;z-index:7;background:#07141ce8;border:1px solid #316376;border-radius:10px;padding:8px 10px;min-width:250px}.hrow{display:flex;justify-content:space-between;gap:14px;font-size:9px;margin:3px 0}.hrow span{color:#9fc0cd}
+#note{position:absolute;left:12px;bottom:50px;z-index:7;width:690px;background:#07141ce8;border:1px solid #316376;border-radius:9px;padding:7px;font-size:9px;line-height:1.35;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700;color:#ffe082}
+#meter{position:absolute;left:12px;bottom:12px;z-index:7;display:flex;align-items:center;gap:8px;background:#07141ce8;border:1px solid #316376;border-radius:9px;padding:7px 10px;font-size:9px}.bar{width:180px;height:10px;background:#102935;border:1px solid #356579;border-radius:999px;overflow:hidden}.fill{height:100%;width:0%;background:linear-gradient(90deg,#4dd0e1,#ffd166,#ff9f43)}
+.rec{font-size:9px;color:#bcd2db;margin-top:6px}
+</style></head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D CINEMATIC</div>
+<h1>107 · Màn hình cảm ứng điện dung</h1>
+<p class="desc">Ngón tay dẫn điện làm biến đổi điện trường và điện dung cục bộ tại lưới điện cực bên dưới kính. Bộ điều khiển suy ra vị trí chạm từ vùng có độ biến thiên điện dung lớn nhất.</p>
+<div class="model"><b>Mô hình hóa:</b> mỗi ô điện cực được coi như có điện dung nền \(C_0\). Ảnh hưởng của ngón tay được biểu diễn bằng điện dung ghép bổ sung \(\Delta C \propto \varepsilon A/d\). Đây là mô hình giáo dục định lượng tương đối; bỏ qua cấu trúc điện cực thực, thuật toán quét đa điểm và mạch đo chuyên dụng.</div>
+
+<div class="ctrl"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctrl"><label>Vị trí X</label><input id="xpos" type="range" min="-3.2" max="3.2" step=".1" value=".7"><output id="xposOut"></output></div>
+<div class="ctrl"><label>Vị trí Y</label><input id="ypos" type="range" min="-1.9" max="1.9" step=".1" value=".4"><output id="yposOut"></output></div>
+<div class="ctrl"><label>Khoảng cách d</label><input id="dist" type="range" min=".05" max="1.2" step=".05" value=".18"><output id="distOut"></output></div>
+<div class="ctrl"><label>Điện dung nền C₀</label><input id="C0" type="range" min="2" max="12" step=".5" value="6"><output id="C0Out"></output></div>
+<div class="ctrl"><label>Hệ số ghép K</label><input id="K" type="range" min=".3" max="2.0" step=".1" value="1"><output id="KOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showField" type="checkbox" checked> Điện trường</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới điện cực</label>
+<label class="check"><input id="showHeat" type="checkbox" checked> Bản đồ ΔC</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị ΔC(t)</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Bắt đầu</button><button id="pauseBtn" class="btn">⏸ Tạm dừng</button>
+<button id="touchBtn" class="btn">👆 Chạm giữa màn hình</button><button id="liftBtn" class="btn">☝ Nhấc ngón tay</button>
+<button id="demoBtn" class="btn">Quét một đường chạm</button><button id="clearGraphBtn" class="btn">Xóa đồ thị</button>
+<button id="cameraBtn" class="btn">🎬 Camera tự động</button><button id="fitBtn" class="btn">⛶ Fit toàn cảnh</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button>
+<button id="recordBtn" class="btn warn">🎥 Bắt đầu quay</button><button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+<div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view">
+<div id="three"></div><div id="labels"></div>
+<div id="formula">C ≈ εA/d &nbsp; · &nbsp; C<sub>ô</sub> = C₀ + ΔC(x,y,d)</div>
+<div id="hud">
+<div class="hrow"><span>Ô cảm ứng mạnh nhất</span><b id="cellHud"></b></div>
+<div class="hrow"><span>ΔC lớn nhất</span><b id="dcHud"></b></div>
+<div class="hrow"><span>C tại ô phát hiện</span><b id="ctHud"></b></div>
+<div class="hrow"><span>Vị trí phát hiện</span><b id="posHud"></b></div>
+<div class="hrow"><span>Khoảng cách ngón tay</span><b id="dHud"></b></div>
+<div class="hrow"><span>Trạng thái</span><b id="statusHud"></b></div>
+</div>
+<div id="note">Khi ngón tay tiến gần mặt kính, độ ghép điện dung tăng mạnh tại vùng ngay bên dưới ngón tay và giảm dần theo khoảng cách ngang. Có thể <b>click trực tiếp lên màn hình 3D</b> để đổi vị trí chạm. Màu đỏ/cam biểu diễn ΔC lớn, xanh biểu diễn nhỏ.</div>
+<div id="meter"><b>Độ nhạy chạm:</b><div class="bar"><div id="sensFill" class="fill"></div></div><span id="sensText">0%</span></div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three'; import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const $=id=>document.getElementById(id),view=$('view');
+const s={running:true,t:0,speed:1,x:.7,y:.4,d:.18,C0:6,K:1,hist:[],scan:false,cameraAuto:false,cameraT:0,record:{rec:null,chunks:[],timer:null,start:0}};
+const NX=12,NY=7,W=7.2,H=4.4;
+const sigma=()=>0.55+0.45*s.d;
+function deltaCAt(x,y){
+ const r2=(x-s.x)*(x-s.x)+(y-s.y)*(y-s.y);
+ const lateral=Math.exp(-r2/(2*sigma()*sigma()));
+ const vertical=1/(s.d+0.18);
+ return 3.2*s.K*lateral*vertical;
+}
+
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,100),renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=7;controls.maxDistance=28;controls.addEventListener('start',()=>{if(s.cameraAuto)setCameraAuto(false)});
+scene.add(new THREE.HemisphereLight(0xffffff,0x172832,4.5));const dl=new THREE.DirectionalLight(0xffffff,4.3);dl.position.set(8,10,7);scene.add(dl);
+const lab=new THREE.Group();lab.position.y=-.3;scene.add(lab);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(17,12),new THREE.MeshStandardMaterial({color:0x102530,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-3.1;lab.add(floor);
+
+/* tablet body */
+const frame=new THREE.Mesh(new THREE.BoxGeometry(8.2,.35,5.25),new THREE.MeshStandardMaterial({color:0x3c4950,metalness:.65,roughness:.25}));frame.position.y=-.35;lab.add(frame);
+const screen=new THREE.Mesh(new THREE.PlaneGeometry(W,H),new THREE.MeshPhysicalMaterial({color:0x163649,transparent:true,opacity:.65,roughness:.12,metalness:.08}));screen.rotation.x=-Math.PI/2;screen.position.y=-.15;lab.add(screen);
+
+/* electrode cells */
+const cells=[];const electrodeGroup=new THREE.Group();lab.add(electrodeGroup);
+for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){
+ const x=-W/2+(i+.5)*W/NX,y=-H/2+(j+.5)*H/NY;
+ const m=new THREE.Mesh(new THREE.BoxGeometry(W/NX*.88,.035,H/NY*.86),new THREE.MeshStandardMaterial({color:0x214c63,emissive:0x07161e,emissiveIntensity:.15,transparent:true,opacity:.88}));
+ m.position.set(x,-.30,y);m.userData={i,j,x,y};electrodeGroup.add(m);cells.push(m)
+}
+
+/* finger */
+const finger=new THREE.Group();lab.add(finger);
+const skinMat=new THREE.MeshStandardMaterial({color:0xe2b091,roughness:.72});
+const shaft=new THREE.Mesh(new THREE.CapsuleGeometry(.34,1.55,8,18),skinMat);shaft.rotation.z=Math.PI/2;shaft.position.y=.95;finger.add(shaft);
+const tip=new THREE.Mesh(new THREE.SphereGeometry(.36,20,14),skinMat);tip.position.set(-.83,.95,0);finger.add(tip);
+finger.rotation.y=Math.PI/2;
+
+/* field arcs */
+const fieldGroup=new THREE.Group();lab.add(fieldGroup);
+for(let k=0;k<16;k++){
+ const curve=new THREE.QuadraticBezierCurve3(new THREE.Vector3(0,-.1,0),new THREE.Vector3((k-7.5)*.11,.55,(k%4-1.5)*.16),new THREE.Vector3((k-7.5)*.08,1.05,(k%4-1.5)*.10));
+ const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(20)),new THREE.LineBasicMaterial({color:0x71e8ff,transparent:true,opacity:.5}));
+ fieldGroup.add(line)
+}
+
+/* graph */
+const gc=document.createElement('canvas');gc.width=820;gc.height=350;const gctx=gc.getContext('2d'),gtex=new THREE.CanvasTexture(gc);
+const graphFrame=new THREE.Mesh(new THREE.BoxGeometry(5.2,2.45,.12),new THREE.MeshStandardMaterial({color:0xeaf3f6}));graphFrame.position.set(4.8,2.8,-3.25);lab.add(graphFrame);
+const graphPlane=new THREE.Mesh(new THREE.PlaneGeometry(4.95,2.22),new THREE.MeshBasicMaterial({map:gtex,side:THREE.DoubleSide}));graphPlane.position.set(4.8,2.8,-3.17);lab.add(graphPlane);
+function drawGraph(){
+ gctx.fillStyle='#f8fafb';gctx.fillRect(0,0,820,350);gctx.fillStyle='#263b45';gctx.font='bold 24px Segoe UI';gctx.fillText('ĐỘ BIẾN THIÊN ĐIỆN DUNG ΔC(t)',230,30);
+ gctx.strokeStyle='#687b84';gctx.lineWidth=2;gctx.beginPath();gctx.moveTo(55,300);gctx.lineTo(755,300);gctx.moveTo(55,45);gctx.lineTo(55,300);gctx.stroke();
+ const tmin=Math.max(0,s.t-12);let maxv=1;for(const p of s.hist)if(p.t>=tmin)maxv=Math.max(maxv,p.dc);
+ if(s.hist.length>1){gctx.strokeStyle='#d2691e';gctx.lineWidth=4;gctx.beginPath();let first=true;for(const p of s.hist){if(p.t<tmin)continue;const X=55+700*(p.t-tmin)/12,Y=300-235*p.dc/maxv;if(first){gctx.moveTo(X,Y);first=false}else gctx.lineTo(X,Y)}gctx.stroke()}
+ gctx.fillStyle='#50656f';gctx.font='17px Segoe UI';gctx.fillText('t (s)',715,330);gctx.fillText('ΔC (pF)',4,60);gtex.needsUpdate=true
+}
+
+/* labels */
+const labels=$('labels');function mk(t){const e=document.createElement('div');e.className='label';e.textContent=t;labels.appendChild(e);return e}
+const lFinger=mk('Ngón tay dẫn điện'),lScreen=mk('Mặt kính'),lElec=mk('Lưới điện cực'),lDetect=mk('Vùng phát hiện');
+function project(el,p){const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=(q.z>1||!$('showLabels').checked)?'none':'block'}
+
+/* physics/update */
+function strongestCell(){
+ let best=cells[0],bestdc=-1;
+ for(const c of cells){const dc=deltaCAt(c.userData.x,c.userData.y);if(dc>bestdc){bestdc=dc;best=c}}
+ return {cell:best,dc:bestdc}
+}
+function updatePhysics(dt){
+ if(!s.running)return;s.t+=dt*s.speed;
+ if(s.scan){s.x=2.8*Math.sin(s.t*.7);s.y=1.35*Math.sin(s.t*1.15+.6);$('xpos').value=s.x.toFixed(1);$('ypos').value=s.y.toFixed(1)}
+ const b=strongestCell();s.hist.push({t:s.t,dc:b.dc});while(s.hist.length&&s.hist[0].t<s.t-12.5)s.hist.shift()
+}
+function updateVisuals(){
+ finger.position.set(s.x,s.d+.28,s.y);
+ fieldGroup.position.set(s.x,0,s.y);
+ fieldGroup.scale.setScalar(.75+Math.min(1.2,1/(s.d+.25))*.3);
+ fieldGroup.visible=$('showField').checked;
+ electrodeGroup.visible=$('showGrid').checked;
+ const b=strongestCell();
+ cells.forEach(c=>{
+   const dc=deltaCAt(c.userData.x,c.userData.y),p=Math.min(1,dc/12);
+   if($('showHeat').checked)c.material.color.setHSL(.56-.50*p,.85,.32+.18*p);else c.material.color.set(0x214c63);
+   c.material.emissiveIntensity=.15+1.8*p;
+ });
+ drawGraph();graphFrame.visible=graphPlane.visible=$('showGraph').checked
+}
+
+/* auto camera */
+const shots=[{p:new THREE.Vector3(11,7,13),t:new THREE.Vector3(0,0,0),d:4.5},{p:new THREE.Vector3(0,10,6),t:new THREE.Vector3(0,-.2,0),d:4},{p:new THREE.Vector3(-9,5,8),t:new THREE.Vector3(0,0,0),d:4},{p:new THREE.Vector3(6,3.2,5),t:new THREE.Vector3(s.x,0,s.y),d:3.5}];
+function ease(u){return u*u*(3-2*u)}function sample(T){let total=shots.reduce((a,b)=>a+b.d,0),tt=T%total;for(let i=0;i<shots.length;i++){const a=shots[i],b=shots[(i+1)%shots.length];if(tt<=a.d){const u=ease(tt/a.d);return{p:new THREE.Vector3().lerpVectors(a.p,b.p,u),t:new THREE.Vector3().lerpVectors(a.t,b.t,u)}}tt-=a.d}return{p:shots[0].p.clone(),t:shots[0].t.clone()}}
+function setCameraAuto(on){s.cameraAuto=on;controls.enabled=!on;$('cameraBtn').textContent=on?'🎬 Dừng camera tự động':'🎬 Camera tự động';$('cameraBtn').classList.toggle('primary',on);if(on)s.cameraT=0;else fit()}
+function updateCamera(dt){if(!s.cameraAuto)return;s.cameraT+=dt*.85;const q=sample(s.cameraT);camera.position.copy(q.p);controls.target.copy(q.t);camera.lookAt(q.t)}
+
+/* UI */
+function updateUI(){
+ $('speedOut').value=s.speed.toFixed(2)+'×';$('xposOut').value=s.x.toFixed(1);$('yposOut').value=s.y.toFixed(1);$('distOut').value=s.d.toFixed(2);$('C0Out').value=s.C0.toFixed(1)+' pF';$('KOut').value=s.K.toFixed(1);
+ const b=strongestCell(),c=b.cell.userData;
+ $('cellHud').textContent=`(${c.i+1}, ${c.j+1})`;$('dcHud').textContent=b.dc.toFixed(2)+' pF';$('ctHud').textContent=(s.C0+b.dc).toFixed(2)+' pF';$('posHud').textContent=`x=${c.x.toFixed(1)}, y=${c.y.toFixed(1)}`;$('dHud').textContent=s.d.toFixed(2);$('statusHud').textContent=s.d<.35?'Đang chạm / rất gần':s.d<.8?'Đang tiến gần':'Không chạm';
+ const sens=Math.min(100,b.dc/12*100);$('sensFill').style.width=sens.toFixed(1)+'%';$('sensText').textContent=Math.round(sens)+'%'
+}
+function sync(reset=false){s.speed=+$('speed').value;s.x=+$('xpos').value;s.y=+$('ypos').value;s.d=+$('dist').value;s.C0=+$('C0').value;s.K=+$('K').value;if(reset){s.t=0;s.hist=[]}updateUI()}
+['xpos','ypos','dist','C0','K'].forEach(id=>$(id).addEventListener('input',()=>{s.scan=false;sync(false)}));$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>s.running=true;$('pauseBtn').onclick=()=>s.running=false;$('touchBtn').onclick=()=>{$('xpos').value=0;$('ypos').value=0;$('dist').value=.05;s.scan=false;sync(false)};
+$('liftBtn').onclick=()=>{$('dist').value=1.2;s.scan=false;sync(false)};$('demoBtn').onclick=()=>{s.scan=!s.scan;$('demoBtn').textContent=s.scan?'Dừng quét':'Quét một đường chạm';s.running=true};
+$('clearGraphBtn').onclick=()=>s.hist=[];$('cameraBtn').onclick=()=>setCameraAuto(!s.cameraAuto);
+$('resetBtn').onclick=()=>{setCameraAuto(false);Object.assign(s,{running:true,t:0,speed:1,x:.7,y:.4,d:.18,C0:6,K:1,hist:[],scan:false});for(const [id,v] of [['speed',1],['xpos',.7],['ypos',.4],['dist',.18],['C0',6],['K',1]])$(id).value=v;$('demoBtn').textContent='Quét một đường chạm';updateUI();fit()};
+$('fitBtn').onclick=fit;$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fit()},80));
+
+/* click on screen */
+const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
+renderer.domElement.addEventListener('pointerdown',e=>{
+ if(s.cameraAuto)return;
+ const r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;ray.setFromCamera(mouse,camera);
+ const hit=ray.intersectObject(screen,false)[0];if(!hit)return;
+ const p=screen.worldToLocal(hit.point.clone());s.x=THREE.MathUtils.clamp(p.x,-3.2,3.2);s.y=THREE.MathUtils.clamp(-p.y,-1.9,1.9);s.d=.05;$('xpos').value=s.x.toFixed(1);$('ypos').value=s.y.toFixed(1);$('dist').value=.05;s.scan=false;updateUI()
+});
+
+/* recording */
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function recClock(){const z=Math.floor((performance.now()-s.record.start)/1000);$('recTime').textContent=String(Math.floor(z/60)).padStart(2,'0')+':'+String(z%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!renderer.domElement.captureStream||!window.MediaRecorder)return;const m=mime(),stream=renderer.domElement.captureStream(30);s.record.chunks=[];s.record.rec=new MediaRecorder(stream,m?{mimeType:m,videoBitsPerSecond:8500000}:{videoBitsPerSecond:8500000});s.record.rec.ondataavailable=e=>{if(e.data.size)s.record.chunks.push(e.data)};s.record.rec.onstop=()=>{clearInterval(s.record.timer);const real=s.record.rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(s.record.chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`107_Man_hinh_cam_ung_dien_dung.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true;$('recLabel').textContent='Đã xuất video'};s.record.rec.start(1000);s.record.start=performance.now();s.record.timer=setInterval(recClock,250);$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false;$('recLabel').textContent='Đang quay'};
+$('stopRecordBtn').onclick=()=>{if(s.record.rec&&s.record.rec.state==='recording')s.record.rec.stop()};
+
+function fit(){controls.target.set(0,-.2,0);camera.position.set(11,7,13);camera.lookAt(controls.target);controls.update()}
+function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}window.addEventListener('resize',resize);
+
+resize();fit();updateUI();let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=Math.min(.033,(now-last)/1000);last=now;updatePhysics(dt);updateVisuals();updateCamera(dt);updateUI();project(lFinger,new THREE.Vector3(s.x,s.d+1.25,s.y));project(lScreen,new THREE.Vector3(-3.4,.45,-1.8));project(lElec,new THREE.Vector3(3,-.7,1.7));project(lDetect,new THREE.Vector3(s.x,.5,s.y));if(controls.enabled)controls.update();renderer.render(scene,camera)}
+requestAnimationFrame(animate);
+</script></body></html>

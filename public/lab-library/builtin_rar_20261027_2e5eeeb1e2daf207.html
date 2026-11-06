@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PHYSICS 11 LAB 07 - Con lắc đơn góc nhỏ</title>
+<style>
+:root{
+  --accent:#168aad;--accent-2:#2aa6c8;--mint:#2ca58d;--danger:#e76f51;--amber:#f4a261;
+  --ink:#18323f;--sub:#53717f;--panel:#e8f0f4;--panel-2:#dce8ee;--line:#b6ccd6;
+  --card:rgba(240,247,250,.90);--card-strong:rgba(244,249,251,.94);--grid:#c8d9e1;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#c7d8df;color:var(--ink);font-family:Inter,Segoe UI,Arial,sans-serif}
+body.dark{
+  --accent:#63e2ff;--accent-2:#38bdf8;--mint:#7fffd6;--danger:#ff758a;--amber:#ffd166;
+  --ink:#eefcff;--sub:#bdd4dd;--panel:#081a22;--panel-2:#0c2430;--line:#1b4c60;
+  --card:rgba(7,28,40,.86);--card-strong:rgba(7,28,40,.92);--grid:#153b4c;
+  background:#183b4e;
+}
+#app{display:grid;grid-template-columns:236px 1fr;height:100vh}
+#panel{background:linear-gradient(180deg,var(--panel),var(--panel-2));border-right:1px solid var(--line);padding:10px 9px;overflow:auto;scrollbar-width:thin;scrollbar-color:#a7c8d5 transparent}
+.eyebrow{font-size:10px;letter-spacing:1.2px;color:var(--accent);font-weight:800;margin-bottom:4px}
+h1{font-size:18px;line-height:1.08;margin:0 0 6px;color:var(--ink)}
+p{font-size:11px;line-height:1.35;color:var(--sub);margin:0}
+hr{border:0;border-top:1px solid var(--line);margin:8px 0}.section{font-size:10.5px;font-weight:800;color:var(--ink);margin-bottom:5px}
+.control{display:grid;grid-template-columns:62px 1fr 52px;gap:6px;align-items:center;margin:5px 0}.control label{font-size:10.5px;color:var(--ink)}.control output{font-size:10px;color:var(--accent);font-weight:700;text-align:right}input[type=range]{width:100%;accent-color:var(--accent)}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:7px 0}.check{background:#eef4f7;border:1px solid var(--line);border-radius:8px;padding:6px;font-size:10px;display:flex;gap:6px;align-items:center;color:var(--ink)}body.dark .check{background:#0b2737}input[type=checkbox]{accent-color:var(--accent)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}.btn{border:1px solid var(--line);border-radius:8px;background:#edf4f7;color:var(--ink);padding:8px 6px;font-size:10.5px;font-weight:800;cursor:pointer}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.full{grid-column:1/-1}body.dark .btn{background:#0e3044;color:#fff;border-color:#2c6880}
+.warn{margin-top:7px;background:#fff3df;border:1px solid #e2bb6f;color:#79551e;border-radius:8px;padding:7px;font-size:9.5px;line-height:1.35;display:none}body.dark .warn{background:#453019;border-color:#ad7b35;color:#ffe6ae}
+.legend{font-size:9.5px;color:var(--sub);display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px}.dt{background:#2f7de1}.dv{background:#2ca58d}
+#graphWrap{height:120px;border:1px solid var(--line);border-radius:10px;background:#eef3f5;overflow:hidden;position:relative;box-shadow:0 2px 8px rgba(0,0,0,.04)}#graph{width:100%;height:100%;display:block}.graphTitle{position:absolute;left:7px;top:4px;font-size:8.8px;color:#5a7480;background:rgba(235,243,247,.94);padding:2px 4px;border-radius:4px}
+.model{display:none;background:#eaf2f5;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:9.4px;line-height:1.35;color:var(--sub);margin-top:6px}.model.show{display:block}.model b{color:var(--ink)}body.dark .model{background:#092433}
+#view{position:relative;min-width:0;height:100vh;background:radial-gradient(circle at 55% 34%,#dce8ed 0%,#c6d8e0 46%,#a8bec9 100%)}body.dark #view{background:radial-gradient(circle at 55% 34%,#91c9dc 0%,#6098ad 30%,#3a7288 60%,#244e62 100%)}
+#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:6;pointer-events:none}
+.label3d{position:absolute;transform:translate(-50%,-50%);background:rgba(235,243,247,.92);border:1px solid #d2e2ea;color:#204050;border-radius:6px;padding:4px 7px;font-size:10px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.08)}body.dark .label3d{background:rgba(7,28,40,.84);border-color:#4d95b2;color:#f1fcff}
+#formula{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:7;background:rgba(232,241,245,.90);border:1px solid #d0e1e9;border-radius:10px;padding:7px 12px;font-size:11px;color:#184255;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.06)}body.dark #formula{background:rgba(6,25,35,.80);border-color:#32718a;color:#eefcff}
+#hud{position:absolute;left:14px;bottom:14px;z-index:8;display:flex;gap:8px;align-items:center;background:rgba(232,241,245,.90);border:1px solid #d0e1e9;border-radius:12px;padding:8px 10px;backdrop-filter:blur(5px);box-shadow:0 5px 16px rgba(0,0,0,.08)}body.dark #hud{background:rgba(7,28,40,.87);border-color:#3b7893}
+.hudItem{min-width:52px}.hudItem span{display:block;font-size:9px;color:#6a8794;margin-bottom:2px}.hudItem b{font-size:11px;color:#173b4b}body.dark .hudItem span{color:#bfdbe5}body.dark .hudItem b{color:#eefcff}.hudHidden{display:none}
+#noteBox{position:absolute;left:14px;bottom:70px;z-index:7;width:220px;background:rgba(235,243,247,.93);border:1px solid #d0e1e9;border-radius:10px;padding:8px;color:#466574;font-size:9.8px;box-shadow:0 7px 20px rgba(0,0,0,.06)}#noteBox b{display:block;margin-bottom:4px;color:#173c4f}body.dark #noteBox{background:rgba(248,252,253,.94);border-color:#9fb9c4;color:#233845}
+#tooltip{position:absolute;z-index:30;display:none;pointer-events:none;background:#edf4f7;border:1px solid #d0e1e9;border-radius:8px;padding:7px 9px;font-size:10px;color:#173b4b;box-shadow:0 6px 16px rgba(0,0,0,.10)}body.dark #tooltip{background:#061c28;border-color:#4ad5ff;color:#eefcff}
+#credit{position:absolute;left:50%;bottom:8px;z-index:7;transform:translateX(-50%);font-size:11px;color:#53717f}body.dark #credit{color:#e1eef4}
+#hint{position:absolute;right:12px;bottom:12px;z-index:7;font-size:9.8px;color:#355562;background:rgba(226,237,242,.84);border:1px solid #d0e1e9;border-radius:8px;padding:6px 8px}body.dark #hint{color:#eefaff;background:rgba(6,26,38,.64);border-color:#2d5b70}
+@media(max-width:1050px){#app{grid-template-columns:226px 1fr}#formula{font-size:10px}#hud{gap:6px;padding:7px 8px}.hudItem{min-width:47px}#noteBox{width:205px}}
+@media(max-height:760px){#panel{padding-top:8px}.control{margin:4px 0}.btn{padding:7px 5px}#graphWrap{height:106px}.model{font-size:9px}}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="eyebrow">PHYSICS 11 LAB · LIGHT</div>
+<h1>07 · Con lắc đơn góc nhỏ</h1>
+<p>Dao động của con lắc đơn trong gần đúng góc nhỏ. Ưu tiên trực quan sáng, gọn và dễ chiếu trên lớp.</p>
+<hr>
+<div class="section">ĐIỀU KHIỂN</div>
+<div class="control"><label>Tốc độ</label><input id="speed" type="range" min="0.25" max="2" step="0.05" value="1"><output id="speedOut">1.00×</output></div>
+<div class="control"><label>Chiều dài</label><input id="length" type="range" min="0.4" max="2.0" step="0.05" value="1.0"><output id="lengthOut">1.00 m</output></div>
+<div class="control"><label>Gia tốc g</label><input id="gravity" type="range" min="1.6" max="12" step="0.1" value="9.8"><output id="gravityOut">9.8 m/s²</output></div>
+<div class="control"><label>Góc θ₀</label><input id="theta0" type="range" min="2" max="30" step="1" value="10"><output id="theta0Out">10°</output></div>
+<div class="control"><label>Pha đầu φ</label><input id="phi" type="range" min="-180" max="180" step="5" value="0"><output id="phiOut">0°</output></div>
+<div class="checks">
+<label class="check"><input id="showVectors" type="checkbox" checked> Véc tơ</label>
+<label class="check"><input id="showTrail" type="checkbox" checked> Quỹ đạo</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+</div>
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Đang chạy</button><button id="pauseBtn" class="btn">⏸ Tạm dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Fit</button>
+<button id="clearGraphBtn" class="btn full">Xóa đồ thị</button>
+<button id="themeBtn" class="btn full">☀ Sáng / 🌙 Tối</button>
+<button id="theoryBtn" class="btn full">ⓘ Lý thuyết</button>
+</div>
+<div id="warning" class="warn">⚠ Góc ban đầu lớn: xấp xỉ góc nhỏ bắt đầu kém chính xác.</div>
+<hr>
+<div class="section">ĐỒ THỊ θ(t) · 15 s</div>
+<div class="legend"><span><i class="dot dt"></i>θ(t)</span><span><i class="dot dv"></i>ωθ(t)</span></div>
+<div id="graphWrap"><canvas id="graph"></canvas><div class="graphTitle">t (s) →</div></div>
+<div id="theoryBox" class="model"><b>Mô hình hóa:</b> dùng xấp xỉ góc nhỏ <i>sinθ≈θ</i>, nên <i>θ(t)≈θ₀cos(√(g/l)t+φ)</i> và <i>T≈2π√(l/g)</i>. Dây nhẹ, không dãn; vật coi như chất điểm.</div>
+</aside>
+
+<main id="view">
+<div id="three"></div><div id="labels"></div>
+<div id="formula">θ(t) ≈ θ₀ cos(√(g/l)t + φ) &nbsp; | &nbsp; T ≈ 2π√(l/g)</div>
+<div id="hud">
+  <div class="hudItem"><span>t</span><b id="tHud">0.00 s</b></div>
+  <div class="hudItem"><span>θ</span><b id="thetaHud">10.00°</b></div>
+  <div class="hudItem"><span>T</span><b id="periodHud">2.01 s</b></div>
+  <div class="hudItem"><span>f</span><b id="freqHud">0.50 Hz</b></div>
+  <div class="hudHidden"><span id="angVelHud"></span><span id="omegaHud"></span></div>
+</div>
+<div id="noteBox"><b>Quan sát</b>Ở biên: v = 0. Qua VTCB: tốc độ lớn nhất. Tăng l → chu kì tăng; tăng g → chu kì giảm.</div>
+<div id="tooltip"></div><div id="credit">Thầy Hùng vật lí</div><div id="hint">Kéo: xoay · Lăn: zoom · Rê quả nặng: xem số liệu</div>
+</main>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const state={running:true,paused:false,t:0,speed:1,l:1,g:9.8,theta0Deg:10,phiDeg:0,theta:0,angVel:0,lastGraphT:-1,trail:[]};
+const MAX_DT=.033,GRAPH_WINDOW=15,LENGTH_SCALE=4.2;
+const $=id=>document.getElementById(id);
+const dom={speed:$('speed'),length:$('length'),gravity:$('gravity'),theta0:$('theta0'),phi:$('phi'),speedOut:$('speedOut'),lengthOut:$('lengthOut'),gravityOut:$('gravityOut'),theta0Out:$('theta0Out'),phiOut:$('phiOut'),showVectors:$('showVectors'),showTrail:$('showTrail'),showGrid:$('showGrid'),showLabels:$('showLabels'),startBtn:$('startBtn'),pauseBtn:$('pauseBtn'),resetBtn:$('resetBtn'),fitBtn:$('fitBtn'),clearGraphBtn:$('clearGraphBtn'),themeBtn:$('themeBtn'),theoryBtn:$('theoryBtn'),theoryBox:$('theoryBox'),tooltip:$('tooltip'),warning:$('warning')};
+
+const view=$('view'),scene=new THREE.Scene();scene.fog=new THREE.Fog(0xc2d4dc,24,52);
+const camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=7;controls.maxDistance=32;controls.minPolarAngle=.38;controls.maxPolarAngle=Math.PI/2.05;
+scene.add(new THREE.HemisphereLight(0xf7fdff,0x5f7e8d,3.2));const key=new THREE.DirectionalLight(0xffffff,2.2);key.position.set(9,14,9);key.castShadow=true;scene.add(key);const fill=new THREE.PointLight(0xb7efff,1.5,38);fill.position.set(-6,7,5);scene.add(fill);
+
+const lab=new THREE.Group();scene.add(lab);lab.position.y=-1.22;
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(34,22),new THREE.MeshStandardMaterial({color:0xdce5e9,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-5;floor.receiveShadow=true;lab.add(floor);
+const grid=new THREE.GridHelper(34,34,0x8fb3c2,0xbfcfd6);grid.position.y=-4.99;(Array.isArray(grid.material)?grid.material:[grid.material]).forEach(m=>{m.transparent=true;m.opacity=.14});lab.add(grid);
+const back=new THREE.Mesh(new THREE.PlaneGeometry(28,15),new THREE.MeshStandardMaterial({color:0xd5e2e8,roughness:.98,side:THREE.DoubleSide}));back.position.set(0,2.5,-6);lab.add(back);
+
+const base=new THREE.Mesh(new THREE.BoxGeometry(7,.42,3),new THREE.MeshStandardMaterial({color:0xe5edf1,roughness:.5,metalness:.32}));base.position.set(-2.2,-4.45,0);base.castShadow=true;lab.add(base);
+const post=new THREE.Mesh(new THREE.CylinderGeometry(.16,.18,10,22),new THREE.MeshStandardMaterial({color:0xf4f7f8,roughness:.22,metalness:.88}));post.position.set(-5.45,.25,0);post.castShadow=true;lab.add(post);
+const arm=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,6.8,22),new THREE.MeshStandardMaterial({color:0xf4f7f8,roughness:.22,metalness:.88}));arm.rotation.z=Math.PI/2;arm.position.set(-2.2,5.15,0);arm.castShadow=true;lab.add(arm);
+const clamp=new THREE.Mesh(new THREE.BoxGeometry(.62,.45,.82),new THREE.MeshStandardMaterial({color:0xd7e3e9,roughness:.40,metalness:.30}));clamp.position.set(.65,4.9,0);lab.add(clamp);
+
+const pivot=new THREE.Vector3(.65,4.65,0);
+const pivotBall=new THREE.Mesh(new THREE.SphereGeometry(.14,20,14),new THREE.MeshStandardMaterial({color:0xf4a261,emissive:0x804515,emissiveIntensity:.18,roughness:.28,metalness:.12}));pivotBall.position.copy(pivot);lab.add(pivotBall);
+const bob=new THREE.Mesh(new THREE.SphereGeometry(.32,32,22),new THREE.MeshStandardMaterial({color:0x1f8ed6,emissive:0x0b3550,emissiveIntensity:.18,roughness:.16,metalness:.24}));bob.castShadow=true;lab.add(bob);
+const stringLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0x5f6f78}));lab.add(stringLine);
+
+const verticalLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints([pivot,new THREE.Vector3(pivot.x,-4.3,0)]),new THREE.LineDashedMaterial({color:0xe7b74c,dashSize:.18,gapSize:.12}));verticalLine.computeLineDistances();lab.add(verticalLine);
+const arcLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0x64d9ff,transparent:true,opacity:.7}));lab.add(arcLine);
+const thetaArc=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xff9f4a}));lab.add(thetaArc);
+
+const velArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1,0x7fffd6,.22,.11);
+const accArrow=new THREE.ArrowHelper(new THREE.Vector3(-1,0,0),new THREE.Vector3(),1,0xff758a,.22,.11);scene.add(velArrow,accArrow);
+const trailGeom=new THREE.BufferGeometry(),trailLine=new THREE.Line(trailGeom,new THREE.LineBasicMaterial({color:0x73ddff,transparent:true,opacity:.62}));scene.add(trailLine);
+
+const wc=document.createElement('canvas');wc.width=1000;wc.height=430;
+const wg=wc.getContext('2d'),wtex=new THREE.CanvasTexture(wc);wtex.colorSpace=THREE.SRGBColorSpace;
+const frame=new THREE.Mesh(new THREE.BoxGeometry(7.1,3.2,.12),new THREE.MeshStandardMaterial({color:0xe8eef1,roughness:.44,metalness:.03}));frame.position.set(5.15,1.55,-1.3);lab.add(frame);
+const board=new THREE.Mesh(new THREE.PlaneGeometry(6.85,2.95),new THREE.MeshBasicMaterial({map:wtex,side:THREE.DoubleSide}));board.position.set(5.15,1.55,-1.22);lab.add(board);
+
+const labelsHost=$('labels');function mkLabel(t){const e=document.createElement('div');e.className='label3d';e.textContent=t;labelsHost.appendChild(e);return e}
+const lPivot=mkLabel('Điểm treo O'),lBob=mkLabel('Vật nặng'),lEq=mkLabel('VTCB'),lTheta=mkLabel('θ');
+function projectLabel(el,pos){const p=pos.clone().project(camera);if(p.z>1){el.style.display='none';return}el.style.display=dom.showLabels.checked?'block':'none';el.style.left=((p.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-p.y*.5+.5)*view.clientHeight)+'px'}
+
+function omega(){return Math.sqrt(state.g/state.l)}
+function calc(){const om=omega(),th0=state.theta0Deg*Math.PI/180,ph=state.phiDeg*Math.PI/180,phase=om*state.t+ph;state.theta=th0*Math.cos(phase);state.angVel=-om*th0*Math.sin(phase)}
+function bobPosition(){const L=state.l*LENGTH_SCALE;return new THREE.Vector3(pivot.x+L*Math.sin(state.theta),pivot.y-L*Math.cos(state.theta),0)}
+function updatePhysics(dt){if(!(state.running&&!state.paused))return;state.t+=dt*state.speed;calc();if(state.t-state.lastGraphT>=.04){state.lastGraphT=state.t;pushGraph()}}
+
+function rebuildArc(){const L=state.l*LENGTH_SCALE,th0=state.theta0Deg*Math.PI/180,pts=[];for(let i=0;i<=90;i++){const th=-th0+2*th0*i/90;pts.push(new THREE.Vector3(pivot.x+L*Math.sin(th),pivot.y-L*Math.cos(th),0))}arcLine.geometry.setFromPoints(pts)}
+function setVector(arrow,dir,mag,pos){if(mag<1e-5){arrow.visible=false;return}arrow.visible=dom.showVectors.checked;arrow.position.copy(pos);arrow.setDirection(dir.clone().normalize());arrow.setLength(.55+Math.min(2.6,Math.sqrt(mag)*.5),.20,.10)}
+function drawWorldGraph(){
+ const w=wc.width,h=wc.height;wg.fillStyle='#eef3f5';wg.fillRect(0,0,w,h);wg.strokeStyle='#cbd9df';wg.lineWidth=2;
+ for(let i=0;i<=10;i++){const x=80+(w-130)*i/10;wg.beginPath();wg.moveTo(x,65);wg.lineTo(x,h-55);wg.stroke()}for(let j=0;j<=6;j++){const y=65+(h-120)*j/6;wg.beginPath();wg.moveTo(80,y);wg.lineTo(w-50,y);wg.stroke()}
+ wg.strokeStyle='#263743';wg.lineWidth=4;wg.beginPath();wg.moveTo(80,h/2);wg.lineTo(w-50,h/2);wg.stroke();wg.beginPath();wg.moveTo(80,65);wg.lineTo(80,h-55);wg.stroke();
+ wg.fillStyle='#29424e';wg.font='bold 28px Segoe UI';wg.fillText('ĐỒ THỊ GÓC LỆCH  θ(t)',285,38);
+ const om=omega(),T=2*Math.PI/om,span=3*T,ph=state.phiDeg*Math.PI/180,th0=state.theta0Deg;
+ const X=t=>80+(w-130)*t/span,Y=deg=>h/2-deg/(Math.max(th0,1)*1.25)*(h-130)/2;
+ wg.strokeStyle='#2f8df4';wg.lineWidth=5;wg.beginPath();for(let i=0;i<=800;i++){const t=span*i/800,deg=th0*Math.cos(om*t+ph),px=X(t),py=Y(deg);if(i===0)wg.moveTo(px,py);else wg.lineTo(px,py)}wg.stroke();
+ const tm=((state.t%span)+span)%span,deg=state.theta*180/Math.PI,px=X(tm),py=Y(deg);wg.fillStyle='#ef9d24';wg.beginPath();wg.arc(px,py,10,0,Math.PI*2);wg.fill();
+ wg.fillStyle='#526a75';wg.font='19px Segoe UI';wg.fillText('θ ≈ θ₀ cos(√(g/l)t + φ)',330,h-18);wtex.needsUpdate=true
+}
+function updateVisuals(){
+ const pos=bobPosition();bob.position.copy(pos);stringLine.geometry.setFromPoints([pivot,pos]);rebuildArc();
+ const arcR=.72,arcPts=[],steps=35,angle=state.theta;for(let i=0;i<=steps;i++){const a=angle*i/steps;arcPts.push(new THREE.Vector3(pivot.x+arcR*Math.sin(a),pivot.y-arcR*Math.cos(a),.02))}thetaArc.geometry.setFromPoints(arcPts);
+ grid.visible=dom.showGrid.checked;trailLine.visible=dom.showTrail.checked;if(dom.showTrail.checked){state.trail.push(pos.clone().add(new THREE.Vector3(0,0,.08)));if(state.trail.length>180)state.trail.shift();trailGeom.setFromPoints(state.trail)}
+ const L=state.l*LENGTH_SCALE,th=state.theta;
+ const tangent=new THREE.Vector3(Math.cos(th),Math.sin(th),0).multiplyScalar(Math.sign(state.angVel)||1);
+ const speed=Math.abs(state.angVel)*L;
+ const tangAcc=Math.abs(-state.g*Math.sin(th));
+ const accDir=new THREE.Vector3(-Math.cos(th)*Math.sign(th||1),-Math.sin(th)*Math.sign(th||1),0);
+ setVector(velArrow,tangent,speed,pos);setVector(accArrow,accDir,tangAcc,pos);
+ projectLabel(lPivot,pivot.clone().add(new THREE.Vector3(-.55,.45,0)));projectLabel(lBob,pos.clone().add(new THREE.Vector3(0,-.65,0)));projectLabel(lEq,new THREE.Vector3(pivot.x,pivot.y-state.l*LENGTH_SCALE-.5,0));projectLabel(lTheta,new THREE.Vector3(pivot.x+.8*Math.sin(th*.55),pivot.y-.8*Math.cos(th*.55),0));
+ drawWorldGraph()
+}
+
+function fmt(n,d=2){return(Math.abs(n)<1e-9?0:n).toFixed(d)}
+function updateUI(){
+ const om=omega(),T=2*Math.PI/om,f=1/T;
+ dom.speedOut.value=state.speed.toFixed(2)+'×';dom.lengthOut.value=state.l.toFixed(2)+' m';dom.gravityOut.value=state.g.toFixed(1)+' m/s²';dom.theta0Out.value=Math.round(state.theta0Deg)+'°';dom.phiOut.value=Math.round(state.phiDeg)+'°';
+ $('tHud').textContent=fmt(state.t)+' s';$('thetaHud').textContent=fmt(state.theta*180/Math.PI)+'°';$('angVelHud').textContent=fmt(state.angVel)+' rad/s';$('periodHud').textContent=fmt(T)+' s';$('freqHud').textContent=fmt(f)+' Hz';$('omegaHud').textContent=fmt(om,3)+' rad/s';
+ dom.warning.style.display=state.theta0Deg>15?'block':'none';dom.startBtn.textContent=state.running&&!state.paused?'▶ Đang chạy':'▶ Bắt đầu'
+}
+function apply(){state.speed=+dom.speed.value;state.l=+dom.length.value;state.g=+dom.gravity.value;state.theta0Deg=+dom.theta0.value;state.phiDeg=+dom.phi.value;state.trail=[];trailGeom.setFromPoints([]);calc();rebuildArc();updateUI()}
+[dom.speed,dom.length,dom.gravity,dom.theta0,dom.phi].forEach(e=>e.addEventListener('input',apply));
+function syncThemeBtn(){dom.themeBtn.textContent=document.body.classList.contains('dark')?'☀ Sáng / 🌙 Tối':'☀ Sáng / 🌙 Tối'}
+dom.themeBtn.onclick=()=>{document.body.classList.toggle('dark');syncThemeBtn();};
+dom.theoryBtn.onclick=()=>dom.theoryBox.classList.toggle('show');
+dom.startBtn.onclick=()=>{state.running=true;state.paused=false};dom.pauseBtn.onclick=()=>state.paused=true;
+function resetAll(){Object.assign(state,{running:true,paused:false,t:0,speed:1,l:1,g:9.8,theta0Deg:10,phiDeg:0,lastGraphT:-1,trail:[]});dom.speed.value=1;dom.length.value=1;dom.gravity.value=9.8;dom.theta0.value=10;dom.phi.value=0;trailGeom.setFromPoints([]);clearGraph();calc();rebuildArc();fitCamera();updateUI()}
+dom.resetBtn.onclick=resetAll;dom.fitBtn.onclick=fitCamera;dom.clearGraphBtn.onclick=clearGraph;
+
+const canvas=$('graph'),ctx=canvas.getContext('2d');let data=[];function pushGraph(){data.push({t:state.t,theta:state.theta*180/Math.PI,w:state.angVel});const t0=state.t-GRAPH_WINDOW;while(data.length&&data[0].t<t0)data.shift()}function clearGraph(){data=[];state.lastGraphT=-1}
+function drawGraph(){
+ const dpr=Math.min(devicePixelRatio,2),w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.width!==Math.floor(w*dpr)||canvas.height!==Math.floor(h*dpr)){canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr)}
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#eef3f5';ctx.fillRect(0,0,w,h);const L=28,R=5,T=16,B=18,pw=w-L-R,ph=h-T-B;ctx.strokeStyle='#cbd9df';
+ for(let i=0;i<=4;i++){let yy=T+ph*i/4;ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(w-R,yy);ctx.stroke()}for(let i=0;i<=5;i++){let xx=L+pw*i/5;ctx.beginPath();ctx.moveTo(xx,T);ctx.lineTo(xx,h-B);ctx.stroke()}
+ const maxAbs=Math.max(1,...data.flatMap(p=>[Math.abs(p.theta),Math.abs(p.w*10)])),ys=ph/(2*maxAbs*1.08),tMax=data.length?data[data.length-1].t:GRAPH_WINDOW,tMin=Math.max(0,tMax-GRAPH_WINDOW),X=t=>L+(t-tMin)/GRAPH_WINDOW*pw,Y=y=>T+ph/2-y*ys;
+ function series(k,c,scale=1){ctx.strokeStyle=c;ctx.lineWidth=1.55;ctx.beginPath();let first=true;for(const p of data){if(p.t<tMin)continue;const xx=X(p.t),yy=Y(p[k]*scale);if(first){ctx.moveTo(xx,yy);first=false}else ctx.lineTo(xx,yy)}ctx.stroke()}
+ series('theta','#2f7de1');series('w','#2ca58d',10)
+}
+
+function fitCamera(){const box=new THREE.Box3().setFromObject(lab).expandByScalar(.8),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3()),maxDim=Math.max(size.x,size.y,size.z),fov=camera.fov*Math.PI/180;let dist=maxDim/(2*Math.tan(fov/2))*1.15;camera.position.set(center.x+dist*.65,center.y+dist*.10,center.z+dist*.62);controls.target.set(1.35,-1.18,0);controls.update()}
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();renderer.domElement.addEventListener('pointermove',e=>{const r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(mouse,camera);const hit=raycaster.intersectObject(bob,false);if(hit.length){dom.tooltip.style.display='block';dom.tooltip.style.left=(e.clientX-r.left+14)+'px';dom.tooltip.style.top=(e.clientY-r.top+14)+'px';dom.tooltip.innerHTML=`<b>Quả nặng</b><br>θ = ${fmt(state.theta*180/Math.PI)}°<br>ωθ = ${fmt(state.angVel)} rad/s`}else dom.tooltip.style.display='none'});renderer.domElement.addEventListener('pointerleave',()=>dom.tooltip.style.display='none');
+
+function resize(){const w=view.clientWidth,h=view.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}
+window.addEventListener('resize',resize);resize();calc();rebuildArc();fitCamera();pushGraph();syncThemeBtn();
+let last=performance.now();function animate(now){requestAnimationFrame(animate);let dt=(now-last)/1000;last=now;dt=Math.min(MAX_DT,Math.max(0,dt));updatePhysics(dt);updateVisuals();updateUI();drawGraph();controls.update();renderer.render(scene,camera)}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

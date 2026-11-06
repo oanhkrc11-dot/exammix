@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>103 · Dây điện nóng lên khi quá tải · SELF-CONTAINED</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#06111b;color:#eef8fb}
+#app{display:grid;grid-template-columns:285px 1fr;height:100vh}
+#panel{background:linear-gradient(180deg,#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#57dcff;font-weight:800;letter-spacing:.7px}h1{font-size:17px;margin:4px 0 7px;line-height:1.08}.desc{font-size:10px;color:#abc4cf;line-height:1.4}.model{font-size:9px;background:#0b2230;border:1px solid #21495a;border-radius:9px;padding:7px;color:#d9edf5;line-height:1.35}
+.ctrl{display:grid;grid-template-columns:92px 1fr 74px;gap:5px;align-items:center;margin:5px 0}.ctrl label,.ctrl output{font-size:9px}.ctrl output{color:#75ebff;text-align:right;font-weight:700}input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9px;padding:7px 5px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800;cursor:pointer}.primary{background:#0f7da7}.warn{background:#a13b3b}
+#view{position:relative;background:radial-gradient(circle at 52% 28%,#173f58 0,#0a263b 40%,#061725 72%,#030b13 100%)}#sim{position:absolute;inset:0;width:100%;height:100%;display:block}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:3;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10px;font-weight:700}
+#hud{position:absolute;right:12px;top:12px;z-index:3;background:#07141ce8;border:1px solid #316376;border-radius:10px;padding:8px 10px;min-width:270px}.hrow{display:flex;justify-content:space-between;gap:14px;font-size:9px;margin:3px 0}.hrow span{color:#9fc0cd}
+#note{position:absolute;left:12px;bottom:50px;z-index:3;width:720px;background:#07141ce8;border:1px solid #316376;border-radius:9px;padding:7px;font-size:9px;line-height:1.35;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:3;font-size:10px;font-weight:700;color:#ffe082}
+#meter{position:absolute;left:12px;bottom:12px;z-index:3;display:flex;align-items:center;gap:8px;background:#07141ce8;border:1px solid #316376;border-radius:9px;padding:7px 10px;font-size:9px}.bar{width:190px;height:10px;background:#102935;border:1px solid #356579;border-radius:999px;overflow:hidden}.fill{height:100%;width:0%;background:linear-gradient(90deg,#63e06b,#ffd166,#ff6b55)}.rec{font-size:9px;color:#bcd2db;margin-top:6px}
+#tooltip{position:absolute;z-index:5;pointer-events:none;display:none;background:#f5fafc;color:#16323d;border:1px solid #8fb8c8;border-radius:7px;padding:5px 7px;font-size:9px}
+</style></head>
+<body><div id="app">
+<aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D CINEMATIC</div><h1>103 · Dây điện nóng lên khi quá tải</h1>
+<p class="desc">Khi dòng điện tăng, công suất tỏa nhiệt trên dây tăng theo bình phương cường độ dòng điện. Dây có thể nóng lên nhanh nếu quá tải kéo dài.</p>
+<div class="model"><b>Mô hình hóa:</b> dùng R=ρl/S, P=I²R. Nhiệt độ dây theo mô hình tập trung Cth·dT/dt=P−h(T−Tmt). Bỏ qua phụ thuộc R theo nhiệt độ, cấu trúc nhiều lớp thực của cáp và tiêu chuẩn tải dòng cụ thể.</div>
+<div class="ctrl"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctrl"><label>Dòng điện I</label><input id="current" type="range" min="0" max="60" step="1" value="12"><output id="currentOut"></output></div>
+<div class="ctrl"><label>Chiều dài l</label><input id="length" type="range" min="5" max="100" step="5" value="30"><output id="lengthOut"></output></div>
+<div class="ctrl"><label>Tiết diện S</label><input id="area" type="range" min="1" max="16" step=".5" value="4"><output id="areaOut"></output></div>
+<div class="ctrl"><label>Điện trở suất ρ</label><input id="rho" type="range" min="1.5" max="4" step=".1" value="1.7"><output id="rhoOut"></output></div>
+<div class="ctrl"><label>Nhiệt độ MT</label><input id="ambient" type="range" min="10" max="40" step="1" value="25"><output id="ambientOut"></output></div>
+<div class="checks">
+<label class="check"><input id="showHeat" type="checkbox" checked> Hơi nóng</label>
+<label class="check"><input id="showCurrent" type="checkbox" checked> Hạt dòng điện</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị T(t)</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+</div>
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Bắt đầu</button><button id="pauseBtn" class="btn">⏸ Tạm dừng</button>
+<button id="normalBtn" class="btn">Tải bình thường</button><button id="overBtn" class="btn warn">Quá tải</button>
+<button id="demoBtn" class="btn">Chạy tình huống thực tế</button><button id="clearGraphBtn" class="btn">Xóa đồ thị</button>
+<button id="cameraBtn" class="btn">🎬 Camera tự động</button><button id="fitBtn" class="btn">⛶ Fit toàn cảnh</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button>
+<button id="recordBtn" class="btn warn">🎥 Bắt đầu quay</button><button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+<div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+<main id="view">
+<canvas id="sim"></canvas><div id="tooltip"></div>
+<div id="formula">R = ρl/S &nbsp; · &nbsp; P = I²R &nbsp; · &nbsp; Cth·dT/dt = P − h(T−Tmt)</div>
+<div id="hud"><div class="hrow"><span>Điện trở dây R</span><b id="rHud"></b></div><div class="hrow"><span>Công suất tỏa nhiệt</span><b id="pHud"></b></div><div class="hrow"><span>Mật độ dòng J</span><b id="jHud"></b></div><div class="hrow"><span>Nhiệt độ dây</span><b id="tHud"></b></div><div class="hrow"><span>Nhiệt lượng tích lũy</span><b id="qHud"></b></div><div class="hrow"><span>Trạng thái</span><b id="statusHud"></b></div></div>
+<div id="note">Tăng dòng từ I lên 2I làm công suất Joule tăng khoảng <b>4 lần</b> nếu R không đổi. Dây trong hình được phóng đại trực quan. Đây là mô hình nhiệt giáo dục, không dùng để xác định giới hạn an toàn thực tế của cáp.</div>
+<div id="meter"><b>Mức nóng:</b><div class="bar"><div id="heatFill" class="fill"></div></div><span id="heatText">Bình thường</span></div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main></div>
+
+<script>
+const $=id=>document.getElementById(id),canvas=$('sim'),ctx=canvas.getContext('2d'),view=$('view'),tip=$('tooltip');
+const s={running:true,t:0,speed:1,I:12,l:30,S:4,rho:1.7e-8,Ta:25,T:25,Q:0,hist:[],auto:false,autoT:0,az:0.72,el:0.42,zoom:1,cameraAuto:false,cameraT:0,drag:false,lastX:0,lastY:0,record:{rec:null,chunks:[],timer:null,start:0}};
+const Cth=180,hcool=2.8,R=()=>s.rho*s.l/(s.S*1e-6),P=()=>s.I*s.I*R(),J=()=>s.I/s.S;
+let W=1,H=1,dpr=1;
+
+function resize(){dpr=Math.min(devicePixelRatio||1,2);W=view.clientWidth;H=view.clientHeight;canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
+window.addEventListener('resize',resize);
+
+function rot3(p){
+  let [x,y,z]=p,ca=Math.cos(s.az),sa=Math.sin(s.az),ce=Math.cos(s.el),se=Math.sin(s.el);
+  let x1=ca*x-sa*z,z1=sa*x+ca*z;
+  let y1=ce*y-se*z1,z2=se*y+ce*z1;
+  return [x1,y1,z2];
+}
+function proj(p){
+  let [x,y,z]=rot3(p),depth=15-z,sc=(620*s.zoom)/Math.max(4,depth);
+  return [W*.49+x*sc,H*.53-y*sc,sc,depth];
+}
+function poly(points,fill,stroke='#00000055',lw=1){
+  const q=points.map(proj);ctx.beginPath();ctx.moveTo(q[0][0],q[0][1]);for(let i=1;i<q.length;i++)ctx.lineTo(q[i][0],q[i][1]);ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}
+}
+function box(cx,cy,cz,w,h,d,fill){
+  const x0=cx-w/2,x1=cx+w/2,y0=cy-h/2,y1=cy+h/2,z0=cz-d/2,z1=cz+d/2;
+  const faces=[
+    [[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0]],
+    [[x1,y0,z0],[x1,y0,z1],[x1,y1,z1],[x1,y1,z0]],
+    [[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]],
+    [[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]]
+  ];
+  faces.forEach((f,i)=>poly(f,i===2?shade(fill,1.18):i===1?shade(fill,.82):fill));
+}
+function shade(hex,k){hex=hex.replace('#','');let r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);return `rgb(${Math.min(255,r*k)},${Math.min(255,g*k)},${Math.min(255,b*k)})`}
+function line3(a,b,color,w=2){const A=proj(a),B=proj(b);ctx.strokeStyle=color;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(A[0],A[1]);ctx.lineTo(B[0],B[1]);ctx.stroke()}
+function circle3(p,r,fill,stroke=null){const q=proj(p),rr=Math.max(1,r*q[2]);ctx.beginPath();ctx.arc(q[0],q[1],rr,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke()}}
+function label3(text,p){if(!$('showLabels').checked)return;const q=proj(p);ctx.font='12px Segoe UI';const tw=ctx.measureText(text).width;ctx.fillStyle='#f6fbfc';ctx.strokeStyle='#9ec2d2';roundRect(ctx,q[0]-tw/2-6,q[1]-11,tw+12,20,6);ctx.fill();ctx.stroke();ctx.fillStyle='#16323d';ctx.fillText(text,q[0]-tw/2,q[1]+3)}
+function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+
+function drawScene(){
+  ctx.clearRect(0,0,W,H);
+  const grd=ctx.createLinearGradient(0,0,0,H);grd.addColorStop(0,'#183d53');grd.addColorStop(1,'#06111b');ctx.fillStyle=grd;ctx.fillRect(0,0,W,H);
+
+  // floor grid
+  if($('showGrid').checked){
+    for(let i=-8;i<=8;i++)line3([i,-2.4,-5],[i,-2.4,5],'#1b4151',1);
+    for(let z=-5;z<=5;z++)line3([-8,-2.4,z],[8,-2.4,z],'#173846',1);
+  }
+
+  // rear wall
+  box(0,0,-4.5,13,5,.2,'#31444d');
+  box(-5,-.5,-4.25,1.2,1.3,.15,'#e7ecee');
+
+  // cable sheath and copper core
+  const heat=Math.min(1,Math.max(0,(s.T-s.Ta)/90));
+  const shell=heat<.35?'#1f2c33':heat<.7?'#58352d':'#802c20';
+  const core=heat<.4?'#c46a2c':heat<.75?'#ef7f2d':'#ff4f2f';
+  line3([-4.8,.2,0],[4.8,.2,0],shell,16+8*Math.sqrt(s.S/16));
+  line3([-4.8,.2,-.02],[4.8,.2,-.02],core,7+8*Math.sqrt(s.S/16));
+
+  // outlet wire connection and load
+  line3([-5,-.5,-4.15],[-4.8,.2,0],'#a7bbc4',3);
+  box(5.8,-.7,-.4,2.0,2.4,1.6,'#596a72');
+  circle3([5.8,-.55,-1.25],.55,'#223b46','#8bd9e8');
+
+  // fan blades
+  const fq=proj([5.8,-.55,-1.25]);ctx.save();ctx.translate(fq[0],fq[1]);ctx.rotate(s.t*.12*Math.min(2,s.I/12));ctx.fillStyle='#9adbea';for(let i=0;i<4;i++){ctx.rotate(Math.PI/2);ctx.fillRect(0,-4,26,8)}ctx.restore();
+
+  // current particles
+  if($('showCurrent').checked&&s.I>0){
+    for(let i=0;i<32;i++){let u=(i/32+s.t*.028*s.I)%1;circle3([-4.6+9.2*u,.2,.03],.035,'#fff0bf')}
+  }
+
+  // heat wisps
+  if($('showHeat').checked&&heat>0.02){
+    ctx.globalAlpha=.25+.6*heat;
+    for(let i=0;i<28;i++){let u=(i/28+s.t*.045)%1,yy=.45+.38*Math.sin((u+i)*5)*heat,zz=(i%2?1:-1)*(.2+.25*heat);circle3([-4.4+8.8*u,yy,zz],.035+.04*heat,'#ff7a52')}
+    ctx.globalAlpha=1;
+  }
+
+  // labels
+  label3('Dây dẫn quá tải',[-.8,1.0,0]);label3('Lõi đồng',[3.0,.8,0]);label3('Thiết bị tải',[5.8,1.0,-.4]);label3('Tỏa nhiệt Joule',[.2,1.5,0]);
+
+  // graph panel in world-ish screen right
+  if($('showGraph').checked)drawGraphPanel();
+
+  // temperature glow
+  const q=proj([0,.2,0]);const rg=ctx.createRadialGradient(q[0],q[1],10,q[0],q[1],130);rg.addColorStop(0,`rgba(255,80,40,${.28*heat})`);rg.addColorStop(1,'rgba(255,80,40,0)');ctx.fillStyle=rg;ctx.fillRect(q[0]-140,q[1]-140,280,280);
+}
+function drawGraphPanel(){
+  const x=W-370,y=180,w=330,h=175;
+  ctx.fillStyle='#f8fafb';ctx.strokeStyle='#9fb8c3';ctx.lineWidth=2;roundRect(ctx,x,y,w,h,10);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#263b45';ctx.font='bold 14px Segoe UI';ctx.fillText('NHIỆT ĐỘ DÂY T(t)',x+88,y+22);
+  const L=x+42,T=y+38,Rr=x+w-20,B=y+h-28;ctx.strokeStyle='#60727c';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(L,T);ctx.lineTo(L,B);ctx.lineTo(Rr,B);ctx.stroke();
+  const tmin=Math.max(0,s.t-12);let maxT=Math.max(80,s.T,s.Ta+10);
+  if(s.hist.length>1){ctx.strokeStyle='#d85c36';ctx.lineWidth=2.5;ctx.beginPath();let first=true;for(const p of s.hist){if(p.t<tmin)continue;let X=L+(Rr-L)*(p.t-tmin)/12,Y=B-(B-T)*p.T/maxT;if(first){ctx.moveTo(X,Y);first=false}else ctx.lineTo(X,Y)}ctx.stroke()}
+  ctx.fillStyle='#50656f';ctx.font='11px Segoe UI';ctx.fillText('t (s)',Rr-28,B+18);ctx.fillText('T (°C)',x+5,T+8);
+}
+function updatePhysics(dt){
+  if(!s.running)return;const h=dt*s.speed;s.t+=h;
+  if(s.auto){s.autoT+=h;if(s.autoT<4)s.I=8+3*s.autoT;else if(s.autoT<10)s.I=20+5*(s.autoT-4);else s.I=50;s.I=Math.min(50,s.I);$('current').value=Math.round(s.I)}
+  const p=P(),dTdt=(p-hcool*(s.T-s.Ta))/Cth;s.T=Math.max(s.Ta,s.T+dTdt*h);s.Q+=p*h;s.hist.push({t:s.t,T:s.T});while(s.hist.length&&s.hist[0].t<s.t-12.5)s.hist.shift()
+}
+function status(){if(s.T<45)return'Bình thường';if(s.T<70)return'Đang nóng';if(s.T<100)return'Quá nóng';return'Nguy cơ hư hỏng cách điện'}
+function updateUI(){
+  $('speedOut').value=s.speed.toFixed(2)+'×';$('currentOut').value=s.I.toFixed(0)+' A';$('lengthOut').value=s.l.toFixed(0)+' m';$('areaOut').value=s.S.toFixed(1)+' mm²';$('rhoOut').value=(s.rho*1e8).toFixed(1)+'×10⁻⁸';$('ambientOut').value=s.Ta.toFixed(0)+' °C';
+  $('rHud').textContent=R().toFixed(3)+' Ω';$('pHud').textContent=P().toFixed(1)+' W';$('jHud').textContent=J().toFixed(2)+' A/mm²';$('tHud').textContent=s.T.toFixed(1)+' °C';$('qHud').textContent=(s.Q/1000).toFixed(2)+' kJ';$('statusHud').textContent=status();
+  const p=Math.min(100,Math.max(0,(s.T-s.Ta)/90*100));$('heatFill').style.width=p.toFixed(1)+'%';$('heatText').textContent=status()
+}
+function sync(resetThermal=false){s.speed=+$('speed').value;s.I=+$('current').value;s.l=+$('length').value;s.S=+$('area').value;s.rho=+$('rho').value*1e-8;s.Ta=+$('ambient').value;if(resetThermal){s.t=0;s.T=s.Ta;s.Q=0;s.hist=[];s.auto=false;s.autoT=0;$('demoBtn').textContent='Chạy tình huống thực tế'}updateUI()}
+['current','length','area','rho','ambient'].forEach(id=>$(id).addEventListener('input',()=>sync(true)));$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>s.running=true;$('pauseBtn').onclick=()=>s.running=false;$('normalBtn').onclick=()=>{$('current').value=10;sync(true)};$('overBtn').onclick=()=>{$('current').value=50;sync(true)};
+$('demoBtn').onclick=()=>{s.auto=!s.auto;s.autoT=0;s.T=s.Ta;s.Q=0;s.t=0;s.hist=[];$('demoBtn').textContent=s.auto?'Dừng tình huống':'Chạy tình huống thực tế';s.running=true};
+$('clearGraphBtn').onclick=()=>{s.hist=[];s.t=0};$('fitBtn').onclick=()=>{s.az=.72;s.el=.42;s.zoom=1};
+$('cameraBtn').onclick=()=>{s.cameraAuto=!s.cameraAuto;s.cameraT=0;$('cameraBtn').textContent=s.cameraAuto?'🎬 Dừng camera tự động':'🎬 Camera tự động';$('cameraBtn').classList.toggle('primary',s.cameraAuto)};
+$('resetBtn').onclick=()=>{Object.assign(s,{running:true,t:0,speed:1,I:12,l:30,S:4,rho:1.7e-8,Ta:25,T:25,Q:0,hist:[],auto:false,autoT:0,az:.72,el:.42,zoom:1,cameraAuto:false,cameraT:0});for(const [id,v] of [['speed',1],['current',12],['length',30],['area',4],['rho',1.7],['ambient',25]])$(id).value=v;$('demoBtn').textContent='Chạy tình huống thực tế';$('cameraBtn').textContent='🎬 Camera tự động';updateUI()};
+$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+
+canvas.addEventListener('pointerdown',e=>{s.drag=true;s.lastX=e.clientX;s.lastY=e.clientY;s.cameraAuto=false;$('cameraBtn').textContent='🎬 Camera tự động'});
+window.addEventListener('pointerup',()=>s.drag=false);window.addEventListener('pointermove',e=>{if(!s.drag)return;s.az+=(e.clientX-s.lastX)*.006;s.el=Math.max(-.15,Math.min(1.15,s.el+(e.clientY-s.lastY)*.005));s.lastX=e.clientX;s.lastY=e.clientY});
+canvas.addEventListener('wheel',e=>{e.preventDefault();s.zoom=Math.max(.65,Math.min(1.55,s.zoom*(e.deltaY>0?.92:1.08)))},{passive:false});
+
+function updateCamera(dt){if(!s.cameraAuto)return;s.cameraT+=dt*.55;s.az=.72+.75*Math.sin(s.cameraT*.55);s.el=.34+.28*(.5+.5*Math.sin(s.cameraT*.8));s.zoom=.9+.13*Math.sin(s.cameraT*.43)}
+
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function recClock(){const z=Math.floor((performance.now()-s.record.start)/1000);$('recTime').textContent=String(Math.floor(z/60)).padStart(2,'0')+':'+String(z%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!canvas.captureStream||!window.MediaRecorder)return;const m=mime(),stream=canvas.captureStream(30);s.record.chunks=[];s.record.rec=new MediaRecorder(stream,m?{mimeType:m,videoBitsPerSecond:8500000}:{videoBitsPerSecond:8500000});s.record.rec.ondataavailable=e=>{if(e.data.size)s.record.chunks.push(e.data)};s.record.rec.onstop=()=>{clearInterval(s.record.timer);const real=s.record.rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(s.record.chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`103_Day_dien_nong_len_khi_qua_tai.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true;$('recLabel').textContent='Đã xuất video'};s.record.rec.start(1000);s.record.start=performance.now();s.record.timer=setInterval(recClock,250);$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false;$('recLabel').textContent='Đang quay'};
+$('stopRecordBtn').onclick=()=>{if(s.record.rec&&s.record.rec.state==='recording')s.record.rec.stop()};
+
+resize();updateUI();let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=Math.min(.033,(now-last)/1000);last=now;updatePhysics(dt);updateCamera(dt);updateUI();drawScene()}
+requestAnimationFrame(animate);
+</script></body></html>

@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>PHYSICS 10 LAB · 55. Hai vật qua ròng rọc</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --panel:#173445; --panel2:#112736; --line:#436679; --text:#f4fbff; --muted:#b7cdd8;
+  --cyan:#71defd; --yellow:#ffe27b; --green:#8ef2c4; --red:#ff9f9f; --orange:#ffb071;
+}
+body.soft{
+  --panel:#d8e3e8; --panel2:#c7d5dc; --line:#97b2c0; --text:#15384a; --muted:#5a7583;
+  --cyan:#0c7c9d; --yellow:#866600; --green:#0d7b57; --red:#a94a4a; --orange:#af6332;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#132937;color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:278px;min-width:262px;max-width:286px;height:100%;overflow:auto;padding:9px;
+  background:linear-gradient(180deg,var(--panel),var(--panel2));
+  border-right:1px solid var(--line)
+}
+#view{position:relative;flex:1;min-width:0;height:100%;overflow:hidden}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.title{font-weight:900;font-size:12.5px}
+.kicker{font-size:9px;color:var(--muted);margin-top:2px}
+.simTitle{font-size:14px;color:var(--cyan);font-weight:900;margin:7px 0 4px;text-transform:uppercase}
+button,select{
+  border:1px solid var(--line);border-radius:7px;outline:none
+}
+#themeBtn{width:34px;height:30px;background:#244a60;color:#fff;cursor:pointer}
+body.soft #themeBtn{background:#e2edf1;color:#15384a}
+.section{margin-top:6px;padding:7px;border:1px solid var(--line);border-radius:9px;background:rgba(10,31,43,.35)}
+body.soft .section{background:rgba(245,249,251,.7)}
+.section h3{margin:0 0 5px;font-size:9.5px;color:var(--cyan);text-transform:uppercase}
+.control{margin:6px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:3px}
+.row label{font-size:10px;font-weight:700}
+.value{font-size:10px;color:var(--yellow);font-weight:800;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:15px;accent-color:#18a0c8}
+select{width:100%;height:30px;background:#274f64;color:var(--text);padding:4px 6px;font-size:10px}
+body.soft select{background:#eef5f8}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}
+button.action{min-height:32px;background:#244b60;color:#fff;font-weight:800;font-size:10px;cursor:pointer}
+body.soft button.action{background:#dce8ee;color:#17384a}
+#runBtn{background:#219265}
+#resetBtn{background:#6a4252}
+body.soft #resetBtn{background:#dec7ce;color:#4d2534}
+#recordBtn{background:#ab2d3f}
+#recordBtn.recording{animation:pulse 1s infinite}
+@keyframes pulse{50%{filter:brightness(1.2)}}
+
+#badge,#info,#graphWrap,#recHud{
+  position:absolute;z-index:10;background:rgba(10,29,41,.86);border:1px solid #446879;
+  border-radius:10px;backdrop-filter:blur(5px);color:#f4fbff
+}
+body.soft #badge,body.soft #info,body.soft #graphWrap,body.soft #recHud{
+  background:rgba(240,246,249,.92);border-color:#99b4c2;color:#15384a
+}
+#badge{left:14px;top:12px;padding:7px 10px;font-size:11px;font-weight:900}
+#recHud{left:14px;top:48px;padding:5px 8px;border-radius:8px;font-size:10px;font-weight:900;display:none}
+#info{right:12px;top:12px;width:295px;padding:8px 10px;font-size:10.4px}
+#info .head{font-size:9.5px;color:var(--cyan);font-weight:900;margin-bottom:4px;text-transform:uppercase}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 9px;font-variant-numeric:tabular-nums}
+#graphWrap{left:14px;bottom:40px;width:min(42%,560px);height:185px;padding:7px}
+#graph{width:100%;height:100%;display:block}
+#credit{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:15px;font-weight:900;color:#ffe27b;pointer-events:none}
+body.soft #credit{color:#765900}
+.lab{
+  padding:3px 5px;border-radius:7px;background:rgba(11,32,45,.88);border:1px solid #496b7c;color:#fff;
+  font-size:10px;font-weight:800;white-space:nowrap
+}
+body.soft .lab{background:rgba(240,246,249,.95);border-color:#9db7c4;color:#15384a}
+@media(max-width:1000px){
+  #panel{width:255px;min-width:255px}
+  #info{width:235px}
+  #graphWrap{width:44%;height:170px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="top">
+      <div>
+        <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+        <div class="kicker">RÒNG RỌC · DÂY KHÔNG DÃN · PHÒNG LAB</div>
+      </div>
+      <button id="themeBtn" title="Đổi nền">◐</button>
+    </div>
+
+    <div class="simTitle">55. Hai vật qua ròng rọc</div>
+
+    <div class="section">
+      <h3>Mô hình hoá</h3>
+      <div style="font-size:10px;line-height:1.35;color:var(--muted)">
+        Ròng rọc và dây lí tưởng; dây không dãn; bỏ qua ma sát trục; hai vật chuyển động
+        cùng độ lớn gia tốc, ngược chiều nhau.
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Thông số</h3>
+      <div class="control">
+        <div class="row"><label>Khối lượng m₁</label><span class="value" id="m1Text">2.0 kg</span></div>
+        <input id="m1" type="range" min="0.5" max="10" step="0.5" value="2">
+      </div>
+      <div class="control">
+        <div class="row"><label>Khối lượng m₂</label><span class="value" id="m2Text">3.0 kg</span></div>
+        <input id="m2" type="range" min="0.5" max="10" step="0.5" value="3">
+      </div>
+      <div class="control">
+        <div class="row"><label>Gia tốc trọng trường</label><span class="value" id="gText">9.8 m/s²</span></div>
+        <input id="g" type="range" min="5" max="15" step="0.1" value="9.8">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Quan sát</h3>
+      <select id="cameraMode">
+        <option value="all">Toàn cảnh</option>
+        <option value="m1">Theo m₁</option>
+        <option value="m2">Theo m₂</option>
+      </select>
+      <div class="control">
+        <div class="row"><label>Tốc độ mô phỏng</label><span class="value" id="speedText">1.0×</span></div>
+        <input id="simSpeed" type="range" min="0.5" max="2" step="0.5" value="1">
+      </div>
+      <div class="buttons">
+        <button class="action" id="runBtn">▶ Bắt đầu</button>
+        <button class="action" id="pauseBtn">⏸ Dừng</button>
+        <button class="action" id="resetBtn">↻ Đặt lại</button>
+        <button class="action" id="fitBtn">⛶ Fit</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Quay thí nghiệm</h3>
+      <div class="buttons">
+        <button class="action" id="recordBtn">🎥 Bắt đầu quay</button>
+        <button class="action" id="stopRecordBtn">⏹ Dừng quay</button>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label>Thời gian quay</label><span class="value" id="recTimeText">00:00</span>
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="badge">Atwood: a = (m₂ − m₁)g / (m₁ + m₂)</div>
+    <div id="recHud">● REC 00:00</div>
+
+    <div id="info">
+      <div class="head">Số liệu tức thời</div>
+      <div class="infoGrid">
+        <span>t</span><b id="tInfo">0.00 s</b>
+        <span>a</span><b id="aInfo">1.96 m/s²</b>
+        <span>v</span><b id="vInfo">0.00 m/s</b>
+        <span>Độ dời |s|</span><b id="sInfo">0.00 m</b>
+        <span>Lực căng T</span><b id="tensionInfo">23.52 N</b>
+        <span>Trạng thái</span><b id="stateInfo">m₂ nặng hơn → m₂ đi xuống</b>
+      </div>
+    </div>
+
+    <div id="graphWrap"><canvas id="graph"></canvas></div>
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $ = id => document.getElementById(id);
+const view = $('view');
+const fmt = (n,d=2)=>n.toFixed(d).replace('-', '−');
+
+const state = {
+  m1:2, m2:3, g:9.8, simSpeed:1,
+  t:0, s:0, v:0, running:false, paused:true,
+  cameraMode:'all', soft:false,
+  lastStamp:performance.now(),
+  recording:false, recordStart:0
+};
+
+function accel(){
+  return (state.m1 - state.m2) * state.g / (state.m1 + state.m2); // positive means m1 goes down
+}
+function tension(){
+  return 2 * state.m1 * state.m2 * state.g / (state.m1 + state.m2);
+}
+function directionText(){
+  const a = accel();
+  if(Math.abs(a) < 1e-8) return 'm₁ = m₂ → hệ cân bằng';
+  return a > 0 ? 'm₁ nặng hơn → m₁ đi xuống' : 'm₂ nặng hơn → m₂ đi xuống';
+}
+
+/* ================= SCENE ================= */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x132937);
+scene.fog = new THREE.Fog(0x132937, 36, 100);
+
+const camera = new THREE.PerspectiveCamera(44, view.clientWidth/view.clientHeight, .1, 180);
+camera.position.set(14, 8.5, 16);
+
+const renderer = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth, view.clientHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+view.prepend(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth, view.clientHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.inset = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+view.appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = .06;
+controls.minDistance = 6;
+controls.maxDistance = 45;
+controls.minPolarAngle = .08;
+controls.maxPolarAngle = Math.PI * .49;
+controls.target.set(0, 3.5, 0);
+
+const hemi = new THREE.HemisphereLight(0xe8f7ff, 0x4e6874, 2.1);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xf6fbff, 2.0);
+sun.position.set(8, 16, 12);
+sun.castShadow = true;
+scene.add(sun);
+
+/* room */
+const floorMat = new THREE.MeshPhongMaterial({color:0x304a58, shininess:16});
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(54, 30), floorMat);
+floor.rotation.x = -Math.PI/2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+const wallMat = new THREE.MeshPhongMaterial({color:0x28424f});
+const backWall = new THREE.Mesh(new THREE.PlaneGeometry(54, 16), wallMat);
+backWall.position.set(0, 8, -10);
+scene.add(backWall);
+
+const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(30, 16), new THREE.MeshPhongMaterial({color:0x263c49}));
+leftWall.rotation.y = Math.PI/2;
+leftWall.position.set(-18, 8, 0);
+scene.add(leftWall);
+
+const windowMat = new THREE.MeshPhongMaterial({color:0x6e95a8, transparent:true, opacity:.22});
+for(let i=0;i<4;i++){
+  const w = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 7.2), windowMat);
+  w.position.set(-14 + i*6, 10, -9.92);
+  scene.add(w);
+}
+const board = new THREE.Mesh(new THREE.BoxGeometry(8.4, 4.6, .2), new THREE.MeshPhongMaterial({color:0x1f4b4b}));
+board.position.set(11.5, 8.3, -9.75);
+scene.add(board);
+
+/* stand and pulley */
+const stand = new THREE.Group();
+scene.add(stand);
+
+const base = new THREE.Mesh(new THREE.BoxGeometry(5.6, .35, 3.6), new THREE.MeshPhongMaterial({color:0x778992}));
+base.position.set(0, .18, 0);
+base.receiveShadow = true;
+stand.add(base);
+
+const postL = new THREE.Mesh(new THREE.BoxGeometry(.24, 8.2, .24), new THREE.MeshPhongMaterial({color:0x596d77}));
+postL.position.set(-2.5, 4.1, 0);
+const postR = postL.clone();
+postR.position.set(2.5, 4.1, 0);
+const beam = new THREE.Mesh(new THREE.BoxGeometry(5.4, .24, .24), new THREE.MeshPhongMaterial({color:0x596d77}));
+beam.position.set(0, 8.1, 0);
+stand.add(postL, postR, beam);
+
+const axle = new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.7,20), new THREE.MeshPhongMaterial({color:0x9fb0b8}));
+axle.rotation.z = Math.PI/2;
+axle.position.set(0, 7.2, 0);
+stand.add(axle);
+
+const pulleyRadius = .78;
+const pulley = new THREE.Mesh(
+  new THREE.TorusGeometry(pulleyRadius, .11, 18, 44),
+  new THREE.MeshPhongMaterial({color:0xc8d4da, shininess:70})
+);
+pulley.position.set(0, 7.2, 0);
+pulley.castShadow = true;
+stand.add(pulley);
+
+const groove = new THREE.Mesh(
+  new THREE.CylinderGeometry(pulleyRadius+.01, pulleyRadius+.01, .1, 44, 1, true),
+  new THREE.MeshPhongMaterial({color:0x8fa2ac, transparent:true, opacity:.25})
+);
+groove.rotation.z = Math.PI/2;
+groove.position.set(0, 7.2, 0);
+stand.add(groove);
+
+/* masses */
+function makeMass(color, labelText){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.1, .9), new THREE.MeshPhongMaterial({color, shininess:60}));
+  body.castShadow = true;
+  body.position.y = -.55;
+  g.add(body);
+
+  const hook = new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.35,16), new THREE.MeshPhongMaterial({color:0xe1e8ec}));
+  hook.position.y = .05;
+  g.add(hook);
+
+  const div = document.createElement('div');
+  div.className = 'lab';
+  div.textContent = labelText;
+  const lab = new CSS2DObject(div);
+  lab.position.set(0, .9, 0);
+  g.add(lab);
+
+  return {group:g, label:div};
+}
+const mass1 = makeMass(0x3aa6d6, 'm₁');
+const mass2 = makeMass(0xe59055, 'm₂');
+scene.add(mass1.group, mass2.group);
+
+/* force arrows */
+const arrowWeight1 = new THREE.ArrowHelper(new THREE.Vector3(0,-1,0), new THREE.Vector3(), 1, 0xffad76, .22, .12);
+const arrowTension1 = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(), 1, 0x8ef2c4, .22, .12);
+const arrowWeight2 = new THREE.ArrowHelper(new THREE.Vector3(0,-1,0), new THREE.Vector3(), 1, 0xffad76, .22, .12);
+const arrowTension2 = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(), 1, 0x8ef2c4, .22, .12);
+scene.add(arrowWeight1, arrowTension1, arrowWeight2, arrowTension2);
+
+/* rope */
+let ropeLine = null;
+function makeArcPoints(cx, cy, r, segments=26){
+  const pts = [];
+  for(let i=0;i<=segments;i++){
+    const a = Math.PI - (Math.PI * i / segments); // left to right, over top
+    pts.push(new THREE.Vector3(cx + r*Math.cos(a), cy + r*Math.sin(a), 0));
+  }
+  return pts;
+}
+function updateRopeAndMasses(){
+  const yTop = 6.25;
+  const sMax = 2.0;                   // purely visual travel limit
+  state.s = Math.max(-sMax, Math.min(sMax, state.s));
+
+  const y1Top = yTop - state.s;       // s > 0 => m1 down
+  const y2Top = yTop + state.s;
+
+  mass1.group.position.set(-pulleyRadius, y1Top, 0);
+  mass2.group.position.set(+pulleyRadius, y2Top, 0);
+
+  const pts = [];
+  pts.push(new THREE.Vector3(-pulleyRadius, y1Top, 0));
+  pts.push(new THREE.Vector3(-pulleyRadius, 7.2, 0));
+  pts.push(...makeArcPoints(0, 7.2, pulleyRadius, 28));
+  pts.push(new THREE.Vector3(pulleyRadius, y2Top, 0));
+
+  if(ropeLine){
+    scene.remove(ropeLine);
+    ropeLine.geometry.dispose();
+    ropeLine.material.dispose();
+  }
+  ropeLine = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color:0xf5f1d6})
+  );
+  scene.add(ropeLine);
+
+  /* labels and arrows */
+  mass1.label.textContent = `m₁ = ${state.m1.toFixed(1)} kg`;
+  mass2.label.textContent = `m₂ = ${state.m2.toFixed(1)} kg`;
+
+  const P1 = state.m1 * state.g;
+  const P2 = state.m2 * state.g;
+  const T = tension();
+
+  arrowWeight1.position.set(-pulleyRadius-.28, y1Top-.6, 0);
+  arrowWeight1.setLength(Math.max(.3, P1*.05), .2, .11);
+  arrowTension1.position.set(-pulleyRadius+.28, y1Top-.6, 0);
+  arrowTension1.setLength(Math.max(.3, T*.05), .2, .11);
+
+  arrowWeight2.position.set(pulleyRadius-.28, y2Top-.6, 0);
+  arrowWeight2.setLength(Math.max(.3, P2*.05), .2, .11);
+  arrowTension2.position.set(pulleyRadius+.28, y2Top-.6, 0);
+  arrowTension2.setLength(Math.max(.3, T*.05), .2, .11);
+}
+
+/* ================= PHYSICS ================= */
+function resetState(){
+  state.t = 0;
+  state.s = 0;
+  state.v = 0;
+  state.running = false;
+  state.paused = true;
+  $('runBtn').textContent = '▶ Bắt đầu';
+  $('pauseBtn').textContent = '⏸ Dừng';
+  updateRopeAndMasses();
+  updateUI();
+  fitScene();
+}
+function step(dt){
+  const a = accel();
+  state.v += a * dt;
+  state.s += state.v * dt + 0.5 * a * dt * dt;
+
+  const limit = 2.0;
+  if(Math.abs(state.s) >= limit){
+    state.s = Math.max(-limit, Math.min(limit, state.s));
+    state.running = false;
+    state.paused = true;
+    $('runBtn').textContent = '▶ Chạy lại';
+  }
+}
+
+/* ================= GRAPH ================= */
+const graph = $('graph');
+const ctx = graph.getContext('2d');
+
+function resizeGraph(){
+  const dpr = Math.min(devicePixelRatio, 2);
+  const r = graph.getBoundingClientRect();
+  graph.width = Math.max(10, Math.floor(r.width * dpr));
+  graph.height = Math.max(10, Math.floor(r.height * dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  drawGraph();
+}
+function drawGraph(){
+  const W = graph.clientWidth, H = graph.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = state.soft ? '#f3f8fa' : '#173444';
+  ctx.fillRect(0,0,W,H);
+
+  const L=42,R=12,T=12,B=28,w=W-L-R,h=H-T-B;
+  const tMax = 8;
+  const vmax = Math.max(1, Math.abs(accel())*tMax*1.15);
+  const tx=t=>L+t/tMax*w;
+  const yy=v=>T+h-(v+vmax)/(2*vmax)*h;
+
+  ctx.strokeStyle = state.soft ? 'rgba(60,95,110,.15)' : 'rgba(200,230,240,.14)';
+  for(let i=0;i<=5;i++){
+    const gx=L+w*i/5; ctx.beginPath(); ctx.moveTo(gx,T); ctx.lineTo(gx,T+h); ctx.stroke();
+    const gy=T+h*i/5; ctx.beginPath(); ctx.moveTo(L,gy); ctx.lineTo(L+w,gy); ctx.stroke();
+  }
+
+  const a = accel();
+  ctx.globalAlpha = .25;
+  ctx.strokeStyle = '#73ddff';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(tx(0), yy(0));
+  ctx.lineTo(tx(tMax), yy(a*tMax));
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  ctx.strokeStyle = '#73ddff';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  const tNow = Math.min(state.t, tMax);
+  ctx.moveTo(tx(0), yy(0));
+  ctx.lineTo(tx(tNow), yy(a*tNow));
+  ctx.stroke();
+
+  ctx.fillStyle = state.soft ? '#456778' : '#d9edf5';
+  ctx.font = '10px Arial';
+  ctx.textAlign = 'center';
+  for(let i=0;i<=4;i++){
+    const t = tMax*i/4;
+    ctx.fillText(t.toFixed(1), tx(t), H-9);
+  }
+  ctx.fillText('t (s)', L+w/2, H-1);
+  ctx.save();
+  ctx.translate(10, T+h/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('v (m/s)', 0, 0);
+  ctx.restore();
+  ctx.textAlign = 'left';
+}
+
+/* ================= UI ================= */
+function updateUI(){
+  $('m1Text').textContent = `${state.m1.toFixed(1)} kg`;
+  $('m2Text').textContent = `${state.m2.toFixed(1)} kg`;
+  $('gText').textContent  = `${state.g.toFixed(1)} m/s²`;
+  $('speedText').textContent = `${state.simSpeed.toFixed(1)}×`;
+
+  $('tInfo').textContent = `${state.t.toFixed(2)} s`;
+  $('aInfo').textContent = `${fmt(accel(), 2)} m/s²`;
+  $('vInfo').textContent = `${fmt(state.v, 2)} m/s`;
+  $('sInfo').textContent = `${Math.abs(state.s).toFixed(2)} m`;
+  $('tensionInfo').textContent = `${tension().toFixed(2)} N`;
+  $('stateInfo').textContent = directionText();
+}
+
+/* ================= CAMERA ================= */
+function fitScene(){
+  camera.position.set(14, 8.5, 16);
+  controls.target.set(0, 3.8, 0);
+  controls.update();
+}
+function updateCamera(){
+  let targetX = null, targetY = null;
+  if(state.cameraMode === 'm1'){ targetX = mass1.group.position.x; targetY = mass1.group.position.y; }
+  if(state.cameraMode === 'm2'){ targetX = mass2.group.position.x; targetY = mass2.group.position.y; }
+  if(targetX !== null){
+    controls.target.x += (targetX - controls.target.x) * .08;
+    controls.target.y += (targetY - controls.target.y) * .08;
+    camera.position.x += ((targetX + 6) - camera.position.x) * .05;
+    camera.position.y += ((targetY + 2.5) - camera.position.y) * .05;
+  }
+}
+
+/* ================= THEME ================= */
+function applyTheme(){
+  document.body.classList.toggle('soft', state.soft);
+  if(state.soft){
+    scene.background.set(0xb9c9d1);
+    scene.fog.color.set(0xb9c9d1);
+    floorMat.color.set(0x9eb0b8);
+    wallMat.color.set(0xb9c7ce);
+    leftWall.material.color.set(0xb0bec6);
+    windowMat.color.set(0x9dbac8);
+    windowMat.opacity = .30;
+    hemi.intensity = 2.25;
+    sun.intensity = 2.1;
+  }else{
+    scene.background.set(0x132937);
+    scene.fog.color.set(0x132937);
+    floorMat.color.set(0x304a58);
+    wallMat.color.set(0x28424f);
+    leftWall.material.color.set(0x263c49);
+    windowMat.color.set(0x6e95a8);
+    windowMat.opacity = .22;
+    hemi.intensity = 2.1;
+    sun.intensity = 2.0;
+  }
+  drawGraph();
+}
+$('themeBtn').addEventListener('click', ()=>{ state.soft = !state.soft; applyTheme(); });
+
+/* ================= RECORDING ================= */
+const recCanvas = document.createElement('canvas');
+recCanvas.width = 1280;
+recCanvas.height = 720;
+const rctx = recCanvas.getContext('2d');
+let mediaRecorder = null, chunks = [], recMime = '';
+
+function chooseMime(){
+  const prefs = ['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+  for(const m of prefs){
+    if(window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+  }
+  return '';
+}
+function drawRecFrame(){
+  const W = recCanvas.width, H = recCanvas.height;
+  rctx.fillStyle = '#132937';
+  rctx.fillRect(0,0,W,H);
+  rctx.drawImage(renderer.domElement,0,0,W,H);
+
+  rctx.fillStyle='rgba(8,23,32,.66)';
+  rctx.fillRect(0,0,W,52);
+  rctx.fillStyle='#fff';
+  rctx.font='bold 22px Arial';
+  rctx.fillText('PHYSICS 10 LAB · HAI VẬT QUA RÒNG RỌC',22,33);
+
+  rctx.fillStyle='rgba(8,23,32,.72)';
+  rctx.fillRect(W-305,72,282,160);
+  rctx.fillStyle='#fff';
+  rctx.font='bold 17px Arial';
+  rctx.fillText(`t = ${state.t.toFixed(2)} s`, W-285, 103);
+  rctx.fillText(`a = ${fmt(accel(),2)} m/s²`, W-285, 132);
+  rctx.fillText(`v = ${fmt(state.v,2)} m/s`, W-285, 161);
+  rctx.fillText(`T = ${tension().toFixed(2)} N`, W-285, 190);
+
+  rctx.fillStyle='rgba(8,23,32,.76)';
+  rctx.fillRect(18,H-215,490,195);
+  rctx.drawImage(graph,24,H-209,478,183);
+
+  rctx.fillStyle='#ffe27b';
+  rctx.font='bold 18px Arial';
+  rctx.fillText('Thầy Hùng vật lí',W-175,H-22);
+
+  if(state.recording){
+    rctx.fillStyle='#ff4b55';
+    rctx.beginPath(); rctx.arc(24,81,7,0,Math.PI*2); rctx.fill();
+    rctx.fillStyle='#fff';
+    rctx.font='bold 15px Arial';
+    rctx.fillText('REC',38,86);
+  }
+}
+async function startRecording(){
+  if(state.recording) return;
+  if(!window.MediaRecorder || !recCanvas.captureStream){
+    alert('Trình duyệt này chưa hỗ trợ quay video trực tiếp.');
+    return;
+  }
+  recMime = chooseMime();
+  const stream = recCanvas.captureStream(30);
+  try{
+    mediaRecorder = new MediaRecorder(stream, recMime ? {mimeType:recMime, videoBitsPerSecond:6000000} : {videoBitsPerSecond:6000000});
+  }catch(e){
+    mediaRecorder = new MediaRecorder(stream);
+    recMime = mediaRecorder.mimeType || 'video/webm';
+  }
+  chunks = [];
+  mediaRecorder.ondataavailable = e => { if(e.data && e.data.size>0) chunks.push(e.data); };
+  mediaRecorder.onstop = () => {
+    const mime = mediaRecorder.mimeType || recMime || 'video/webm';
+    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+    const blob = new Blob(chunks, {type:mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Physics10_55_Hai_vat_qua_rong_roc.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1500);
+  };
+  mediaRecorder.start(250);
+  state.recording = true;
+  state.recordStart = performance.now();
+  $('recordBtn').classList.add('recording');
+  $('recordBtn').textContent = '● Đang quay';
+  $('recHud').style.display = 'block';
+}
+function stopRecording(){
+  if(!state.recording) return;
+  state.recording = false;
+  $('recordBtn').classList.remove('recording');
+  $('recordBtn').textContent = '🎥 Bắt đầu quay';
+  $('recHud').style.display = 'none';
+  if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+}
+function updateRecClock(now){
+  if(!state.recording){
+    $('recTimeText').textContent = '00:00';
+    return;
+  }
+  const sec = Math.floor((now - state.recordStart)/1000);
+  const mm = String(Math.floor(sec/60)).padStart(2,'0');
+  const ss = String(sec%60).padStart(2,'0');
+  $('recTimeText').textContent = `${mm}:${ss}`;
+  $('recHud').textContent = `● REC ${mm}:${ss}`;
+}
+
+/* ================= EVENTS ================= */
+$('m1').addEventListener('input', e => { state.m1 = parseFloat(e.target.value); resetState(); });
+$('m2').addEventListener('input', e => { state.m2 = parseFloat(e.target.value); resetState(); });
+$('g').addEventListener('input', e => { state.g = parseFloat(e.target.value); resetState(); });
+$('simSpeed').addEventListener('input', e => { state.simSpeed = parseFloat(e.target.value); updateUI(); });
+
+$('cameraMode').addEventListener('change', e => {
+  state.cameraMode = e.target.value;
+  if(state.cameraMode === 'all') fitScene();
+});
+
+$('runBtn').addEventListener('click', () => {
+  if(!state.running && Math.abs(state.s) >= 2.0) resetState();
+  state.running = true;
+  state.paused = false;
+  $('runBtn').textContent = '▶ Đang chạy';
+});
+$('pauseBtn').addEventListener('click', () => {
+  if(!state.running) return;
+  state.paused = !state.paused;
+  $('pauseBtn').textContent = state.paused ? '▶ Tiếp tục' : '⏸ Dừng';
+});
+$('resetBtn').addEventListener('click', resetState);
+$('fitBtn').addEventListener('click', fitScene);
+$('recordBtn').addEventListener('click', startRecording);
+$('stopRecordBtn').addEventListener('click', stopRecording);
+
+function resize(){
+  const w = view.clientWidth, h = view.clientHeight;
+  camera.aspect = w/h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
+  labelRenderer.setSize(w,h);
+  resizeGraph();
+}
+window.addEventListener('resize', resize);
+
+/* ================= LOOP ================= */
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt = (now - state.lastStamp) / 1000;
+  state.lastStamp = now;
+  dt = Math.min(Math.max(dt,0), 0.028);
+
+  if(state.running && !state.paused){
+    state.t += dt * state.simSpeed;
+    step(dt * state.simSpeed);
+  }
+
+  updateRopeAndMasses();
+  updateCamera();
+  updateUI();
+  drawGraph();
+  updateRecClock(now);
+
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+
+  if(state.recording) drawRecFrame();
+}
+
+resetState();
+applyTheme();
+resize();
+animate(performance.now());
+</script>
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>102 - Chim đậu trên một dây điện cao thế</title>
+<style>
+:root{--text:#eef9ff;--gold:#ffd972}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 65% 34%,#14334b 0%,#07131e 48%,#02070b 100%);color:var(--text);font-family:Inter,Segoe UI,system-ui,sans-serif}
+#app{position:fixed;inset:0}
+#panel{position:fixed;left:12px;top:12px;bottom:12px;width:286px;z-index:40;overflow:auto;padding:11px;border-radius:16px;background:linear-gradient(180deg,rgba(8,18,28,.96),rgba(5,12,20,.94));border:1px solid rgba(111,193,235,.22);box-shadow:0 18px 52px rgba(0,0,0,.42);backdrop-filter:blur(14px);transition:.25s}
+#panel.hide{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none}
+#panel::-webkit-scrollbar{width:6px}#panel::-webkit-scrollbar-thumb{background:#31536a;border-radius:8px}
+h1{font-size:14px;margin:0 0 3px;font-weight:900}.sub{font-size:10.5px;color:#7bdcff;font-weight:800}
+.desc{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(12,28,41,.72);border:1px solid rgba(94,171,211,.14);font-size:10.3px;line-height:1.45;color:#cce1ee}
+.warn{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(84,33,16,.58);border:1px solid rgba(255,158,77,.22);font-size:10.2px;line-height:1.42;color:#ffd8b3}
+.section{margin:10px 0 6px;color:#75d8ff;font-weight:900;font-size:10.5px;letter-spacing:.6px}
+label.control{display:block;margin:7px 0 9px;font-size:10.8px}label.control .value{float:right;color:#9fe9ff;font-weight:800}
+input[type=range]{width:100%;accent-color:#52c9ff;margin-top:4px}
+.buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:7px}
+button{border:1px solid #355a73;background:#122332;color:#eef8ff;border-radius:9px;padding:7px 6px;font-size:10.5px;font-weight:800;cursor:pointer}
+button:hover{filter:brightness(1.12)}button.primary{border-color:#54d692;background:linear-gradient(180deg,#1f5d3e,#153c2a)}button.danger{border-color:#b85b3d;background:linear-gradient(180deg,#632a1d,#3b1b14)}
+.checkrow{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:10.4px;color:#cfe2ee}.checkrow input{accent-color:#55cfff}
+.modeling{margin-top:9px;padding:8px 9px;border-radius:10px;background:rgba(21,28,38,.72);border-left:3px solid #d8a447;font-size:10px;line-height:1.42;color:#c8d4dd}
+#graph{width:100%;height:150px;background:#071019;border-radius:9px;margin-top:8px;border:1px solid rgba(104,186,225,.14)}
+#formula{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:28;padding:8px 14px;border-radius:999px;background:rgba(6,16,25,.66);border:1px solid rgba(102,209,255,.2);color:#dff8ff;font-size:14.5px;font-weight:900;backdrop-filter:blur(9px);box-shadow:0 10px 28px #0004}
+#hud{position:fixed;right:16px;top:16px;z-index:20;width:340px;padding:10px 11px;border-radius:13px;background:rgba(6,14,22,.68);border:1px solid rgba(116,193,234,.18);backdrop-filter:blur(9px);font-size:11px;line-height:1.55}
+#hud b{color:var(--gold)}
+#probar{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:35;display:flex;gap:5px;flex-wrap:wrap;justify-content:center;padding:5px;border-radius:12px;background:rgba(6,14,22,.54);border:1px solid rgba(115,195,235,.16);backdrop-filter:blur(10px)}
+#probar button{padding:6px 8px;font-size:10.3px;border-radius:8px}
+#credit{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:18;color:#ffe075;font-size:14px;font-weight:900}
+#note{position:fixed;left:306px;bottom:16px;z-index:18;color:#a9bfce;font-size:10px;background:rgba(6,14,22,.5);border:1px solid rgba(116,193,234,.11);border-radius:9px;padding:6px 8px}
+#recStatus{position:fixed;right:18px;bottom:84px;z-index:30;display:none;padding:7px 10px;border-radius:10px;background:rgba(125,0,0,.72);border:1px solid rgba(255,120,120,.45);font-size:11px;font-weight:900}
+.status{display:inline-block;padding:3px 7px;border-radius:999px;background:#17374b;color:#a9e7ff;font-weight:800;font-size:9.5px}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="formula">ΔV<sub>chân</sub> = I<sub>dây</sub>·r′·s &nbsp; · &nbsp; I<sub>chim</sub> = ΔV/R<sub>chim</sub></div>
+<div id="probar">
+<button id="fullscreenBtn">⛶</button><button id="panelBtn">☰</button>
+<button id="bgBtn">🌗</button><button id="lightBtn">💡</button>
+<button id="camBtn">🎥</button><button id="autoCamBtn">↻ Cam</button>
+<button id="recordBtn">🔴 Quay</button><button id="stopRecordBtn">⏹</button>
+</div>
+
+<div id="panel">
+<h1>PHYSICS 11 LAB · 3D PRO</h1>
+<div class="sub">102 · CHIM ĐẬU TRÊN MỘT DÂY ĐIỆN CAO THẾ</div>
+<div class="desc">Hai chân chim cùng tiếp xúc trên <b>một dây dẫn</b> và cách nhau rất ngắn. Điện thế tuyệt đối của dây so với đất có thể rất lớn, nhưng <b>chênh lệch điện thế giữa hai chân</b> thường rất nhỏ nên dòng qua cơ thể chim rất nhỏ trong mô hình lý tưởng.</div>
+<div class="warn"><b>Quan trọng:</b> dây cao thế không an toàn. Nếu chim đồng thời chạm một vật dẫn có điện thế khác (cột/đất/dây khác) thì có thể xuất hiện dòng rất lớn qua cơ thể.</div>
+
+<div class="section">ĐIỀU KHIỂN VẬT LÍ</div>
+<label class="control">Tốc độ mô phỏng <span id="speedVal" class="value">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
+<label class="control">Điện thế dây so với đất U <span id="UVal" class="value">110 kV</span><input id="lineVoltage" type="range" min="10" max="500" step="10" value="110"></label>
+<label class="control">Dòng điện trên dây I <span id="ILineVal" class="value">300 A</span><input id="lineCurrent" type="range" min="0" max="1000" step="10" value="300"></label>
+<label class="control">Điện trở dây trên mét r′ <span id="rPrimeVal" class="value">0.00030 Ω/m</span><input id="rPrime" type="range" min=".00005" max=".002" step=".00005" value=".0003"></label>
+<label class="control">Khoảng cách hai chân s <span id="footVal" class="value">0.12 m</span><input id="footSep" type="range" min=".04" max=".30" step=".01" value=".12"></label>
+<label class="control">Điện trở cơ thể chim R <span id="bodyRVal" class="value">20 kΩ</span><input id="bodyR" type="range" min="5" max="100" step="1" value="20"></label>
+
+<div class="section">TÌNH HUỐNG</div>
+<div class="buttons">
+<button id="safeMode" class="primary">🕊 Cùng một dây</button><button id="groundMode" class="danger">⚠ Chạm đất/cột</button>
+<button id="start">▶ Bắt đầu</button><button id="pause">⏸ Tạm dừng</button>
+<button id="reset">↻ Đặt lại</button><button id="fit">⛶ Fit</button>
+<button id="flyInBtn">🪽 Bay đến đậu</button><button id="flyAwayBtn">🕊 Bay đi</button>
+</div>
+
+<div class="section">HIỂN THỊ</div>
+<label class="checkrow"><input id="showPotential" type="checkbox" checked> Hiện điện thế tại hai chân</label>
+<label class="checkrow"><input id="showCurrent" type="checkbox" checked> Hiện dòng qua chim</label>
+<label class="checkrow"><input id="showDrop" type="checkbox" checked> Hiện sụt áp dọc dây</label>
+<label class="checkrow"><input id="showGrid" type="checkbox" checked> Hiện lưới</label>
+<canvas id="graph" width="262" height="150"></canvas>
+<div class="modeling"><b>Mô hình hóa:</b> đoạn dây gần chim được coi là dây dẫn thuần trở với điện trở tuyến tính r′. Bỏ qua hồ quang, cảm ứng, điện dung với đất và sinh lý điện giật thực tế. Khi chim đang bay, mô phỏng cho xem trạng thái “không tiếp xúc dây” nên dòng qua chim bằng 0.</div>
+</div>
+
+<div id="hud">
+<span class="status">CHIM TRÊN MỘT DÂY · HAI CHÂN GẦN CÙNG ĐIỆN THẾ</span><br>
+Trạng thái chim = <b id="birdStateOut">ĐANG ĐẬU TRÊN DÂY</b><br>
+U dây–đất = <b id="UOut">110 kV</b><br>
+I dây = <b id="ILineOut">300 A</b> · r′ = <b id="rPrimeOut">0.00030 Ω/m</b><br>
+V chân trái = <b id="VL">110000.000 V</b><br>
+V chân phải = <b id="VR">109999.989 V</b><br>
+ΔV hai chân = <b id="dVOut">0.0108 V</b><br>
+I qua chim = <b id="IBirdOut">0.54 μA</b><br>
+Đánh giá = <b id="statusOut">RẤT NHỎ trong mô hình lý tưởng</b>
+</div>
+
+<div id="note">điện thế tuyệt đối rất lớn ≠ chênh lệch điện thế giữa hai chân lớn</div>
+<div id="credit">Thầy Hùng vật lí</div>
+<div id="recStatus">● ĐANG QUAY 00:00</div>
+<div id="shockBanner">⚡ CHIM BỊ ĐIỆN GIẬT: PHÁT TIA LỬA CHÉO RỒI RƠI</div>
+<canvas id="recordCanvas" width="1920" height="1080" style="display:none"></canvas>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+const $=id=>document.getElementById(id);
+const state={running:false,paused:false,time:0,speed:1,U:110e3,ILine:300,rp:.0003,footSep:.12,Rbody:20000,mode:'wire',backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false,pulse:0,birdMode:'perched',birdProgress:1,shockPulse:0,shockTimer:0};
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('app').appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x06131e);
+const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,200);camera.position.set(8,5.4,10);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=4;controls.maxDistance=28;controls.minPolarAngle=.2;controls.maxPolarAngle=1.48;controls.target.set(0,1.0,0);
+const hemi=new THREE.HemisphereLight(0xe4f7ff,0x10202d,1.7);scene.add(hemi);const key=new THREE.DirectionalLight(0xffffff,1.9);key.position.set(7,10,8);scene.add(key);const rim=new THREE.PointLight(0x56d8ff,1.1,30,2);rim.position.set(-5,5,-5);scene.add(rim);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(38,28),new THREE.MeshStandardMaterial({color:0x101c27,roughness:.94}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.3;scene.add(floor);
+const grid=new THREE.GridHelper(38,38,0x2e5b72,0x173241);grid.position.y=-2.29;grid.material.transparent=true;grid.material.opacity=.13;scene.add(grid);
+const model=new THREE.Group();scene.add(model);
+const wireGroup=new THREE.Group(),birdGroup=new THREE.Group(),extraBirdGroup=new THREE.Group(),skyBirdGroup=new THREE.Group(),indicatorGroup=new THREE.Group(),dangerGroup=new THREE.Group(),sparkGroup=new THREE.Group(),shockGroup=new THREE.Group();
+model.add(wireGroup,birdGroup,extraBirdGroup,skyBirdGroup,indicatorGroup,dangerGroup,sparkGroup,shockGroup);
+const extraBirds=[], skyBirds=[];
+const wireY=.25;
+const perchPos=new THREE.Vector3(0,0,0),flyInStart=new THREE.Vector3(-7.6,3.8,-2.6),flyAwayEnd=new THREE.Vector3(8.4,4.6,2.4),fallEnd=new THREE.Vector3(3.8,-1.68,1.08);
+let birdParts={wing1:null,wing2:null,legs:null};
+const sparkMaterial=new THREE.LineBasicMaterial({color:0xffb36b,transparent:true,opacity:.9});
+const sparks=[];
+function birdOnWire(){return state.birdMode==='perched'}
+function dVFeet(){if(!birdOnWire())return 0;return state.mode==='wire'?Math.abs(state.ILine*state.rp*state.footSep):state.U}
+function birdCurrent(){if(!birdOnWire())return 0;return state.Rbody>0?dVFeet()/state.Rbody:Infinity}
+function shockActive(){return state.birdMode==='perched'&&state.mode==='ground';}
+function fallingShockActive(){return state.birdMode==='falling';}
+function makeJaggedLine(points,color=0xffb36b,opacity=.95){const geom=new THREE.BufferGeometry().setFromPoints(points);const line=new THREE.Line(geom,new THREE.LineBasicMaterial({color,transparent:true,opacity}));return line;}
+function buildShockArc(a,b,bend=0,segments=6,spread=.12){const pts=[];const dir=b.clone().sub(a);for(let i=0;i<=segments;i++){const t=i/segments;const p=a.clone().lerp(b,t);const off=new THREE.Vector3(0,Math.sin(t*Math.PI)*bend,0);off.x+=(Math.random()-.5)*spread*(i>0&&i<segments?1:0);off.z+=(Math.random()-.5)*spread*(i>0&&i<segments?1:0);pts.push(p.add(off));}return makeJaggedLine(pts,0xffbf70,.95);}
+function vLeft(){if(!birdOnWire())return null;return state.U}
+function vRight(){if(!birdOnWire())return null;return state.mode==='wire'?state.U-state.ILine*state.rp*state.footSep:0}
+function clearGroup(g){while(g.children.length){const o=g.children.pop();o.traverse?.(q=>{q.geometry?.dispose?.();q.material?.dispose?.()})}}
+function addRod(group,a,b,r,color,metal=.65){const mid=a.clone().add(b).multiplyScalar(.5),len=a.distanceTo(b);const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,18),new THREE.MeshStandardMaterial({color,metalness:metal,roughness:.3}));mesh.position.copy(mid);mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());group.add(mesh);return mesh;}
+function buildWire(){clearGroup(wireGroup);const cable=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,13.5,28),new THREE.MeshStandardMaterial({color:0xb7c0c9,metalness:.88,roughness:.22}));cable.rotation.z=Math.PI/2;cable.position.set(0,wireY,0);wireGroup.add(cable);for(let k=0;k<3;k++){const pts=[];for(let i=0;i<=180;i++){const x=-6.7+i/180*13.4,a=i/180*Math.PI*18+k*2*Math.PI/3;pts.push(new THREE.Vector3(x,wireY+.128*Math.cos(a),.128*Math.sin(a)));}wireGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xdce4ea,transparent:true,opacity:.45})))}const poleMat=new THREE.MeshStandardMaterial({color:0x4b5862,metalness:.35,roughness:.68});for(const x of [-6.1,6.1]){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,5.2,16),poleMat);pole.position.set(x,-.65,0);wireGroup.add(pole);const cross=new THREE.Mesh(new THREE.BoxGeometry(1.8,.14,.18),poleMat);cross.position.set(x,1.15,0);wireGroup.add(cross);for(let j=0;j<4;j++){const disk=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.12,24),new THREE.MeshStandardMaterial({color:0xd9e3e8,roughness:.35}));disk.rotation.z=Math.PI/2;disk.position.set(x+(j-1.5)*.18,.72,0);wireGroup.add(disk);}}}
+
+function makeBirdRig(scale=1, palette={body:0xb99168,dark:0x3a2b25,light:0xe4d6bb,beak:0xd97a3b}, legSpread=.12, detail=true){
+ const g=new THREE.Group();
+ const bodyMat=new THREE.MeshStandardMaterial({color:palette.body,roughness:.72});
+ const darkMat=new THREE.MeshStandardMaterial({color:palette.dark,roughness:.76});
+ const lightMat=new THREE.MeshStandardMaterial({color:palette.light,roughness:.78});
+ const beakMat=new THREE.MeshStandardMaterial({color:palette.beak,roughness:.56});
+ const body=new THREE.Mesh(new THREE.SphereGeometry(.60,28,22),bodyMat);body.scale.set(1.18,1.08,.82);body.position.set(0,1.26,0);g.add(body);
+ const back=new THREE.Mesh(new THREE.SphereGeometry(.44,22,18),darkMat);back.scale.set(1.08,.82,.78);back.position.set(-.16,1.42,0);g.add(back);
+ const chest=new THREE.Mesh(new THREE.SphereGeometry(.44,22,18),lightMat);chest.scale.set(.84,1.12,.78);chest.position.set(.23,1.13,.06);g.add(chest);
+ const neck=new THREE.Mesh(new THREE.SphereGeometry(.18,16,14),lightMat);neck.scale.set(.8,1.2,.8);neck.position.set(.33,1.48,0);g.add(neck);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.34,24,18),darkMat);head.scale.set(1.02,1,.94);head.position.set(.47,1.93,0);g.add(head);
+ const cheek=new THREE.Mesh(new THREE.SphereGeometry(.15,14,10),lightMat);cheek.scale.set(1.05,.68,.84);cheek.position.set(.61,1.88,.14);g.add(cheek);
+ const eyeWhite=new THREE.Mesh(new THREE.SphereGeometry(.045,12,10),new THREE.MeshBasicMaterial({color:0xffffff}));eyeWhite.position.set(.67,1.98,.18);g.add(eyeWhite);
+ const pupil=new THREE.Mesh(new THREE.SphereGeometry(.022,10,8),new THREE.MeshBasicMaterial({color:0x050505}));pupil.position.set(.692,1.98,.202);g.add(pupil);
+ const beakTop=new THREE.Mesh(new THREE.ConeGeometry(.085,.28,16),beakMat);beakTop.rotation.z=-Math.PI/2;beakTop.position.set(.82,1.90,0);g.add(beakTop);
+ const beakLow=new THREE.Mesh(new THREE.ConeGeometry(.055,.16,12),beakMat);beakLow.rotation.z=-Math.PI/2+.06;beakLow.position.set(.77,1.83,0);g.add(beakLow);
+ const wing1=new THREE.Mesh(new THREE.SphereGeometry(.38,20,16),darkMat);wing1.scale.set(1.42,.38,.56);wing1.position.set(-.14,1.30,.48);wing1.rotation.z=-.48;g.add(wing1);
+ const wing1Tip=new THREE.Mesh(new THREE.ConeGeometry(.10,.56,12),darkMat);wing1Tip.position.set(-.55,1.13,.50);wing1Tip.rotation.set(0,0,1.22);g.add(wing1Tip);
+ const wing2=wing1.clone();wing2.position.z=-.48;wing2.rotation.z=.48;g.add(wing2);
+ const wing2Tip=wing1Tip.clone();wing2Tip.position.z=-.50;wing2Tip.rotation.z=-1.22;g.add(wing2Tip);
+ const tailRoot=new THREE.Group();
+ for(const [zz,ang,sc] of [[-.16,2.32,.92],[0,2.45,1.0],[.16,2.6,.92]]){const t=new THREE.Mesh(new THREE.ConeGeometry(.08,.84,10),darkMat);t.rotation.z=ang;t.scale.set(1,sc,1);t.position.set(-.78,1.10,zz);tailRoot.add(t);} g.add(tailRoot);
+ const legHolder=new THREE.Group(); const half=legSpread/2*6.0;
+ for(const x of [-half,half]){addRod(legHolder,new THREE.Vector3(x,.90,0),new THREE.Vector3(x,.38,0),.028,0xc97842,.08);addRod(legHolder,new THREE.Vector3(x,.38,-.04),new THREE.Vector3(x+.12,.24,.17),.016,0xc97842,.05);addRod(legHolder,new THREE.Vector3(x,.38,0),new THREE.Vector3(x+.01,.22,0),.016,0xc97842,.05);addRod(legHolder,new THREE.Vector3(x,.38,.04),new THREE.Vector3(x-.11,.24,-.17),.016,0xc97842,.05);} g.add(legHolder);
+ if(detail){const crest=new THREE.Mesh(new THREE.ConeGeometry(.04,.16,8),darkMat);crest.position.set(.34,2.18,0);crest.rotation.z=-.18;g.add(crest);} 
+ g.scale.setScalar(scale);
+ g.userData={wing1,wing2,wing1Tip,wing2Tip,legs:legHolder,head,tailRoot};
+ return g;
+}
+function makeCompanionBird(scale=0.62,palette={body:0x9c795b,dark:0x44352d,light:0xe3d4bc,beak:0xd6843f},x=0,z=0){
+ const g=makeBirdRig(scale,palette,.10,false);
+ g.position.set(x,0,z);
+ g.userData.baseX=x; g.userData.baseZ=z; g.userData.phase=Math.random()*Math.PI*2;
+ return g;
+}
+function buildSkyBirds(){
+ clearGroup(skyBirdGroup); skyBirds.length=0;
+ const colors=[
+  {body:0x66798a,dark:0x33414c,light:0xcdd9e3,beak:0xd68a41},
+  {body:0x8d816e,dark:0x44372f,light:0xe9ddc7,beak:0xcf7e39},
+  {body:0x748391,dark:0x3d4954,light:0xdbe3ea,beak:0xd69043}
+ ];
+ for(let i=0;i<4;i++){
+   const g=makeBirdRig(.24+.03*(i%2),colors[i%colors.length],.08,false);
+   g.position.set(-5.8+i*2.4,4.4+.28*(i%2),-4.6-.15*i);
+   g.rotation.y=.35-.12*i;
+   g.traverse(o=>{if(o.isMesh&&o.material){o.material.transparent=true;o.material.opacity=.62;o.material.depthWrite=false;}});
+   g.userData.base=g.position.clone(); g.userData.phase=i*1.37;
+   skyBirdGroup.add(g); skyBirds.push(g);
+ }
+}
+function buildExtraBirds(){
+ clearGroup(extraBirdGroup);extraBirds.length=0;
+ const configs=[
+   [-4.8,.04,.58,{body:0x93806f,dark:0x44362f,light:0xe5d8c2,beak:0xd2823c}],
+   [-3.2,-.03,.66,{body:0x8a97a3,dark:0x495762,light:0xe7eef3,beak:0xe08a3f}],
+   [2.7,.03,.62,{body:0xb09a69,dark:0x5b4832,light:0xf0e1c2,beak:0xd88a40}],
+   [4.1,-.02,.54,{body:0x7e8892,dark:0x404c56,light:0xd9e2e9,beak:0xd6873f}],
+   [-6.3,.01,.50,{body:0x9c795b,dark:0x44352d,light:0xe3d4bc,beak:0xd6843f}]
+ ];
+ for(const [x,z,s,p] of configs){const b=makeCompanionBird(s,p,x,z);extraBirdGroup.add(b);extraBirds.push(b);}
+}
+function buildBird(){
+ clearGroup(birdGroup);
+ const main=makeBirdRig(1,{body:0xb99168,dark:0x3a2b25,light:0xe4d6bb,beak:0xd97a3b},state.footSep,true);
+ birdGroup.add(main);
+ birdParts={wing1:main.userData.wing1,wing2:main.userData.wing2,legs:main.userData.legs,wing1Tip:main.userData.wing1Tip,wing2Tip:main.userData.wing2Tip,head:main.userData.head,tailRoot:main.userData.tailRoot};
+ setBirdTransformImmediate();
+}
+function makeTextSprite(text,bg='rgba(8,20,30,.85)',fg='#fff'){const c=document.createElement('canvas');c.width=360;c.height=110;const x=c.getContext('2d');x.fillStyle=bg;x.fillRect(4,4,352,102);x.strokeStyle='rgba(255,255,255,.18)';x.lineWidth=3;x.strokeRect(4,4,352,102);x.fillStyle=fg;x.font='800 30px Segoe UI';x.textAlign='center';x.textBaseline='middle';x.fillText(text,180,57);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(2.2,.67,1);return s;}
+function buildIndicators(){clearGroup(indicatorGroup);clearGroup(dangerGroup);clearGroup(sparkGroup);clearGroup(shockGroup);const half=state.footSep/2*6.0;if(birdOnWire()&&$('showPotential').checked){const l=makeTextSprite(`V₁ = ${(vLeft()/1000).toFixed(3)} kV`,'rgba(20,74,100,.86)','#bcefff');l.position.set(-half,2.95,0);indicatorGroup.add(l);const r=makeTextSprite(`V₂ = ${(vRight()/1000).toFixed(3)} kV`,'rgba(20,74,100,.86)','#bcefff');r.position.set(half,2.55,0);indicatorGroup.add(r);}if(birdOnWire()&&$('showCurrent').checked){const I=birdCurrent();const col=state.mode==='wire'?0x72f3a4:0xff694f;const len=THREE.MathUtils.clamp(.7+Math.log10(1+I*1e6)*.25,.7,2.5);const a=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(-half,.72,.48),Math.max(.25,len),col,.14,.08);indicatorGroup.add(a);}if($('showDrop').checked&&state.mode==='wire'){const grad=state.ILine*state.rp;for(let i=-5;i<=5;i++){const x=i*1.05;const h=.16+.28*(i+5)/10;const m=new THREE.Mesh(new THREE.BoxGeometry(.08,h,.08),new THREE.MeshBasicMaterial({color:0x5adfff,transparent:true,opacity:.55}));m.position.set(x,wireY+.35+h/2,-.45);indicatorGroup.add(m);}}if(state.mode==='ground'&&birdOnWire()){const rod=addRod(dangerGroup,new THREE.Vector3(.55,1.75,-.1),new THREE.Vector3(3.8,-1.2,-.1),.07,0xff6b4d,.45);const ground=new THREE.ArrowHelper(new THREE.Vector3(0,-1,0),new THREE.Vector3(3.8,-1.2,-.1),1.0,0xff6b4d,.18,.1);dangerGroup.add(ground);const tag=makeTextSprite('CHẠM VẬT DẪN GẦN ĐẤT','rgba(110,28,18,.9)','#ffd0c6');tag.position.set(2.7,1.4,0);dangerGroup.add(tag);for(let i=0;i<6;i++){const pts=[new THREE.Vector3(.42+i*.1,1.72+.03*Math.sin(i),-0.03),new THREE.Vector3(.68+i*.5,1.15-i*.52,-.08+.04*i)];const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),sparkMaterial);sparkGroup.add(line);sparks.push(line);}buildShockEffect();}}
+function buildShockEffect(){
+clearGroup(shockGroup);
+if(!(shockActive()||fallingShockActive()))return;
+if(shockActive()){
+const half=state.footSep/2*6.0;
+const leftFoot=new THREE.Vector3(-half,.26,0), rightFoot=new THREE.Vector3(half,.26,0);
+const bodyPoint=new THREE.Vector3(.10,1.28,0);
+const rodTop=new THREE.Vector3(.55,1.75,-.1), rodMid=new THREE.Vector3(1.9,.55,-.08), rodEnd=new THREE.Vector3(3.8,-1.2,-.1);
+for(let i=0;i<2;i++){
+shockGroup.add(buildShockArc(leftFoot,rodTop,.18+.04*i,6,.10));
+shockGroup.add(buildShockArc(rightFoot,rodTop,.15+.04*i,6,.10));
+}
+for(let i=0;i<2;i++)shockGroup.add(buildShockArc(bodyPoint,rodMid,.14+.03*i,5,.08));
+shockGroup.add(buildShockArc(rodTop,rodEnd,.06,5,.04));
+const ringGeo=new THREE.TorusGeometry(.18,.028,10,28);
+for(const p of [leftFoot,rightFoot]){const ring=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:.9}));ring.rotation.x=Math.PI/2;ring.position.copy(p);shockGroup.add(ring);}
+const boltMat=new THREE.MeshBasicMaterial({color:0xffd76b,transparent:true,opacity:.96});
+for(const p of [new THREE.Vector3(.15,1.48,.34),new THREE.Vector3(.36,1.7,-.28)]){const sp=new THREE.Mesh(new THREE.SphereGeometry(.06,10,10),boltMat);sp.position.copy(p);shockGroup.add(sp);}
+return;
+}
+const base=birdGroup.position.clone();
+const left=base.clone().add(new THREE.Vector3(-.18,.18,0)), right=base.clone().add(new THREE.Vector3(.18,.1,0));
+const tail=base.clone().add(new THREE.Vector3(-.55,.28,-.12));
+const down1=base.clone().add(new THREE.Vector3(.55,-.8,.42));
+const down2=base.clone().add(new THREE.Vector3(.9,-1.2,.25));
+shockGroup.add(buildShockArc(left,down1,.22,6,.12));
+shockGroup.add(buildShockArc(right,down2,.18,6,.12));
+shockGroup.add(buildShockArc(base.clone().add(new THREE.Vector3(.1,.32,0)),tail,.12,5,.10));
+for(let i=0;i<3;i++){
+const glow=new THREE.Mesh(new THREE.SphereGeometry(.08+.02*i,10,10),new THREE.MeshBasicMaterial({color:i===0?0xfff0a8:0xff9d42,transparent:true,opacity:.9-.2*i}));
+glow.position.copy(base).add(new THREE.Vector3(.1+.12*i,.25-.08*i,.06*(i-1)));
+shockGroup.add(glow);
+}
+}
+function setBirdTransformImmediate(){const p=getBirdPosition();birdGroup.position.copy(p);const flying=state.birdMode!=='perched';birdGroup.rotation.set(0, flying?0.18:0, flying?-0.18:0);if(birdParts.legs)birdParts.legs.visible=!flying;}
+function getBirdPosition(){
+if(state.birdMode==='perched')return perchPos.clone();
+if(state.birdMode==='grounded')return fallEnd.clone();
+if(state.birdMode==='flyingIn'){
+const c=new THREE.QuadraticBezierCurve3(flyInStart,new THREE.Vector3(-2.4,5.1,-.7),perchPos);
+return c.getPoint(THREE.MathUtils.clamp(state.birdProgress,0,1));
+}
+if(state.birdMode==='falling'){
+const c=new THREE.QuadraticBezierCurve3(perchPos.clone().add(new THREE.Vector3(.12,.02,0)),new THREE.Vector3(1.7,1.95,.62),fallEnd);
+return c.getPoint(THREE.MathUtils.clamp(state.birdProgress,0,1));
+}
+const c=new THREE.QuadraticBezierCurve3(perchPos,new THREE.Vector3(2.8,4.8,.8),flyAwayEnd);
+return c.getPoint(THREE.MathUtils.clamp(state.birdProgress,0,1));
+}
+function triggerFlyIn(){state.mode='wire';state.shockTimer=0;state.shockPulse=0;state.birdMode='flyingIn';state.birdProgress=0;state.running=true;state.paused=false;buildIndicators();}
+function triggerFlyAway(){state.shockTimer=0;state.shockPulse=0;state.birdMode='flyingAway';state.birdProgress=0;state.running=true;state.paused=false;buildIndicators();}
+function updateBirdMotion(dt){
+if(!state.running||state.paused)return;
+state.pulse+=dt*state.speed*2.2;
+if(state.birdMode==='flyingIn'){
+state.birdProgress=Math.min(1,state.birdProgress+dt*0.28*state.speed);
+if(state.birdProgress>=1){state.birdMode='perched';state.birdProgress=1;state.shockTimer=0;buildIndicators();}
+}else if(state.birdMode==='flyingAway'){
+state.birdProgress=Math.min(1,state.birdProgress+dt*0.28*state.speed);
+if(state.birdProgress>=1){state.birdMode='away';state.birdProgress=1;buildIndicators();}
+}else if(state.birdMode==='falling'){
+state.birdProgress=Math.min(1,state.birdProgress+dt*0.9*state.speed);
+if(state.birdProgress>=1){state.birdMode='grounded';state.birdProgress=1;state.shockPulse=0;buildIndicators();}
+}
+if(shockActive()){
+state.shockTimer+=dt*state.speed;
+if(state.shockTimer>.85){state.birdMode='falling';state.birdProgress=0;state.shockTimer=0;buildIndicators();}
+}else if(state.birdMode!=='falling'){
+state.shockTimer=0;
+}
+const p=(state.birdMode==='away')?flyAwayEnd:getBirdPosition();
+birdGroup.position.copy(p);
+if(state.birdMode==='perched'){
+const safeBob=.018*Math.sin(state.pulse*1.4);
+if(shockActive()){
+state.shockPulse+=dt*state.speed*24;
+const jitter=.03+0.014*Math.sin(state.shockPulse*1.7);
+birdGroup.position.x+=(Math.random()-.5)*jitter;
+birdGroup.position.y+=.035*Math.sin(state.shockPulse*3.1)+.012*Math.sin(state.shockPulse*8.0);
+birdGroup.position.z+=(Math.random()-.5)*jitter*.9;
+birdGroup.rotation.set(.15*Math.sin(state.shockPulse*2.8),0,.14*Math.sin(state.shockPulse*3.5));
+if(birdParts.legs)birdParts.legs.visible=true;
+if(birdParts.wing1){const wf=.28*Math.sin(state.shockPulse*4.0);birdParts.wing1.rotation.z=-.72+wf;birdParts.wing2.rotation.z=.72-wf;if(birdParts.wing1Tip){birdParts.wing1Tip.rotation.z=1.12+.38*Math.sin(state.shockPulse*4.0);birdParts.wing2Tip.rotation.z=-1.12-.38*Math.sin(state.shockPulse*4.0);}} if(birdParts.head)birdParts.head.rotation.z=.08*Math.sin(state.shockPulse*3.4);
+}else{
+state.shockPulse=0;
+birdGroup.position.y+=safeBob;
+birdGroup.rotation.set(0,0,0);
+if(birdParts.legs)birdParts.legs.visible=true;
+if(birdParts.wing1){const wf=.05*Math.sin(state.pulse*2.5);birdParts.wing1.rotation.z=-.44+wf;birdParts.wing2.rotation.z=.44-wf;if(birdParts.wing1Tip){birdParts.wing1Tip.rotation.z=1.18+.08*Math.sin(state.pulse*2.5);birdParts.wing2Tip.rotation.z=-1.18-.08*Math.sin(state.pulse*2.5);}} if(birdParts.head)birdParts.head.rotation.z=.05*Math.sin(state.pulse*1.6); if(birdParts.tailRoot)birdParts.tailRoot.rotation.y=.08*Math.sin(state.pulse*1.2);
+}
+}else if(state.birdMode==='falling'){
+state.shockPulse+=dt*state.speed*18;
+const flap=1.05*Math.sin(state.shockPulse*10.5);
+birdGroup.rotation.set(.55+.6*state.birdProgress,.35,-.35-1.25*state.birdProgress+.18*Math.sin(state.shockPulse*1.7));
+birdGroup.position.x+=(Math.random()-.5)*.04;
+birdGroup.position.y+=(Math.random()-.5)*.03;
+if(birdParts.legs)birdParts.legs.visible=true;
+if(birdParts.wing1){birdParts.wing1.rotation.z=-.86-flap;birdParts.wing2.rotation.z=.86+flap;if(birdParts.wing1Tip){birdParts.wing1Tip.rotation.z=1.14+.52*Math.sin(state.shockPulse*10.5);birdParts.wing2Tip.rotation.z=-1.14-.52*Math.sin(state.shockPulse*10.5);}}
+}else if(state.birdMode==='grounded'){
+birdGroup.rotation.set(.25,.18,-1.35);
+if(birdParts.legs)birdParts.legs.visible=true;
+if(birdParts.wing1){birdParts.wing1.rotation.z=-.18;birdParts.wing2.rotation.z=.48;if(birdParts.wing1Tip){birdParts.wing1Tip.rotation.z=1.04;birdParts.wing2Tip.rotation.z=-1.22;}}
+}else{
+const flap=.95*Math.sin(state.pulse*13);
+birdGroup.rotation.set(.1*Math.sin(state.pulse*2.5),.14,-0.18+.05*Math.sin(state.pulse*1.8));
+if(birdParts.legs)birdParts.legs.visible=false;
+if(birdParts.wing1){birdParts.wing1.rotation.z=-.72-flap;birdParts.wing2.rotation.z=.72+flap;if(birdParts.wing1Tip){birdParts.wing1Tip.rotation.z=1.18+.58*Math.sin(state.pulse*13);birdParts.wing2Tip.rotation.z=-1.18-.58*Math.sin(state.pulse*13);}}
+}
+}
+function updatePhysics(dt){if(!state.running||state.paused)return;state.time+=dt*state.speed;updateBirdMotion(dt)}
+function updateVisuals(){buildIndicators();grid.visible=$('showGrid').checked;const shock=shockActive()||fallingShockActive();$('shockBanner').classList.toggle('active',shock&&state.running&&!state.paused);extraBirds.forEach((b,i)=>{const ph=b.userData.phase+i; const u=b.userData; if(shock){b.position.y=.78+.20*i+.20*Math.sin(state.time*7.5+ph);b.position.x=u.baseX+.36*Math.sin(state.time*4.3+ph);b.position.z=u.baseZ+.25*Math.cos(state.time*3.8+ph);b.rotation.set(.06*Math.sin(state.time*5+ph),.18*Math.cos(state.time*2.5+ph),.12*Math.sin(state.time*8+ph)); if(u.wing1){const f=.62*Math.sin(state.time*20+ph);u.wing1.rotation.z=-.82-f;u.wing2.rotation.z=.82+f;u.wing1Tip.rotation.z=1.10+.55*Math.sin(state.time*20+ph);u.wing2Tip.rotation.z=-1.10-.55*Math.sin(state.time*20+ph);} }else{b.position.x=u.baseX;b.position.z=u.baseZ;b.position.y=.02*Math.sin(state.time*1.8+ph);b.rotation.set(0,.04*Math.sin(state.time+ph),0); if(u.head)u.head.rotation.z=.05*Math.sin(state.time*1.5+ph); if(u.tailRoot)u.tailRoot.rotation.y=.07*Math.sin(state.time*1.4+ph); if(u.wing1){u.wing1.rotation.z=-.48+.04*Math.sin(state.time*2+ph);u.wing2.rotation.z=.48-.04*Math.sin(state.time*2+ph);u.wing1Tip.rotation.z=1.18+.06*Math.sin(state.time*2+ph);u.wing2Tip.rotation.z=-1.18-.06*Math.sin(state.time*2+ph);} }});skyBirds.forEach((b,i)=>{const ph=b.userData.phase; b.position.x=b.userData.base.x+1.15*Math.cos(state.time*.55+ph); b.position.y=b.userData.base.y+.35*Math.sin(state.time*.9+ph); b.position.z=b.userData.base.z+.32*Math.sin(state.time*.75+ph); b.rotation.set(.08*Math.sin(state.time*.9+ph),.36-.09*i+.08*Math.sin(state.time*.6+ph),-.08+.05*Math.sin(state.time*.8+ph)); const f=.82*Math.sin(state.time*11+ph*3); b.userData.wing1.rotation.z=-.84-f; b.userData.wing2.rotation.z=.84+f; b.userData.wing1Tip.rotation.z=1.05+.65*Math.sin(state.time*11+ph*3); b.userData.wing2Tip.rotation.z=-1.05-.65*Math.sin(state.time*11+ph*3);});if(state.mode==='ground'&&sparkGroup.children.length){sparkGroup.children.forEach((s,i)=>{s.visible=(birdOnWire()||state.birdMode==='falling')&&(Math.sin(state.time*12+i*1.7)>0);});}if(shockGroup.children.length){shockGroup.children.forEach((obj,i)=>{if(obj.material){obj.material.opacity=obj.type==='Line'?(0.45+0.5*Math.abs(Math.sin(state.time*18+i))):(0.7+0.3*Math.abs(Math.sin(state.time*16+i)));}if(obj.type==='Mesh'&&obj.geometry?.type==='TorusGeometry'){const sc=1+0.16*Math.sin(state.time*14+i);obj.scale.set(sc,sc,sc);}if(obj.type==='Mesh'&&obj.geometry?.type==='SphereGeometry'){obj.visible=Math.sin(state.time*16+i*1.7)>-.1;}});}birdGroup.traverse(o=>{if(o.isMesh&&o.material){if(shock&&(birdOnWire()||state.birdMode==='falling')){o.material.emissive?.setHex?.(0x883311);o.material.emissiveIntensity=.28+.18*Math.abs(Math.sin(state.time*24));}else if(o.material.emissive){o.material.emissive.setHex(0x000000);o.material.emissiveIntensity=0;}}});}
+function drawGraph(){const c=$('graph'),g=c.getContext('2d'),w=c.width,h=c.height;g.fillStyle='#071019';g.fillRect(0,0,w,h);const L=36,T=12,B=24,R=8,pw=w-L-R,ph=h-T-B;g.strokeStyle='rgba(190,225,240,.28)';g.beginPath();g.moveTo(L,T);g.lineTo(L,T+ph);g.lineTo(L+pw,T+ph);g.stroke();if(state.mode==='wire'){const span=2.0,grad=state.ILine*state.rp,center=state.U;const min=center-grad*span/2,max=center+grad*span/2;g.strokeStyle='#67e5ff';g.lineWidth=2;g.beginPath();for(let i=0;i<=120;i++){const x=-span/2+i/120*span,V=center-grad*(x+span/2),gx=L+i/120*pw,gy=T+ph*(1-(V-min)/(max-min||1));i?g.lineTo(gx,gy):g.moveTo(gx,gy);}g.stroke();if(birdOnWire()){const half=state.footSep/2;for(const [xx,col] of [[-half,'#ffd65f'],[half,'#ff9a62']]){const gx=L+(xx+span/2)/span*pw;g.strokeStyle=col;g.beginPath();g.moveTo(gx,T);g.lineTo(gx,T+ph);g.stroke();}}g.fillStyle='#91aabb';g.font='9px Segoe UI';g.fillText('V(x)',4,12);g.fillText('dọc dây',w-42,h-6);}else{const I=birdCurrent();g.fillStyle='#ff7058';const bar=THREE.MathUtils.clamp(Math.log10(1+I*1e6)/6,0,1);g.fillRect(L,T+ph*(1-bar),pw*.55,ph*bar);g.fillStyle='#ffd65f';g.font='10px Segoe UI';g.fillText(`I_chim ≈ ${formatCurrent(I)}`,L,T+12);g.fillStyle='#91aabb';g.font='9px Segoe UI';g.fillText('thang log',4,12);}if(!birdOnWire()){g.fillStyle='rgba(255,255,255,.55)';g.font='11px Segoe UI';g.fillText('Chim đang bay / không tiếp xúc dây',L+12,h-10)}}
+function formatCurrent(I){if(!isFinite(I))return '∞';if(I<1e-3)return `${(I*1e6).toFixed(2)} μA`;if(I<1)return `${(I*1e3).toFixed(2)} mA`;return `${I.toFixed(2)} A`;}
+function updateUI(){const dv=dVFeet(),Ib=birdCurrent();$('speedVal').textContent=`${state.speed.toFixed(2)}×`;$('UVal').textContent=`${(state.U/1000).toFixed(0)} kV`;$('ILineVal').textContent=`${state.ILine.toFixed(0)} A`;$('rPrimeVal').textContent=`${state.rp.toFixed(5)} Ω/m`;$('footVal').textContent=`${state.footSep.toFixed(2)} m`;$('bodyRVal').textContent=`${(state.Rbody/1000).toFixed(0)} kΩ`;$('UOut').textContent=`${(state.U/1000).toFixed(0)} kV`;$('ILineOut').textContent=`${state.ILine.toFixed(0)} A`;$('rPrimeOut').textContent=`${state.rp.toFixed(5)} Ω/m`;$('birdStateOut').textContent=state.birdMode==='perched'?'ĐANG ĐẬU TRÊN DÂY':(state.birdMode==='flyingIn'?'ĐANG BAY ĐẾN ĐẬU':(state.birdMode==='flyingAway'||state.birdMode==='away'?'ĐANG BAY RỜI DÂY':(state.birdMode==='falling'?'BỊ ĐIỆN GIẬT, ĐANG RƠI':(state.birdMode==='grounded'?'ĐÃ RƠI XUỐNG ĐẤT':'KHÔNG XÁC ĐỊNH'))));const vl=vLeft(),vr=vRight();$('VL').textContent=vl==null?'--':vl.toFixed(3)+' V';$('VR').textContent=vr==null?'--':vr.toFixed(3)+' V';$('dVOut').textContent=birdOnWire()?`${dv.toFixed(4)} V`:'0.0000 V';$('IBirdOut').textContent=formatCurrent(Ib);let status='';if(state.birdMode==='falling')status='CHIM BỊ GIẬT, phát tia lửa chéo rồi rơi khỏi dây';else if(state.birdMode==='grounded')status='CHIM ĐÃ RƠI SAU KHI BỊ ĐIỆN GIẬT';else if(!birdOnWire())status='CHIM ĐANG BAY, KHÔNG CÓ TIẾP XÚC ĐIỆN';else status=state.mode==='wire'?'RẤT NHỎ trong mô hình lý tưởng':'NGUY HIỂM: chim bị điện giật vì tạo mạch từ dây xuống đất';$('statusOut').textContent=status;drawGraph();}
+const bgModes=[{b:0x06131e,f:0x101c27},{b:0xeaf2f6,f:0xd6e1e6},{b:0x06162a,f:0x0b2039}];
+function applyBackground(){const m=bgModes[state.backgroundIndex];scene.background.setHex(m.b);floor.material.color.setHex(m.f)}
+function applyLighting(){if(state.lightMode===0){hemi.intensity=1.7;key.intensity=1.9;rim.intensity=1.1}else if(state.lightMode===1){hemi.intensity=2.2;key.intensity=2.4;rim.intensity=.5}else{hemi.intensity=1.05;key.intensity=1.2;rim.intensity=1.9}}
+function setCamera(m){state.cameraMode=m%4;state.autoCamera=false;if(m===0){camera.position.set(0,3.1,12);controls.target.set(0,1.0,0)}else if(m===1){camera.position.set(8,5.4,10);controls.target.set(0,1.0,0)}else if(m===2){camera.position.set(0,10,.1);controls.target.set(0,1.0,0)}else{camera.position.set(4.5,3.2,5);controls.target.set(0,1.0,0)}camera.lookAt(controls.target);controls.update()}
+function updateAutoCam(){if(!state.autoCamera)return;const a=state.time*.13,r=10;camera.position.set(Math.cos(a)*r,4.8,Math.sin(a)*r);camera.lookAt(controls.target)}
+async function toggleFullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}}
+function rebuild(){buildWire();buildBird();buildExtraBirds();buildSkyBirds();buildIndicators();drawGraph()}
+$('speed').oninput=e=>state.speed=+e.target.value;$('lineVoltage').oninput=e=>{state.U=+e.target.value*1000;buildIndicators();drawGraph()};$('lineCurrent').oninput=e=>{state.ILine=+e.target.value;buildIndicators();drawGraph()};$('rPrime').oninput=e=>{state.rp=+e.target.value;buildIndicators();drawGraph()};$('footSep').oninput=e=>{state.footSep=+e.target.value;buildBird();buildExtraBirds();buildSkyBirds();buildIndicators();drawGraph()};$('bodyR').oninput=e=>{state.Rbody=+e.target.value*1000;buildIndicators();drawGraph()};$('showPotential').onchange=buildIndicators;$('showCurrent').onchange=buildIndicators;$('showDrop').onchange=buildIndicators;$('safeMode').onclick=()=>{state.mode='wire';state.shockPulse=0;state.shockTimer=0;if(state.birdMode==='grounded')state.birdMode='perched';buildIndicators();drawGraph()};$('groundMode').onclick=()=>{state.mode='ground';state.shockPulse=0;state.shockTimer=0;buildIndicators();drawGraph()};$('start').onclick=()=>{state.running=true;state.paused=false};$('pause').onclick=()=>state.paused=!state.paused;$('reset').onclick=()=>{Object.assign(state,{running:false,paused:false,time:0,speed:1,U:110e3,ILine:300,rp:.0003,footSep:.12,Rbody:20000,mode:'wire',backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false,pulse:0,birdMode:'perched',birdProgress:1,shockPulse:0,shockTimer:0});$('speed').value=1;$('lineVoltage').value=110;$('lineCurrent').value=300;$('rPrime').value=.0003;$('footSep').value=.12;$('bodyR').value=20;applyBackground();applyLighting();rebuild();setCamera(1);$('shockBanner').classList.remove('active')};$('fit').onclick=()=>setCamera(1);$('flyInBtn').onclick=triggerFlyIn;$('flyAwayBtn').onclick=triggerFlyAway;$('fullscreenBtn').onclick=toggleFullscreen;$('panelBtn').onclick=()=>$('panel').classList.toggle('hide');$('bgBtn').onclick=()=>{state.backgroundIndex=(state.backgroundIndex+1)%3;applyBackground()};$('lightBtn').onclick=()=>{state.lightMode=(state.lightMode+1)%3;applyLighting()};$('camBtn').onclick=()=>setCamera((state.cameraMode+1)%4);$('autoCamBtn').onclick=()=>state.autoCamera=!state.autoCamera;
+const rc=$('recordCanvas'),rctx=rc.getContext('2d');let rec=null,chunks=[],mime='',recStart=0,recTimer=null;function bestMime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function drawRec(){const sw=renderer.domElement.width,sh=renderer.domElement.height,dw=rc.width,dh=rc.height,s=Math.max(dw/sw,dh/sh),rw=sw*s,rh=sh*s;rctx.fillStyle='#06131e';rctx.fillRect(0,0,dw,dh);rctx.drawImage(renderer.domElement,(dw-rw)/2,(dh-rh)/2,rw,rh);rctx.fillStyle='rgba(4,12,20,.72)';rctx.fillRect(34,34,1280,115);rctx.fillStyle='#fff';rctx.font='800 30px Segoe UI';rctx.fillText('102 · CHIM ĐẬU TRÊN MỘT DÂY ĐIỆN CAO THẾ',58,76);rctx.fillStyle='#ffe075';rctx.font='700 23px Segoe UI';rctx.fillText(`U=${(state.U/1000).toFixed(0)} kV · ΔV chân=${dVFeet().toFixed(4)} V · I_chim=${formatCurrent(birdCurrent())} · ${state.birdMode==='perched'?'CHIM ĐẬU TRÊN DÂY':'CHIM ĐANG BAY'}`,58,118);rctx.textAlign='center';rctx.font='800 27px Segoe UI';rctx.fillText('Thầy Hùng vật lí',dw/2,dh-34);rctx.textAlign='left'}
+function startRec(){if(rec&&rec.state==='recording')return;mime=bestMime();if(!mime){alert('Trình duyệt chưa hỗ trợ ghi video.');return}chunks=[];const stream=rc.captureStream(60);rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12000000});rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{const ext=mime.includes('mp4')?'mp4':'webm',a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:mime}));a.download=`102_Chim_dau_tren_mot_day_dien_cao_the_v2_Bay_Den_Dau.${ext}`;a.click();$('recStatus').style.display='none';clearInterval(recTimer)};rec.start(1000);recStart=performance.now();$('recStatus').style.display='block';recTimer=setInterval(()=>{$('recStatus').textContent=`● ĐANG QUAY ${Math.floor((performance.now()-recStart)/1000)} s`},500)}
+$('recordBtn').onclick=startRec;$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+let last=performance.now();function animate(now){requestAnimationFrame(animate);const dt=THREE.MathUtils.clamp((now-last)/1000,0,.033);last=now;updatePhysics(dt);updateVisuals();updateUI();updateAutoCam();controls.update();renderer.render(scene,camera);if(rec&&rec.state==='recording')drawRec()}
+applyBackground();applyLighting();rebuild();setCamera(1);requestAnimationFrame(animate);addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+/*
+  Design tokens re-extracted directly from a real headless-browser render of
+  legacy/index.html (not hand-traced CSS cascade — the app layers 5+
+  overlapping theme revisions via plain CSS overrides, which is too easy to
+  get wrong by reading source; getComputedStyle() on the actual rendered
+  page is ground truth). Dark is the actual shipped default (`body.dark` is
+  hardcoded in the saved file, and <option value="dark"> is listed first in
+  the theme <select>) — NOT light, which is what this file originally
+  (incorrectly) defaulted to.
+*/
+:root {
+  --color-bg: #07111f;
+  --color-panel: #0d1b2c;
+  --color-panel-2: #12263a;
+  --color-text: #eef6ff;
+  --color-muted: #92a9c2;
+  --color-border: #203b59;
+  --shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.28);
+
+  --color-brand-blue: #2f7df6;
+  --color-brand-blue-deep: #1ba8e7;
+  --color-brand-cyan: #22d3ee;
+  --color-brand-orange: #f59e0b;
+  --color-brand-green: #22c55e;
+
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef476f;
+  --color-danger-strong: #ef4444;
+
+  --radius-sm: 7px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+
+  --sidebar-width: 238px;
+
+  /* Hero/CTA gradients, used directly as background-image in a few
+     components rather than exposed as Tailwind color utilities. */
+  --gradient-hero: linear-gradient(115deg, #0a1d35 0%, #102c50 58%, #123665 100%);
+  --gradient-sidebar: linear-gradient(180deg, #08192f 0%, #071422 100%);
+  --gradient-cta: linear-gradient(135deg, #0ea5e9, #22d3ee);
+  --gradient-nav-active: linear-gradient(90deg, rgba(47, 125, 246, 0.22), rgba(25, 194, 215, 0.09));
+}
+
+/* Light is the alternate theme (ThemeToggle), re-extracted the same way. */
+.light {
+  --color-bg: #f4f8fa;
+  --color-panel: #ffffff;
+  --color-panel-2: #f3f8fa;
+  --color-text: #172b4d;
+  --color-muted: #5f7185;
+  --color-border: #d5e3e7;
+  --shadow-soft: 0 10px 28px rgba(23, 43, 77, 0.07);
+}
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-panel: var(--color-panel);
+  --color-panel-2: var(--color-panel-2);
+  --color-text: var(--color-text);
+  --color-muted: var(--color-muted);
+  --color-border: var(--color-border);
+
+  --color-brand-blue: var(--color-brand-blue);
+  --color-brand-blue-deep: var(--color-brand-blue-deep);
+  --color-brand-cyan: var(--color-brand-cyan);
+  --color-brand-orange: var(--color-brand-orange);
+  --color-brand-green: var(--color-brand-green);
+
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+  --color-danger-strong: var(--color-danger-strong);
+
+  --font-sans: "Segoe UI", Inter, Arial, sans-serif;
+}
+
+body {
+  background: var(--color-bg);
+  background-image:
+    radial-gradient(circle at 75% 0px, rgba(47, 125, 246, 0.13), transparent 30%),
+    radial-gradient(circle at 25% 100%, rgba(115, 87, 255, 0.08), transparent 34%);
+  background-attachment: fixed;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+.light body {
+  background-image: none;
+}

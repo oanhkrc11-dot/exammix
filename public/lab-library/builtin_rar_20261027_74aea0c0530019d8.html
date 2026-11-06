@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-118 Sóng dừng trong phòng 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#020912;color:#eef8fb}
+#app{display:grid;grid-template-columns:270px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800}.desc{font-size:10.1px;color:#a9c2cd;line-height:1.35}h1{font-size:17px;margin:4px 0 6px;line-height:1.08}.model{font-size:9.3px;color:#d9edf5;background:#0b2230;border:1px solid #21495a;border-radius:8px;padding:6px;margin:6px 0}
+.ctl{display:grid;grid-template-columns:80px 1fr 72px;gap:5px;align-items:center;margin:5px 0}.ctl label{font-size:9.3px}.ctl output{font-size:8.9px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 52% 30%,#153f58 0,#0a263b 40%,#061725 72%,#030b13 100%)}#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label{position:absolute;transform:translate(-50%,-50%);background:rgba(244,250,252,.95);color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9px;white-space:nowrap}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10px;font-weight:700}
+#hud{position:absolute;right:12px;top:12px;z-index:7;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:8px 10px;min-width:205px}.hrow{display:flex;justify-content:space-between;gap:14px;font-size:9px;margin:3px 0}.hrow span{color:#9fc0cd}.hrow b{color:#fff}
+#note{position:absolute;left:12px;bottom:12px;z-index:7;width:570px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700}.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style></head>
+<body>
+<div id="app"><aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D CINEMATIC</div><h1>118 · Sóng dừng trong phòng</h1>
+<p class="desc">Sóng âm từ loa phản xạ ở hai tường đối diện. Khi tần số phù hợp mode riêng của phòng, sóng tới và phản xạ chồng chất tạo vùng áp suất cực đại – cực tiểu cố định.</p>
+<div class="model"><b>Mô hình hóa:</b> xét mode 1D dọc chiều dài phòng, hai tường cứng nên là bụng áp suất. Bỏ qua suy hao, hấp thụ tường, mode theo chiều rộng/cao và hình học phức tạp.</div>
+
+<div class="ctl"><label>Tốc độ mô phỏng</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Chiều dài L</label><input id="roomL" type="range" min="4" max="12" step=".2" value="8"><output id="roomLOut"></output></div>
+<div class="ctl"><label>Vận tốc âm v</label><input id="soundV" type="range" min="320" max="360" step="1" value="343"><output id="soundVOut"></output></div>
+<div class="ctl"><label>Mode n</label><input id="mode" type="range" min="1" max="6" step="1" value="3"><output id="modeOut"></output></div>
+<div class="ctl"><label>Biên độ</label><input id="amp" type="range" min=".2" max="1" step=".05" value=".8"><output id="ampOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showPressure" type="checkbox" checked> Trường áp suất</label>
+<label class="check"><input id="showNodes" type="checkbox" checked> Nút / bụng</label>
+<label class="check"><input id="showParticles" type="checkbox" checked> Phần tử khí</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị p(x)</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Bắt đầu</button><button id="pauseBtn" class="btn">⏸ Tạm dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Fit toàn cảnh</button>
+<button id="mode1Btn" class="btn">Mode 1</button><button id="mode3Btn" class="btn">Mode 3</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div><div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view"><div id="three"></div><div id="labels"></div>
+<div id="formula">fₙ = nv/(2L) &nbsp; · &nbsp; p(x,t)=A cos(nπx/L) cos(2πfₙt)</div>
+<div id="hud">
+<div class="hrow"><span>Tần số cộng hưởng fₙ</span><b id="fHud"></b></div>
+<div class="hrow"><span>Bước sóng λ</span><b id="lambdaHud"></b></div>
+<div class="hrow"><span>Số nút áp suất</span><b id="nodeHud"></b></div>
+<div class="hrow"><span>Số bụng áp suất</span><b id="antiHud"></b></div>
+<div class="hrow"><span>Trạng thái</span><b id="statusHud"></b></div>
+</div>
+<div id="note">Màu đỏ/cam biểu diễn áp suất dương tương đối, xanh biểu diễn áp suất âm tương đối. Các mặt phẳng nút áp suất có biên độ bằng 0; tại tường cứng là bụng áp suất. Phần tử khí chỉ dao động quanh vị trí cân bằng, không trôi theo sóng.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const $=id=>document.getElementById(id),view=$('view');
+const state={running:true,t:0,speed:1,L:8,v:343,n:3,A:.8};
+const f=()=>state.n*state.v/(2*state.L),lambda=()=>2*state.L/state.n;
+
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=8;controls.maxDistance=30;controls.minPolarAngle=.35;controls.maxPolarAngle=1.75;
+scene.add(new THREE.HemisphereLight(0xffffff,0x172832,4.3));const dl=new THREE.DirectionalLight(0xffffff,4.2);dl.position.set(7,10,8);scene.add(dl);
+
+const lab=new THREE.Group();scene.add(lab);lab.position.set(0,-.5,0);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(18,12),new THREE.MeshStandardMaterial({color:0x102530,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.8;lab.add(floor);
+const grid=new THREE.GridHelper(18,28,0x2e586a,0x123345);grid.position.y=-2.79;lab.add(grid);
+
+// room frame
+const wallMat=new THREE.MeshStandardMaterial({color:0x425d68,transparent:true,opacity:.28,side:THREE.DoubleSide});
+const leftWall=new THREE.Mesh(new THREE.PlaneGeometry(5.2,5.3),wallMat);leftWall.rotation.y=Math.PI/2;lab.add(leftWall);
+const rightWall=leftWall.clone();lab.add(rightWall);
+const backWall=new THREE.Mesh(new THREE.PlaneGeometry(12,5.3),wallMat);lab.add(backWall);
+const ceiling=new THREE.Mesh(new THREE.PlaneGeometry(12,5.2),wallMat);ceiling.rotation.x=Math.PI/2;lab.add(ceiling);
+
+// speaker
+const speaker=new THREE.Group();lab.add(speaker);
+const spBox=new THREE.Mesh(new THREE.BoxGeometry(.8,1.6,1.25),new THREE.MeshStandardMaterial({color:0x273943,metalness:.45,roughness:.3}));speaker.add(spBox);
+const cone=new THREE.Mesh(new THREE.ConeGeometry(.42,.28,32),new THREE.MeshStandardMaterial({color:0x93dff7,emissive:0x174f65,emissiveIntensity:.35}));
+cone.rotation.z=-Math.PI/2;cone.position.x=.53;speaker.add(cone);
+
+// pressure slices
+const pressureG=new THREE.Group();lab.add(pressureG);
+const slices=[];
+for(let i=0;i<41;i++){
+ const mat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.16,side:THREE.DoubleSide,depthWrite:false});
+ const p=new THREE.Mesh(new THREE.PlaneGeometry(4.5,4.5),mat);p.rotation.y=Math.PI/2;pressureG.add(p);slices.push(p)
+}
+
+// node and antinode planes
+const nodeG=new THREE.Group(),antiG=new THREE.Group();lab.add(nodeG,antiG);
+function rebuildMarkers(){
+ nodeG.clear();antiG.clear();
+ for(let m=0;m<state.n;m++){
+   const x=-state.L/2+(m+.5)*state.L/state.n;
+   const p=new THREE.Mesh(new THREE.PlaneGeometry(4.8,4.8),new THREE.MeshBasicMaterial({color:0x7ef0b2,transparent:true,opacity:.22,side:THREE.DoubleSide}));
+   p.rotation.y=Math.PI/2;p.position.x=x;nodeG.add(p)
+ }
+ for(let m=0;m<=state.n;m++){
+   const x=-state.L/2+m*state.L/state.n;
+   const p=new THREE.Mesh(new THREE.PlaneGeometry(4.65,4.65),new THREE.MeshBasicMaterial({color:0xffb45a,transparent:true,opacity:.08,side:THREE.DoubleSide}));
+   p.rotation.y=Math.PI/2;p.position.x=x;antiG.add(p)
+ }
+}
+
+// gas particles
+const particleG=new THREE.Group();lab.add(particleG);const particles=[];
+for(let ix=0;ix<31;ix++)for(let iy=0;iy<5;iy++)for(let iz=0;iz<5;iz++){
+ const m=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),new THREE.MeshBasicMaterial({color:0xd7f5ff,transparent:true,opacity:.72}));
+ m.userData={u:ix/30,y:-1.7+iy*.85,z:-1.7+iz*.85};particleG.add(m);particles.push(m)
+}
+
+// graph
+const gc=document.createElement('canvas');gc.width=820;gc.height=350;const gctx=gc.getContext('2d'),gtex=new THREE.CanvasTexture(gc);
+const graphFrame=new THREE.Mesh(new THREE.BoxGeometry(5.3,2.5,.12),new THREE.MeshStandardMaterial({color:0xeaf3f6,roughness:.45}));graphFrame.position.set(4.7,2.45,-3.1);lab.add(graphFrame);
+const graphPlane=new THREE.Mesh(new THREE.PlaneGeometry(5.05,2.27),new THREE.MeshBasicMaterial({map:gtex,side:THREE.DoubleSide}));graphPlane.position.set(4.7,2.45,-3.02);lab.add(graphPlane);
+
+function layoutRoom(){
+ leftWall.position.set(-state.L/2,0,0);rightWall.position.set(state.L/2,0,0);
+ backWall.scale.x=state.L/12;backWall.position.set(0,0,-2.6);
+ ceiling.scale.x=state.L/12;ceiling.position.set(0,2.65,0);
+ speaker.position.set(-state.L/2+.55,-1.25,1.5);
+ for(let i=0;i<slices.length;i++)slices[i].position.x=-state.L/2+state.L*i/(slices.length-1);
+ rebuildMarkers();
+}
+
+function pressureAt(x){return state.A*Math.cos(state.n*Math.PI*(x+state.L/2)/state.L)*Math.cos(2*Math.PI*f()*state.t)}
+function displacementAt(x){return .12*state.A*Math.sin(state.n*Math.PI*(x+state.L/2)/state.L)*Math.sin(2*Math.PI*f()*state.t)}
+
+function drawGraph(){
+ gctx.fillStyle='#f8fafb';gctx.fillRect(0,0,820,350);
+ gctx.fillStyle='#263b45';gctx.font='bold 24px Segoe UI';gctx.fillText('PHÂN BỐ ÁP SUẤT p(x)',265,30);
+ gctx.strokeStyle='#d5dfe4';gctx.lineWidth=1;
+ for(let i=0;i<=10;i++){const x=55+i*70;gctx.beginPath();gctx.moveTo(x,50);gctx.lineTo(x,300);gctx.stroke()}
+ gctx.strokeStyle='#687b84';gctx.lineWidth=2;gctx.beginPath();gctx.moveTo(55,175);gctx.lineTo(755,175);gctx.stroke();
+ gctx.strokeStyle='#8c42bd';gctx.lineWidth=4;gctx.beginPath();
+ for(let i=0;i<=500;i++){const x=-state.L/2+state.L*i/500,p=pressureAt(x),px=55+700*i/500,py=175-110*p;i?gctx.lineTo(px,py):gctx.moveTo(px,py)}gctx.stroke();
+ gctx.fillStyle='#50656f';gctx.font='17px Segoe UI';gctx.fillText('x',744,330);gctx.fillText('p',18,57);gtex.needsUpdate=true
+}
+
+function updatePhysics(dt){if(state.running)state.t+=dt*state.speed}
+function updateVisuals(){
+ const phase=Math.cos(2*Math.PI*f()*state.t);
+ slices.forEach((s,i)=>{
+   const x=s.position.x,p=state.A*Math.cos(state.n*Math.PI*(x+state.L/2)/state.L)*phase;
+   const a=Math.min(1,Math.abs(p));
+   s.material.color.set(p>=0?0xff6b55:0x4da6ff);s.material.opacity=.04+.27*a
+ });
+ particles.forEach(m=>{
+   const x0=-state.L/2+state.L*m.userData.u;
+   m.position.set(x0+displacementAt(x0),m.userData.y,m.userData.z)
+ });
+ const coneScale=1+.10*Math.sin(2*Math.PI*f()*state.t);cone.scale.x=coneScale;
+ pressureG.visible=$('showPressure').checked;nodeG.visible=antiG.visible=$('showNodes').checked;particleG.visible=$('showParticles').checked;grid.visible=$('showGrid').checked;
+ graphFrame.visible=graphPlane.visible=$('showGraph').checked;drawGraph()
+}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('roomLOut').value=state.L.toFixed(1)+' m';$('soundVOut').value=state.v.toFixed(0)+' m/s';$('modeOut').value='n='+state.n;$('ampOut').value=state.A.toFixed(2);
+ $('fHud').textContent=f().toFixed(1)+' Hz';$('lambdaHud').textContent=lambda().toFixed(2)+' m';$('nodeHud').textContent=state.n;$('antiHud').textContent=state.n+1;$('statusHud').textContent=state.running?'Đang dao động':'Tạm dừng'
+}
+function sync(resetT=true){
+ state.speed=+$('speed').value;state.L=+$('roomL').value;state.v=+$('soundV').value;state.n=+$('mode').value;state.A=+$('amp').value;
+ if(resetT)state.t=0;layoutRoom();updateUI()
+}
+['roomL','soundV','mode','amp'].forEach(id=>$(id).addEventListener('input',()=>sync(true)));$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;
+$('mode1Btn').onclick=()=>{$('mode').value=1;sync(true)};
+$('mode3Btn').onclick=()=>{$('mode').value=3;sync(true)};
+$('resetBtn').onclick=()=>{Object.assign(state,{running:true,t:0,speed:1,L:8,v:343,n:3,A:.8});for(const [id,v] of [['speed',1],['roomL',8],['soundV',343],['mode',3],['amp',.8]])$(id).value=v;sync(true);fit()};
+$('fitBtn').onclick=fit;
+$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fit()},80));
+
+const labels=$('labels');function mk(t){const e=document.createElement('div');e.className='label';e.textContent=t;labels.appendChild(e);return e}
+const lSp=mk('Loa phát âm'),lNode=mk('Nút áp suất'),lAnti=mk('Bụng áp suất tại tường cứng');
+function project(el,p){const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=(q.z>1||!$('showLabels').checked)?'none':'block'}
+function fit(){controls.target.set(.4,0,0);camera.position.set(13.5,7.2,17.5);camera.lookAt(controls.target);controls.update()}
+function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}
+window.addEventListener('resize',()=>{resize();fit()});
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!renderer.domElement.captureStream||!window.MediaRecorder)return;const m=mime();rec=new MediaRecorder(renderer.domElement.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`118_Song_dung_trong_phong_3D.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+layoutRoom();resize();fit();updateUI();
+let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);const dt=Math.min(.033,(now-last)/1000);last=now;
+ updatePhysics(dt);updateVisuals();updateUI();
+ project(lSp,new THREE.Vector3(-state.L/2+.7,-.2,1.5));
+ const nodeX=-state.L/2+.5*state.L/state.n;project(lNode,new THREE.Vector3(nodeX,2.2,0));
+ project(lAnti,new THREE.Vector3(state.L/2-.1,2.0,0));
+ controls.update();renderer.render(scene,camera)
+}
+requestAnimationFrame(animate);
+</script></body></html>

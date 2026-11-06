@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mô phỏng chuyển động biến đổi đều</title>
+<style>
+:root{
+  --bg:#f4f8ff; --card:#fff; --ink:#213149; --muted:#6a7890; --line:#d8e4f1;
+  --blue:#2368d8; --cyan:#24a3d8; --green:#16a06a; --orange:#ef9415;
+  --red:#e74f5b; --purple:#6c50d9; --road:#737b86;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);
+  background:linear-gradient(180deg,#f8fbff,#eaf2fb);
+}
+.app{max-width:1280px;margin:auto;padding:16px}
+.header{
+  background:linear-gradient(135deg,#0f4e9a,#1d78c9);
+  color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 12px 28px rgba(22,82,151,.15)
+}
+.header h1{margin:0;font-size:clamp(22px,2.7vw,34px)}
+.header p{margin:6px 0 0;line-height:1.5;opacity:.94}
+.card{
+  background:#fff;border:1px solid var(--line);border-radius:18px;
+  box-shadow:0 10px 28px rgba(36,63,101,.08);margin-top:14px
+}
+.sceneCard{padding:14px}
+.scene{
+  position:relative;height:620px;border-radius:15px;overflow:hidden;border:1px solid #d2deeb;
+  background:linear-gradient(#dff2ff 0 42%,#eef7ff 42% 52%,#dde1e6 52% 100%);
+}
+.topNote{
+  position:absolute;left:14px;right:14px;top:12px;z-index:50;
+  background:#ffffffec;border:1px solid #d7e2ef;border-radius:12px;padding:10px 12px;
+  font-weight:800;color:#38506e;line-height:1.45
+}
+.laneTitle{
+  position:absolute;left:18px;font-weight:900;color:#173a78;background:#ffffffdc;
+  border:1px solid #d9e5f1;border-radius:10px;padding:6px 10px;z-index:25
+}
+.laneTitle.carT{top:72px}.laneTitle.runnerT{top:348px}
+.road{
+  position:absolute;left:5%;right:5%;height:92px;background:linear-gradient(#7e858e,#6d747e);
+  border-radius:10px;box-shadow:inset 0 8px 0 rgba(255,255,255,.16),0 7px 0 #525965
+}
+.road.carRoad{top:150px}.road.runnerRoad{top:430px}
+.road::after{
+  content:"";position:absolute;left:0;right:0;top:52%;height:3px;
+  background:repeating-linear-gradient(90deg,#fff4 0 32px,transparent 32px 58px)
+}
+.startLine,.finishLine{
+  position:absolute;top:0;bottom:0;width:3px;background:#ffffffb8
+}
+.startLine{left:6%}.finishLine{right:6%}
+.timeMark{
+  position:absolute;top:96px;transform:translateX(-50%);text-align:center;font-size:13px;color:#3e4c60;
+  font-weight:800
+}
+.timeMark.runner{top:375px}
+.timeMark .tick{
+  width:2px;height:15px;background:#4a5563;margin:5px auto 0
+}
+.car{
+  position:absolute;width:104px;height:52px;z-index:30;transform:translate(-50%,-50%);
+  filter:drop-shadow(0 5px 4px rgba(0,0,0,.18))
+}
+.wheel{transform-box:fill-box;transform-origin:center}
+.car.moving .wheel{animation:spin .35s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.runner{
+  position:absolute;width:64px;height:96px;z-index:30;transform:translate(-50%,-50%);
+  filter:drop-shadow(0 4px 3px rgba(0,0,0,.14))
+}
+.runner.moving .arm1{animation:arm1 .34s ease-in-out infinite alternate;transform-origin:38px 45px}
+.runner.moving .arm2{animation:arm2 .34s ease-in-out infinite alternate;transform-origin:30px 44px}
+.runner.moving .leg1{animation:leg1 .34s ease-in-out infinite alternate;transform-origin:32px 58px}
+.runner.moving .leg2{animation:leg2 .34s ease-in-out infinite alternate;transform-origin:32px 58px}
+@keyframes arm1{to{transform:rotate(24deg)}}@keyframes arm2{to{transform:rotate(-24deg)}}
+@keyframes leg1{to{transform:rotate(18deg)}}@keyframes leg2{to{transform:rotate(-18deg)}}
+.ghost{opacity:.22;filter:none}
+.speedBubble{
+  position:absolute;z-index:31;background:#fff;border:1px solid #d7e3ef;border-radius:999px;
+  padding:5px 9px;font-weight:900;font-size:13px;box-shadow:0 4px 10px rgba(0,0,0,.06);
+  transform:translate(-50%,-50%);white-space:nowrap
+}
+.speedVector{
+  position:absolute;z-index:29;height:5px;border-radius:99px;background:var(--orange);transform-origin:left center
+}
+.speedVector::after{
+  content:"";position:absolute;right:-1px;top:50%;transform:translateY(-50%);
+  border-left:12px solid var(--orange);border-top:7px solid transparent;border-bottom:7px solid transparent
+}
+.light{
+  position:absolute;left:8%;top:108px;width:32px;height:86px;z-index:26
+}
+.light .pole{position:absolute;left:14px;top:16px;width:4px;height:70px;background:#474d55}
+.light .box{position:absolute;left:3px;top:0;width:26px;height:52px;border-radius:6px;background:#2c333a;border:2px solid #13171b}
+.light span{display:block;width:10px;height:10px;border-radius:50%;margin:4px auto;background:#333}
+.light .red{background:#ef4444}.light .yellow{background:#fbbf24}.light .green{background:#22c55e;box-shadow:0 0 9px #22c55e}
+.stats{
+  position:absolute;right:16px;top:70px;z-index:40;background:#ffffffeb;border:1px solid #d8e4f0;border-radius:13px;
+  padding:10px 12px;width:235px
+}
+.stats h3{margin:0 0 8px;color:#173a78;font-size:17px}
+.statRow{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #e5ebf2;font-size:13px}
+.statRow:last-child{border-bottom:0}.statRow b{color:#172033}
+.controls{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-top:12px}
+button{
+  border:0;border-radius:11px;padding:11px 8px;color:#fff;font-weight:800;cursor:pointer;
+  box-shadow:0 5px 12px rgba(0,0,0,.08)
+}
+.blue{background:var(--blue)}.green{background:var(--green)}.orange{background:var(--orange)}
+.red{background:var(--red)}.purple{background:var(--purple)}.gray{background:#677281}
+.explainGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px}
+.explainBox{border:1px solid #dbe6f2;border-radius:14px;padding:12px;background:#fbfdff;line-height:1.55}
+.explainBox h3{margin:0 0 8px;color:#173a78}
+.compare{grid-column:1/-1;background:#fff9e9;border-color:#efdfa8}
+.formula{
+  display:inline-block;background:#eef5ff;border:1px solid #cee0f5;border-radius:9px;padding:5px 8px;font-weight:900;color:#1f5d9f;margin-top:5px
+}
+@media(max-width:900px){
+  .controls{grid-template-columns:repeat(2,1fr)}
+  .explainGrid{grid-template-columns:1fr}
+  .compare{grid-column:auto}
+  .scene{height:660px}
+  .stats{top:auto;bottom:10px;width:220px}
+}
+@media(max-width:560px){
+  .app{padding:8px}.scene{height:700px}.controls{grid-template-columns:1fr}
+  .road{left:3%;right:3%}.stats{right:8px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Mô phỏng sự thay đổi vị trí và vận tốc theo thời gian</h1>
+    <p>Hình minh họa hai chuyển động trong các khoảng thời gian bằng nhau: ô tô <b>nhanh dần đều</b> và người chạy <b>chậm dần đều</b>.</p>
+  </div>
+
+  <div class="card sceneCard">
+    <div class="scene" id="scene">
+      <div class="topNote">
+        Quan sát sau mỗi <b>1 giây</b>: vận tốc ô tô tăng đều <b>10 km/h</b>, còn vận tốc người chạy giảm đều <b>2 m/s</b>.
+      </div>
+
+      <div class="laneTitle carT">a) Ô tô: nhanh dần đều</div>
+      <div class="laneTitle runnerT">b) Người chạy: chậm dần đều</div>
+
+      <div class="light">
+        <div class="box"><span class="red"></span><span class="yellow"></span><span class="green"></span></div>
+        <div class="pole"></div>
+      </div>
+
+      <div class="road carRoad"></div>
+      <div class="road runnerRoad"></div>
+
+      <!-- các mốc thời gian đặt đúng theo quỹ đạo của từng vật -->
+      <div id="carMarks"></div>
+      <div id="runnerMarks"></div>
+
+      <!-- ghost snapshots -->
+      <div id="carGhosts"></div>
+      <div id="runnerGhosts"></div>
+
+      <!-- vật chuyển động chính -->
+      <svg class="car" id="car" viewBox="0 0 140 70">
+        <path d="M15 45 L23 28 Q28 16 45 14 L86 14 Q105 17 116 31 L127 34 Q134 35 135 45 L132 54 L10 54 Q7 50 10 46 Z" fill="#2f69a8" stroke="#183c66" stroke-width="3"/>
+        <path d="M43 18 L62 18 L62 31 L30 31 Q34 21 43 18 Z" fill="#6bb8df"/>
+        <path d="M66 18 L84 18 Q97 21 105 31 L66 31 Z" fill="#6bb8df"/>
+        <circle class="wheel" cx="36" cy="55" r="10" fill="#20252b" stroke="#e2a82d" stroke-width="3"/>
+        <circle class="wheel" cx="108" cy="55" r="10" fill="#20252b" stroke="#e2a82d" stroke-width="3"/>
+      </svg>
+
+      <svg class="runner" id="runner" viewBox="0 0 70 110">
+        <circle cx="36" cy="13" r="9" fill="#f0ae7d"/>
+        <path d="M35 22 L29 48 L43 51 L47 28" fill="#e94f64"/>
+        <path class="arm1" d="M32 30 L18 45" stroke="#f0ae7d" stroke-width="6" stroke-linecap="round"/>
+        <path class="arm2" d="M43 31 L55 44" stroke="#f0ae7d" stroke-width="6" stroke-linecap="round"/>
+        <path class="leg1" d="M34 50 L22 76 L10 94" stroke="#e94f64" stroke-width="7" stroke-linecap="round"/>
+        <path class="leg2" d="M40 51 L50 76 L58 97" stroke="#e94f64" stroke-width="7" stroke-linecap="round"/>
+        <path d="M8 96 L18 96" stroke="#3c83c5" stroke-width="5" stroke-linecap="round"/>
+        <path d="M55 99 L65 99" stroke="#3c83c5" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+
+      <div class="speedBubble" id="carSpeed">0 km/h</div>
+      <div class="speedBubble" id="runnerSpeed">6 m/s</div>
+      <div class="speedVector" id="carVector"></div>
+      <div class="speedVector" id="runnerVector"></div>
+
+      <div class="stats">
+        <h3>Đang quan sát</h3>
+        <div class="statRow"><span>Thời gian</span><b id="timeNow">0.00 s</b></div>
+        <div class="statRow"><span>Ô tô</span><b id="carNow">0 km/h</b></div>
+        <div class="statRow"><span>Người chạy</span><b id="runnerNow">6.0 m/s</b></div>
+        <div class="statRow"><span>Trạng thái</span><b id="stateNow">Sẵn sàng</b></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="blue" id="playBoth">▶ Chạy cả hai</button>
+      <button class="green" id="playCar">🚗 Chỉ chạy ô tô</button>
+      <button class="orange" id="playRunner">🏃 Chỉ chạy người</button>
+      <button class="purple" id="stepBtn">⏭ Từng giây</button>
+      <button class="gray" id="pauseBtn">⏸ Tạm dừng</button>
+      <button class="red" id="resetBtn">↻ Làm lại</button>
+    </div>
+  </div>
+
+  <div class="card explainGrid">
+    <div class="explainBox">
+      <h3>Ô tô: chuyển động nhanh dần đều</h3>
+      Sau các thời điểm \(0\,s,\ 1\,s,\ 2\,s,\ 3\,s\), vận tốc lần lượt là
+      <b>0 – 10 – 20 – 30 km/h</b>. Trong mỗi giây, vận tốc tăng thêm cùng một lượng.
+      Vì vận tốc ngày càng lớn nên quãng đường đi được trong các khoảng thời gian 1 s liên tiếp <b>ngày càng dài</b>.
+      <div class="formula">Δv = +10 km/h mỗi 1 s</div>
+    </div>
+
+    <div class="explainBox">
+      <h3>Người chạy: chuyển động chậm dần đều</h3>
+      Sau các thời điểm \(0\,s,\ 1\,s,\ 2\,s,\ 3\,s\), vận tốc lần lượt là
+      <b>6 – 4 – 2 – 0 m/s</b>. Trong mỗi giây, vận tốc giảm đi cùng một lượng.
+      Vì vận tốc giảm dần nên quãng đường đi được trong các khoảng 1 s liên tiếp <b>ngày càng ngắn</b>.
+      <div class="formula">Δv = −2 m/s mỗi 1 s</div>
+    </div>
+
+    <div class="explainBox compare">
+      <h3>Giống nhau và khác nhau</h3>
+      <b>Giống nhau:</b> cả hai đều là chuyển động thẳng có vận tốc thay đổi đều theo thời gian, tức gia tốc không đổi.<br>
+      <b>Khác nhau:</b> ô tô có vận tốc tăng dần nên là <b>nhanh dần đều</b>; người chạy có vận tốc giảm dần về 0 nên là <b>chậm dần đều</b>.
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const scene = $('#scene'), car=$('#car'), runner=$('#runner');
+  const carSpeed=$('#carSpeed'), runnerSpeed=$('#runnerSpeed');
+  const carVector=$('#carVector'), runnerVector=$('#runnerVector');
+  const timeNow=$('#timeNow'), carNow=$('#carNow'), runnerNow=$('#runnerNow'), stateNow=$('#stateNow');
+  const pauseBtn=$('#pauseBtn');
+
+  let t=0, running=false, paused=false, mode='both', raf=0, last=null;
+  const T=3;
+
+  // Chuẩn hóa quỹ đạo theo chính dữ kiện vận tốc.
+  // Ô tô: v = 10t km/h -> x ∝ t². Người: v = 6-2t -> x ∝ 6t-t².
+  function carFrac(t){ return (t*t)/(T*T); }
+  function runnerFrac(t){ return (6*t-t*t)/(6*T-T*T); }
+
+  function geom(){
+    const w=scene.clientWidth;
+    return {
+      carStart:w*0.11, carEnd:w*0.88,
+      runnerStart:w*0.28, runnerEnd:w*0.72,
+      carY:202, runnerY:482
+    };
+  }
+
+  function carV(t){ return 10*t; }
+  function runnerV(t){ return Math.max(0,6-2*t); }
+
+  function positionFor(frac,start,end){ return start+(end-start)*frac; }
+
+  function drawMarks(){
+    const g=geom();
+    $('#carMarks').innerHTML=''; $('#runnerMarks').innerHTML='';
+    $('#carGhosts').innerHTML=''; $('#runnerGhosts').innerHTML='';
+
+    for(let i=0;i<=3;i++){
+      const cx=positionFor(carFrac(i),g.carStart,g.carEnd);
+      const rx=positionFor(runnerFrac(i),g.runnerStart,g.runnerEnd);
+
+      const cm=document.createElement('div');
+      cm.className='timeMark'; cm.style.left=cx+'px'; cm.innerHTML=`${i===0?'t = 0 s':i+' s'}<div class="tick"></div>`;
+      $('#carMarks').appendChild(cm);
+
+      const rm=document.createElement('div');
+      rm.className='timeMark runner'; rm.style.left=rx+'px'; rm.innerHTML=`${i===0?'t = 0 s':i+' s'}<div class="tick"></div>`;
+      $('#runnerMarks').appendChild(rm);
+
+      if(i>0){
+        const cg=car.cloneNode(true); cg.removeAttribute('id'); cg.classList.add('ghost');
+        cg.style.left=cx+'px'; cg.style.top=g.carY+'px'; $('#carGhosts').appendChild(cg);
+
+        const rg=runner.cloneNode(true); rg.removeAttribute('id'); rg.classList.add('ghost');
+        rg.style.left=rx+'px'; rg.style.top=g.runnerY+'px'; $('#runnerGhosts').appendChild(rg);
+      }
+    }
+  }
+
+  function render(){
+    const g=geom();
+    const tc=Math.min(T,t);
+
+    const cx=positionFor(carFrac(tc),g.carStart,g.carEnd);
+    const rx=positionFor(runnerFrac(tc),g.runnerStart,g.runnerEnd);
+    car.style.left=cx+'px'; car.style.top=g.carY+'px';
+    runner.style.left=rx+'px'; runner.style.top=g.runnerY+'px';
+
+    const cv=carV(tc), rv=runnerV(tc);
+
+    carSpeed.style.left=cx+'px'; carSpeed.style.top=(g.carY-55)+'px'; carSpeed.textContent=`${cv.toFixed(1)} km/h`;
+    runnerSpeed.style.left=rx+'px'; runnerSpeed.style.top=(g.runnerY-63)+'px'; runnerSpeed.textContent=`${rv.toFixed(1)} m/s`;
+
+    carVector.style.left=(cx-4)+'px'; carVector.style.top=(g.carY-31)+'px'; carVector.style.width=(10+cv*2.2)+'px';
+    runnerVector.style.left=(rx-4)+'px'; runnerVector.style.top=(g.runnerY-36)+'px'; runnerVector.style.width=(10+rv*14)+'px';
+
+    timeNow.textContent=t.toFixed(2)+' s';
+    carNow.textContent=cv.toFixed(1)+' km/h';
+    runnerNow.textContent=rv.toFixed(1)+' m/s';
+
+    const carMoving=running && !paused && mode!=='runner' && cv>0.05;
+    const runnerMoving=running && !paused && mode!=='car' && rv>0.05;
+    car.classList.toggle('moving',carMoving);
+    runner.classList.toggle('moving',runnerMoving);
+
+    if(running){
+      stateNow.textContent=paused?'Tạm dừng':
+        mode==='car'?'Ô tô đang chạy':mode==='runner'?'Người đang chạy':'Hai vật đang chạy';
+    }else{
+      stateNow.textContent=t>=3?'Đã hoàn thành':'Sẵn sàng';
+    }
+  }
+
+  function stepFrame(ts){
+    if(!running)return;
+    if(paused){last=ts;raf=requestAnimationFrame(stepFrame);return}
+    if(last==null)last=ts;
+    const dt=Math.min((ts-last)/1000,.05);last=ts;
+    t+=dt;
+    if(t>=T){t=T;running=false}
+    render();
+    if(running)raf=requestAnimationFrame(stepFrame);
+  }
+
+  function play(which){
+    cancelAnimationFrame(raf);
+    if(t>=T)t=0;
+    mode=which; running=true; paused=false; last=null;
+    pauseBtn.textContent='⏸ Tạm dừng';
+    render(); raf=requestAnimationFrame(stepFrame);
+  }
+
+  $('#playBoth').addEventListener('click',()=>play('both'));
+  $('#playCar').addEventListener('click',()=>play('car'));
+  $('#playRunner').addEventListener('click',()=>play('runner'));
+
+  $('#stepBtn').addEventListener('click',()=>{
+    cancelAnimationFrame(raf);running=false;paused=false;
+    t=Math.min(3,Math.floor(t+0.001)+1);
+    render();
+  });
+
+  pauseBtn.addEventListener('click',()=>{
+    if(!running)return;
+    paused=!paused;
+    pauseBtn.textContent=paused?'▶ Tiếp tục':'⏸ Tạm dừng';
+    render();
+  });
+
+  $('#resetBtn').addEventListener('click',()=>{
+    cancelAnimationFrame(raf);t=0;running=false;paused=false;last=null;
+    pauseBtn.textContent='⏸ Tạm dừng';render();
+  });
+
+  window.addEventListener('resize',()=>{drawMarks();render()});
+  drawMarks();render();
+})();
+</script>
+</body>
+</html>

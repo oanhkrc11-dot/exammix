@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mô phỏng chuyển động tròn đều và hình chiếu</title>
+<style>
+body{margin:0;background:#06111f;color:white;font-family:Arial;text-align:center;overflow:hidden}
+h2{margin:8px;color:#ffd166;font-size:24px}
+#wrap{height:100vh;display:flex;flex-direction:column}
+canvas{display:block;margin:auto;background:#081827;border-radius:16px}
+#top{height:43vh}
+#bottom{height:38vh}
+.controls{height:15vh;display:flex;align-items:center;justify-content:center;gap:15px;flex-wrap:wrap}
+button{font-size:18px;padding:8px 18px;border-radius:10px;background:#1d4668;color:white;border:1px solid #61dcff}
+input{width:180px}
+</style>
+</head>
+<body>
+<div id="wrap">
+<h2>Chuyển động tròn đều và hình chiếu</h2>
+<canvas id="circle"></canvas>
+<canvas id="graph"></canvas>
+<div class="controls">
+<button onclick="run=!run">▶ / ⏸</button>
+<label>φ <input id="phase" type="range" min="-3.14" max="3.14" step="0.01" value="0"></label>
+<label>T <input id="period" type="range" min="1" max="5" step="0.1" value="2"></label>
+<button onclick="t=0">Reset</button>
+</div>
+</div>
+
+<script>
+let c1=document.getElementById("circle"), c2=document.getElementById("graph");
+let ctx=c1.getContext("2d"), g=c2.getContext("2d");
+function resize(){
+ c1.width=innerWidth*.95;c1.height=innerHeight*.38;
+ c2.width=innerWidth*.95;c2.height=innerHeight*.32;
+}
+resize();addEventListener("resize",resize);
+
+let t=0,run=true, history=[];
+function draw(){
+ if(run)t+=0.03;
+ let T=+period.value, phi=+phase.value;
+ let w=2*Math.PI/T;
+ let x=Math.cos(w*t+phi);
+
+ ctx.clearRect(0,0,c1.width,c1.height);
+ let ox=c1.width/2, oy=c1.height/2;
+ let R=Math.min(c1.width,c1.height)*0.28;
+ ctx.strokeStyle="#61dcff";ctx.lineWidth=3;
+ ctx.beginPath();ctx.arc(ox,oy,R,0,Math.PI*2);ctx.stroke();
+
+ let ang=w*t+phi;
+ let mx=ox+R*Math.cos(ang), my=oy-R*Math.sin(ang);
+ let qx=ox+R*Math.cos(ang);
+
+ ctx.setLineDash([8,8]);
+ ctx.strokeStyle="#aaa";
+ ctx.beginPath();ctx.moveTo(mx,my);ctx.lineTo(qx,oy);ctx.stroke();
+ ctx.setLineDash([]);
+
+ ctx.strokeStyle="#ffd166";
+ ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(mx,my);ctx.stroke();
+
+ ctx.fillStyle="#ff6b6b";
+ ctx.beginPath();ctx.arc(mx,my,9,0,7);ctx.fill();
+ ctx.fillStyle="#7de1ac";
+ ctx.beginPath();ctx.arc(qx,oy,9,0,7);ctx.fill();
+
+ ctx.fillStyle="white";ctx.font="20px Arial";
+ ctx.fillText("M",mx+12,my);
+ ctx.fillText("Q",qx+12,oy+25);
+ ctx.fillText("x = A cos(ωt + φ)",20,35);
+
+ history.push(x);if(history.length>250)history.shift();
+
+ g.clearRect(0,0,c2.width,c2.height);
+ let mid=c2.height/2;
+ g.strokeStyle="#294660";g.lineWidth=2;
+ g.beginPath();g.moveTo(0,mid);g.lineTo(c2.width,mid);g.stroke();
+
+ g.strokeStyle="#61dcff";g.lineWidth=3;
+ g.beginPath();
+ history.forEach((v,i)=>{
+   let xx=i*c2.width/250;
+   let yy=mid-v*mid*.75;
+   if(i==0)g.moveTo(xx,yy);else g.lineTo(xx,yy);
+ });
+ g.stroke();
+
+ g.fillStyle="#ffd166";g.beginPath();
+ let yy=mid-x*mid*.75;
+ g.arc(c2.width-5,yy,8,0,7);g.fill();
+
+ g.fillStyle="white";g.font="18px Arial";
+ g.fillText("+A",10,25);
+ g.fillText("-A",10,c2.height-10);
+ g.fillText("Đồ thị x(t)",20,30);
+ requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

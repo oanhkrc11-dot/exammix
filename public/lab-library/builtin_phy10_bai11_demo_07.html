@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ném ngang có hình chiếu trên Ox và Oy</title>
+<style>
+:root{
+  --bg:#05101a; --panel:#0b1622; --panel2:#09131c; --line:#243a4b;
+  --text:#eef8ff; --muted:#9db3c4; --green:#78ff5a; --yellow:#ffd33d;
+  --cyan:#27dcff; --orange:#ff9e3a; --red:#ff6675;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; color:var(--text);
+  background:radial-gradient(circle at 50% -10%, #11304b 0, #07121c 35%, #03070c 100%);
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+}
+.wrap{max-width:1280px;margin:auto;padding:18px}
+h1{
+  margin:0 0 6px; text-align:center; font-size:clamp(28px,4.4vw,50px);
+  letter-spacing:1px; font-weight:950;
+}
+.sub{
+  text-align:center; color:var(--cyan); font-weight:800; margin-bottom:16px;
+  font-size:clamp(14px,2vw,20px);
+}
+.layout{display:grid;grid-template-columns:330px 1fr;gap:14px}
+.panel{
+  background:linear-gradient(180deg,rgba(12,22,34,.96),rgba(7,14,21,.96));
+  border:1px solid #1b3346; border-radius:20px; padding:15px;
+  box-shadow:0 14px 40px rgba(0,0,0,.28);
+}
+.control label{
+  display:flex; justify-content:space-between; gap:10px;
+  font-weight:850; margin:12px 0 6px;
+}
+.value{color:var(--yellow); font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:#27dcff}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
+button{
+  border:0; border-radius:12px; padding:11px 10px; cursor:pointer;
+  font-weight:900; font-size:14px
+}
+#play{background:var(--green);color:#031507}
+#reset{background:#243647;color:#eef8ff}
+#step{background:var(--orange);color:#261406}
+#vectors{background:var(--cyan);color:#042028}
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.card{
+  background:#07111a; border:1px solid #1d3346; border-radius:14px; padding:10px;
+  line-height:1.55;
+}
+.card strong{display:block;margin-bottom:4px}
+.card.ox strong{color:var(--yellow)}
+.card.oy strong{color:var(--cyan)}
+.formula{
+  margin-top:12px; background:#07111a; border:1px solid #1d3346; border-radius:14px;
+  padding:12px; line-height:1.7; font-family:"Cambria Math","Times New Roman",serif; font-size:17px
+}
+.tip{margin-top:10px;font-size:13px;color:#b7c7d4;line-height:1.5}
+canvas{
+  width:100%; display:block; border-radius:15px;
+  background:linear-gradient(180deg,#07131d 0%,#050c12 75%,#03070a 100%)
+}
+.bigcanvas{min-height:420px}
+.smallrow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.boxTitle{
+  font-weight:900; font-size:18px; margin-bottom:8px
+}
+.boxTitle.ox{color:var(--yellow)}
+.boxTitle.oy{color:var(--cyan)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:10px 2px 0;color:#c8d7e2;font-size:13px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:-1px;margin-right:5px}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:11px}
+.stat{
+  background:#07111a; border:1px solid #1d3346; border-radius:12px; padding:9px 6px; text-align:center
+}
+.stat small{display:block;color:#9bb0c0;font-size:11px}
+.stat b{font-size:15px;font-variant-numeric:tabular-nums}
+.note{
+  margin-top:10px; background:#07111a; border-left:4px solid var(--green); border-radius:10px;
+  padding:11px 12px; line-height:1.55; color:#dbeaf3
+}
+.smallnote{
+  margin-top:8px; color:#b5c6d3; font-size:13px; line-height:1.45
+}
+@media(max-width:950px){
+  .layout{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:600px){
+  .smallrow{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CHUYỂN ĐỘNG NÉM NGANG</h1>
+  <div class="sub">Có thêm 2 hình chiếu chuyển động trên Ox và Oy</div>
+
+  <div class="layout">
+    <section class="panel control">
+      <label>Vận tốc ban đầu v₀ <span class="value" id="v0v">15.0 m/s</span></label>
+      <input id="v0" type="range" min="3" max="35" step="0.5" value="15">
+
+      <label>Độ cao h <span class="value" id="hv">20.0 m</span></label>
+      <input id="h" type="range" min="2" max="60" step="1" value="20">
+
+      <label>Gia tốc trọng trường g <span class="value" id="gv">9.8 m/s²</span></label>
+      <input id="g" type="range" min="1.6" max="15" step="0.1" value="9.8">
+
+      <label>Tốc độ mô phỏng <span class="value" id="sv">1.00×</span></label>
+      <input id="speed" type="range" min="0.25" max="2.5" step="0.25" value="1">
+
+      <div class="btns">
+        <button id="play">▶ Chạy</button>
+        <button id="reset">↺ Đặt lại</button>
+        <button id="step">+0,1 s</button>
+        <button id="vectors">Vectơ: BẬT</button>
+      </div>
+
+      <div class="cardgrid">
+        <div class="card ox">
+          <strong>Hình chiếu trên Ox</strong>
+          Chuyển động thẳng đều<br>
+          vₓ = v₀ = const<br>
+          x = v₀t
+        </div>
+        <div class="card oy">
+          <strong>Hình chiếu trên Oy</strong>
+          Chuyển động rơi tự do<br>
+          vᵧ = gt<br>
+          y = ½gt²
+        </div>
+      </div>
+
+      <div class="formula">
+        Thời gian rơi: t = √(2h/g)<br>
+        Tầm xa: L = v₀√(2h/g)<br>
+        Độ lớn vận tốc: v = √(v₀² + (gt)²)<br>
+        Phương trình quỹ đạo: y = gx²/(2v₀²)
+      </div>
+
+      <div class="tip">
+        Quy ước: gốc tọa độ tại vị trí ném; Ox hướng sang phải; Oy hướng xuống.
+        Vì vậy trong mô phỏng này, tung độ rơi <b>y</b> tăng dần theo thời gian.
+      </div>
+    </section>
+
+    <section class="panel">
+      <canvas id="mainCanvas" class="bigcanvas" width="900" height="450"></canvas>
+
+      <div class="legend">
+        <span><i class="dot" style="background:#78ff5a"></i>Quỹ đạo ném ngang</span>
+        <span><i class="dot" style="background:#ffd33d"></i>Hình chiếu trên Ox</span>
+        <span><i class="dot" style="background:#27dcff"></i>Hình chiếu trên Oy</span>
+        <span><i class="dot" style="background:#ff9e3a"></i>Vectơ vận tốc</span>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><small>t hiện tại</small><b id="tc">0.00 s</b></div>
+        <div class="stat"><small>x</small><b id="xc">0.00 m</b></div>
+        <div class="stat"><small>y</small><b id="yc">0.00 m</b></div>
+        <div class="stat"><small>vₓ</small><b id="vxc">15.00 m/s</b></div>
+        <div class="stat"><small>vᵧ</small><b id="vyc">0.00 m/s</b></div>
+        <div class="stat"><small>|v|</small><b id="vc">15.00 m/s</b></div>
+      </div>
+
+      <div class="note" id="msg">Vật bắt đầu được ném theo phương ngang, nên ban đầu chỉ có vận tốc theo trục Ox.</div>
+
+      <div class="smallrow">
+        <div>
+          <div class="boxTitle ox">HÌNH CHIẾU CHUYỂN ĐỘNG TRÊN OX</div>
+          <canvas id="oxCanvas" width="430" height="220"></canvas>
+          <div class="smallnote">Các vị trí cách đều trong những khoảng thời gian bằng nhau → chuyển động thẳng đều.</div>
+        </div>
+        <div>
+          <div class="boxTitle oy">HÌNH CHIẾU CHUYỂN ĐỘNG TRÊN OY</div>
+          <canvas id="oyCanvas" width="430" height="220"></canvas>
+          <div class="smallnote">Khoảng cách giữa các vị trí tăng dần theo thời gian → chuyển động nhanh dần đều.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const main = $('mainCanvas'), oxCv = $('oxCanvas'), oyCv = $('oyCanvas');
+const ctx = main.getContext('2d'), ox = oxCv.getContext('2d'), oy = oyCv.getContext('2d');
+const v0 = $('v0'), h = $('h'), g = $('g'), speed = $('speed');
+
+let t = 0, running = false, last = performance.now(), showVectors = true;
+
+function params(){
+  const V = +v0.value;
+  const H = +h.value;
+  const G = +g.value;
+  const T = Math.sqrt(2 * H / G);
+  const L = V * T;
+  return {V,H,G,T,L};
+}
+function updateLabels(){
+  $('v0v').textContent = (+v0.value).toFixed(1) + ' m/s';
+  $('hv').textContent = (+h.value).toFixed(1) + ' m';
+  $('gv').textContent = (+g.value).toFixed(1) + ' m/s²';
+  $('sv').textContent = (+speed.value).toFixed(2) + '×';
+}
+function line(c,x1,y1,x2,y2,color,w=1,dash=[]){
+  c.save(); c.strokeStyle=color; c.lineWidth=w; c.setLineDash(dash);
+  c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke(); c.restore();
+}
+function arrow(c,x1,y1,x2,y2,color,w=2){
+  line(c,x1,y1,x2,y2,color,w);
+  const a = Math.atan2(y2-y1,x2-x1), s = 8;
+  c.save(); c.fillStyle = color; c.beginPath(); c.moveTo(x2,y2);
+  c.lineTo(x2-s*Math.cos(a-.45), y2-s*Math.sin(a-.45));
+  c.lineTo(x2-s*Math.cos(a+.45), y2-s*Math.sin(a+.45));
+  c.closePath(); c.fill(); c.restore();
+}
+function dot(c,x,y,color,r=6,glow=0){
+  c.save(); c.fillStyle = color;
+  if(glow){ c.shadowColor = color; c.shadowBlur = glow; }
+  c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fill(); c.restore();
+}
+function text(c,s,x,y,color='#dceaf3',size=14,align='left',bold=false){
+  c.save(); c.fillStyle=color; c.textAlign=align;
+  c.font=(bold?'800 ':'') + size + 'px system-ui';
+  c.fillText(s,x,y); c.restore();
+}
+function roundRect(c,x,y,w,h,r,fill,stroke){
+  c.save(); c.beginPath(); c.roundRect(x,y,w,h,r);
+  if(fill){ c.fillStyle=fill; c.fill(); }
+  if(stroke){ c.strokeStyle=stroke; c.stroke(); }
+  c.restore();
+}
+function drawMain(p){
+  const {V,H,G,T,L} = p;
+  const x = V*t, y = .5*G*t*t, vx = V, vy = G*t;
+
+  ctx.clearRect(0,0,main.width,main.height);
+
+  const left = 95, top = 70, ground = 360, right = main.width - 45;
+  const usableX = right - left, usableY = ground - top - 8;
+  const sx = usableX / Math.max(L,1), sy = usableY / Math.max(H,1);
+
+  text(ctx,'TỔNG QUAN – NÉM NGANG',32,34,'#78ff5a',18,'left',true);
+
+  // cliff
+  const cliffX = left - 38;
+  const grd = ctx.createLinearGradient(cliffX, top, cliffX+50, ground);
+  grd.addColorStop(0,'#41542f'); grd.addColorStop(.18,'#2a3521'); grd.addColorStop(1,'#161d17');
+  ctx.save();
+  ctx.fillStyle = grd; ctx.fillRect(cliffX,top,48,ground-top);
+  ctx.fillStyle = '#618443'; ctx.fillRect(cliffX,top-6,56,7);
+  ctx.restore();
+
+  // guide lines
+  line(ctx,left,ground,right,ground,'#6e8594',1);
+  line(ctx,left,top,left,ground,'#536b7b',1,[5,5]);
+
+  // labels and arrows
+  arrow(ctx,left,top,left+95,top,'#ffd33d',3);
+  text(ctx,'v₀',left+45,top-12,'#ffd33d',17,'center',true);
+  arrow(ctx,right-42,top+18,right-42,top+72,'#ffffff',2);
+  text(ctx,'g',right-28,top+49,'#ffffff',16,'left',true);
+
+  // full parabola
+  ctx.save();
+  ctx.strokeStyle = '#295e43';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  for(let i=0;i<=180;i++){
+    const q = T*i/180;
+    const X = left + (V*q)*sx;
+    const Y = top + (.5*G*q*q)*sy;
+    if(i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+  }
+  ctx.stroke(); ctx.restore();
+
+  // current path
+  ctx.save();
+  ctx.strokeStyle = '#78ff5a';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([8,5]);
+  ctx.beginPath();
+  for(let i=0;i<=120;i++){
+    const q = t*i/120;
+    const X = left + (V*q)*sx;
+    const Y = top + (.5*G*q*q)*sy;
+    if(i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+  }
+  ctx.stroke(); ctx.restore();
+
+  // equal-time markers
+  for(let k=0;k<=6;k++){
+    const q = T*k/6;
+    const X = left + (V*q)*sx;
+    const Y = top + (.5*G*q*q)*sy;
+    dot(ctx,X,Y,'#78ff5a',4,10);
+  }
+
+  const X = left + x*sx;
+  const Y = top + y*sy;
+  dot(ctx,X,Y,'#78ff5a',8,18);
+
+  line(ctx,X,top,X,Y,'#78ff5a',1,[4,5]);
+  line(ctx,left,Y,X,Y,'#2c4556',1,[4,5]);
+
+  // height bracket
+  arrow(ctx,left-16,top+8,left-16,ground-8,'#d8e7ef',1);
+  arrow(ctx,left-16,ground-8,left-16,top+8,'#d8e7ef',1);
+  text(ctx,'h',left-27,(top+ground)/2,'#d8e7ef',18,'right',true);
+
+  // formula boxes
+  roundRect(ctx,126,135,175,70,12,'#07111a','#355b3c');
+  text(ctx,'vₓ = v₀ = const',214,165,'#ffd33d',16,'center',true);
+  text(ctx,'x = v₀t',214,189,'#ebf4f8',15,'center');
+
+  roundRect(ctx,126,220,175,72,12,'#07111a','#255866');
+  text(ctx,'vᵧ = gt',214,249,'#27dcff',16,'center',true);
+  text(ctx,'y = ½gt²',214,274,'#ebf4f8',15,'center');
+
+  if(showVectors){
+    const s = 3.2;
+    arrow(ctx,X,Y,X+vx*s,Y,'#ffd33d',2.3);
+    arrow(ctx,X,Y,X,Y+vy*s,'#27dcff',2.3);
+    arrow(ctx,X,Y,X+vx*s,Y+vy*s,'#ff9e3a',2.3);
+    text(ctx,'vₓ',X+vx*s*.55,Y-8,'#ffd33d',12,'center',true);
+    if(vy > 1) text(ctx,'vᵧ',X+8,Y+vy*s*.55,'#27dcff',12,'left',true);
+    text(ctx,'v',X+vx*s+8,Y+vy*s,'#ff9e3a',12,'left',true);
+  }
+
+  text(ctx,`x = ${x.toFixed(2)} m`, right-120, 312, '#ffd33d', 13, 'right');
+  text(ctx,`y = ${y.toFixed(2)} m`, right-120, 332, '#27dcff', 13, 'right');
+  text(ctx,'Quỹ đạo parabol', right-130, 102, '#78ff5a', 15, 'right', true);
+}
+function drawOx(p){
+  const {V,T} = p;
+  const x = V*t;
+
+  ox.clearRect(0,0,oxCv.width,oxCv.height);
+  const W = oxCv.width, H = oxCv.height;
+  const left = 45, axisY = 110, right = W-26;
+  const sx = (right-left) / Math.max(V*T,1);
+
+  text(ox,'Hình chiếu theo trục Ox',18,28,'#ffd33d',18,'left',true);
+  arrow(ox,left,axisY,right,axisY,'#eaf4f9',1.5);
+  text(ox,'Ox',right-3,axisY-10,'#eaf4f9',13,'right',true);
+
+  for(let k=0;k<=6;k++){
+    const q = T*k/6;
+    const px = left + V*q*sx;
+    line(ox,px,axisY-18,px,axisY+18,'#ffd33d',1,[4,4]);
+    dot(ox,px,axisY,'#ffd33d',6,10);
+    text(ox,k===0?'0':`${k}Δt`,px,axisY+39,'#cad9e2',12,'center');
+  }
+
+  const px = left + x*sx;
+  dot(ox,px,axisY,'#ffd33d',9,18);
+  arrow(ox,left,axisY-42,left+115,axisY-42,'#ffd33d',2.5);
+  text(ox,'vₓ = v₀ = const',left+58,axisY-54,'#ffd33d',14,'center',true);
+
+  roundRect(ox,120,155,110,42,10,'#07111a','#6c5a18');
+  text(ox,'x = v₀t',175,182,'#ffd33d',18,'center',true);
+}
+function drawOy(p){
+  const {H,G,T} = p;
+  const y = .5*G*t*t;
+
+  oy.clearRect(0,0,oyCv.width,oyCv.height);
+  const W = oyCv.width, Hc = oyCv.height;
+  const top = 45, bottom = Hc-28, axisX = 110;
+  const sy = (bottom-top) / Math.max(H,1);
+
+  text(oy,'Hình chiếu theo trục Oy',18,28,'#27dcff',18,'left',true);
+  arrow(oy,axisX,top,axisX,bottom,'#eaf4f9',1.5);
+  text(oy,'Oy',axisX+10,bottom-2,'#eaf4f9',13,'left',true);
+
+  for(let k=0;k<=5;k++){
+    const q = T*k/5;
+    const py = top + (.5*G*q*q)*sy;
+    line(oy,axisX-18,py,axisX+18,py,'#27dcff',1,[4,4]);
+    dot(oy,axisX,py,'#27dcff',6,10);
+    text(oy,k===0?'0':`${k}Δt`,axisX-28,py+4,'#cad9e2',12,'right');
+  }
+
+  const py = top + y*sy;
+  dot(oy,axisX,py,'#27dcff',9,18);
+  arrow(oy,axisX+55,top+6,axisX+55,top+63,'#ff6675',2.2);
+  text(oy,'g',axisX+67,top+39,'#ff6675',14,'left',true);
+
+  roundRect(oy,185,72,120,42,10,'#07111a','#1e5360');
+  text(oy,'vᵧ = gt',245,99,'#27dcff',18,'center',true);
+
+  roundRect(oy,185,126,120,42,10,'#07111a','#1e5360');
+  text(oy,'y = ½gt²',245,153,'#27dcff',18,'center',true);
+
+  text(oy,'Các khoảng rơi tăng dần theo thời gian.',250,195,'#c8d7e1',13,'center');
+}
+function render(){
+  updateLabels();
+  const p = params();
+  t = Math.min(t,p.T);
+
+  const x = p.V*t, y = .5*p.G*t*t, vx = p.V, vy = p.G*t, v = Math.hypot(vx,vy);
+
+  $('tc').textContent = t.toFixed(2) + ' s';
+  $('xc').textContent = x.toFixed(2) + ' m';
+  $('yc').textContent = y.toFixed(2) + ' m';
+  $('vxc').textContent = vx.toFixed(2) + ' m/s';
+  $('vyc').textContent = vy.toFixed(2) + ' m/s';
+  $('vc').textContent = v.toFixed(2) + ' m/s';
+
+  if(t === 0){
+    $('msg').innerHTML = 'Vật bắt đầu được ném theo phương ngang, nên ban đầu chỉ có vận tốc theo trục <b>Ox</b>.';
+  }else if(t < p.T){
+    $('msg').innerHTML = `Tại thời điểm <b>${t.toFixed(2)} s</b>: hình chiếu trên <b>Ox</b> là chuyển động thẳng đều, còn hình chiếu trên <b>Oy</b> là rơi tự do nhanh dần đều.`;
+  }else{
+    $('msg').innerHTML = `Vật chạm đất sau <b>${p.T.toFixed(2)} s</b>; tầm xa đạt <b>${p.L.toFixed(2)} m</b>.`;
+  }
+
+  drawMain(p);
+  drawOx(p);
+  drawOy(p);
+}
+[v0,h,g,speed].forEach(el=>el.addEventListener('input',()=>{t=0; running=false; $('play').textContent='▶ Chạy'; render();}));
+
+$('play').onclick = ()=>{
+  running = !running;
+  $('play').textContent = running ? '⏸ Tạm dừng' : '▶ Chạy';
+  last = performance.now();
+};
+$('reset').onclick = ()=>{
+  t = 0; running = false; $('play').textContent='▶ Chạy'; render();
+};
+$('step').onclick = ()=>{
+  const p = params();
+  t = Math.min(p.T, t + 0.1);
+  render();
+};
+$('vectors').onclick = ()=>{
+  showVectors = !showVectors;
+  $('vectors').textContent = 'Vectơ: ' + (showVectors ? 'BẬT' : 'TẮT');
+  render();
+};
+
+function loop(now){
+  if(running){
+    const dt = (now - last)/1000 * (+speed.value);
+    last = now;
+    const p = params();
+    t += dt;
+    if(t >= p.T){
+      t = p.T;
+      running = false;
+      $('play').textContent='▶ Chạy';
+    }
+    render();
+  }else{
+    last = now;
+  }
+  requestAnimationFrame(loop);
+}
+render();
+requestAnimationFrame(loop);
+<\/script>
+</body>
+</html>

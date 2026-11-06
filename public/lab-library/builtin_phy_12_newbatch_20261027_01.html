@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Điện tích trong từ trường - GV Nguyễn Huy Hùng</title>
+<style>
+:root{--bg:#030507;--panel:#10151c;--text:#f6f8fb;--muted:#95a0ae;--line:#27303a;--pink:#ff3ea8;--cyan:#39e7ff;--yellow:#ffd84d;--green:#57f294}
+*{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020304;color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+#app{width:100vw;height:100vh;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px}
+.stage{position:relative;overflow:hidden;border-radius:24px;border:1px solid #151b22;background:#000}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+.overlay{position:absolute;left:18px;right:18px;top:16px;display:flex;justify-content:space-between;pointer-events:none}
+.badge,.label{padding:8px 12px;border-radius:999px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.12);font-size:13px}
+.eq{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);padding:10px 18px;border-radius:15px;background:rgba(0,0,0,.52);border:1px solid rgba(255,255,255,.12);font-size:clamp(20px,2vw,31px);font-family:"Times New Roman",serif}
+.panel{border:1px solid #171d24;border-radius:24px;background:rgba(12,16,21,.96);padding:16px;display:flex;flex-direction:column;gap:14px}
+h1{margin:0;font-size:21px}.sub{margin:3px 0 0;color:var(--muted);font-size:13px}
+.group{padding:13px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
+.control{margin:10px 0 13px}.labelrow{display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px}.value{font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--pink)} select{width:100%;padding:10px;border-radius:11px;border:1px solid #303844;background:#0d1116;color:#fff}
+.switch{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin:8px 0}.switch input{width:18px;height:18px;accent-color:var(--cyan)}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+button{cursor:pointer;padding:12px 10px;border-radius:13px;border:1px solid #303844;background:#171d25;color:#fff;font-weight:800}
+button:hover{background:#202731}.primary{background:linear-gradient(135deg,#ff3ea8,#c51d74);border-color:#ff3ea8}.cyan{background:linear-gradient(135deg,#19bdd1,#167fe1);border-color:#2ad0e1}
+.note{margin-top:auto;font-size:12px;color:#74808f;line-height:1.45}
+@media(max-width:900px){#app{grid-template-columns:1fr;padding:7px}.panel{position:absolute;right:10px;top:10px;width:min(320px,calc(100vw - 20px));max-height:calc(100vh - 20px);overflow:auto;z-index:20}}
+</style>
+</head>
+<body>
+<div id="app">
+<section class="stage" id="stage">
+  <canvas id="canvas"></canvas>
+  <div class="overlay">
+    <div class="badge">CHARGED PARTICLE IN B FIELD</div>
+    <div class="label" id="status">Lực Lorenzt vuông góc vận tốc</div>
+  </div>
+  <div class="eq">r = mv / |q|B  &nbsp;&nbsp;&nbsp; T = 2πm / |q|B</div>
+</section>
+<aside class="panel">
+  <div><h1>Điện tích trong từ trường đều</h1><div class="sub">Quỹ đạo tròn trên mặt phẳng vuông góc với B</div></div>
+
+  <div class="group">
+    <div class="control"><div class="labelrow"><span>Điện tích q</span><span class="value" id="qV">+1</span></div><input id="q" type="range" min="-3" max="3" step="1" value="1"></div>
+    <div class="control"><div class="labelrow"><span>Khối lượng m</span><span class="value" id="mV">1.0</span></div><input id="m" type="range" min="0.5" max="3" step="0.1" value="1"></div>
+    <div class="control"><div class="labelrow"><span>Tốc độ ban đầu v</span><span class="value" id="vV">120</span></div><input id="v" type="range" min="40" max="220" step="5" value="120"></div>
+    <div class="control"><div class="labelrow"><span>Cảm ứng từ B</span><span class="value" id="bV">1.0</span></div><input id="b" type="range" min="0.3" max="2.5" step="0.1" value="1"></div>
+    <div class="control"><div class="labelrow"><span>Góc phóng</span><span class="value" id="angV">0°</span></div><input id="ang" type="range" min="-80" max="80" step="5" value="0"></div>
+  </div>
+
+  <div class="group">
+    <div class="switch"><span>Hiện nền từ trường</span><input id="field" type="checkbox" checked></div>
+    <div class="switch"><span>Hiện vectơ vận tốc</span><input id="vec" type="checkbox" checked></div>
+    <div class="switch"><span>Phát sáng quỹ đạo</span><input id="glow" type="checkbox" checked></div>
+  </div>
+
+  <div class="buttons">
+    <button class="primary" id="play">Tạm dừng</button>
+    <button id="reset">Bắn lại</button>
+    <button class="cyan" id="preset">Thử nhanh</button>
+    <button id="full">Toàn màn hình</button>
+  </div>
+
+  <div class="note">Quy ước: từ trường đều vuông góc mặt phẳng mô phỏng. Dấu của q quyết định chiều cong của quỹ đạo.<br><br>GV: Nguyễn Huy Hùng</div>
+</aside>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const canvas=$('canvas'),ctx=canvas.getContext('2d'),stage=$('stage');
+let W=0,H=0,DPR=1,last=performance.now(),running=true,trail=[],x=0,y=0,vx=0,vy=0;
+function resize(){const r=stage.getBoundingClientRect();DPR=Math.min(devicePixelRatio||1,2);W=Math.floor(r.width);H=Math.floor(r.height);canvas.width=W*DPR;canvas.height=H*DPR;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);}
+addEventListener('resize',resize);
+
+function updateLabels(){
+  $('qV').textContent=(+$('q').value>0?'+':'')+$('q').value;
+  $('mV').textContent=(+$('m').value).toFixed(1);
+  $('vV').textContent=$('v').value;
+  $('bV').textContent=(+$('b').value).toFixed(1);
+  $('angV').textContent=$('ang').value+'°';
+  $('status').textContent=(+$('q').value>=0?'q dương':'q âm')+' • B đều';
+}
+document.querySelectorAll('input[type=range]').forEach(x=>x.oninput=updateLabels);
+
+function initParticle(){
+  x=W*0.25; y=H*0.52;
+  const ang=+$('ang').value*Math.PI/180;
+  const speed=+$('v').value*0.55;
+  vx=speed*Math.cos(ang); vy=-speed*Math.sin(ang);
+  trail=[];
+}
+function drawField(){
+  if(!$('field').checked) return;
+  ctx.save(); ctx.strokeStyle='rgba(57,231,255,.18)'; ctx.fillStyle='rgba(57,231,255,.18)';
+  const step=42;
+  for(let yy=26;yy<H;yy+=step){
+    for(let xx=26;xx<W;xx+=step){
+      ctx.beginPath();ctx.arc(xx,yy,7,0,Math.PI*2);ctx.stroke();
+      ctx.beginPath();ctx.arc(xx,yy,2.2,0,Math.PI*2);ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+function drawArrow(x1,y1,x2,y2,color){
+  const a=Math.atan2(y2-y1,x2-x1),len=10;
+  ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2.2;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-len*Math.cos(a-Math.PI/6),y2-len*Math.sin(a-Math.PI/6));ctx.lineTo(x2-len*Math.cos(a+Math.PI/6),y2-len*Math.sin(a+Math.PI/6));ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+function loop(now){
+  const dt=Math.min((now-last)/1000,.04); last=now;
+  const q=+$('q').value || 0.0001, m=+$('m').value, B=+$('b').value;
+  if(running){
+    const ax=(q/m)*(vy*B);
+    const ay=(q/m)*(-vx*B);
+    vx+=ax*dt*45; vy+=ay*dt*45;
+    x+=vx*dt; y+=vy*dt;
+    trail.push({x,y,vx,vy});
+    if(trail.length>1600) trail.shift();
+    if(x<-150||x>W+150||y<-150||y>H+150) initParticle();
+  }
+
+  ctx.clearRect(0,0,W,H);
+  drawField();
+  ctx.save();
+  ctx.strokeStyle='#ff3ea8'; ctx.lineWidth=2.5; if($('glow').checked){ctx.shadowColor='#ff3ea8'; ctx.shadowBlur=15}
+  if(trail.length>1){ctx.beginPath();ctx.moveTo(trail[0].x,trail[0].y); for(let i=1;i<trail.length;i++) ctx.lineTo(trail[i].x,trail[i].y); ctx.stroke();}
+  ctx.restore();
+
+  ctx.save(); ctx.fillStyle='#ffd84d'; ctx.shadowColor='#ffd84d'; ctx.shadowBlur=18; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill(); ctx.restore();
+  ctx.fillStyle='white'; ctx.font='bold 14px Segoe UI'; ctx.fillText('q',x+10,y-12);
+
+  if($('vec').checked){
+    drawArrow(x,y,x+vx*0.20,y+vy*0.20,'#39e7ff');
+    const Fx=(q)*(vy*B)*0.65, Fy=(q)*(-vx*B)*0.65;
+    drawArrow(x,y,x+Fx*0.055,y+Fy*0.055,'#57f294');
+  }
+
+  requestAnimationFrame(loop);
+}
+$('play').onclick=()=>{running=!running;$('play').textContent=running?'Tạm dừng':'Tiếp tục';last=performance.now();}
+$('reset').onclick=()=>initParticle();
+$('preset').onclick=()=>{const p=[[1,1,120,1,0],[-1,1,120,1,0],[1,1.8,180,0.6,25],[2,0.8,110,1.8,-20]][Math.floor(Math.random()*4)];
+  $('q').value=p[0];$('m').value=p[1];$('v').value=p[2];$('b').value=p[3];$('ang').value=p[4];updateLabels();initParticle();}
+$('full').onclick=()=>{if(!document.fullscreenElement)stage.requestFullscreen?.(); else document.exitFullscreen?.();}
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();$('play').click()} if(e.key.toLowerCase()==='f')$('full').click();});
+resize(); updateLabels(); initParticle(); requestAnimationFrame(loop);
+</script>
+</body></html>

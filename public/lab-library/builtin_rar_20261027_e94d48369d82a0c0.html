@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PHYSICS 11 LAB 20 - Hệ treo ô tô qua gờ đường</title>
+<style>
+:root{
+ --panel:#081820;--panel2:#0d2631;--line:#2b4b58;--txt:#eef8fb;--muted:#aec4cd;
+ --accent:#4cc9f0;--blue:#61d4ff;--orange:#ffb45a;--red:#ff6a5f;--green:#6ee7a5
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Inter,Segoe UI,Arial,sans-serif;background:#020912}
+#app{display:grid;grid-template-columns:244px 1fr;height:100vh}
+#panel{background:linear-gradient(180deg,var(--panel),var(--panel2));color:var(--txt);padding:10px;overflow:auto;border-right:1px solid #163546}
+.eyebrow{font-size:10px;letter-spacing:1.2px;font-weight:800;color:var(--accent);margin-bottom:4px}
+h1{font-size:17px;line-height:1.08;margin:0 0 6px}.desc{font-size:10.5px;line-height:1.34;color:var(--muted);margin:0}
+hr{border:0;border-top:1px solid #1f4352;margin:8px 0}.section{font-size:10px;font-weight:800;margin:5px 0}
+.control{display:grid;grid-template-columns:66px 1fr 58px;gap:5px;align-items:center;margin:5px 0}.control label{font-size:9.8px}.control output{font-size:9.4px;text-align:right;color:#72e4ff;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:7px 0}.check{font-size:9.6px;display:flex;align-items:center;gap:5px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px}.btn{border:1px solid #2b5769;border-radius:8px;background:#103240;color:#edf9fc;padding:7px 5px;font-size:9.8px;font-weight:800;cursor:pointer}.btn.primary{background:#0f7da7;border-color:#0f7da7}.btn.record{background:#b83e3e;border-color:#b83e3e}
+.recBox{margin-top:7px;border:1px solid #2b5769;border-radius:8px;padding:6px;background:#0e2a37;color:#bcd2db;font-size:9.2px}
+.recStatus{display:flex;justify-content:space-between}.recDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#718891;margin-right:4px}.recDot.on{background:#e33f3f;box-shadow:0 0 0 3px rgba(227,63,63,.17)}
+.model{display:none;margin-top:6px;border:1px solid #2b5769;border-radius:8px;padding:7px;background:#0d2430;color:#bcd2db;font-size:9.2px;line-height:1.35}.model.show{display:block}
+#view{position:relative;height:100vh;min-width:0;background:radial-gradient(circle at 55% 30%,#123d58 0%,#0a263b 38%,#061725 70%,#030b13 100%)}
+#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:6;pointer-events:none}
+.label3d{position:absolute;transform:translate(-50%,-50%);background:rgba(235,245,250,.94);border:1px solid #9ec2d2;color:#17333e;border-radius:6px;padding:4px 6px;font-size:9.8px;white-space:nowrap}
+#formula{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;background:rgba(238,247,250,.92);border:1px solid #8fb4c4;border-radius:9px;padding:6px 10px;font-size:10.2px;color:#14313c}
+#hud{position:absolute;right:12px;bottom:12px;z-index:8;display:flex;gap:9px;background:rgba(7,20,28,.88);border:1px solid #316376;border-radius:10px;padding:7px 9px}
+.hudItem{min-width:58px}.hudItem span{display:block;font-size:8.5px;color:#98bac8}.hudItem b{font-size:10.5px;color:#f3fbff}
+#note{position:absolute;left:12px;bottom:12px;z-index:7;width:300px;background:rgba(7,20,28,.88);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.4px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;color:#dceff7;font-weight:700}
+#hint{position:absolute;right:12px;top:12px;z-index:7;font-size:9.5px;color:#eef8fb;background:rgba(8,24,34,.80);border:1px solid #315d70;border-radius:8px;padding:6px 8px}
+@media(max-width:1050px){#app{grid-template-columns:230px 1fr}}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="eyebrow">PHYSICS 11 LAB · 3D</div>
+<h1>20 · Hệ treo ô tô qua gờ</h1>
+<p class="desc">Mô hình khối lượng – lò xo – giảm chấn phản ứng với kích thích nền do bánh xe đi qua gờ đường.</p>
+<hr>
+<div class="section">THAM SỐ</div>
+<div class="control"><label>Tốc độ mô phỏng</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut">1.00×</output></div>
+<div class="control"><label>m thân xe</label><input id="mass" type="range" min="200" max="800" step="10" value="420"><output id="massOut">420 kg</output></div>
+<div class="control"><label>k hệ treo</label><input id="springK" type="range" min="8000" max="40000" step="500" value="18000"><output id="springKOut">18000</output></div>
+<div class="control"><label>c giảm chấn</label><input id="damping" type="range" min="300" max="5000" step="50" value="1700"><output id="dampingOut">1700</output></div>
+<div class="control"><label>Chiều cao gờ</label><input id="bumpH" type="range" min=".02" max=".18" step=".01" value=".08"><output id="bumpHOut">0.08 m</output></div>
+<div class="control"><label>Vận tốc xe</label><input id="carSpeed" type="range" min="2" max="20" step=".5" value="8"><output id="carSpeedOut">8.0 m/s</output></div>
+
+<div class="checks">
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị</label>
+<label class="check"><input id="showForces" type="checkbox" checked> Véc tơ lực</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="bumpBtn" class="btn">🚗 Chạy qua gờ</button>
+<button id="fitBtn" class="btn">⛶ Căn giữa</button><button id="fullscreenBtn" class="btn">⛶ Vừa màn hình</button>
+<button id="clearGraphBtn" class="btn">Xóa đồ thị</button><button id="theoryBtn" class="btn">ⓘ Lý thuyết</button>
+<button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button><button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+
+<div class="recBox"><div class="recStatus"><span><i id="recDot" class="recDot"></i><b id="recLabel">Chưa quay</b></span><b id="recTime">00:00</b></div><div id="recFormat" style="margin-top:4px">Ưu tiên MP4 nếu trình duyệt hỗ trợ.</div></div>
+<div id="theoryBox" class="model"><b>Mô hình:</b> m z¨ + c(z˙−y˙) + k(z−y) = 0, trong đó y(t) là kích thích từ mặt đường, z(t) là chuyển động thân xe. Đây là mô hình 1/4 xe đơn giản hóa.</div>
+</aside>
+
+<main id="view">
+<div id="three"></div><div id="labels"></div>
+<div id="formula">m z¨ + c(z˙ − y˙) + k(z − y) = 0</div>
+<div id="hint">Kéo: xoay · Lăn: zoom · 🎥 quay vùng mô phỏng</div>
+<div id="hud">
+<div class="hudItem"><span>y đường</span><b id="yHud">0.000 m</b></div>
+<div class="hudItem"><span>z thân xe</span><b id="zHud">0.000 m</b></div>
+<div class="hudItem"><span>v thân xe</span><b id="vHud">0.000 m/s</b></div>
+<div class="hudItem"><span>a thân xe</span><b id="aHud">0.000 m/s²</b></div>
+</div>
+<div id="note">Gờ đường màu đỏ kích thích bánh xe đi lên. Thân xe màu xanh sáng dao động trên hệ treo. Lò xo và giảm chấn được nối trực tiếp giữa bánh xe và thân xe để nhìn rõ cơ cấu thật.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const state={running:true,paused:false,t:0,speed:1,m:420,k:18000,c:1700,bumpH:.08,carSpeed:8,z:0,v:0,a:0,roadY:0,roadV:0,roadPhase:0,lastGraphT:-1};
+const MAX_DT=.02,GRAPH_WINDOW=12,VERT_SCALE=7;
+const dom={speed:$('speed'),mass:$('mass'),springK:$('springK'),damping:$('damping'),bumpH:$('bumpH'),carSpeed:$('carSpeed'),
+speedOut:$('speedOut'),massOut:$('massOut'),springKOut:$('springKOut'),dampingOut:$('dampingOut'),bumpHOut:$('bumpHOut'),carSpeedOut:$('carSpeedOut'),
+showGrid:$('showGrid'),showLabels:$('showLabels'),showGraph:$('showGraph'),showForces:$('showForces'),
+startBtn:$('startBtn'),pauseBtn:$('pauseBtn'),resetBtn:$('resetBtn'),bumpBtn:$('bumpBtn'),fitBtn:$('fitBtn'),fullscreenBtn:$('fullscreenBtn'),clearGraphBtn:$('clearGraphBtn'),theoryBtn:$('theoryBtn'),theoryBox:$('theoryBox'),
+recordBtn:$('recordBtn'),stopRecordBtn:$('stopRecordBtn'),recDot:$('recDot'),recLabel:$('recLabel'),recTime:$('recTime'),recFormat:$('recFormat')};
+
+const view=$('view'),scene=new THREE.Scene();scene.fog=null;
+const camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);renderer.shadowMap.enabled=true;$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=8;controls.maxDistance=30;controls.minPolarAngle=.45;controls.maxPolarAngle=2.15;
+scene.add(new THREE.HemisphereLight(0xffffff,0x203040,4.5));const key=new THREE.DirectionalLight(0xffffff,4.8);key.position.set(8,14,10);scene.add(key);
+
+const lab=new THREE.Group();scene.add(lab);lab.position.set(-1.4,-1.2,0);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(34,20),new THREE.MeshStandardMaterial({color:0x0b1d2a,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-4.6;lab.add(floor);
+const grid=new THREE.GridHelper(34,34,0x2b5265,0x123244);grid.position.y=-4.59;(Array.isArray(grid.material)?grid.material:[grid.material]).forEach(m=>{m.transparent=true;m.opacity=.60});lab.add(grid);
+
+// road
+const road=new THREE.Mesh(new THREE.BoxGeometry(14,.35,4.2),new THREE.MeshStandardMaterial({color:0x394b54,roughness:.82,metalness:.08}));road.position.set(-1.6,-3.55,0);lab.add(road);
+const bump=new THREE.Mesh(new THREE.BoxGeometry(1.2,.30,4.2),new THREE.MeshStandardMaterial({color:0xff6a5f,emissive:0xa4241c,emissiveIntensity:.55,roughness:.55}));bump.position.set(3.0,-3.22,0);lab.add(bump);
+
+// wheel assembly
+const wheelGroup=new THREE.Group();lab.add(wheelGroup);
+const tire=new THREE.Mesh(new THREE.CylinderGeometry(.75,.75,.58,40),new THREE.MeshStandardMaterial({color:0x13191d,roughness:.82}));tire.rotation.x=Math.PI/2;wheelGroup.add(tire);
+const rim=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.61,32),new THREE.MeshStandardMaterial({color:0xbfd7e0,emissive:0x284f61,emissiveIntensity:.3,metalness:.75,roughness:.22}));rim.rotation.x=Math.PI/2;wheelGroup.add(rim);
+
+// car body
+const bodyGroup=new THREE.Group();lab.add(bodyGroup);
+const body=new THREE.Mesh(new THREE.BoxGeometry(5.2,1.0,2.6),new THREE.MeshStandardMaterial({color:0x6fdcff,emissive:0x1685aa,emissiveIntensity:.75,roughness:.22,metalness:.25}));bodyGroup.add(body);
+const cabin=new THREE.Mesh(new THREE.BoxGeometry(2.6,.9,2.3),new THREE.MeshStandardMaterial({color:0x9deaff,emissive:0x237897,emissiveIntensity:.45,roughness:.24,metalness:.12}));cabin.position.set(.3,.88,0);bodyGroup.add(cabin);
+
+// suspension spring + damper
+const springLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0x78e8ff}));
+lab.add(springLine);
+const damperBody=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,1.25,20),new THREE.MeshStandardMaterial({color:0xffb45a,emissive:0x9d5a0a,emissiveIntensity:.55,metalness:.6,roughness:.24}));damperBody.rotation.z=Math.PI/2;lab.add(damperBody);
+const damperRod=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,1,14),new THREE.MeshStandardMaterial({color:0xf1f4f5,metalness:.85,roughness:.15}));damperRod.rotation.z=Math.PI/2;lab.add(damperRod);
+
+function updateSpring(a,b){
+ const N=140,turns=14,r=.13,pts=[],dir=b.clone().sub(a),L=dir.length(),u=dir.clone().normalize();
+ const n1=new THREE.Vector3(0,0,1),n2=new THREE.Vector3().crossVectors(u,n1).normalize();
+ for(let i=0;i<=N;i++){const s=i/N,p=a.clone().add(u.clone().multiplyScalar(L*s)),ang=turns*2*Math.PI*s;p.add(n1.clone().multiplyScalar(r*Math.sin(ang))).add(n2.clone().multiplyScalar(r*Math.cos(ang)));pts.push(p)}
+ springLine.geometry.dispose();springLine.geometry=new THREE.BufferGeometry().setFromPoints(pts)
+}
+
+// force arrows
+const springArrow=new THREE.ArrowHelper(new THREE.Vector3(0,1,0),new THREE.Vector3(),1,0x61d4ff,.22,.12);lab.add(springArrow);
+const dampArrow=new THREE.ArrowHelper(new THREE.Vector3(0,1,0),new THREE.Vector3(),1,0xffb45a,.22,.12);lab.add(dampArrow);
+
+// graph
+const wc=document.createElement('canvas');wc.width=1050;wc.height=450;const wg=wc.getContext('2d'),wtex=new THREE.CanvasTexture(wc);wtex.colorSpace=THREE.SRGBColorSpace;
+const frame=new THREE.Mesh(new THREE.BoxGeometry(7.8,3.4,.15),new THREE.MeshStandardMaterial({color:0xeaf4f7,roughness:.46,metalness:.06}));frame.position.set(5.0,1.15,-1.7);lab.add(frame);
+const board=new THREE.Mesh(new THREE.PlaneGeometry(7.48,3.08),new THREE.MeshBasicMaterial({map:wtex,side:THREE.DoubleSide}));board.position.set(5.0,1.15,-1.61);lab.add(board);
+
+const labelsHost=$('labels');function mkLabel(t){const e=document.createElement('div');e.className='label3d';e.textContent=t;labelsHost.appendChild(e);return e}
+const lBody=mkLabel('Thân xe'),lWheel=mkLabel('Bánh xe'),lSusp=mkLabel('Lò xo + giảm chấn'),lBump=mkLabel('Gờ đường');
+function projectLabel(el,pos){const p=pos.clone().project(camera);if(p.z>1){el.style.display='none';return}el.style.display=dom.showLabels.checked?'block':'none';el.style.left=((p.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-p.y*.5+.5)*view.clientHeight)+'px'}
+
+function bumpInput(t){
+ const duration=1.2/state.carSpeed*8;
+ if(state.roadPhase<=0)return {y:0,v:0};
+ const tau=state.roadPhase;
+ if(tau<duration){
+   const y=state.bumpH*.5*(1-Math.cos(2*Math.PI*tau/duration));
+   const v=state.bumpH*.5*(2*Math.PI/duration)*Math.sin(2*Math.PI*tau/duration);
+   return {y,v}
+ }
+ return {y:0,v:0}
+}
+function deriv(z,v,roadY,roadV){
+ return -(state.c/state.m)*(v-roadV)-(state.k/state.m)*(z-roadY)
+}
+function integrate(dt){
+ const hmax=.003,n=Math.max(1,Math.ceil(dt/hmax)),h=dt/n;
+ for(let i=0;i<n;i++){
+   if(state.roadPhase>0)state.roadPhase+=h;
+   const inp=bumpInput(state.t);state.roadY=inp.y;state.roadV=inp.v;
+   state.a=deriv(state.z,state.v,state.roadY,state.roadV);
+   state.v+=state.a*h;state.z+=state.v*h;state.t+=h;
+ }
+}
+let data=[];
+function pushGraph(){data.push({t:state.t,y:state.roadY,z:state.z});const t0=state.t-GRAPH_WINDOW;while(data.length&&data[0].t<t0)data.shift()}
+function clearGraph(){data=[];state.lastGraphT=-1}
+function updatePhysics(dt){if(state.running&&!state.paused)integrate(dt*state.speed);if(state.running&&!state.paused&&state.t-state.lastGraphT>.03){state.lastGraphT=state.t;pushGraph()}}
+
+function updateVisuals(){
+ const roadBase=-2.65+state.roadY*VERT_SCALE;
+ const bodyY=-.85+state.z*VERT_SCALE;
+ wheelGroup.position.set(-2.0,roadBase,0);
+ bodyGroup.position.set(-2.0,bodyY,0);
+ const a=new THREE.Vector3(-2.65,roadBase+.7,0),b=new THREE.Vector3(-2.65,bodyY-.45,0);
+ updateSpring(a,b);
+
+ const da=new THREE.Vector3(-1.35,roadBase+.72,0),db=new THREE.Vector3(-1.35,bodyY-.45,0),mid=da.clone().add(db).multiplyScalar(.5),vec=db.clone().sub(da);
+ damperRod.position.copy(mid);damperRod.scale.y=Math.max(.2,vec.length());
+ damperBody.position.copy(da.clone().lerp(db,.38));
+
+ const fs=-state.k*(state.z-state.roadY),fd=-state.c*(state.v-state.roadV);
+ springArrow.visible=dampArrow.visible=dom.showForces.checked;
+ springArrow.position.set(-3.3,bodyY+.2,.8);springArrow.setDirection(new THREE.Vector3(0,Math.sign(fs)||1,0));springArrow.setLength(.3+Math.min(1.4,Math.abs(fs)/8000),.22,.12);
+ dampArrow.position.set(-.7,bodyY+.2,.8);dampArrow.setDirection(new THREE.Vector3(0,Math.sign(fd)||1,0));dampArrow.setLength(.3+Math.min(1.4,Math.abs(fd)/3000),.22,.12);
+
+ grid.visible=dom.showGrid.checked;frame.visible=board.visible=dom.showGraph.checked;
+ projectLabel(lBody,new THREE.Vector3(-2,bodyY+1.7,.9));projectLabel(lWheel,new THREE.Vector3(-2,roadBase-1.0,.7));projectLabel(lSusp,new THREE.Vector3(-2.0,(roadBase+bodyY)/2,.9));projectLabel(lBump,new THREE.Vector3(3.0,-2.75,.8));
+ drawGraph()
+}
+function drawGraph(){
+ const w=wc.width,h=wc.height;wg.fillStyle='#f8fafb';wg.fillRect(0,0,w,h);wg.strokeStyle='#d0d9dd';wg.lineWidth=2;
+ for(let i=0;i<=10;i++){const x=80+(w-130)*i/10;wg.beginPath();wg.moveTo(x,65);wg.lineTo(x,h-55);wg.stroke()}
+ for(let j=0;j<=6;j++){const y=65+(h-120)*j/6;wg.beginPath();wg.moveTo(80,y);wg.lineTo(w-50,y);wg.stroke()}
+ wg.strokeStyle='#34454d';wg.lineWidth=4;wg.beginPath();wg.moveTo(80,h/2);wg.lineTo(w-50,h/2);wg.stroke();wg.beginPath();wg.moveTo(80,65);wg.lineTo(80,h-55);wg.stroke();
+ wg.fillStyle='#24343b';wg.font='bold 28px Segoe UI';wg.fillText('ĐÁP ỨNG HỆ TREO QUA GỜ',275,38);
+ const maxAbs=Math.max(.04,...data.flatMap(p=>[Math.abs(p.y),Math.abs(p.z)])),tMax=data.length?data[data.length-1].t:GRAPH_WINDOW,tMin=Math.max(0,tMax-GRAPH_WINDOW),X=t=>80+(w-130)*(t-tMin)/GRAPH_WINDOW,Y=x=>h/2-x/(maxAbs*1.18)*(h-135)/2;
+ for(const [key,col,lw] of [['y','#ff6a5f',3],['z','#1677c8',5]]){
+   wg.strokeStyle=col;wg.lineWidth=lw;wg.beginPath();let first=true;
+   for(const p of data){if(p.t<tMin)continue;const xx=X(p.t),yy=Y(p[key]);if(first){wg.moveTo(xx,yy);first=false}else wg.lineTo(xx,yy)}wg.stroke();
+   if(data.length){const last=data[data.length-1];wg.fillStyle=col;wg.beginPath();wg.arc(X(last.t),Y(last[key]),key==='z'?8:6,0,Math.PI*2);wg.fill()}
+ }
+ wg.fillStyle='#566a72';wg.font='18px Segoe UI';wg.fillText(`Đỏ: mặt đường y(t)   ·   Xanh: thân xe z(t)`,310,h-18);wtex.needsUpdate=true
+}
+function fmt(n,d=3){return(Math.abs(n)<1e-9?0:n).toFixed(d)}
+function updateUI(){
+ dom.speedOut.value=state.speed.toFixed(2)+'×';dom.massOut.value=state.m.toFixed(0)+' kg';dom.springKOut.value=state.k.toFixed(0);dom.dampingOut.value=state.c.toFixed(0);dom.bumpHOut.value=state.bumpH.toFixed(2)+' m';dom.carSpeedOut.value=state.carSpeed.toFixed(1)+' m/s';
+ $('yHud').textContent=fmt(state.roadY)+' m';$('zHud').textContent=fmt(state.z)+' m';$('vHud').textContent=fmt(state.v)+' m/s';$('aHud').textContent=fmt(state.a)+' m/s²'
+}
+function applyControls(reset=false){
+ state.speed=+dom.speed.value;state.m=+dom.mass.value;state.k=+dom.springK.value;state.c=+dom.damping.value;state.bumpH=+dom.bumpH.value;state.carSpeed=+dom.carSpeed.value;
+ if(reset){state.t=0;state.z=0;state.v=0;state.a=0;state.roadY=0;state.roadV=0;state.roadPhase=0;clearGraph();pushGraph()}
+ updateUI()
+}
+[dom.mass,dom.springK,dom.damping,dom.bumpH,dom.carSpeed].forEach(e=>e.addEventListener('input',()=>applyControls(true)));
+dom.speed.addEventListener('input',()=>{state.speed=+dom.speed.value;updateUI()});
+dom.startBtn.onclick=()=>{state.running=true;state.paused=false};dom.pauseBtn.onclick=()=>state.paused=true;dom.bumpBtn.onclick=()=>{state.roadPhase=.0001;state.running=true;state.paused=false};dom.clearGraphBtn.onclick=()=>{clearGraph();pushGraph()};dom.theoryBtn.onclick=()=>dom.theoryBox.classList.toggle('show');
+dom.fullscreenBtn.onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fitCamera()},80));
+dom.resetBtn.onclick=()=>{dom.speed.value=1;dom.mass.value=420;dom.springK.value=18000;dom.damping.value=1700;dom.bumpH.value=.08;dom.carSpeed.value=8;Object.assign(state,{running:true,paused:false,t:0,speed:1,m:420,k:18000,c:1700,bumpH:.08,carSpeed:8,z:0,v:0,a:0,roadY:0,roadV:0,roadPhase:0,lastGraphT:-1});clearGraph();pushGraph();fitCamera();updateUI()};
+dom.fitBtn.onclick=fitCamera;
+
+// recording
+let mediaRecorder=null,chunks=[],recStart=0,recTimer=null,recExt='webm';
+function pickMime(){for(const [m,e] of [['video/mp4;codecs=avc1.42E01E','mp4'],['video/mp4','mp4'],['video/webm;codecs=vp9','webm'],['video/webm','webm']])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return{m,e};return{m:'',e:'webm'}}
+function recClock(){const s=Math.floor((performance.now()-recStart)/1000);dom.recTime.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+async function startRec(){
+ if(!renderer.domElement.captureStream||!window.MediaRecorder){dom.recLabel.textContent='Không hỗ trợ quay';return}
+ const p=pickMime(),stream=renderer.domElement.captureStream(30);recExt=p.e;mediaRecorder=new MediaRecorder(stream,p.m?{mimeType:p.m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];
+ mediaRecorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ mediaRecorder.onstop=()=>{clearInterval(recTimer);dom.recDot.classList.remove('on');dom.recLabel.textContent='Đã dừng';const mime=mediaRecorder.mimeType||p.m||'video/webm';recExt=mime.includes('mp4')?'mp4':'webm';const blob=new Blob(chunks,{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`020_He_treo_o_to_qua_go_duong.${recExt}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);dom.recordBtn.disabled=false;dom.stopRecordBtn.disabled=true;dom.recFormat.textContent='Ưu tiên MP4 nếu trình duyệt hỗ trợ.'};
+ mediaRecorder.start(1000);recStart=performance.now();recClock();recTimer=setInterval(recClock,250);dom.recDot.classList.add('on');dom.recLabel.textContent='Đang quay';dom.recordBtn.disabled=true;dom.stopRecordBtn.disabled=false;dom.recFormat.textContent=recExt==='mp4'?'Đang ghi MP4 · 30 fps':'Đang ghi WebM · 30 fps'
+}
+dom.recordBtn.onclick=startRec;dom.stopRecordBtn.onclick=()=>{if(mediaRecorder&&mediaRecorder.state==='recording')mediaRecorder.stop()};
+
+function fitCamera(){
+ controls.target.set(.8,-.6,-.3);
+ camera.position.set(14.5,7.0,19.0);
+ camera.lookAt(controls.target);
+ controls.update()
+}
+function resize(){const ww=view.clientWidth,hh=view.clientHeight;camera.aspect=ww/hh;camera.updateProjectionMatrix();renderer.setSize(ww,hh,false)}
+window.addEventListener('resize',()=>{resize();fitCamera()});resize();applyControls(true);fitCamera();
+
+let last=performance.now();function animate(now){requestAnimationFrame(animate);const dt=Math.min(MAX_DT,Math.max(0,(now-last)/1000));last=now;updatePhysics(dt);updateVisuals();updateUI();controls.update();renderer.render(scene,camera)}requestAnimationFrame(animate);
+</script>
+</body></html>

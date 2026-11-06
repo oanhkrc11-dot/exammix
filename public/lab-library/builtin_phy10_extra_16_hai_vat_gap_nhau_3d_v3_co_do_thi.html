@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Hai vật gặp nhau V2</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#dceef7;--panel:#f7fbfd;--card:#ffffff;--line:#b9d7e5;
+  --text:#17384a;--muted:#637f8e;--cyan:#047c9e;--yellow:#9a7200;
+  --green:#0a7d52;--red:#b54c4c;
+}
+body.dark{
+  --bg:#142f43;--panel:#17384f;--card:#1d455f;--line:#4c7b91;
+  --text:#f4fbff;--muted:#bdd0da;--cyan:#76e5ff;--yellow:#ffe47c;
+  --green:#90ffd0;--red:#ff9999;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:220px;min-width:210px;max-width:225px;height:100%;overflow:auto;padding:7px;
+  background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 91%,#c7dfe9 9%));
+  border-right:1px solid var(--line);z-index:20
+}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:5px}
+.title{font-size:11.5px;font-weight:900;line-height:1.1}
+.sub{font-size:8.5px;color:var(--muted);margin-top:2px}
+#themeBtn{width:31px;min-width:31px;height:28px;padding:0}
+.simTitle{font-size:13px;color:var(--cyan);font-weight:900;margin:6px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px;margin-top:5px}
+.card h3{margin:0 0 5px;font-size:9px;color:var(--cyan);text-transform:uppercase;letter-spacing:.04em}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.mini label{display:block;font-size:9px;font-weight:700;margin-bottom:2px}
+input[type=number],select{
+  width:100%;height:28px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--text);
+  padding:3px 5px;font-size:10px;font-weight:700
+}
+input[type=range]{width:100%;height:14px;accent-color:#1a9ec2}
+.val{font-size:9px;color:var(--yellow);font-weight:800}
+.rrow{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-top:5px}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:5px}
+button{
+  min-height:30px;border:1px solid var(--line);border-radius:7px;background:#d9ecf4;color:#17384a;
+  font-size:9.5px;font-weight:800;cursor:pointer;padding:4px
+}
+body.dark button{background:#28546c;color:#fff}
+button:hover{filter:brightness(1.04)}
+#runBtn{background:#239a69;color:white}
+#resetBtn{background:#dfc4cc;color:#522938}
+body.dark #resetBtn{background:#6a4352;color:#fff}
+#view{position:relative;flex:1;min-width:0;height:100%;overflow:hidden}
+#statusBadge{
+  position:absolute;left:12px;top:12px;z-index:8;padding:6px 9px;border-radius:9px;
+  background:rgba(255,255,255,.90);border:1px solid #b9d7e5;color:#17384a;font-size:10px;font-weight:900;
+  backdrop-filter:blur(4px)
+}
+body.dark #statusBadge{background:rgba(24,58,80,.88);border-color:#4c7b91;color:white}
+#answerBadge{
+  position:absolute;right:12px;top:12px;z-index:8;padding:6px 9px;border-radius:9px;
+  background:rgba(255,255,255,.90);border:1px solid #b9d7e5;color:#17384a;font-size:10px;font-weight:900;
+  backdrop-filter:blur(4px)
+}
+body.dark #answerBadge{background:rgba(24,58,80,.88);border-color:#4c7b91;color:white}
+#dataStrip{
+  position:absolute;left:12px;bottom:12px;z-index:9;padding:6px 9px;border-radius:8px;
+  background:rgba(255,255,255,.92);border:1px solid #b9d7e5;color:#17384a;
+  font-size:10px;font-weight:800;white-space:nowrap;backdrop-filter:blur(4px)
+}
+body.dark #dataStrip{background:rgba(24,58,80,.90);border-color:#4c7b91;color:white}
+#graphWrap{
+  position:absolute;right:12px;bottom:12px;width:min(48%,620px);height:155px;z-index:9;
+  background:rgba(255,255,255,.93);border:1px solid #b9d7e5;border-radius:10px;padding:5px;
+  backdrop-filter:blur(4px);transition:.2s ease
+}
+body.dark #graphWrap{background:rgba(24,58,80,.91);border-color:#4c7b91}
+#graphWrap.hidden{display:none}
+#graph{width:100%;height:100%;display:block}
+.label3d{padding:2px 5px;border-radius:6px;background:rgba(255,255,255,.90);border:1px solid #b9d7e5;color:#17384a;font-size:9px;font-weight:900;white-space:nowrap}
+body.dark .label3d{background:rgba(24,58,80,.86);border-color:#4c7b91;color:#fff}
+#credit{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:7;font-size:13px;font-weight:900;color:#876300;pointer-events:none}
+body.dark #credit{color:#ffe47c}
+@media(max-width:900px){
+  #panel{width:210px;min-width:210px}
+  #graphWrap{width:42%;height:138px}
+  #dataStrip{font-size:9px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="top">
+      <div>
+        <div class="title">PHYSICS 10 LAB</div>
+        <div class="sub">3D CINEMATIC</div>
+      </div>
+      <button id="themeBtn" title="Sáng/Tối">☀</button>
+    </div>
+
+    <div class="simTitle">16. Hai vật gặp nhau</div>
+
+    <div class="card">
+      <h3>Tình huống</h3>
+      <select id="scenario">
+        <option value="opposite">Ngược chiều</option>
+        <option value="chase">Cùng chiều đuổi nhau</option>
+        <option value="apart">Không gặp nhau</option>
+        <option value="samev">Cùng vận tốc</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h3>Vật A</h3>
+      <div class="pair">
+        <div class="mini"><label>x₀A (m)</label><input id="xA0" type="number" min="-20" max="20" step="0.5" value="-8"></div>
+        <div class="mini"><label>vA (m/s)</label><input id="vA" type="number" min="-6" max="6" step="0.1" value="2"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Vật B</h3>
+      <div class="pair">
+        <div class="mini"><label>x₀B (m)</label><input id="xB0" type="number" min="-20" max="20" step="0.5" value="8"></div>
+        <div class="mini"><label>vB (m/s)</label><input id="vB" type="number" min="-6" max="6" step="0.1" value="-1"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Mô phỏng</h3>
+      <div class="rrow"><span style="font-size:9px;font-weight:700">Tốc độ</span><span id="speedVal" class="val">×1</span></div>
+      <input id="simSpeed" type="range" min="0.5" max="2" step="0.5" value="1">
+
+      <div class="rrow"><span style="font-size:9px;font-weight:700">Camera</span></div>
+      <select id="cameraMode">
+        <option value="all">Toàn cảnh</option>
+        <option value="A">Theo A</option>
+        <option value="B">Theo B</option>
+      </select>
+
+      <div class="buttons">
+        <button id="runBtn">▶ Chạy</button>
+        <button id="pauseBtn">⏸ Dừng</button>
+        <button id="graphBtn">📉 Ẩn đồ thị</button>
+        <button id="answerBtn">👁 Kết quả</button>
+        <button id="resetBtn">↻ Reset</button>
+        <button id="fitBtn">⛶ Fit</button>
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="statusBadge">Hai vật đang tiến lại gần</div>
+    <div id="answerBadge">t gặp = ? · x gặp = ?</div>
+
+    <div id="dataStrip">t = 0.00 s | xA = −8.00 m | xB = 8.00 m | Δx = 16.00 m</div>
+
+    <div id="graphWrap">
+      <div style="position:absolute;left:9px;top:5px;font-size:9px;font-weight:900;color:var(--cyan);z-index:2">ĐỒ THỊ x–t</div>
+      <canvas id="graph" style="padding-top:10px"></canvas>
+    </div>
+
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $=id=>document.getElementById(id);
+const view=$('view');
+
+const state={
+  xA0:-8,vA:2,xB0:8,vB:-1,
+  t:0,tMax:20,
+  running:false,paused:true,
+  simSpeed:1,
+  answerVisible:false,
+  graphVisible:true,
+  dark:false,
+  cameraMode:'all',
+  meetingFlash:0,
+  meetingPause:0,
+  lastStamp:performance.now()
+};
+
+function fmt(n,d=2){return n.toFixed(d).replace('-','−');}
+function xA(){return state.xA0+state.vA*state.t;}
+function xB(){return state.xB0+state.vB*state.t;}
+
+function solveMeeting(){
+  const den=state.vA-state.vB;
+  if(Math.abs(den)<1e-10){
+    if(Math.abs(state.xA0-state.xB0)<1e-10) return {t:0,x:state.xA0,coincident:true};
+    return null;
+  }
+  const t=(state.xB0-state.xA0)/den;
+  if(t<0)return null;
+  return {t,x:state.xA0+state.vA*t};
+}
+
+function relation(){
+  const gap0=state.xB0-state.xA0;
+  const rel=state.vB-state.vA;
+  if(Math.abs(state.vA-state.vB)<1e-10){
+    if(Math.abs(gap0)<1e-10)return 'Hai vật trùng vị trí và cùng vận tốc';
+    return 'Hai vật cùng vận tốc – khoảng cách không đổi';
+  }
+  const rate=gap0*rel;
+  if(rate<0)return 'Hai vật đang tiến lại gần';
+  if(rate>0)return 'Hai vật đang ra xa';
+  return 'Hai vật đang ở cùng vị trí';
+}
+
+/* ====================== SCENE ====================== */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xdceef7);
+scene.fog=new THREE.Fog(0xdceef7,35,80);
+
+const camera=new THREE.PerspectiveCamera(42,view.clientWidth/view.clientHeight,.1,150);
+camera.position.set(11,7.5,15);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.065;
+controls.minDistance=6;controls.maxDistance=40;
+controls.minPolarAngle=.08;controls.maxPolarAngle=Math.PI*.48;
+controls.target.set(0,0,0);
+
+const hemi=new THREE.HemisphereLight(0xffffff,0x8aa2ad,2.6);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xffffff,2.5);
+sun.position.set(10,16,8);sun.castShadow=true;scene.add(sun);
+
+const floorMat=new THREE.MeshPhongMaterial({color:0xc7dde8,shininess:15});
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(70,26),floorMat);
+floor.rotation.x=-Math.PI/2;floor.position.y=-1.35;floor.receiveShadow=true;scene.add(floor);
+
+const roadMat=new THREE.MeshPhongMaterial({color:0x8799a3,shininess:22});
+const road=new THREE.Mesh(new THREE.BoxGeometry(56,.16,3.5),roadMat);
+road.position.y=-.55;road.receiveShadow=true;scene.add(road);
+
+const shoulderMat=new THREE.MeshPhongMaterial({color:0xbfcfd6});
+for(const z of [-2.05,2.05]){
+  const sh=new THREE.Mesh(new THREE.BoxGeometry(56,.08,.5),shoulderMat);
+  sh.position.set(0,-.48,z);scene.add(sh);
+}
+
+/* road center line */
+for(let x=-26;x<=26;x+=2.5){
+  const dash=new THREE.Mesh(new THREE.BoxGeometry(1.25,.025,.09),new THREE.MeshBasicMaterial({color:0xf8f4cf}));
+  dash.position.set(x,-.45,0);scene.add(dash);
+}
+
+/* meter axis and labels */
+const axisY=-.36;
+const axis=new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-26,axisY,-1.35),new THREE.Vector3(26,axisY,-1.35)]),
+  new THREE.LineBasicMaterial({color:0x38677b})
+);
+scene.add(axis);
+
+for(let x=-25;x<=25;x++){
+  const h=x%5===0?.42:.23;
+  const tick=new THREE.Mesh(new THREE.BoxGeometry(.025,h,.025),new THREE.MeshBasicMaterial({color:x===0?0xc59000:0x4a7282}));
+  tick.position.set(x,axisY-h/2,-1.35);scene.add(tick);
+
+  if(x%5===0){
+    const d=document.createElement('div');d.className='label3d';d.textContent=x===0?'O':String(x);
+    const l=new CSS2DObject(d);l.position.set(x,-.85,-1.35);scene.add(l);
+  }
+}
+
+const posArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(22,axisY,-1.35),3,0x38677b,.28,.16);
+scene.add(posArrow);
+const axd=document.createElement('div');axd.className='label3d';axd.textContent='+x';
+const axlab=new CSS2DObject(axd);axlab.position.set(25.8,-.15,-1.35);scene.add(axlab);
+
+/* light scenery */
+for(let i=-24;i<=24;i+=8){
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.08,.11,1.1,10),new THREE.MeshPhongMaterial({color:0x8a6a4e}));
+  trunk.position.set(i,-.75,-5.8);scene.add(trunk);
+  const crown=new THREE.Mesh(new THREE.SphereGeometry(.65,16,12),new THREE.MeshPhongMaterial({color:0x86b98d}));
+  crown.position.set(i,-.05,-5.8);scene.add(crown);
+}
+
+/* cars */
+function roundedCar(color,label,zLane){
+  const g=new THREE.Group();scene.add(g);
+
+  const body=new THREE.Mesh(
+    new THREE.CapsuleGeometry(.42,1.05,8,18),
+    new THREE.MeshPhongMaterial({color,shininess:90})
+  );
+  body.rotation.z=Math.PI/2;
+  body.scale.set(.82,1,.72);
+  body.position.y=.32;
+  body.castShadow=true;
+  g.add(body);
+
+  const cabin=new THREE.Mesh(
+    new THREE.BoxGeometry(.62,.32,.72),
+    new THREE.MeshPhongMaterial({color:0xeaf9ff,transparent:true,opacity:.88,shininess:100})
+  );
+  cabin.position.set(-.05,.70,0);g.add(cabin);
+
+  const wheelMat=new THREE.MeshPhongMaterial({color:0x26333b,shininess:35});
+  const wheels=[];
+  for(const sx of [-.43,.43]){
+    for(const sz of [-.39,.39]){
+      const w=new THREE.Mesh(new THREE.CylinderGeometry(.17,.17,.13,24),wheelMat);
+      w.rotation.x=Math.PI/2;w.position.set(sx,.08,sz);g.add(w);wheels.push(w);
+    }
+  }
+
+  const frontLight=new THREE.Mesh(new THREE.SphereGeometry(.075,14,10),new THREE.MeshBasicMaterial({color:0xfff5c7}));
+  frontLight.scale.set(1.3,.7,1);frontLight.position.set(.64,.34,.22);g.add(frontLight);
+  const frontLight2=frontLight.clone();frontLight2.position.z=-.22;g.add(frontLight2);
+
+  const rear=new THREE.Mesh(new THREE.SphereGeometry(.065,12,8),new THREE.MeshBasicMaterial({color:0xff5d5d}));
+  rear.scale.set(1.2,.7,1);rear.position.set(-.64,.34,.22);g.add(rear);
+  const rear2=rear.clone();rear2.position.z=-.22;g.add(rear2);
+
+  const d=document.createElement('div');d.className='label3d';d.textContent=label;
+  const lab=new CSS2DObject(d);lab.position.set(0,1.25,0);g.add(lab);
+
+  g.position.z=zLane;
+  return {g,wheels,label:d};
+}
+
+const carA=roundedCar(0x2196c9,'A',-.85);
+const carB=roundedCar(0xf29458,'B',.85);
+
+function orientCar(car,v){
+  car.g.rotation.y = v>=0 ? 0 : Math.PI;
+}
+
+const velA=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(0,1.05,-.85),1,0x0f8fb7,.24,.13);
+const velB=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(0,1.05,.85),1,0xe2864d,.24,.13);
+scene.add(velA,velB);
+
+/* meeting effect */
+const ringMat=new THREE.MeshBasicMaterial({color:0xffc928,transparent:true,opacity:.8,side:THREE.DoubleSide});
+const meetRing=new THREE.Mesh(new THREE.RingGeometry(.48,.62,40),ringMat);
+meetRing.rotation.x=-Math.PI/2;meetRing.position.y=-.40;meetRing.visible=false;scene.add(meetRing);
+
+const meetGlow=new THREE.PointLight(0xffd84d,0,5,2);scene.add(meetGlow);
+const meetDiv=document.createElement('div');meetDiv.className='label3d';meetDiv.textContent='Gặp nhau';
+const meetLabel=new CSS2DObject(meetDiv);meetLabel.position.y=.75;meetLabel.visible=false;scene.add(meetLabel);
+
+function updateCars(dt){
+  const a=xA(),b=xB();
+  carA.g.position.x=a;carB.g.position.x=b;
+  carA.label.textContent=`A · ${fmt(a,1)} m`;
+  carB.label.textContent=`B · ${fmt(b,1)} m`;
+
+  orientCar(carA,state.vA);orientCar(carB,state.vB);
+
+  const rotA=state.vA*dt*3.0, rotB=state.vB*dt*3.0;
+  carA.wheels.forEach(w=>w.rotation.z-=rotA);
+  carB.wheels.forEach(w=>w.rotation.z-=rotB);
+
+  velA.position.set(a,1.0,-.85);
+  velA.setDirection(new THREE.Vector3(Math.sign(state.vA)||1,0,0));
+  velA.setLength(Math.abs(state.vA)<1e-9?.001:Math.max(.6,Math.abs(state.vA)*.5),.22,.12);
+  velA.visible=Math.abs(state.vA)>1e-9;
+
+  velB.position.set(b,1.0,.85);
+  velB.setDirection(new THREE.Vector3(Math.sign(state.vB)||1,0,0));
+  velB.setLength(Math.abs(state.vB)<1e-9?.001:Math.max(.6,Math.abs(state.vB)*.5),.22,.12);
+  velB.visible=Math.abs(state.vB)>1e-9;
+}
+
+function triggerMeetingEffect(){
+  const m=solveMeeting();
+  if(!m)return;
+  meetRing.position.x=m.x;
+  meetGlow.position.set(m.x,.3,0);
+  meetLabel.position.set(m.x,.9,0);
+  meetRing.visible=true;meetLabel.visible=true;
+  state.meetingFlash=1.2;
+  state.meetingPause=.5;
+}
+
+function updateMeetingEffect(dt){
+  if(state.meetingFlash>0){
+    state.meetingFlash-=dt;
+    const k=Math.max(0,state.meetingFlash/1.2);
+    const pulse=1+0.12*Math.sin((1-k)*Math.PI*6);
+    meetRing.scale.setScalar(pulse);
+    ringMat.opacity=.35+.45*k;
+    meetGlow.intensity=3.5*k;
+  }else{
+    meetRing.visible=false;meetLabel.visible=false;meetGlow.intensity=0;
+  }
+}
+
+/* ====================== GRAPH ====================== */
+const graph=$('graph'),ctx=graph.getContext('2d');
+
+function resizeGraph(){
+  const dpr=Math.min(devicePixelRatio,2),r=graph.getBoundingClientRect();
+  graph.width=Math.max(10,Math.floor(r.width*dpr));
+  graph.height=Math.max(10,Math.floor(r.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);drawGraph();
+}
+
+function graphLimits(){
+  const m=solveMeeting();
+  let tMax=state.tMax;
+  if(m&&m.t>0)tMax=Math.max(6,Math.min(20,m.t*1.25));
+  const vals=[state.xA0,state.xB0,state.xA0+state.vA*tMax,state.xB0+state.vB*tMax];
+  let xmin=Math.min(...vals),xmax=Math.max(...vals);
+  let p=Math.max(2,(xmax-xmin)*.12);xmin-=p;xmax+=p;
+  return {tMax,xmin,xmax};
+}
+
+function drawGraph(){
+  if(!state.graphVisible)return;
+  const W=graph.clientWidth,H=graph.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=state.dark?'#183a50':'#fbfeff';ctx.fillRect(0,0,W,H);
+
+  const L=38,R=10,T=10,B=24,w=W-L-R,h=H-T-B;
+  const {tMax,xmin,xmax}=graphLimits();
+  const tx=t=>L+t/tMax*w;
+  const xy=x=>T+h-(x-xmin)/(xmax-xmin)*h;
+
+  ctx.strokeStyle=state.dark?'rgba(200,230,240,.13)':'rgba(65,105,125,.13)';
+  ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const gx=L+w*i/5;ctx.beginPath();ctx.moveTo(gx,T);ctx.lineTo(gx,T+h);ctx.stroke();
+    const gy=T+h*i/5;ctx.beginPath();ctx.moveTo(L,gy);ctx.lineTo(L+w,gy);ctx.stroke();
+  }
+
+  // full paths faint
+  ctx.lineWidth=1.2;ctx.globalAlpha=.32;
+  ctx.strokeStyle='#178fb8';
+  ctx.beginPath();ctx.moveTo(tx(0),xy(state.xA0));ctx.lineTo(tx(tMax),xy(state.xA0+state.vA*tMax));ctx.stroke();
+  ctx.strokeStyle='#e1844b';
+  ctx.beginPath();ctx.moveTo(tx(0),xy(state.xB0));ctx.lineTo(tx(tMax),xy(state.xB0+state.vB*tMax));ctx.stroke();
+  ctx.globalAlpha=1;
+
+  // completed bold
+  const tc=Math.min(state.t,tMax);
+  ctx.lineWidth=2.3;ctx.strokeStyle='#178fb8';
+  ctx.beginPath();ctx.moveTo(tx(0),xy(state.xA0));ctx.lineTo(tx(tc),xy(state.xA0+state.vA*tc));ctx.stroke();
+  ctx.strokeStyle='#e1844b';
+  ctx.beginPath();ctx.moveTo(tx(0),xy(state.xB0));ctx.lineTo(tx(tc),xy(state.xB0+state.vB*tc));ctx.stroke();
+
+  // time cursor
+  ctx.strokeStyle=state.dark?'#e8f8ff':'#547889';ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(tx(tc),T);ctx.lineTo(tx(tc),T+h);ctx.stroke();ctx.setLineDash([]);
+
+  // meeting M
+  const m=solveMeeting();
+  if(m && m.t<=tMax){
+    ctx.fillStyle='#d2a500';
+    ctx.beginPath();ctx.arc(tx(m.t),xy(m.x),4,0,Math.PI*2);ctx.fill();
+    ctx.font='9px Arial';ctx.fillText('M',tx(m.t)+7,xy(m.x)-6);
+  }
+
+  // legend
+  ctx.font='9px Arial';
+  ctx.fillStyle='#178fb8';ctx.fillRect(L+2,T+2,12,2);ctx.fillText('A',L+18,T+6);
+  ctx.fillStyle='#e1844b';ctx.fillRect(L+34,T+2,12,2);ctx.fillText('B',L+50,T+6);
+
+  ctx.fillStyle=state.dark?'#d9edf5':'#456778';
+  ctx.textAlign='center';
+  for(let i=0;i<=4;i++){
+    const tv=tMax*i/4;ctx.fillText(tv.toFixed(1),tx(tv),H-8);
+  }
+  ctx.fillText('t (s)',L+w/2,H-1);
+
+  ctx.save();ctx.translate(9,T+h/2);ctx.rotate(-Math.PI/2);ctx.fillText('x (m)',0,0);ctx.restore();
+  ctx.textAlign='left';
+}
+
+/* ====================== THEME ====================== */
+function applyTheme(){
+  document.body.classList.toggle('dark',state.dark);
+  $('themeBtn').textContent=state.dark?'🌙':'☀';
+
+  if(state.dark){
+    scene.background.set(0x142f43);scene.fog.color.set(0x142f43);
+    floorMat.color.set(0x294b61);roadMat.color.set(0x455c69);
+    hemi.intensity=2.0;sun.intensity=2.0;
+  }else{
+    scene.background.set(0xdceef7);scene.fog.color.set(0xdceef7);
+    floorMat.color.set(0xc7dde8);roadMat.color.set(0x8799a3);
+    hemi.intensity=2.6;sun.intensity=2.5;
+  }
+  drawGraph();
+}
+$('themeBtn').addEventListener('click',()=>{state.dark=!state.dark;applyTheme();});
+
+/* ====================== CAMERA ====================== */
+function desiredAllTarget(){
+  const m=solveMeeting();
+  if(m && m.t>=0){
+    const min=Math.min(state.xA0,state.xB0,m.x);
+    const max=Math.max(state.xA0,state.xB0,m.x);
+    return (min+max)/2;
+  }
+  return (xA()+xB())/2;
+}
+
+function updateCamera(){
+  const mode=state.cameraMode;
+  if(mode==='A'){
+    const targetX=xA();
+    controls.target.x += (targetX-controls.target.x)*.08;
+    camera.position.x += ((targetX+8)-camera.position.x)*.045;
+  }else if(mode==='B'){
+    const targetX=xB();
+    controls.target.x += (targetX-controls.target.x)*.08;
+    camera.position.x += ((targetX+8)-camera.position.x)*.045;
+  }else{
+    const targetX=desiredAllTarget();
+    controls.target.x += (targetX-controls.target.x)*.05;
+  }
+}
+
+/* ====================== UI ====================== */
+function updateStatus(){
+  $('statusBadge').textContent=relation();
+
+  const m=solveMeeting();
+  $('answerBadge').textContent=state.answerVisible
+    ? (m ? `t gặp = ${m.t.toFixed(2)} s · x gặp = ${fmt(m.x,2)} m` : 'Không có thời điểm gặp trong tương lai')
+    : 't gặp = ? · x gặp = ?';
+
+  $('dataStrip').textContent=
+    `t = ${state.t.toFixed(2)} s | xA = ${fmt(xA(),2)} m | xB = ${fmt(xB(),2)} m | Δx = ${Math.abs(xB()-xA()).toFixed(2)} m`;
+}
+
+function syncInputs(){
+  state.xA0=parseFloat($('xA0').value);
+  state.vA=parseFloat($('vA').value);
+  state.xB0=parseFloat($('xB0').value);
+  state.vB=parseFloat($('vB').value);
+  state.simSpeed=parseFloat($('simSpeed').value);
+  state.cameraMode=$('cameraMode').value;
+  $('speedVal').textContent=`×${state.simSpeed}`;
+}
+
+function resetMotion(){
+  state.t=0;state.running=false;state.paused=true;
+  state.meetingFlash=0;state.meetingPause=0;
+  meetRing.visible=false;meetLabel.visible=false;meetGlow.intensity=0;
+  $('runBtn').textContent='▶ Chạy';$('pauseBtn').textContent='⏸ Dừng';
+  updateStatus();drawGraph();
+}
+
+function setScenario(name){
+  const presets={
+    opposite:{xA0:-8,vA:2,xB0:8,vB:-1},
+    chase:{xA0:-8,vA:3,xB0:2,vB:1},
+    apart:{xA0:-5,vA:-1,xB0:5,vB:1.5},
+    samev:{xA0:-6,vA:2,xB0:4,vB:2}
+  };
+  const p=presets[name];
+  $('xA0').value=p.xA0;$('vA').value=p.vA;$('xB0').value=p.xB0;$('vB').value=p.vB;
+  syncInputs();resetMotion();fitScene();
+}
+
+$('scenario').addEventListener('change',e=>setScenario(e.target.value));
+['xA0','vA','xB0','vB'].forEach(id=>$(id).addEventListener('input',()=>{syncInputs();resetMotion();}));
+$('simSpeed').addEventListener('input',()=>{syncInputs();});
+$('cameraMode').addEventListener('change',()=>{syncInputs();});
+
+$('runBtn').addEventListener('click',()=>{
+  const m=solveMeeting();
+  if(m && state.t>=m.t+1.5)state.t=0;
+  if(state.t>=state.tMax)state.t=0;
+  state.running=true;state.paused=false;$('runBtn').textContent='▶ Đang chạy';
+});
+$('pauseBtn').addEventListener('click',()=>{
+  if(!state.running)return;
+  state.paused=!state.paused;
+  $('pauseBtn').textContent=state.paused?'▶ Tiếp tục':'⏸ Dừng';
+});
+$('graphBtn').addEventListener('click',()=>{
+  state.graphVisible=!state.graphVisible;
+  $('graphWrap').classList.toggle('hidden',!state.graphVisible);
+  $('graphBtn').textContent=state.graphVisible?'📉 Ẩn đồ thị':'📈 Hiện đồ thị';
+  if(state.graphVisible)resizeGraph();
+});
+$('answerBtn').addEventListener('click',()=>{
+  state.answerVisible=!state.answerVisible;
+  $('answerBtn').textContent=state.answerVisible?'🙈 Ẩn KQ':'👁 Kết quả';
+  updateStatus();
+});
+$('resetBtn').addEventListener('click',()=>setScenario($('scenario').value));
+$('fitBtn').addEventListener('click',fitScene);
+
+function fitScene(){
+  const m=solveMeeting();
+  const xs=[state.xA0,state.xB0];
+  if(m)xs.push(m.x);
+  const min=Math.min(...xs),max=Math.max(...xs),center=(min+max)/2;
+  const span=Math.max(12,max-min);
+  controls.target.set(center,0,0);
+  camera.position.set(center+span*.45,Math.max(6,span*.28),Math.max(12,span*.72));
+  controls.update();
+}
+
+/* ====================== LOOP ====================== */
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);labelRenderer.setSize(w,h);
+  if(state.graphVisible)resizeGraph();
+}
+window.addEventListener('resize',resize);
+
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt=(now-state.lastStamp)/1000;state.lastStamp=now;
+  dt=Math.min(Math.max(dt,0),0.03);
+
+  const m=solveMeeting();
+
+  if(state.running&&!state.paused){
+    if(state.meetingPause>0){
+      state.meetingPause-=dt;
+    }else{
+      const prev=state.t;
+      state.t+=dt*state.simSpeed;
+
+      if(m && prev<m.t && state.t>=m.t){
+        state.t=m.t;
+        triggerMeetingEffect();
+      }else if(state.t>=state.tMax){
+        state.t=state.tMax;state.running=false;state.paused=true;$('runBtn').textContent='▶ Chạy lại';
+      }else if(m && state.t>m.t+1.2){
+        state.running=false;state.paused=true;$('runBtn').textContent='▶ Chạy lại';
+      }
+    }
+  }
+
+  updateMeetingEffect(dt);
+  updateCars(dt);
+  updateStatus();
+  updateCamera();
+  drawGraph();
+
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+syncInputs();
+applyTheme();
+setScenario('opposite');
+resize();
+resizeGraph();
+animate(performance.now());
+</script>
+</body>
+</html>

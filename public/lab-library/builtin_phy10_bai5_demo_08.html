@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Sửa lỗi phương trình động</title>
+<style>
+body{background:#050505;color:white;font-family:Arial;margin:0;display:flex;height:100vh}
+.panel{width:300px;background:#111;padding:20px}
+.main{flex:1;padding:20px}
+h2{color:#ffd700}
+label{display:block;color:#ffd700;margin:12px 0}
+input,select{background:#222;color:white;padding:8px;width:120px}
+button{display:block;width:100%;margin:8px 0;padding:12px;background:#ffd700;border:0;border-radius:8px;font-weight:bold}
+#eq{color:#ffd700;font-size:24px}
+svg{background:#000;border:1px solid #555;width:100%;height:88vh}
+</style>
+</head>
+<body>
+<div class="panel">
+<h2>Điều khiển</h2>
+<label>d₀ (m)<input id="d0" value="2"></label>
+<label>v (m/s)<input id="v" value="3"></label>
+<label>Bước t(s/ô)<select id="ts"></select></label>
+<label>Bước d(m/ô)<select id="ds"></select></label>
+<button id="create">Tạo đồ thị</button>
+<button id="step">Vẽ từng bước</button>
+<button id="auto">Tự động</button>
+<button id="reset">Làm lại</button>
+</div>
+
+<div class="main">
+<div id="eq"></div>
+<svg id="svg" viewBox="0 0 850 750"></svg>
+</div>
+
+<script>
+for(let i=1;i<=20;i++){
+ ts.innerHTML+=`<option>${i}</option>`;
+ ds.innerHTML+=`<option>${i}</option>`;
+}
+let data=[],k=0,timer;
+
+function createGraph(){
+ let d0=Number(document.getElementById("d0").value);
+ let v=Number(document.getElementById("v").value);
+ let bt=Number(document.getElementById("ts").value);
+
+ document.getElementById("eq").innerHTML=
+ `d = ${d0} ${v>=0?"+":"-"} ${Math.abs(v)}t &nbsp;&nbsp;(v = ${v} m/s)`;
+
+ data=[];
+ for(let i=0;i<=10;i++){
+   let t=i*bt;
+   data.push({t:t,d:d0+v*t});
+ }
+ k=0;
+ draw();
+}
+
+function draw(){
+ svg.innerHTML="";
+ let ox=100,oy=600,size=450;
+ let bt=Number(ts.value),bd=Number(ds.value);
+
+ for(let i=0;i<=10;i++){
+  let x=ox+i*size/10;
+  let y=oy-i*size/10;
+  svg.innerHTML+=`
+  <line x1="${x}" y1="150" x2="${x}" y2="${oy}" stroke="#333"/>
+  <line x1="${ox}" y1="${y}" x2="${ox+size}" y2="${y}" stroke="#333"/>
+  <text x="${x-8}" y="${oy+25}" fill="white">${i*bt}</text>
+  <text x="55" y="${y+5}" fill="white">${i*bd}</text>`;
+ }
+
+ svg.innerHTML+=`
+ <line x1="${ox}" y1="${oy}" x2="600" y2="${oy}" stroke="white" stroke-width="3"/>
+ <polygon points="600,600 585,592 585,608" fill="white"/>
+ <line x1="${ox}" y1="${oy}" x2="${ox}" y2="70" stroke="white" stroke-width="3"/>
+ <polygon points="100,70 92,85 108,85" fill="white"/>`;
+
+ let pts=[];
+ for(let i=0;i<k;i++){
+  let p=data[i];
+  let x=ox+p.t/bt*size/10;
+  let y=oy-p.d/bd*size/10;
+  pts.push([x,y]);
+  svg.innerHTML+=`
+  <circle cx="${x}" cy="${y}" r="7" fill="white"/>
+  <text x="${x+8}" y="${y-8}" fill="white">(${p.t};${p.d})</text>`;
+ }
+ if(pts.length>1)
+ svg.innerHTML+=`<polyline points="${pts.map(p=>p.join(",")).join(" ")}" fill="none" stroke="#ffd700" stroke-width="5"/>`;
+}
+create.onclick=createGraph;
+step.onclick=()=>{if(k<data.length){k++;draw()}};
+auto.onclick=()=>{clearInterval(timer);timer=setInterval(()=>{if(k>=data.length)clearInterval(timer);else{k++;draw()}},800)};
+reset.onclick=()=>{k=0;draw()};
+createGraph();
+</script>
+</body>
+</html>

@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>048 - Sóng biển tiến vào bờ</title>
+<style>
+:root{--text:#eef9ff;--gold:#ffd972}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 66% 34%,#12354b 0%,#07131e 48%,#02070b 100%);color:var(--text);font-family:Inter,Segoe UI,system-ui,sans-serif}
+#app{position:fixed;inset:0}
+#panel{position:fixed;left:12px;top:12px;bottom:12px;width:262px;z-index:40;overflow:auto;padding:11px;border-radius:16px;background:linear-gradient(180deg,rgba(8,18,28,.96),rgba(5,12,20,.94));border:1px solid rgba(111,193,235,.22);box-shadow:0 18px 52px rgba(0,0,0,.42);backdrop-filter:blur(14px);transition:.25s}
+#panel.hide{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none}
+#panel::-webkit-scrollbar{width:6px}#panel::-webkit-scrollbar-thumb{background:#31536a;border-radius:8px}
+h1{font-size:14px;margin:0 0 3px;font-weight:900}.sub{font-size:10.5px;color:#7bdcff;font-weight:800}
+.desc{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(12,28,41,.72);border:1px solid rgba(94,171,211,.14);font-size:10.3px;line-height:1.45;color:#cce1ee}
+.section{margin:10px 0 6px;color:#75d8ff;font-weight:900;font-size:10.5px;letter-spacing:.6px}
+label.control{display:block;margin:7px 0 9px;font-size:10.8px}label.control .value{float:right;color:#9fe9ff;font-weight:800}
+input[type=range]{width:100%;accent-color:#52c9ff;margin-top:4px}
+.buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:7px}
+button{border:1px solid #355a73;background:#122332;color:#eef8ff;border-radius:9px;padding:7px 6px;font-size:10.5px;font-weight:800;cursor:pointer}
+button:hover{filter:brightness(1.12)}button.primary{border-color:#54d692;background:linear-gradient(180deg,#1f5d3e,#153c2a)}
+.checkrow{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:10.4px;color:#cfe2ee}.checkrow input{accent-color:#55cfff}
+.modeling{margin-top:9px;padding:8px 9px;border-radius:10px;background:rgba(21,28,38,.72);border-left:3px solid #d8a447;font-size:10px;line-height:1.42;color:#c8d4dd}
+#formula{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:28;padding:8px 14px;border-radius:999px;background:rgba(6,16,25,.66);border:1px solid rgba(102,209,255,.2);color:#dff8ff;font-size:15px;font-weight:900;backdrop-filter:blur(9px);box-shadow:0 10px 28px #0004}
+#hud{position:fixed;right:16px;top:16px;z-index:20;width:315px;padding:10px 11px;border-radius:13px;background:rgba(6,14,22,.68);border:1px solid rgba(116,193,234,.18);backdrop-filter:blur(9px);font-size:11px;line-height:1.55}
+#hud b{color:var(--gold)}
+#probar{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:35;display:flex;gap:5px;flex-wrap:wrap;justify-content:center;padding:5px;border-radius:12px;background:rgba(6,14,22,.54);border:1px solid rgba(115,195,235,.16);backdrop-filter:blur(10px)}
+#probar button{padding:6px 8px;font-size:10.3px;border-radius:8px}
+#credit{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:18;color:#ffe075;font-size:14px;font-weight:900}
+#note{position:fixed;left:282px;bottom:16px;z-index:18;color:#a9bfce;font-size:10px;background:rgba(6,14,22,.5);border:1px solid rgba(116,193,234,.11);border-radius:9px;padding:6px 8px}
+#recStatus{position:fixed;right:18px;bottom:84px;z-index:30;display:none;padding:7px 10px;border-radius:10px;background:rgba(125,0,0,.72);border:1px solid rgba(255,120,120,.45);font-size:11px;font-weight:900}
+.status{display:inline-block;padding:3px 7px;border-radius:999px;background:#17374b;color:#a9e7ff;font-weight:800;font-size:9.5px}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="formula">f không đổi · λ = v/f · nước nông → v giảm → λ giảm</div>
+<div id="probar">
+<button id="fullscreenBtn">⛶</button><button id="panelBtn">☰</button>
+<button id="bgBtn">🌗</button><button id="lightBtn">💡</button>
+<button id="camBtn">🎥</button><button id="autoCamBtn">↻ Cam</button>
+<button id="recordBtn">🔴 Quay</button><button id="stopRecordBtn">⏹</button>
+</div>
+
+<div id="panel">
+<h1>PHYSICS 11 LAB · 3D PRO</h1>
+<div class="sub">048 · SÓNG BIỂN TIẾN VÀO BỜ</div>
+<div class="desc">
+Khi sóng biển tiến vào vùng nước nông, phần mặt sóng vào vùng nông trước sẽ truyền chậm hơn. Vì thế mặt sóng <b>quay dần song song với bờ</b>, đồng thời bước sóng giảm nhưng tần số vẫn giữ nguyên.
+</div>
+
+<div class="section">ĐIỀU KHIỂN</div>
+<label class="control">Tốc độ mô phỏng <span id="speedVal" class="value">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
+<label class="control">Biên độ A <span id="ampVal" class="value">0.55 m</span><input id="amp" type="range" min=".15" max="1.2" step=".05" value=".55"></label>
+<label class="control">Tần số f <span id="freqVal" class="value">0.30 Hz</span><input id="freq" type="range" min=".1" max=".8" step=".02" value=".3"></label>
+<label class="control">Vận tốc vùng sâu <span id="vDeepVal" class="value">3.0 m/s</span><input id="vDeep" type="range" min="1.5" max="5" step=".1" value="3"></label>
+<label class="control">Vận tốc sát bờ <span id="vShallowVal" class="value">1.2 m/s</span><input id="vShallow" type="range" min=".5" max="2.5" step=".1" value="1.2"></label>
+<label class="control">Góc tiến vào bờ <span id="angleVal" class="value">35°</span><input id="angle" type="range" min="0" max="65" step="1" value="35"></label>
+<label class="control">Độ dốc đáy biển <span id="slopeVal" class="value">1.00×</span><input id="slope" type="range" min=".5" max="1.8" step=".05" value="1"></label>
+
+<div class="section">NÚT NHANH</div>
+<div class="buttons">
+<button id="start" class="primary">▶ Bắt đầu</button><button id="pause">⏸ Tạm dừng</button>
+<button id="reset">↻ Đặt lại</button><button id="fit">⛶ Fit</button>
+</div>
+<div class="buttons">
+<button id="normalBtn">Vuông góc bờ</button><button id="obliqueBtn">Xiên 45°</button>
+<button id="strongBtn">Nông rõ</button><button id="softBtn">Nông nhẹ</button>
+</div>
+
+<div class="section">HIỂN THỊ</div>
+<label class="checkrow"><input id="showFronts" type="checkbox" checked> Hiện mặt sóng</label>
+<label class="checkrow"><input id="showRay" type="checkbox" checked> Hiện hướng truyền</label>
+<label class="checkrow"><input id="showDepth" type="checkbox" checked> Hiện đáy biển</label>
+<label class="checkrow"><input id="showParticles" type="checkbox" checked> Hiện phần tử nước dao động</label>
+<label class="checkrow"><input id="showGrid" type="checkbox" checked> Hiện lưới tham chiếu</label>
+
+<div class="modeling"><b>Mô hình hóa:</b> vận tốc được cho giảm dần khi độ sâu giảm. Tần số giữ nguyên nên \(λ=v/f\). Các phần tử nước chỉ dao động tại chỗ; chúng không bị mô phỏng “trôi” theo sóng. Độ cao sóng gần bờ được tăng nhẹ chỉ để minh họa trực quan hiện tượng shoaling.</div>
+</div>
+
+<div id="hud">
+<span class="status">SÓNG BIỂN · NƯỚC SÂU → NƯỚC NÔNG</span><br>
+t = <b id="tOut">0.00 s</b> · f = <b id="fOut">0.30 Hz</b><br>
+v sâu = <b id="vdOut">3.0 m/s</b> · λ sâu = <b id="ldOut">10.00 m</b><br>
+v nông = <b id="vsOut">1.2 m/s</b> · λ nông = <b id="lsOut">4.00 m</b><br>
+Góc ngoài khơi = <b id="ang0Out">35.0°</b><br>
+Góc gần bờ = <b id="ang1Out">13.5°</b><br>
+Trạng thái = <b id="runOut">ĐỨNG YÊN</b>
+</div>
+
+<div id="note">mặt sóng càng gần bờ càng sít và càng song song bờ · hạt nước chỉ dao động tại chỗ</div>
+<div id="credit">Thầy Hùng vật lí</div>
+<div id="recStatus">● ĐANG QUAY 00:00</div>
+<canvas id="recordCanvas" width="1920" height="1080" style="display:none"></canvas>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const state={running:false,paused:false,time:0,speed:1,A:.55,f:.3,vDeep:3,vShallow:1.2,angle:35,slope:1,phase:0,backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false};
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('app').appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x06131e);
+const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,200);camera.position.set(10,8.5,12);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=5;controls.maxDistance=32;controls.minPolarAngle=.18;controls.maxPolarAngle=1.5;controls.target.set(0,.1,0);
+
+const hemi=new THREE.HemisphereLight(0xe3f7ff,0x10202d,1.7);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,1.8);key.position.set(7,10,8);scene.add(key);
+const rim=new THREE.PointLight(0x56d8ff,1.1,30,2);rim.position.set(-5,5,-5);scene.add(rim);
+
+const model=new THREE.Group();scene.add(model);
+const seaGroup=new THREE.Group(),frontGroup=new THREE.Group(),rayGroup=new THREE.Group(),particleGroup=new THREE.Group();
+model.add(seaGroup,frontGroup,rayGroup,particleGroup);
+
+const grid=new THREE.GridHelper(40,40,0x2e5b72,0x173241);grid.position.y=-2.45;grid.material.transparent=true;grid.material.opacity=.12;scene.add(grid);
+
+function clearGroup(g){while(g.children.length){const o=g.children.pop();o.traverse?.(q=>{q.geometry?.dispose?.();q.material?.dispose?.()})}}
+function depthAtX(x){
+ const u=THREE.MathUtils.clamp((x+6)/12,0,1);
+ return 4.2 - 3.5*Math.pow(u,state.slope);
+}
+function speedAtX(x){
+ const u=THREE.MathUtils.clamp((x+6)/12,0,1);
+ return THREE.MathUtils.lerp(state.vDeep,state.vShallow,Math.pow(u,state.slope));
+}
+function localAngleDeg(x){
+ const v=speedAtX(x),s0=Math.sin(THREE.MathUtils.degToRad(state.angle));
+ const sr=THREE.MathUtils.clamp((v/state.vDeep)*s0,-1,1);
+ return THREE.MathUtils.radToDeg(Math.asin(sr));
+}
+function buildSea(){
+ clearGroup(seaGroup);
+ const water=new THREE.Mesh(new THREE.PlaneGeometry(15,10,100,2),new THREE.MeshPhongMaterial({color:0x147ba4,transparent:true,opacity:.42,side:THREE.DoubleSide,shininess:80}));
+ water.rotation.x=-Math.PI/2;water.position.set(0,0,0);seaGroup.add(water);
+ // seabed slope
+ const pts=[];
+ for(let i=0;i<=60;i++){const x=-7.5+i/60*15;pts.push(new THREE.Vector3(x,-depthAtX(x),-5),new THREE.Vector3(x,-depthAtX(x),5))}
+ const geo=new THREE.BufferGeometry().setFromPoints(pts);seaGroup.add(new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color:0xb69b6a,transparent:true,opacity:.7})));
+ const shore=new THREE.Mesh(new THREE.BoxGeometry(1.8,.6,10.5),new THREE.MeshStandardMaterial({color:0xb8a26d,roughness:.95}));
+ shore.position.set(7.05,-.25,0);seaGroup.add(shore);
+}
+function waveHeight(x,z,t){
+ const v=speedAtX(x),lam=Math.max(.25,v/state.f);
+ const ang=THREE.MathUtils.degToRad(localAngleDeg(x));
+ const k=2*Math.PI/lam;
+ const coord=x*Math.cos(ang)+z*Math.sin(ang);
+ const amp=state.A*(1+0.35*THREE.MathUtils.clamp((x+6)/12,0,1));
+ return amp*Math.sin(k*coord-2*Math.PI*state.f*t);
+}
+function buildFronts(){
+ clearGroup(frontGroup);
+ if(!$('showFronts').checked)return;
+ const phase=state.phase%1;
+ for(let j=-7;j<=7;j++){
+   const pts=[];
+   for(let s=0;s<=90;s++){
+     const x=-6+s/90*12;
+     const ang=THREE.MathUtils.degToRad(localAngleDeg(x));
+     const v=speedAtX(x),lam=v/state.f;
+     const offset=(j+phase)*THREE.MathUtils.clamp(lam*.42,.35,1.45);
+     const z=offset/Math.max(.22,Math.cos(ang)) - x*Math.tan(ang)*.18;
+     if(Math.abs(z)<=4.7) pts.push(new THREE.Vector3(x,.12+0.03*j,z));
+   }
+   if(pts.length>2){
+     frontGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x7cecff,transparent:true,opacity:.74})));
+   }
+ }
+}
+function buildRay(){
+ clearGroup(rayGroup);
+ if(!$('showRay').checked)return;
+ const pts=[];
+ let z=-2.5;
+ for(let i=0;i<=70;i++){
+   const x=-6+i/70*12;
+   const ang=THREE.MathUtils.degToRad(localAngleDeg(x));
+   if(i>0) z += Math.tan(ang)*12/70;
+   pts.push(new THREE.Vector3(x,.32,z));
+ }
+ rayGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xffd66e,transparent:true,opacity:.95})));
+ for(const idx of [12,35,58]){
+   const p=pts[idx],q=pts[idx+1],d=q.clone().sub(p).normalize();
+   rayGroup.add(new THREE.ArrowHelper(d,p,1.0,0xffd66e,.13,.075));
+ }
+}
+function buildParticles(){
+ clearGroup(particleGroup);
+ if(!$('showParticles').checked)return;
+ const mat=new THREE.MeshBasicMaterial({color:0xe5fbff});
+ const geo=new THREE.SphereGeometry(.055,10,8);
+ for(let ix=0;ix<14;ix++)for(let iz=0;iz<7;iz++){
+   const x=-5.7+ix*.86,z=-3+iz*1.0;
+   const m=new THREE.Mesh(geo,mat);m.userData={x,z,phase:(ix+iz)*.37};particleGroup.add(m);
+ }
+}
+function updateParticles(){
+ if(!$('showParticles').checked)return;
+ for(const m of particleGroup.children){
+   const {x,z,phase}=m.userData;
+   const y=.10+0.14*state.A*Math.sin(2*Math.PI*state.f*state.time+phase);
+   m.position.set(x,y,z);
+ }
+}
+function updatePhysics(dt){
+ if(!state.running||state.paused)return;
+ state.time+=dt*state.speed;state.phase+=dt*state.speed*state.f*.7;
+}
+function updateVisuals(){
+ buildFronts();updateParticles();grid.visible=$('showGrid').checked;seaGroup.visible=$('showDepth').checked||true;
+}
+function updateUI(){
+ const ang1=localAngleDeg(6);
+ $('speedVal').textContent=`${state.speed.toFixed(2)}×`;$('ampVal').textContent=`${state.A.toFixed(2)} m`;$('freqVal').textContent=`${state.f.toFixed(2)} Hz`;$('vDeepVal').textContent=`${state.vDeep.toFixed(1)} m/s`;$('vShallowVal').textContent=`${state.vShallow.toFixed(1)} m/s`;$('angleVal').textContent=`${state.angle.toFixed(0)}°`;$('slopeVal').textContent=`${state.slope.toFixed(2)}×`;
+ $('tOut').textContent=`${state.time.toFixed(2)} s`;$('fOut').textContent=`${state.f.toFixed(2)} Hz`;$('vdOut').textContent=`${state.vDeep.toFixed(1)} m/s`;$('vsOut').textContent=`${state.vShallow.toFixed(1)} m/s`;$('ldOut').textContent=`${(state.vDeep/state.f).toFixed(2)} m`;$('lsOut').textContent=`${(state.vShallow/state.f).toFixed(2)} m`;$('ang0Out').textContent=`${state.angle.toFixed(1)}°`;$('ang1Out').textContent=`${ang1.toFixed(1)}°`;
+ $('runOut').textContent=state.running&&!state.paused?'ĐANG CHẠY':state.paused?'TẠM DỪNG':'ĐỨNG YÊN';
+}
+
+const bgModes=[0x06131e,0xeaf2f6,0x06162a];
+function applyBackground(){scene.background.setHex(bgModes[state.backgroundIndex])}
+function applyLighting(){if(state.lightMode===0){hemi.intensity=1.7;key.intensity=1.8;rim.intensity=1.1}else if(state.lightMode===1){hemi.intensity=2.2;key.intensity=2.3;rim.intensity=.5}else{hemi.intensity=1.05;key.intensity=1.15;rim.intensity=1.9}}
+function setCamera(m){state.cameraMode=m%4;state.autoCamera=false;if(m===0){camera.position.set(0,12,.1);controls.target.set(0,0,0)}else if(m===1){camera.position.set(10,8.5,12);controls.target.set(0,0,0)}else if(m===2){camera.position.set(12,3,0);controls.target.set(0,0,0)}else{camera.position.set(6,4,6);controls.target.set(1,0,0)}camera.lookAt(controls.target);controls.update()}
+function updateAutoCam(){if(!state.autoCamera)return;const a=state.time*.11,r=12;camera.position.set(Math.cos(a)*r,6.8,Math.sin(a)*r);camera.lookAt(controls.target)}
+async function toggleFullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}}
+function rebuild(){buildSea();buildFronts();buildRay();buildParticles()}
+
+$('speed').oninput=e=>state.speed=+e.target.value;
+$('amp').oninput=e=>state.A=+e.target.value;
+$('freq').oninput=e=>{state.f=+e.target.value;buildFronts()};
+$('vDeep').oninput=e=>{state.vDeep=+e.target.value;buildFronts();buildRay()};
+$('vShallow').oninput=e=>{state.vShallow=+e.target.value;buildFronts();buildRay()};
+$('angle').oninput=e=>{state.angle=+e.target.value;buildFronts();buildRay()};
+$('slope').oninput=e=>{state.slope=+e.target.value;rebuild()};
+$('showFronts').onchange=buildFronts;$('showRay').onchange=buildRay;$('showParticles').onchange=buildParticles;
+$('start').onclick=()=>{state.running=true;state.paused=false};
+$('pause').onclick=()=>state.paused=!state.paused;
+$('reset').onclick=()=>{Object.assign(state,{running:false,paused:false,time:0,speed:1,A:.55,f:.3,vDeep:3,vShallow:1.2,angle:35,slope:1,phase:0,backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false});$('speed').value=1;$('amp').value=.55;$('freq').value=.3;$('vDeep').value=3;$('vShallow').value=1.2;$('angle').value=35;$('slope').value=1;applyBackground();applyLighting();rebuild();setCamera(1)};
+$('fit').onclick=()=>setCamera(1);
+$('normalBtn').onclick=()=>{state.angle=0;$('angle').value=0;buildFronts();buildRay()};
+$('obliqueBtn').onclick=()=>{state.angle=45;$('angle').value=45;buildFronts();buildRay()};
+$('strongBtn').onclick=()=>{state.vShallow=.8;$('vShallow').value=.8;buildFronts();buildRay()};
+$('softBtn').onclick=()=>{state.vShallow=2.2;$('vShallow').value=2.2;buildFronts();buildRay()};
+$('fullscreenBtn').onclick=toggleFullscreen;$('panelBtn').onclick=()=>$('panel').classList.toggle('hide');
+$('bgBtn').onclick=()=>{state.backgroundIndex=(state.backgroundIndex+1)%3;applyBackground()};
+$('lightBtn').onclick=()=>{state.lightMode=(state.lightMode+1)%3;applyLighting()};
+$('camBtn').onclick=()=>setCamera((state.cameraMode+1)%4);$('autoCamBtn').onclick=()=>state.autoCamera=!state.autoCamera;
+
+// recording
+const rc=$('recordCanvas'),rctx=rc.getContext('2d');let rec=null,chunks=[],mime='',recStart=0,recTimer=null;
+function bestMime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function drawRec(){const sw=renderer.domElement.width,sh=renderer.domElement.height,dw=rc.width,dh=rc.height,s=Math.max(dw/sw,dh/sh),rw=sw*s,rh=sh*s;rctx.fillStyle='#06131e';rctx.fillRect(0,0,dw,dh);rctx.drawImage(renderer.domElement,(dw-rw)/2,(dh-rh)/2,rw,rh);rctx.fillStyle='rgba(4,12,20,.72)';rctx.fillRect(34,34,1000,115);rctx.fillStyle='#fff';rctx.font='800 30px Segoe UI';rctx.fillText('048 · SÓNG BIỂN TIẾN VÀO BỜ',58,76);rctx.fillStyle='#ffe075';rctx.font='700 23px Segoe UI';rctx.fillText(`f=${state.f.toFixed(2)} Hz · λsâu=${(state.vDeep/state.f).toFixed(2)} m · λnông=${(state.vShallow/state.f).toFixed(2)} m · góc gần bờ=${localAngleDeg(6).toFixed(1)}°`,58,118);rctx.textAlign='center';rctx.font='800 27px Segoe UI';rctx.fillText('Thầy Hùng vật lí',dw/2,dh-34);rctx.textAlign='left'}
+function startRec(){if(rec&&rec.state==='recording')return;mime=bestMime();if(!mime){alert('Trình duyệt chưa hỗ trợ ghi video.');return}chunks=[];const stream=rc.captureStream(60);rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12000000});rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{const ext=mime.includes('mp4')?'mp4':'webm',a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:mime}));a.download=`048_Song_bien_tien_vao_bo.${ext}`;a.click();$('recStatus').style.display='none';clearInterval(recTimer)};rec.start(1000);recStart=performance.now();$('recStatus').style.display='block';recTimer=setInterval(()=>{$('recStatus').textContent=`● ĐANG QUAY ${Math.floor((performance.now()-recStart)/1000)} s`},500)}
+$('recordBtn').onclick=startRec;$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=THREE.MathUtils.clamp((now-last)/1000,0,.033);last=now;updatePhysics(dt);updateVisuals();updateUI();updateAutoCam();controls.update();renderer.render(scene,camera);if(rec&&rec.state==='recording')drawRec()}
+applyBackground();applyLighting();rebuild();setCamera(1);requestAnimationFrame(animate);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>

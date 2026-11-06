@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · 70 Cân bằng quay V3</title>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#132937;color:#f4fbff}
+#app{display:flex;height:100%}
+aside{width:300px;padding:10px;background:linear-gradient(#173445,#112736);border-right:1px solid #436679;overflow:auto}
+main{position:relative;flex:1;min-width:0}
+.title{font-weight:900;font-size:13px}
+.sub{font-size:9px;color:#b7cdd8}
+.sim{font-size:15px;font-weight:900;color:#71defd;margin:8px 0 6px}
+.box{border:1px solid #436679;border-radius:10px;padding:8px;margin-top:7px;background:rgba(10,31,43,.42)}
+.box h3{margin:0 0 6px;font-size:9.5px;color:#71defd;text-transform:uppercase}
+.row{display:flex;justify-content:space-between;gap:8px;margin:4px 0;font-size:10px;font-weight:700}
+.val{color:#ffe27b;font-weight:800}
+input[type=range]{width:100%;accent-color:#18a0c8}
+button,select{width:100%;height:32px;border:1px solid #436679;border-radius:7px;background:#244b60;color:#fff;font-weight:800;font-size:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+.play{background:#219265}.reset{background:#6a4252}.caseBtn{height:34px}
+.tip{font-size:9px;color:#b7cdd8;line-height:1.4}
+#badge,#hud,#lessonFlow{position:absolute;z-index:5;background:rgba(10,29,41,.9);border:1px solid #446879;border-radius:10px;backdrop-filter:blur(5px)}
+#badge{left:14px;top:12px;padding:8px 11px;font-size:11px;font-weight:900}
+#lessonFlow{left:14px;top:58px;padding:7px 10px;font-size:10px;max-width:460px}
+#hud{right:12px;top:12px;width:340px;padding:9px 11px;font-size:10px}
+.g{display:grid;grid-template-columns:1fr auto;gap:4px 8px}
+.lab{padding:3px 6px;border-radius:7px;background:#102d3e;border:1px solid #496b7c;font-size:10px;font-weight:800;white-space:nowrap}
+#equilibrium{position:absolute;top:118px;right:12px;z-index:6;padding:10px 14px;border-radius:10px;font-weight:900;font-size:15px;border:1px solid #436679;background:rgba(10,29,41,.92)}
+#credit{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:15px;font-weight:900;color:#ffe27b}
+</style>
+</head>
+<body>
+<div id="app">
+<aside>
+  <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+  <div class="sub">70 · CÂN BẰNG VẬT CÓ TRỤC QUAY CỐ ĐỊNH</div>
+  <div class="sim">70. Cân bằng quay</div>
+
+  <div class="box">
+    <h3>Mạch dạy học</h3>
+    <div class="grid2">
+      <button class="caseBtn" id="case0">0. Chưa treo vật</button>
+      <button class="caseBtn" id="case1">1. Chỉ treo trái</button>
+      <button class="caseBtn" id="case2">2. Chỉ treo phải</button>
+      <button class="caseBtn" id="case3">3. Treo cả hai</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h3>Thông số hai vật</h3>
+    <div class="row"><span>F₁ (bên trái)</span><span class="val" id="f1t">8.0 N</span></div>
+    <input id="f1" type="range" min="1" max="20" step=".5" value="8">
+
+    <div class="row"><span>d₁</span><span class="val" id="d1t">2.0 m</span></div>
+    <input id="d1" type="range" min=".5" max="4" step=".1" value="2">
+
+    <div class="row"><span>F₂ (bên phải)</span><span class="val" id="f2t">4.0 N</span></div>
+    <input id="f2" type="range" min="1" max="20" step=".5" value="4">
+
+    <div class="row"><span>d₂</span><span class="val" id="d2t">4.0 m</span></div>
+    <input id="d2" type="range" min=".5" max="4" step=".1" value="4">
+  </div>
+
+  <div class="box">
+    <h3>PPT từng bước</h3>
+    <div class="grid3">
+      <button id="b1">B1: Trục O</button>
+      <button id="b2">B2: Treo vật 1</button>
+      <button id="b3">B3: Treo vật 2</button>
+    </div>
+    <div class="grid2" style="margin-top:5px">
+      <button id="b4">B4: Kết luận</button>
+      <button id="auto" class="play">▶ Tự chạy</button>
+    </div>
+    <div class="grid2" style="margin-top:5px">
+      <button id="prev">◀ Lùi</button>
+      <button id="reset" class="reset">↻ Làm lại</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <div class="tip">
+      Ý tưởng sư phạm: cho học sinh thấy rõ <b>chỉ treo trái</b> thì thanh quay một chiều,
+      <b>chỉ treo phải</b> thì quay chiều ngược lại, còn muốn <b>cân bằng</b> thì phải treo
+      cả hai sao cho <b>F₁d₁ = F₂d₂</b>.
+    </div>
+  </div>
+</aside>
+
+<main id="view">
+  <div id="badge">Quan sát từng tình huống để rút ra điều kiện cân bằng quay</div>
+
+  <div id="lessonFlow">Trình tự gợi ý: chưa treo vật → chỉ treo trái → chỉ treo phải → treo cả hai → so sánh moment.</div>
+
+  <div id="hud">
+    <div class="g">
+      <span>M₁ = F₁d₁</span><b id="m1">16.00 N·m</b>
+      <span>M₂ = F₂d₂</span><b id="m2">16.00 N·m</b>
+      <span>ΣM = M₁ − M₂</span><b id="sum">0.00 N·m</b>
+      <span>Góc nghiêng thanh</span><b id="angleInfo">0.0°</b>
+      <span>Tình huống</span><b id="caseInfo">Chưa treo vật</b>
+      <span>Kết luận</span><b id="status">Chưa khảo sát</b>
+    </div>
+  </div>
+
+  <div id="equilibrium">Bắt đầu từ trục quay O</div>
+
+  <div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {CSS2DRenderer,CSS2DObject} from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $=id=>document.getElementById(id), view=$('view');
+
+const S={
+  F1:8,d1:2,F2:4,d2:4,
+  step:0,
+  caseMode:0, // 0 none, 1 left only, 2 right only, 3 both
+  timer:null,
+  theta:0,targetTheta:0,last:performance.now()
+};
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x132937);
+scene.fog=new THREE.Fog(0x132937,28,90);
+
+const camera=new THREE.PerspectiveCamera(45,view.clientWidth/view.clientHeight,.1,120);
+camera.position.set(9,7,12);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.target.set(0,1.7,0);
+controls.maxPolarAngle=Math.PI*.49;
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x4e6874,2.2));
+const sun=new THREE.DirectionalLight(0xffffff,1.8);
+sun.position.set(8,12,10);
+scene.add(sun);
+
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(20,15),
+  new THREE.MeshPhongMaterial({color:0x304a58})
+);
+floor.rotation.x=-Math.PI/2;
+scene.add(floor);
+
+/* fixed support and pivot */
+const support=new THREE.Mesh(
+  new THREE.CylinderGeometry(.16,.16,3.4,24),
+  new THREE.MeshPhongMaterial({color:0x536c79})
+);
+support.position.set(0,1.7,-.9);
+scene.add(support);
+
+const base=new THREE.Mesh(
+  new THREE.BoxGeometry(2.3,.25,2.1),
+  new THREE.MeshPhongMaterial({color:0x657985})
+);
+base.position.set(0,.13,-.9);
+scene.add(base);
+
+const rig=new THREE.Group();
+rig.position.set(0,2.1,0);
+scene.add(rig);
+
+const beam=new THREE.Mesh(
+  new THREE.BoxGeometry(10,.28,.62),
+  new THREE.MeshPhongMaterial({color:0x82949e,shininess:35})
+);
+rig.add(beam);
+
+const axle=new THREE.Mesh(
+  new THREE.CylinderGeometry(.35,.35,.92,28),
+  new THREE.MeshPhongMaterial({color:0xffd45c,shininess:80})
+);
+axle.rotation.x=Math.PI/2;
+axle.position.set(0,2.1,0);
+scene.add(axle);
+
+/* labels */
+function lab(t){
+  const d=document.createElement('div');
+  d.className='lab';
+  d.textContent=t;
+  return new CSS2DObject(d);
+}
+const oLab=lab('O');
+oLab.position.set(0,2.95,0);
+scene.add(oLab);
+
+const leftLab=lab('Vật 1');
+const rightLab=lab('Vật 2');
+scene.add(leftLab,rightLab);
+
+const m1Lab=lab('M₁ ↺');
+const m2Lab=lab('M₂ ↻');
+scene.add(m1Lab,m2Lab);
+
+/* weights */
+function makeWeight(color){
+  const g=new THREE.Group();
+  const line=new THREE.Line(
+    new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({color:0xe7eef2})
+  );
+  const mass=new THREE.Mesh(
+    new THREE.BoxGeometry(.78,.76,.78),
+    new THREE.MeshPhongMaterial({color,shininess:60})
+  );
+  g.add(line,mass);
+  scene.add(g);
+  return {group:g,line,mass};
+}
+const leftWeight=makeWeight(0x45a9d4);
+const rightWeight=makeWeight(0xe59b5d);
+
+/* arrows and dashed arm lines */
+const A1=new THREE.ArrowHelper(new THREE.Vector3(0,-1,0),new THREE.Vector3(),1,0x73ddff,.28,.16);
+const A2=new THREE.ArrowHelper(new THREE.Vector3(0,-1,0),new THREE.Vector3(),1,0xffad76,.28,.16);
+scene.add(A1,A2);
+
+function dashed(color){
+  const L=new THREE.Line(
+    new THREE.BufferGeometry(),
+    new THREE.LineDashedMaterial({color,dashSize:.18,gapSize:.1})
+  );
+  scene.add(L); return L;
+}
+const d1Line=dashed(0x8ef2c4);
+const d2Line=dashed(0xff8f8f);
+
+function setLine(line,p1,p2,show){
+  line.visible=show;
+  if(show){
+    line.geometry.setFromPoints([p1,p2]);
+    line.computeLineDistances();
+  }
+}
+
+function worldPoint(localX){
+  const c=Math.cos(S.theta), s=Math.sin(S.theta);
+  return new THREE.Vector3(localX*c, 2.1+localX*s, 0);
+}
+
+function getEffectiveMoments(){
+  const useLeft  = (S.caseMode===1 || S.caseMode===3) ? 1 : 0;
+  const useRight = (S.caseMode===2 || S.caseMode===3) ? 1 : 0;
+  const M1 = useLeft  ? S.F1*S.d1 : 0;
+  const M2 = useRight ? S.F2*S.d2 : 0;
+  return {M1,M2,sum:M1-M2,useLeft,useRight};
+}
+
+function caseText(){
+  if(S.caseMode===0) return 'Chưa treo vật';
+  if(S.caseMode===1) return 'Chỉ treo vật bên trái';
+  if(S.caseMode===2) return 'Chỉ treo vật bên phải';
+  return 'Treo cả hai vật';
+}
+
+function updateUI(){
+  const {M1,M2,sum,useLeft,useRight}=getEffectiveMoments();
+
+  $('f1t').textContent=S.F1.toFixed(1)+' N';
+  $('d1t').textContent=S.d1.toFixed(1)+' m';
+  $('f2t').textContent=S.F2.toFixed(1)+' N';
+  $('d2t').textContent=S.d2.toFixed(1)+' m';
+
+  $('m1').textContent=M1.toFixed(2)+' N·m';
+  $('m2').textContent=M2.toFixed(2)+' N·m';
+  $('sum').textContent=sum.toFixed(2)+' N·m';
+  $('angleInfo').textContent=(S.theta*180/Math.PI).toFixed(1)+'°';
+  $('caseInfo').textContent=caseText();
+
+  if(S.caseMode===0){
+    $('status').textContent='Chưa có lực gây quay';
+    $('equilibrium').textContent='Chưa treo vật';
+    $('equilibrium').style.color='#d7edf7';
+  }else if(S.caseMode===1){
+    $('status').textContent='Thanh quay về phía trái';
+    $('equilibrium').textContent='Chỉ có M₁ → thanh quay sang trái';
+    $('equilibrium').style.color='#73ddff';
+  }else if(S.caseMode===2){
+    $('status').textContent='Thanh quay về phía phải';
+    $('equilibrium').textContent='Chỉ có M₂ → thanh quay sang phải';
+    $('equilibrium').style.color='#ffb071';
+  }else{
+    if(Math.abs(sum)<0.05){
+      $('status').textContent='Cân bằng: F₁d₁ = F₂d₂';
+      $('equilibrium').textContent='ΣM = 0 · CÂN BẰNG';
+      $('equilibrium').style.color='#8ef2c4';
+    }else if(sum>0){
+      $('status').textContent='M₁ > M₂: quay sang trái';
+      $('equilibrium').textContent='M₁ > M₂ · chưa cân bằng';
+      $('equilibrium').style.color='#73ddff';
+    }else{
+      $('status').textContent='M₂ > M₁: quay sang phải';
+      $('equilibrium').textContent='M₂ > M₁ · chưa cân bằng';
+      $('equilibrium').style.color='#ffb071';
+    }
+  }
+
+  // target tilt by case
+  if(S.caseMode===0) S.targetTheta=0;
+  else if(S.caseMode===1) S.targetTheta=0.28;
+  else if(S.caseMode===2) S.targetTheta=-0.28;
+  else{
+    const t = THREE.MathUtils.clamp(sum/28,-1,1)*0.30;
+    S.targetTheta = Math.abs(sum)<0.05 ? 0 : t;
+  }
+
+  rig.rotation.z=S.theta;
+
+  const showPivot=S.step>=1;
+  axle.visible=oLab.visible=showPivot;
+
+  const leftPos=worldPoint(-S.d1);
+  const rightPos=worldPoint(S.d2);
+
+  const showLeft = (S.step>=2) && useLeft;
+  const showRight= (S.step>=3) && useRight;
+
+  leftWeight.group.visible=A1.visible=leftLab.visible=showLeft;
+  if(showLeft){
+    const top=leftPos.clone();
+    const bottom=new THREE.Vector3(leftPos.x,Math.max(.78,leftPos.y-1.6),0);
+    leftWeight.line.geometry.setFromPoints([top,bottom.clone().add(new THREE.Vector3(0,.38,0))]);
+    leftWeight.mass.position.copy(bottom);
+    A1.position.copy(leftPos.clone().add(new THREE.Vector3(0,.14,.25)));
+    A1.setLength(Math.max(.45,S.F1*.10),.25,.13);
+    leftLab.position.copy(leftPos.clone().add(new THREE.Vector3(0,.78,.15)));
+  }
+
+  rightWeight.group.visible=A2.visible=rightLab.visible=showRight;
+  if(showRight){
+    const top=rightPos.clone();
+    const bottom=new THREE.Vector3(rightPos.x,Math.max(.78,rightPos.y-1.6),0);
+    rightWeight.line.geometry.setFromPoints([top,bottom.clone().add(new THREE.Vector3(0,.38,0))]);
+    rightWeight.mass.position.copy(bottom);
+    A2.position.copy(rightPos.clone().add(new THREE.Vector3(0,.14,.25)));
+    A2.setLength(Math.max(.45,S.F2*.10),.25,.13);
+    rightLab.position.copy(rightPos.clone().add(new THREE.Vector3(0,.78,.15)));
+  }
+
+  const showConclusion = S.step>=4;
+  setLine(d1Line,new THREE.Vector3(0,1.95,.34),new THREE.Vector3(leftPos.x,1.95,.34),showConclusion && useLeft);
+  setLine(d2Line,new THREE.Vector3(0,1.80,.34),new THREE.Vector3(rightPos.x,1.80,.34),showConclusion && useRight);
+
+  m1Lab.visible = showConclusion && useLeft;
+  m2Lab.visible = showConclusion && useRight;
+  if(m1Lab.visible) m1Lab.position.set(-1.4,3.12,.45);
+  if(m2Lab.visible) m2Lab.position.set( 1.4,3.12,.45);
+}
+
+function setStep(n){
+  S.step=Math.max(0,Math.min(4,n));
+  updateUI();
+}
+function stopAuto(){
+  if(S.timer){
+    clearInterval(S.timer);
+    S.timer=null;
+    $('auto').textContent='▶ Tự chạy';
+  }
+}
+function setCase(c){
+  S.caseMode=c;
+  S.theta=0;
+  setStep(0);
+}
+
+$('case0').onclick=()=>setCase(0);
+$('case1').onclick=()=>setCase(1);
+$('case2').onclick=()=>setCase(2);
+$('case3').onclick=()=>setCase(3);
+
+$('b1').onclick=()=>setStep(1);
+$('b2').onclick=()=>setStep(2);
+$('b3').onclick=()=>setStep(3);
+$('b4').onclick=()=>setStep(4);
+$('prev').onclick=()=>setStep(S.step-1);
+$('reset').onclick=()=>{stopAuto();S.theta=0;setStep(0)};
+$('auto').onclick=()=>{
+  if(S.timer){stopAuto();return}
+  S.theta=0; setStep(0); $('auto').textContent='■ Dừng';
+  S.timer=setInterval(()=>{
+    if(S.step<4) setStep(S.step+1);
+    else stopAuto();
+  },1000);
+};
+
+$('f1').oninput=e=>{S.F1=+e.target.value;updateUI()};
+$('d1').oninput=e=>{S.d1=+e.target.value;updateUI()};
+$('f2').oninput=e=>{S.F2=+e.target.value;updateUI()};
+$('d2').oninput=e=>{S.d2=+e.target.value;updateUI()};
+
+function resize(){
+  camera.aspect=view.clientWidth/view.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(view.clientWidth,view.clientHeight);
+  labelRenderer.setSize(view.clientWidth,view.clientHeight);
+}
+window.addEventListener('resize',resize);
+
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt=Math.min((now-S.last)/1000,.03);
+  S.last=now;
+
+  S.theta += (S.targetTheta-S.theta)*Math.min(1,dt*4.5);
+  if(Math.abs(S.theta)<0.0002) S.theta=0;
+
+  updateUI();
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+resize();
+updateUI();
+loop(performance.now());
+</script>
+</body>
+</html>

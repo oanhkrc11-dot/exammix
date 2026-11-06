@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>056–057 - Hạt tích điện và electron trong điện trường đều</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07131e;color:#eef9ff;font-family:Inter,Segoe UI,system-ui,sans-serif}
+#app{position:fixed;inset:0}
+#panel{position:fixed;left:12px;top:12px;bottom:12px;width:318px;z-index:40;overflow:auto;padding:11px;border-radius:16px;background:linear-gradient(180deg,rgba(8,18,28,.97),rgba(5,12,20,.95));border:1px solid rgba(111,193,235,.22);box-shadow:0 18px 52px rgba(0,0,0,.42)}
+#panel.hide{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none}
+#panel::-webkit-scrollbar{width:6px}#panel::-webkit-scrollbar-thumb{background:#31536a;border-radius:8px}
+h1{font-size:14px;margin:0 0 3px;font-weight:900}.sub{font-size:10.5px;color:#7bdcff;font-weight:800}
+.desc{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(12,28,41,.72);font-size:10.3px;line-height:1.45;color:#cce1ee}
+.section{margin:10px 0 6px;color:#75d8ff;font-weight:900;font-size:10.5px}
+label.control{display:block;margin:7px 0 9px;font-size:10.8px}label.control .value{float:right;color:#9fe9ff;font-weight:800}
+input[type=range]{width:100%;accent-color:#52c9ff;margin-top:4px}
+.buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:7px}
+button{border:1px solid #355a73;background:#122332;color:#eef8ff;border-radius:9px;padding:7px 6px;font-size:10.4px;font-weight:800;cursor:pointer}
+button:hover{filter:brightness(1.12)} button.primary{border-color:#54d692;background:#1b5136} button.active{border-color:#6ad9ff;background:#123c56}
+.checkrow{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:10.4px;color:#cfe2ee}
+.modeling{margin-top:9px;padding:8px 9px;border-radius:10px;background:rgba(21,28,38,.72);border-left:3px solid #d8a447;font-size:10px;line-height:1.42;color:#c8d4dd}
+#graph{width:100%;height:156px;background:#071019;border-radius:9px;margin-top:8px;border:1px solid rgba(104,186,225,.14)}
+#formula{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:28;padding:8px 14px;border-radius:999px;background:rgba(6,16,25,.68);border:1px solid rgba(102,209,255,.2);font-size:14px;font-weight:900}
+#hud{position:fixed;right:16px;top:16px;z-index:20;width:370px;padding:10px 11px;border-radius:13px;background:rgba(6,14,22,.70);border:1px solid rgba(116,193,234,.18);font-size:11px;line-height:1.55}
+#hud b{color:#ffd972}
+#probar{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:35;display:flex;gap:5px;padding:5px;border-radius:12px;background:rgba(6,14,22,.54);border:1px solid rgba(115,195,235,.16)}
+#probar button{padding:6px 8px;font-size:10.3px}
+#credit{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:18;color:#ffe075;font-size:14px;font-weight:900}
+#recStatus{position:fixed;right:18px;bottom:84px;z-index:30;display:none;padding:7px 10px;border-radius:10px;background:rgba(125,0,0,.72);font-size:11px;font-weight:900}
+#tooltip{position:fixed;z-index:60;display:none;pointer-events:none;padding:6px 8px;border-radius:8px;background:rgba(4,12,20,.92);border:1px solid rgba(135,213,250,.28);font-size:10px;color:#eaf7ff}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="formula">F⃗ = qE⃗ &nbsp; · &nbsp; a⃗ = qE⃗/m</div>
+
+<div id="probar">
+<button id="fullscreenBtn">⛶</button><button id="panelBtn">☰</button>
+<button id="bgBtn">🌗</button><button id="lightBtn">💡</button>
+<button id="camBtn">🎥</button><button id="autoCamBtn">↻ Cam</button>
+<button id="recordBtn">🔴 Quay</button><button id="stopRecordBtn">⏹</button>
+</div>
+
+<div id="panel">
+<h1>PHYSICS 11 LAB · 3D PRO</h1>
+<div class="sub">056–057 · HẠT TÍCH ĐIỆN / ELECTRON QUA HAI BẢN TỤ</div>
+
+<div class="desc">
+Giữa hai bản kim loại song song, điện trường được coi là đều. Hạt chịu lực điện \(F=qE\) và gia tốc không đổi \(a=qE/m\). Chế độ 057 dùng đúng điện tích và khối lượng electron; electron bay ngang với \(v_0\perp E\) nên quỹ đạo trong vùng điện trường là <b>parabol</b>.
+</div>
+
+<div class="section">CHẾ ĐỘ THÍ NGHIỆM</div>
+<div class="buttons">
+<button id="modeGeneral" class="active">056 · Hạt tổng quát</button>
+<button id="modeElectron">057 · Electron bay ngang</button>
+</div>
+
+<div class="section">CHỌN HẠT</div>
+<div class="buttons">
+<button id="positiveBtn" class="active">q > 0</button>
+<button id="electronBtn">Electron</button>
+<button id="negativeBtn">q < 0</button>
+<button id="neutralBtn">q = 0</button>
+</div>
+
+<div class="section">ĐIỀU KHIỂN</div>
+<label class="control">Tốc độ mô phỏng <span id="speedVal" class="value">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
+<label class="control">Điện tích q <span id="qVal" class="value">+1.0 μC</span><input id="q" type="range" min="-5" max="5" step=".1" value="1"></label>
+<label class="control">Khối lượng m <span id="mVal" class="value">50 mg</span><input id="mass" type="range" min="10" max="200" step="5" value="50"></label>
+<label class="control">Cường độ điện trường E <span id="eVal" class="value">50 V/m</span><input id="field" type="range" min="0" max="300" step="5" value="50"></label>
+<label class="control">Vận tốc đầu v₀ <span id="v0Val" class="value">6.0 m/s</span><input id="v0" type="range" min="1" max="15" step=".1" value="6"></label>
+<label class="control">Góc phóng θ so với phương ngang <span id="thetaVal" class="value">0°</span><input id="theta" type="range" min="-45" max="45" step="1" value="0"></label>
+<label class="control">Khoảng cách hai bản d <span id="gapVal" class="value">4.0 m</span><input id="gap" type="range" min="2" max="6" step=".1" value="4"></label>
+
+<div class="section">NÚT NHANH</div>
+<div class="buttons">
+<button id="start" class="primary">▶ Bắt đầu</button><button id="pause">⏸ Tạm dừng</button>
+<button id="reset">↻ Đặt lại</button><button id="fit">⛶ Fit</button>
+<button id="horizontalBtn">v₀ ⟂ E</button><button id="reverseE">↕ Đảo chiều E</button>
+<button id="clearTrail">Xóa quỹ đạo</button><button id="slowBtn">Chậm 0.5×</button>
+</div>
+
+<div class="section">HIỂN THỊ</div>
+<label class="checkrow"><input id="showE" type="checkbox" checked> Hiện véc tơ/đường sức E</label>
+<label class="checkrow"><input id="showV" type="checkbox" checked> Hiện véc tơ vận tốc v</label>
+<label class="checkrow"><input id="showA" type="checkbox" checked> Hiện véc tơ gia tốc a</label>
+<label class="checkrow"><input id="showTrail" type="checkbox" checked> Hiện quỹ đạo</label>
+<label class="checkrow"><input id="showGrid" type="checkbox" checked> Hiện lưới</label>
+
+<canvas id="graph" width="280" height="156"></canvas>
+
+<div class="modeling">
+<b>Mô hình hóa:</b> bỏ qua trọng lực, lực cản và hiệu ứng mép của bản tụ; điện trường giữa hai bản coi như đều. Hình học và bán kính hạt được phóng đại trực quan. Số liệu \(F,a,v,x,y\) tính từ phương trình chuyển động thật.
+</div>
+</div>
+
+<div id="hud">
+<b>HẠT TÍCH ĐIỆN TRONG ĐIỆN TRƯỜNG ĐỀU</b><br>
+q = <b id="qOut">+1.0 μC</b> · m = <b id="mOut">50 mg</b><br>
+E = <b id="eOut">50 V/m</b><br>
+F = <b id="fOut">0.05 mN</b><br>
+a = <b id="aOut">1.0 m/s²</b><br>
+x = <b id="xOut">...</b> · y = <b id="yOut">...</b><br>
+vₓ = <b id="vxOut">...</b> · vᵧ = <b id="vyOut">...</b><br>
+|v| = <b id="vOut">...</b><br>
+Trạng thái = <b id="runOut">ĐỨNG YÊN</b>
+</div>
+
+<div id="credit">Thầy Hùng vật lí</div>
+<div id="recStatus">● ĐANG QUAY 00:00</div>
+<div id="tooltip"></div>
+<canvas id="recordCanvas" width="1920" height="1080" style="display:none"></canvas>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const state={
+ experimentMode:'general',
+ running:false,paused:false,time:0,speed:1,
+ q:1e-6,m:50e-6,E:50,fieldSign:-1,v0:6,theta:0,gap:4,
+ x:-5,y:0,vx:6,vy:0,
+ backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false,pulse:0
+};
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('app').appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x06131e);
+const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,200);camera.position.set(9,6.3,12);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=5;controls.maxDistance=30;controls.minPolarAngle=.18;controls.maxPolarAngle=1.5;controls.target.set(0,.2,0);
+
+const hemi=new THREE.HemisphereLight(0xe3f7ff,0x10202d,1.7);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,1.8);key.position.set(7,10,8);scene.add(key);
+const rim=new THREE.PointLight(0x56d8ff,1.1,30,2);rim.position.set(-5,5,-5);scene.add(rim);
+
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(36,26),new THREE.MeshStandardMaterial({color:0x101c27,roughness:.92}));floor.rotation.x=-Math.PI/2;floor.position.y=-3.2;scene.add(floor);
+const grid=new THREE.GridHelper(36,36,0x2e5b72,0x173241);grid.position.y=-3.19;grid.material.transparent=true;grid.material.opacity=.14;scene.add(grid);
+
+const root=new THREE.Group();scene.add(root);
+const plateGroup=new THREE.Group(),fieldGroup=new THREE.Group(),particleGroup=new THREE.Group(),vectorGroup=new THREE.Group(),trailGroup=new THREE.Group();
+root.add(plateGroup,fieldGroup,particleGroup,vectorGroup,trailGroup);
+
+const launcherGroup=new THREE.Group();root.add(launcherGroup);
+function buildLauncher(){
+ clearGroup(launcherGroup);
+ const tube=new THREE.Mesh(
+   new THREE.CylinderGeometry(.18,.18,1.0,20),
+   new THREE.MeshStandardMaterial({color:0x697681,metalness:.65,roughness:.28})
+ );
+ tube.rotation.z=Math.PI/2;
+ tube.position.set(-5.45,0,0);
+ launcherGroup.add(tube);
+ const ring=new THREE.Mesh(
+   new THREE.TorusGeometry(.22,.035,10,28),
+   new THREE.MeshStandardMaterial({color:0xa8b8c4,metalness:.7,roughness:.25})
+ );
+ ring.rotation.y=Math.PI/2;
+ ring.position.set(-4.95,0,0);
+ launcherGroup.add(ring);
+}
+
+
+let particle=null,trailPts=[];
+
+function clearGroup(g){while(g.children.length){const o=g.children.pop();o.traverse?.(q=>{q.geometry?.dispose?.();q.material?.dispose?.()})}}
+function fmtQ(q){if(Math.abs(q)<1e-15)return '0 C';return `${q>=0?'+':'−'}${Math.abs(q*1e6).toFixed(2)} μC`}
+function Fval(){return state.q*state.E*state.fieldSign}
+function Aval(){return state.q*state.E*state.fieldSign/state.m}
+function insideField(){return state.x>-4.5&&state.x<4.5&&Math.abs(state.y)<state.gap/2}
+function resetKinematics(){
+ const th=THREE.MathUtils.degToRad(state.theta);
+ state.x=-5;state.y=0;state.vx=state.v0*Math.cos(th);state.vy=state.v0*Math.sin(th);state.time=0;trailPts=[];buildTrail();
+}
+function makeTextSprite(text,color='#fff'){
+ const c=document.createElement('canvas');c.width=256;c.height=80;const ctx=c.getContext('2d');ctx.fillStyle='rgba(5,14,22,.7)';ctx.fillRect(0,0,256,80);ctx.fillStyle=color;ctx.font='bold 28px Segoe UI';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,128,42);
+ const tex=new THREE.CanvasTexture(c);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));s.scale.set(1.7,.52,1);return s;
+}
+function buildPlates(){
+ clearGroup(plateGroup);
+ const plateMatTop=new THREE.MeshStandardMaterial({color:state.fieldSign<0?0xff715c:0x588cff,metalness:.45,roughness:.35});
+ const plateMatBot=new THREE.MeshStandardMaterial({color:state.fieldSign<0?0x588cff:0xff715c,metalness:.45,roughness:.35});
+ const top=new THREE.Mesh(new THREE.BoxGeometry(9.5,.18,5.4),plateMatTop);top.position.set(0,state.gap/2,0);plateGroup.add(top);
+ const bot=new THREE.Mesh(new THREE.BoxGeometry(9.5,.18,5.4),plateMatBot);bot.position.set(0,-state.gap/2,0);plateGroup.add(bot);
+ const topLabel=makeTextSprite(state.fieldSign<0?'+ bản trên':'− bản trên',state.fieldSign<0?'#ffd5ca':'#dbe6ff');topLabel.position.set(0,state.gap/2+.55,-2.2);plateGroup.add(topLabel);
+ const botLabel=makeTextSprite(state.fieldSign<0?'− bản dưới':'+ bản dưới',state.fieldSign<0?'#dbe6ff':'#ffd5ca');botLabel.position.set(0,-state.gap/2-.55,-2.2);plateGroup.add(botLabel);
+}
+function buildField(){
+ clearGroup(fieldGroup);if(!$('showE').checked)return;
+ const dir=new THREE.Vector3(0,state.fieldSign,0);
+ for(let x=-4;x<=4;x+=1.2)for(let z=-2;z<=2;z+=1.1){
+  const start=new THREE.Vector3(x,state.fieldSign<0?state.gap/2-.25:-state.gap/2+.25,z);
+  fieldGroup.add(new THREE.ArrowHelper(dir,start,state.gap-.5,0x66ddff,.14,.08));
+ }
+}
+function buildParticle(){
+ clearGroup(particleGroup);
+ const color=state.q>0?0xff6b54:state.q<0?0x5c8dff:0xd2d8de;
+ particle=new THREE.Mesh(new THREE.SphereGeometry(.22,24,18),new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.25,roughness:.35}));
+ particle.position.set(state.x,state.y,0);particle.userData={kind:'particle'};particleGroup.add(particle);
+}
+function buildVectors(){
+ clearGroup(vectorGroup);const p=new THREE.Vector3(state.x,state.y,0);
+ if($('showV').checked){
+  const vv=new THREE.Vector3(state.vx,state.vy,0);if(vv.length()>1e-9){const l=THREE.MathUtils.clamp(.6+.14*vv.length(),.65,2.4);vectorGroup.add(new THREE.ArrowHelper(vv.normalize(),p,l,0xffd55f,.16,.09));}
+ }
+ if($('showA').checked&&insideField()&&Math.abs(Aval())>1e-12){
+  const aa=new THREE.Vector3(0,Math.sign(Aval()),0);const l=THREE.MathUtils.clamp(.6+.18*Math.log10(1+Math.abs(Aval())),.65,2.4);vectorGroup.add(new THREE.ArrowHelper(aa,p,l,0xff6174,.16,.09));
+ }
+}
+function buildTrail(){
+ clearGroup(trailGroup);if(!$('showTrail').checked||trailPts.length<2)return;
+ trailGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(trailPts.map(p=>new THREE.Vector3(p.x,p.y,0))),new THREE.LineBasicMaterial({color:0x7feaff,transparent:true,opacity:.9})));
+}
+function drawGraph(){
+ const c=$('graph'),g=c.getContext('2d'),w=c.width,h=c.height;g.fillStyle='#071019';g.fillRect(0,0,w,h);
+ const L=38,T=12,B=24,R=8,pw=w-L-R,ph=h-T-B,xmin=-5.2,xmax=5.2,ymin=-state.gap/2-.6,ymax=state.gap/2+.6;
+ g.strokeStyle='rgba(190,225,240,.28)';g.beginPath();g.moveTo(L,T);g.lineTo(L,T+ph);g.lineTo(L+pw,T+ph);g.stroke();
+ g.strokeStyle='rgba(255,255,255,.14)';g.setLineDash([4,4]);for(const yy of [-state.gap/2,state.gap/2]){const gy=T+(ymax-yy)/(ymax-ymin)*ph;g.beginPath();g.moveTo(L,gy);g.lineTo(L+pw,gy);g.stroke()}g.setLineDash([]);
+ if(trailPts.length>1){g.strokeStyle='#73e8ff';g.lineWidth=2;g.beginPath();trailPts.forEach((p,i)=>{const gx=L+(p.x-xmin)/(xmax-xmin)*pw,gy=T+(ymax-p.y)/(ymax-ymin)*ph;i?g.lineTo(gx,gy):g.moveTo(gx,gy)});g.stroke();}
+ g.fillStyle='#ffd65f';const gx=L+(state.x-xmin)/(xmax-xmin)*pw,gy=T+(ymax-state.y)/(ymax-ymin)*ph;g.beginPath();g.arc(gx,gy,4,0,Math.PI*2);g.fill();
+ g.fillStyle='#91aabb';g.font='9px Segoe UI';g.fillText('y',10,12);g.fillText('x',w-16,h-6);
+}
+function isElectron(){return state.experimentMode==='electron' || (Math.abs(state.q+1.602176634e-19)<1e-23 && Math.abs(state.m-9.1093837015e-31)<1e-35)}
+function updatePhysics(dt){
+ if(!state.running||state.paused)return;
+ // Hạt vĩ mô: thời gian mô phỏng theo giây thật.
+ // Electron: dùng hệ số thời gian 1e-6 để chuyển động microsecond vẫn quan sát được,
+ // nhưng phương trình và q,m,E vẫn giữ giá trị vật lí thật.
+ const visualTimeScale=isElectron()?1e-6:1;
+ const realDt=dt*state.speed*visualTimeScale;
+ state.time+=realDt;
+ state.pulse+=dt*state.speed*2.2;
+
+ const maxStep=isElectron()?2e-9:.004;
+ let steps=Math.max(1,Math.ceil(realDt/maxStep));
+ const h=realDt/steps;
+
+ for(let i=0;i<steps;i++){
+   const a=insideField()?Aval():0;
+   state.vy+=a*h;
+   state.x+=state.vx*h;
+   state.y+=state.vy*h;
+ }
+
+ if(trailPts.length===0||Math.hypot(state.x-trailPts[trailPts.length-1].x,state.y-trailPts[trailPts.length-1].y)>.035){
+   trailPts.push({x:state.x,y:state.y});
+   if(trailPts.length>500)trailPts.shift();
+   buildTrail();
+ }
+ if(state.x>6||state.x<-6||Math.abs(state.y)>state.gap/2+2.5){state.running=false;}
+}
+function updateVisuals(){
+ if(particle){particle.position.set(state.x,state.y,0);particle.scale.setScalar(1+.05*Math.sin(state.pulse*2.2));}
+ buildVectors();grid.visible=$('showGrid').checked;
+ if(state.autoCamera){const a=state.time*.16;camera.position.set(Math.cos(a)*10,5.5,Math.sin(a)*10);camera.lookAt(controls.target)}
+}
+function updateUI(){
+ $('speedVal').textContent=`${state.speed.toFixed(2)}×`;$('qVal').textContent=isElectron()?'−e':fmtQ(state.q);$('mVal').textContent=isElectron()?'mₑ':`${(state.m*1e6).toFixed(0)} mg`;$('eVal').textContent=state.E>=1000?`${(state.E/1000).toFixed(2)} kV/m`:`${state.E.toFixed(0)} V/m`;$('v0Val').textContent=`${state.v0.toFixed(1)} m/s`;$('thetaVal').textContent=`${state.theta.toFixed(0)}°`;$('gapVal').textContent=`${state.gap.toFixed(1)} m`;
+ $('qOut').textContent=isElectron()?'−1.602×10⁻¹⁹ C':fmtQ(state.q);
+ $('mOut').textContent=isElectron()?'9.109×10⁻³¹ kg':`${(state.m*1e6).toFixed(0)} mg`;$('eOut').textContent=state.E>=1000?`${(state.E/1000).toFixed(2)} kV/m`:`${state.E.toFixed(0)} V/m`;$('fOut').textContent=`${(Fval()*1000).toFixed(3)} mN`;$('aOut').textContent=`${Aval().toFixed(1)} m/s²`;$('xOut').textContent=`${state.x.toFixed(2)} m`;$('yOut').textContent=`${state.y.toFixed(2)} m`;$('vxOut').textContent=`${state.vx.toFixed(2)} m/s`;$('vyOut').textContent=`${state.vy.toFixed(2)} m/s`;$('vOut').textContent=`${Math.hypot(state.vx,state.vy).toFixed(2)} m/s`;$('runOut').textContent=(state.experimentMode==='electron'?'057 ELECTRON · ':'056 HẠT · ')+(state.running&&!state.paused?'ĐANG CHẠY':state.paused?'TẠM DỪNG':'ĐỨNG YÊN');drawGraph();
+}
+function rebuild(){buildPlates();buildLauncher();buildField();buildParticle();buildVectors();buildTrail();updateUI()}
+
+const bgModes=[{b:0x06131e,f:0x101c27},{b:0xeaf2f6,f:0xd6e1e6},{b:0x06162a,f:0x0b2039}];
+function applyBackground(){const m=bgModes[state.backgroundIndex];scene.background.setHex(m.b);floor.material.color.setHex(m.f)}
+function applyLighting(){if(state.lightMode===0){hemi.intensity=1.7;key.intensity=1.8;rim.intensity=1.1}else if(state.lightMode===1){hemi.intensity=2.2;key.intensity=2.3;rim.intensity=.5}else{hemi.intensity=1.05;key.intensity=1.15;rim.intensity=1.9}}
+function setCamera(m){state.cameraMode=m%4;state.autoCamera=false;if(m===0)camera.position.set(0,10,.01);else if(m===1)camera.position.set(9,6.3,12);else if(m===2)camera.position.set(0,3.8,13);else camera.position.set(5,3.5,6);controls.target.set(0,.2,0);camera.lookAt(controls.target);controls.update()}
+async function toggleFullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}}
+
+
+function applyExperimentMode(mode){
+ state.experimentMode=mode;
+ $('modeGeneral').classList.toggle('active',mode==='general');
+ $('modeElectron').classList.toggle('active',mode==='electron');
+
+ if(mode==='electron'){
+   // Electron thật: q = -e, m = me.
+   state.q=-1.602176634e-19;
+   state.m=9.1093837015e-31;
+   state.E=10;
+   state.fieldSign=-1;
+   state.v0=8e6;
+   state.theta=0;
+   state.gap=4;
+
+   $('q').disabled=true;
+   $('mass').disabled=true;
+   $('theta').disabled=true;
+
+   $('field').max=100;
+   $('field').step=1;
+   $('field').value=10;
+
+   $('v0').max=10000000;
+   $('v0').step=100000;
+   $('v0').value=8000000;
+
+   $('gap').value=4;
+   ['positiveBtn','negativeBtn','neutralBtn'].forEach(id=>$(id).disabled=true);
+   $('electronBtn').disabled=false;
+
+   resetKinematics();
+   rebuild();
+ }else{
+   state.q=1e-6;
+   state.m=50e-6;
+   state.E=50;
+   state.fieldSign=-1;
+   state.v0=6;
+   state.theta=0;
+   state.gap=4;
+
+   $('q').disabled=false;
+   $('mass').disabled=false;
+   $('theta').disabled=false;
+
+   $('field').max=300;
+   $('field').step=5;
+   $('field').value=50;
+
+   $('v0').max=15;
+   $('v0').step=.1;
+   $('v0').value=6;
+
+   $('q').value=1;
+   $('mass').value=50;
+   $('theta').value=0;
+   $('gap').value=4;
+
+   ['positiveBtn','negativeBtn','neutralBtn','electronBtn'].forEach(id=>$(id).disabled=false);
+   resetKinematics();
+   rebuild();
+ }
+ updateModeInfo();
+}
+
+function updateModeInfo(){
+ if(state.experimentMode==='electron'){
+   $('formula').innerHTML='Electron: F⃗ = −eE⃗ &nbsp; · &nbsp; a⃗ = −eE⃗/mₑ &nbsp; · &nbsp; v₀ ⟂ E';
+ }else{
+   $('formula').innerHTML='F⃗ = qE⃗ &nbsp; · &nbsp; a⃗ = qE⃗/m';
+ }
+}
+
+$('modeGeneral').onclick=()=>applyExperimentMode('general');
+$('modeElectron').onclick=()=>applyExperimentMode('electron');
+
+function setQPreset(type){
+ if(type==='electron'){applyExperimentMode('electron');return;} else if(state.experimentMode==='electron'){state.experimentMode='general';$('modeGeneral').classList.add('active');$('modeElectron').classList.remove('active');}
+ ['positiveBtn','electronBtn','negativeBtn','neutralBtn'].forEach(id=>$(id).classList.remove('active'));
+ if(type==='positive'){state.q=1e-6;state.m=50e-6;state.E=50;$('positiveBtn').classList.add('active')}
+ if(type==='negative'){state.q=-1e-6;state.m=50e-6;state.E=50;$('negativeBtn').classList.add('active')}
+ if(type==='neutral'){state.q=0;state.m=50e-6;state.E=50;$('neutralBtn').classList.add('active')}
+ if(type==='electron'){state.q=-1.602176634e-19;state.m=9.1093837015e-31;state.E=10;$('electronBtn').classList.add('active')}
+ // electron needs realistic field/velocity scaling for display
+ if(type==='electron'){state.E=10;state.v0=8e6;state.theta=0;$('field').max=100;$('field').step=1;$('field').value=10;$('v0').max=10000000;$('v0').step=100000;$('v0').value=8000000;}
+ else{$('field').max=300;$('field').step=5;$('field').value=state.E=50;$('v0').max=15;$('v0').step=.1;$('v0').value=state.v0=6;}
+ $('q').value=THREE.MathUtils.clamp(state.q*1e6,-5,5);$('mass').value=THREE.MathUtils.clamp(state.m*1e6,10,200);resetKinematics();rebuild();
+}
+$('positiveBtn').onclick=()=>setQPreset('positive');$('negativeBtn').onclick=()=>setQPreset('negative');$('neutralBtn').onclick=()=>setQPreset('neutral');$('electronBtn').onclick=()=>setQPreset('electron');
+
+$('speed').oninput=e=>state.speed=+e.target.value;
+$('q').oninput=e=>{if(state.experimentMode==='electron')return;state.q=+e.target.value*1e-6;resetKinematics();rebuild()};
+$('mass').oninput=e=>{if(state.experimentMode==='electron')return;state.m=+e.target.value*1e-6;resetKinematics();rebuild()};
+$('field').oninput=e=>{state.E=+e.target.value;resetKinematics();rebuild()};
+$('v0').oninput=e=>{state.v0=+e.target.value;resetKinematics();rebuild()};
+$('theta').oninput=e=>{if(state.experimentMode==='electron')return;state.theta=+e.target.value;resetKinematics();rebuild()};
+$('gap').oninput=e=>{state.gap=+e.target.value;resetKinematics();rebuild()};
+$('showE').onchange=buildField;$('showV').onchange=buildVectors;$('showA').onchange=buildVectors;$('showTrail').onchange=buildTrail;
+
+$('start').onclick=()=>{state.running=true;state.paused=false};
+$('pause').onclick=()=>state.paused=!state.paused;
+$('fit').onclick=()=>setCamera(1);
+$('horizontalBtn').onclick=()=>{state.theta=0;$('theta').value=0;resetKinematics();rebuild()};
+$('reverseE').onclick=()=>{state.fieldSign*=-1;resetKinematics();rebuild()};
+$('clearTrail').onclick=()=>{trailPts=[];buildTrail();drawGraph()};
+$('slowBtn').onclick=()=>{state.speed=.5;$('speed').value=.5};
+
+$('reset').onclick=()=>{Object.assign(state,{experimentMode:'general',running:false,paused:false,time:0,speed:1,q:1e-6,m:50e-6,E:50,fieldSign:-1,v0:6,theta:0,gap:4,x:-5,y:0,vx:6,vy:0,backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false,pulse:0});$('speed').value=1;$('q').value=1;$('mass').value=50;$('field').max=300;$('field').step=5;$('field').value=50;$('v0').max=15;$('v0').step=.1;$('v0').value=6;$('theta').value=0;$('gap').value=4;['positiveBtn','electronBtn','negativeBtn','neutralBtn'].forEach(id=>{ $(id).classList.remove('active'); $(id).disabled=false;});
+ $('positiveBtn').classList.add('active');
+ $('modeGeneral').classList.add('active');$('modeElectron').classList.remove('active');
+ $('q').disabled=false;$('mass').disabled=false;$('theta').disabled=false;
+ trailPts=[];applyBackground();applyLighting();setCamera(1);updateModeInfo();rebuild()};
+
+$('fullscreenBtn').onclick=toggleFullscreen;$('panelBtn').onclick=()=>$('panel').classList.toggle('hide');$('bgBtn').onclick=()=>{state.backgroundIndex=(state.backgroundIndex+1)%3;applyBackground()};$('lightBtn').onclick=()=>{state.lightMode=(state.lightMode+1)%3;applyLighting()};$('camBtn').onclick=()=>setCamera((state.cameraMode+1)%4);$('autoCamBtn').onclick=()=>state.autoCamera=!state.autoCamera;
+
+// tooltip
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();
+renderer.domElement.addEventListener('pointermove',e=>{const rect=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-rect.left)/rect.width)*2-1;mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(mouse,camera);const hits=particle?raycaster.intersectObject(particle):[];const tip=$('tooltip');if(hits.length){tip.style.display='block';tip.style.left=(e.clientX+12)+'px';tip.style.top=(e.clientY+12)+'px';tip.textContent=`Hạt: q=${fmtQ(state.q)} · m=${(state.m*1e6).toFixed(2)} mg`;}else tip.style.display='none';});
+
+// recording
+const rc=$('recordCanvas'),rctx=rc.getContext('2d');let rec=null,chunks=[],mime='',recStart=0,recTimer=null;
+function bestMime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function drawRec(){const sw=renderer.domElement.width,sh=renderer.domElement.height,dw=rc.width,dh=rc.height,s=Math.max(dw/sw,dh/sh),rw=sw*s,rh=sh*s;rctx.fillStyle='#06131e';rctx.fillRect(0,0,dw,dh);rctx.drawImage(renderer.domElement,(dw-rw)/2,(dh-rh)/2,rw,rh);rctx.fillStyle='rgba(4,12,20,.72)';rctx.fillRect(34,34,1370,115);rctx.fillStyle='#fff';rctx.font='800 30px Segoe UI';rctx.fillText(state.experimentMode==='electron'?'057 · ELECTRON BAY NGANG QUA HAI BẢN TÍCH ĐIỆN TRÁI DẤU':'056 · HẠT TÍCH ĐIỆN TRONG ĐIỆN TRƯỜNG ĐỀU',58,76);rctx.fillStyle='#ffe075';rctx.font='700 23px Segoe UI';rctx.fillText(`${state.experimentMode==='electron'?'q=−e · m=mₑ':('q='+fmtQ(state.q))} · E=${state.E>=1000?(state.E/1000).toFixed(2)+' kV/m':state.E.toFixed(0)+' V/m'} · a=${Aval().toExponential(2)} m/s² · x=${state.x.toFixed(2)} m · y=${state.y.toFixed(2)} m`,58,118);rctx.textAlign='center';rctx.font='800 27px Segoe UI';rctx.fillText('Thầy Hùng vật lí',dw/2,dh-34);rctx.textAlign='left'}
+function startRec(){if(rec&&rec.state==='recording')return;mime=bestMime();if(!mime){alert('Trình duyệt chưa hỗ trợ ghi video.');return}chunks=[];const stream=rc.captureStream(60);rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12000000});rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{const ext=mime.includes('mp4')?'mp4':'webm',a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:mime}));a.download=`056_Hat_tich_dien_trong_dien_truong_deu.${ext}`;a.click();$('recStatus').style.display='none';clearInterval(recTimer)};rec.start(1000);recStart=performance.now();$('recStatus').style.display='block';recTimer=setInterval(()=>{$('recStatus').textContent=`● ĐANG QUAY ${Math.floor((performance.now()-recStart)/1000)} s`},500)}
+$('recordBtn').onclick=startRec;$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=THREE.MathUtils.clamp((now-last)/1000,0,.033);last=now;updatePhysics(dt);updateVisuals();updateUI();controls.update();renderer.render(scene,camera);if(rec&&rec.state==='recording')drawRec()}
+applyBackground();applyLighting();resetKinematics();rebuild();setCamera(1);updateModeInfo();requestAnimationFrame(animate);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>

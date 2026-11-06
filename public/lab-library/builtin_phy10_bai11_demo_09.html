@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mô phỏng ném xiên – 2 chuyển động 1D</title>
+<style>
+:root{
+  --bg:#071018;--panel:#0d1722;--text:#eef8ff;--muted:#9eb3c5;
+  --cyan:#22d3ee;--green:#38f08f;--orange:#ff9d2e;--yellow:#ffd84d;
+  --line:#274154;--red:#ff5d6c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#05090d,#09131c);color:var(--text);
+font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:1180px;margin:auto;padding:18px}
+h1{margin:0 0 6px;font-size:clamp(24px,4vw,42px);text-align:center}
+.sub{text-align:center;color:var(--muted);margin-bottom:15px}
+.grid{display:grid;grid-template-columns:320px 1fr;gap:14px}
+.panel{background:rgba(13,23,34,.96);border:1px solid #1e3446;border-radius:18px;padding:15px;
+box-shadow:0 12px 35px rgba(0,0,0,.25)}
+.controls label{display:block;font-weight:700;margin:10px 0 4px}
+.row{display:flex;align-items:center;gap:8px}
+input[type=range]{width:100%}
+.out{min-width:74px;text-align:right;font-variant-numeric:tabular-nums;color:var(--yellow);font-weight:800}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+button{border:0;border-radius:12px;padding:11px 12px;font-weight:800;cursor:pointer}
+#play{background:var(--green);color:#042014}
+#reset{background:#213447;color:#eaf4ff}
+#step{background:var(--orange);color:#221204}
+#toggleVec{background:var(--cyan);color:#04212a}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.card{background:#08121b;border:1px solid #1c3244;border-radius:12px;padding:10px}
+.card b{color:var(--cyan)}
+.formulas{font-family:"Cambria Math","Times New Roman",serif;line-height:1.7;font-size:16px}
+.note{color:#b8cad8;font-size:13px;line-height:1.45;margin-top:9px}
+.stage{position:relative}
+canvas{width:100%;display:block;background:radial-gradient(circle at 50% 0%,#0d1b27,#050b10 72%);
+border-radius:16px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:#c5d6e3;margin:8px 2px 0}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.stat{background:#08121b;border:1px solid #1c3244;border-radius:12px;padding:9px;text-align:center}
+.stat small{display:block;color:#9fb3c4}.stat strong{font-size:17px}
+.explain{margin-top:12px;background:#08121b;border-left:4px solid var(--green);padding:12px;border-radius:10px;line-height:1.55}
+@media(max-width:860px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>NÉM XIÊN = 2 CHUYỂN ĐỘNG 1D</h1>
+  <div class="sub">Phương ngang: thẳng đều • Phương thẳng đứng: biến đổi đều dưới tác dụng của trọng lực</div>
+
+  <div class="grid">
+    <section class="panel controls">
+      <label>Vận tốc đầu v₀</label>
+      <div class="row"><input id="v0" type="range" min="5" max="40" step="1" value="22"><div id="v0o" class="out">22 m/s</div></div>
+
+      <label>Góc ném θ</label>
+      <div class="row"><input id="ang" type="range" min="5" max="85" step="1" value="45"><div id="ango" class="out">45°</div></div>
+
+      <label>Gia tốc trọng trường g</label>
+      <div class="row"><input id="grav" type="range" min="1.6" max="15" step="0.1" value="9.8"><div id="gravo" class="out">9.8 m/s²</div></div>
+
+      <label>Tốc độ mô phỏng</label>
+      <div class="row"><input id="speed" type="range" min="0.25" max="2.5" step="0.25" value="1"><div id="speedo" class="out">1.00×</div></div>
+
+      <div class="btns">
+        <button id="play">▶ Chạy</button>
+        <button id="reset">↺ Đặt lại</button>
+        <button id="step">+0,1 s</button>
+        <button id="toggleVec">Vectơ: BẬT</button>
+      </div>
+
+      <div class="cards">
+        <div class="card"><b>Phương ngang</b><div class="formulas">vₓ = v₀cosθ<br>x = v₀cosθ·t</div></div>
+        <div class="card"><b>Phương đứng</b><div class="formulas">vᵧ = v₀sinθ − gt<br>y = v₀sinθ·t − ½gt²</div></div>
+      </div>
+
+      <div class="note">
+        Gợi ý dạy học: cho HS giữ v₀ không đổi, thay đổi θ; sau đó giữ θ không đổi, thay đổi g và quan sát thời gian bay, độ cao cực đại, tầm xa.
+      </div>
+    </section>
+
+    <section class="panel stage">
+      <canvas id="cv" width="820" height="650"></canvas>
+      <div class="legend">
+        <span><i class="dot" style="background:#38f08f"></i>Ném xiên</span>
+        <span><i class="dot" style="background:#ffd84d"></i>Chuyển động ngang</span>
+        <span><i class="dot" style="background:#22d3ee"></i>Chuyển động đứng</span>
+        <span><i class="dot" style="background:#ff9d2e"></i>Hình chiếu trên các trục</span>
+      </div>
+      <div class="stats">
+        <div class="stat"><small>Thời gian bay</small><strong id="Tf">–</strong></div>
+        <div class="stat"><small>Độ cao cực đại</small><strong id="H">–</strong></div>
+        <div class="stat"><small>Tầm xa</small><strong id="R">–</strong></div>
+        <div class="stat"><small>Thời gian hiện tại</small><strong id="tc">0.00 s</strong></div>
+      </div>
+      <div class="explain" id="explain">
+        Hai thành phần chuyển động có cùng thời gian <b>t</b>. Vận tốc ngang không đổi, còn vận tốc thẳng đứng giảm đều do gia tốc <b>g</b>. Các điểm hình chiếu của vật trên Ox và Oy cũng chuyển động tương ứng theo từng thành phần.
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const el=id=>document.getElementById(id);
+const v0=el('v0'), ang=el('ang'), grav=el('grav'), speed=el('speed');
+let t=0, running=false, last=0, showVec=true;
+
+function vals(){
+  const V=+v0.value, th=+ang.value*Math.PI/180, g=+grav.value;
+  const vx=V*Math.cos(th), vy0=V*Math.sin(th);
+  const T=2*vy0/g, H=vy0*vy0/(2*g), R=vx*T;
+  return {V,th,g,vx,vy0,T,H,R};
+}
+function sync(){
+  el('v0o').textContent=(+v0.value).toFixed(0)+' m/s';
+  el('ango').textContent=(+ang.value).toFixed(0)+'°';
+  el('gravo').textContent=(+grav.value).toFixed(1)+' m/s²';
+  el('speedo').textContent=(+speed.value).toFixed(2)+'×';
+  const a=vals();
+  el('Tf').textContent=a.T.toFixed(2)+' s';
+  el('H').textContent=a.H.toFixed(2)+' m';
+  el('R').textContent=a.R.toFixed(2)+' m';
+  t=Math.min(t,a.T);
+  draw();
+}
+[v0,ang,grav,speed].forEach(x=>x.addEventListener('input',sync));
+
+el('play').onclick=()=>{running=!running;el('play').textContent=running?'⏸ Tạm dừng':'▶ Chạy';last=performance.now()};
+el('reset').onclick=()=>{t=0;running=false;el('play').textContent='▶ Chạy';draw()};
+el('step').onclick=()=>{const a=vals();t=Math.min(a.T,t+.1);draw()};
+el('toggleVec').onclick=()=>{showVec=!showVec;el('toggleVec').textContent='Vectơ: '+(showVec?'BẬT':'TẮT');draw()};
+
+function line(x1,y1,x2,y2,c,w=1,dash=[]){
+  ctx.save();ctx.strokeStyle=c;ctx.lineWidth=w;ctx.setLineDash(dash);
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();
+}
+function txt(s,x,y,c='#d9edf7',size=14,align='left',bold=false){
+  ctx.save();ctx.fillStyle=c;ctx.font=(bold?'700 ':'')+size+'px system-ui';ctx.textAlign=align;ctx.fillText(s,x,y);ctx.restore();
+}
+function dot(x,y,c,r=6){ctx.save();ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.restore()}
+function arrow(x1,y1,x2,y2,c,w=2){
+  line(x1,y1,x2,y2,c,w);const a=Math.atan2(y2-y1,x2-x1),s=8;
+  ctx.save();ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-s*Math.cos(a-.45),y2-s*Math.sin(a-.45));
+  ctx.lineTo(x2-s*Math.cos(a+.45),y2-s*Math.sin(a+.45));ctx.closePath();ctx.fill();ctx.restore()
+}
+function draw(){
+  const W=cv.width,Hh=cv.height;ctx.clearRect(0,0,W,Hh);
+  const a=vals(), tt=Math.min(t,a.T);
+  el('tc').textContent=tt.toFixed(2)+' s';
+
+  const left=70,right=35;
+  const topBase=255, midBase=430, botBase=610;
+  const usable=W-left-right;
+  const sx=usable/Math.max(a.R,1);
+  const sy=160/Math.max(a.H*1.15,1);
+
+  // headings
+  txt('1. CHUYỂN ĐỘNG NÉM XIÊN',left,28,'#38f08f',17,'left',true);
+  txt('2. THÀNH PHẦN NGANG — THẲNG ĐỀU',left,335,'#ffd84d',15,'left',true);
+  txt('3. THÀNH PHẦN ĐỨNG — BIẾN ĐỔI ĐỀU',left,505,'#22d3ee',15,'left',true);
+
+  // axes
+  arrow(left,topBase,W-right,topBase,'#486579',1);
+  arrow(left,topBase,left,65,'#486579',1);
+  arrow(left,midBase,W-right,midBase,'#486579',1);
+  arrow(235,botBase,235,525,'#486579',1);
+
+  // projectile path
+  ctx.save();ctx.strokeStyle='#265847';ctx.lineWidth=3;ctx.beginPath();
+  for(let i=0;i<=120;i++){
+    const q=a.T*i/120, x=a.vx*q, y=a.vy0*q-.5*a.g*q*q;
+    const X=left+x*sx, Y=topBase-y*sy;
+    if(i===0)ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+  }ctx.stroke();ctx.restore();
+
+  // traveled segment
+  ctx.save();ctx.strokeStyle='#38f08f';ctx.lineWidth=3;ctx.setLineDash([7,5]);ctx.beginPath();
+  for(let i=0;i<=80;i++){
+    const q=tt*i/80, x=a.vx*q, y=a.vy0*q-.5*a.g*q*q;
+    const X=left+x*sx, Y=topBase-y*sy;
+    if(i===0)ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+  }ctx.stroke();ctx.restore();
+
+  const x=a.vx*tt, y=Math.max(0,a.vy0*tt-.5*a.g*tt*tt), vy=a.vy0-a.g*tt;
+  const X=left+x*sx, Y=topBase-y*sy;
+  const projX={x:X,y:topBase};
+  const projY={x:left,y:Y};
+  dot(X,Y,'#38f08f',7);
+  line(X,topBase,X,Y,'#ff9d2e',2,[6,4]);
+  line(left,Y,X,Y,'#ff9d2e',2,[6,4]);
+
+  // moving projection points on the two axes
+  dot(projX.x,projX.y,'#ffd84d',6);
+  dot(projY.x,projY.y,'#22d3ee',6);
+  txt('Hình chiếu trên Ox',Math.min(W-140,projX.x+10),projX.y-10,'#ffd84d',12);
+  txt('Hình chiếu trên Oy',projY.x+12,Math.max(84,projY.y-10),'#22d3ee',12);
+
+  if(showVec){
+    const sc=3.2;
+    arrow(X,Y,X+a.vx*sc,Y,'#ffd84d',2);
+    arrow(X,Y,X,Y-vy*sc,'#22d3ee',2);
+    arrow(X,Y,X+a.vx*sc,Y-vy*sc,'#ff9d2e',2);
+    txt('vₓ',X+a.vx*sc/2,Y-8,'#ffd84d',13,'center',true);
+    txt('vᵧ',X+9,Y-vy*sc/2,'#22d3ee',13,'left',true);
+  }
+
+  // initial velocity and angle
+  const sc0=3.3;
+  arrow(left,topBase,left+a.vx*sc0,topBase-a.vy0*sc0,'#ff9d2e',2);
+  arrow(left,topBase,left+a.vx*sc0,topBase,'#ffd84d',2);
+  arrow(left,topBase,left,topBase-a.vy0*sc0,'#22d3ee',2);
+  txt('v₀',left+a.vx*sc0+6,topBase-a.vy0*sc0,'#ff9d2e',13,'left',true);
+  txt('v₀cosθ',left+a.vx*sc0*.55,topBase+20,'#ffd84d',12,'center');
+  txt('v₀sinθ',left-8,topBase-a.vy0*sc0*.5,'#22d3ee',12,'right');
+
+  // horizontal
+  const Xh=left+x*sx;
+  dot(Xh,midBase,'#ffd84d',7);
+  line(left,midBase,Xh,midBase,'#ffd84d',4);
+  for(let q=0;q<=a.T+1e-9;q+=a.T/8){
+    if(q<=tt+1e-9) dot(left+a.vx*q*sx,midBase,'#ffd84d',2.8);
+  }
+  txt('vₓ = không đổi',left,midBase+28,'#ffd84d',13);
+
+  // vertical
+  const yscale=70/Math.max(a.H,1);
+  const Yv=botBase-y*yscale;
+  dot(235,Yv,'#22d3ee',7);
+  line(235,botBase,235,Yv,'#22d3ee',4);
+  for(let q=0;q<=a.T+1e-9;q+=a.T/8){
+    const yy=Math.max(0,a.vy0*q-.5*a.g*q*q);
+    if(q<=tt+1e-9) dot(235,botBase-yy*yscale,'#22d3ee',2.8);
+  }
+  arrow(285,545,285,590,'#ff5d6c',2);
+  txt('g',296,570,'#ff5d6c',14,'left',true);
+  txt('vᵧ = v₀sinθ − gt',330,565,'#22d3ee',14);
+
+  // labels
+  txt('x',W-right-8,topBase-8,'#8ba5b7',12,'right');
+  txt('y',left+10,72,'#8ba5b7',12);
+  txt(`x = ${x.toFixed(2)} m`,W-210,300,'#ffd84d',13);
+  txt(`y = ${y.toFixed(2)} m`,W-100,300,'#22d3ee',13);
+  txt(`t = ${tt.toFixed(2)} s`,W-310,300,'#e8f3fa',13);
+
+  const phase = tt===0 ? 'Vật vừa được phóng.' :
+    tt < a.T/2 ? 'Vật đang đi lên: vᵧ > 0.' :
+    Math.abs(tt-a.T/2)<0.05 ? 'Gần đỉnh quỹ đạo: vᵧ ≈ 0.' :
+    tt < a.T ? 'Vật đang đi xuống: vᵧ < 0.' : 'Vật chạm lại độ cao ban đầu.';
+  el('explain').innerHTML = `<b>${phase}</b> Hai thành phần có cùng thời gian <b>t = ${tt.toFixed(2)} s</b>. 
+  Theo ngang: <b>vₓ = ${a.vx.toFixed(2)} m/s</b> không đổi. Theo đứng: <b>vᵧ = ${vy.toFixed(2)} m/s</b>.`;
+}
+function anim(now){
+  if(running){
+    const a=vals(), dt=(now-last)/1000*(+speed.value);last=now;t+=dt;
+    if(t>=a.T){t=a.T;running=false;el('play').textContent='▶ Chạy'}
+    draw();
+  } else last=now;
+  requestAnimationFrame(anim);
+}
+sync();requestAnimationFrame(anim);
+<\/script>
+</body>
+</html>

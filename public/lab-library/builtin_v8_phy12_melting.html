@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Mô phỏng nóng chảy chất rắn đẹp</title>
+<style>
+body{margin:0;font-family:Arial;background:#eef3f8;}
+canvas{display:block;margin:10px auto;border:1px solid #aaa;background:#fff;}
+.controls{width:90%;margin:10px auto;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+label{display:flex;align-items:center;gap:5px;}
+button{padding:5px 10px;border:none;border-radius:6px;background:#0f766e;color:white;font-weight:bold;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="controls">
+<label>Thời gian (phút): <input type="range" id="timeSlider" min="0" max="20" step="0.1" value="0" style="width:300px;"></label>
+<select id="typeSelect">
+<option value="crystal">Chất rắn kết tinh</option>
+<option value="amorphous">Chất rắn vô định hình</option>
+</select>
+<button id="startBtn">Bắt đầu</button>
+<button id="pauseBtn">Tạm dừng</button>
+<button id="resetBtn">Đặt lại</button>
+</div>
+<canvas id="canvas" width="900" height="300"></canvas>
+<canvas id="chart" width="900" height="250"></canvas>
+<script>
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const chart=document.getElementById('chart');
+const ctxChart=chart.getContext('2d');
+const width=canvas.width,height=canvas.height;
+
+let running=false,time=0,type='crystal';
+const numParticles=80;
+const crystalParticles=[], amorphousParticles=[];
+const meltTemp=5;
+const tempHistoryCrystal=[], tempHistoryAmorph=[];
+
+// init phân tử trong khung nhỏ hơn
+const boxX1=150, boxX2=750, boxY1=50, boxY2=250;
+for(let i=0;i<numParticles;i++){
+  // kết tinh
+  const cols=Math.sqrt(numParticles);
+  const spacingX=(boxX2-boxX1)/cols;
+  const spacingY=(boxY2-boxY1)/cols;
+  const x=boxX1 + (i%cols+0.5)*spacingX;
+  const y=boxY1 + (Math.floor(i/cols)+0.5)*spacingY;
+  crystalParticles.push({x,y,baseX:x,baseY:y,vx:0,vy:0,r:6});
+  // vô định hình
+  const xA=Math.random()*(boxX2-boxX1)+boxX1;
+  const yA=Math.random()*(boxY2-boxY1)+boxY1;
+  amorphousParticles.push({x:xA,y:yA,vx:0,vy:0,r:6});
+}
+
+function getCrystalTemp(t){
+  if(t<meltTemp) return (t/meltTemp)*100*0.5;
+  if(t<=meltTemp+5) return 50;
+  return 50 + (t-(meltTemp+5))/(20-(meltTemp+5))*50;
+}
+
+function getAmorphTemp(t){ return (t/20)*100; }
+
+function drawParticles(particles){
+  particles.forEach(p=>{
+    ctx.fillStyle='blue';
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,2*Math.PI);
+    ctx.fill();
+  });
+}
+
+function updateParticles(t){
+  if(type==='crystal'){
+    crystalParticles.forEach(p=>{
+      if(t<meltTemp) {p.x=p.baseX;p.y=p.baseY;}
+      else{
+        p.vx=(Math.random()-0.5)*1.5;
+        p.vy=(Math.random()-0.5)*1.5;
+        p.x+=p.vx; p.y+=p.vy;
+      }
+    });
+    tempHistoryCrystal.push(getCrystalTemp(t));
+  }else{
+    amorphousParticles.forEach(p=>{
+      const factor=t/20;
+      p.vx=(Math.random()-0.5)*factor*3;
+      p.vy=(Math.random()-0.5)*factor*3;
+      p.x+=p.vx; p.y+=p.vy;
+    });
+    tempHistoryAmorph.push(getAmorphTemp(t));
+  }
+  if(tempHistoryCrystal.length>900) tempHistoryCrystal.shift();
+  if(tempHistoryAmorph.length>900) tempHistoryAmorph.shift();
+}
+
+function draw(){
+  ctx.clearRect(0,0,width,height);
+  ctx.strokeStyle='black'; ctx.lineWidth=2;
+  ctx.strokeRect(boxX1,boxY1,boxX2-boxX1,boxY2-boxY1);
+
+  if(type==='crystal') drawParticles(crystalParticles);
+  else drawParticles(amorphousParticles);
+
+  // đồ thị
+  ctxChart.clearRect(0,0,chart.width,chart.height);
+  // chất rắn kết tinh
+  ctxChart.strokeStyle='blue'; ctxChart.lineWidth=3;
+  ctxChart.beginPath();
+  tempHistoryCrystal.forEach((v,i)=>{
+    const x=i;
+    const y=chart.height - (v/100)*chart.height;
+    if(i===0) ctxChart.moveTo(x,y); else ctxChart.lineTo(x,y);
+  });
+  ctxChart.stroke();
+
+  // chất rắn vô định hình với đường cong mượt
+  ctxChart.strokeStyle='red'; ctxChart.lineWidth=3;
+  ctxChart.beginPath();
+  for(let i=0;i<tempHistoryAmorph.length;i++){
+    const x=i;
+    const y=chart.height - (Math.pow(tempHistoryAmorph[i]/100,1.2)*chart.height);
+    if(i===0) ctxChart.moveTo(x,y); else ctxChart.lineTo(x,y);
+  }
+  ctxChart.stroke();
+}
+
+function loop(){
+  if(running){
+    time+=0.05;
+    updateParticles(time);
+    draw();
+    requestAnimationFrame(loop);
+  }
+}
+
+document.getElementById('timeSlider').addEventListener('input',(e)=>{
+  time=Number(e.target.value);
+  updateParticles(time); draw();
+});
+document.getElementById('typeSelect').addEventListener('change',(e)=>{type=e.target.value; draw();});
+document.getElementById('startBtn').addEventListener('click',()=>{running=true; loop();});
+document.getElementById('pauseBtn').addEventListener('click',()=>{running=false;});
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  running=false; time=0; 
+  crystalParticles.forEach((p,i)=>{p.x=p.baseX;p.y=p.baseY;});
+  amorphousParticles.forEach(p=>{p.x=Math.random()*(boxX2-boxX1)+boxX1; p.y=Math.random()*(boxY2-boxY1)+boxY1;});
+  tempHistoryCrystal.length=0; tempHistoryAmorph.length=0;
+  draw();
+});
+
+draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vietnamese Text Builder Telex v3 - Presentation Mode</title>
+<style>
+  :root{
+    --bg:#071320;
+    --panel:#0d2238;
+    --panel2:#102a45;
+    --text:#eef7ff;
+    --muted:#a2c4de;
+    --accent:#63e7ff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Segoe UI, Arial, sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(circle at top, rgba(82,160,255,.16), transparent 34%),
+      radial-gradient(circle at bottom right, rgba(255,90,130,.10), transparent 26%),
+      linear-gradient(180deg,#030b14,#081523 55%, #06111b);
+  }
+  .wrap{
+    width:min(1380px,96vw);
+    margin:16px auto;
+    background:rgba(4,14,25,.95);
+    border:1px solid rgba(128,210,255,.10);
+    border-radius:22px;
+    box-shadow:0 10px 40px rgba(0,0,0,.4);
+    overflow:hidden;
+  }
+  .top{
+    padding:18px 22px 14px;
+    border-bottom:1px solid rgba(128,210,255,.10);
+    background:linear-gradient(180deg, rgba(14,37,61,.96), rgba(8,22,38,.96));
+  }
+  h1{
+    margin:0 0 6px;
+    font-size:clamp(26px,4vw,40px);
+    background:linear-gradient(90deg,#ff85ac,#ffc873,#7cf1bf,#73dbff,#bb95ff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sub{font-size:14px;line-height:1.55;color:var(--muted)}
+  .main{
+    display:grid;
+    grid-template-columns:410px 1fr;
+    gap:18px;
+    padding:18px;
+  }
+  .panel{
+    background:linear-gradient(180deg, rgba(12,31,51,.96), rgba(8,20,34,.96));
+    border:1px solid rgba(128,210,255,.10);
+    border-radius:18px;
+    padding:15px;
+  }
+  .panel h3{
+    margin:0 0 12px;
+    color:#c6efff;
+    font-size:16px;
+  }
+  .row{margin-bottom:12px}
+  label{
+    display:block;
+    font-size:13px;
+    color:#b7d6ee;
+    margin-bottom:6px;
+  }
+  input[type=text], textarea, select, input[type=color], input[type=range], input[type=number]{
+    width:100%;
+    background:#091828;
+    color:var(--text);
+    border:1px solid rgba(128,210,255,.16);
+    border-radius:10px;
+    padding:10px 12px;
+    outline:none;
+    font-family:inherit;
+  }
+  textarea{min-height:120px; resize:vertical}
+  input[type=range]{padding:0;height:36px}
+  input[type=color]{height:44px;padding:4px}
+  .small{color:#97bad4;font-size:13px;line-height:1.55}
+  .value{font-size:12px;color:#8db0cb;margin-top:4px}
+  .btns{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  button{
+    border:1px solid rgba(128,210,255,.16);
+    border-radius:999px;
+    padding:10px 14px;
+    color:var(--text);
+    background:linear-gradient(180deg,#175c87,#103b59);
+    cursor:pointer;
+    font-weight:600;
+    font-family:inherit;
+  }
+  button:hover{filter:brightness(1.08)}
+  .kbdGrid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:8px;
+  }
+  .key{
+    border-radius:12px;
+    border:1px solid rgba(128,210,255,.16);
+    background:#0c1d30;
+    color:#eef8ff;
+    padding:10px 6px;
+    text-align:center;
+    font-weight:700;
+    cursor:pointer;
+    user-select:none;
+  }
+  .key:hover{background:#14304d}
+  .key.small{font-size:12px;font-weight:600}
+  .viewer{
+    background:linear-gradient(180deg, rgba(4,15,26,.98), rgba(2,10,18,.98));
+    border:1px solid rgba(128,210,255,.10);
+    border-radius:20px;
+    padding:14px;
+    min-height:760px;
+  }
+  .outputBar{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:12px;
+  }
+  .outBox{
+    background:rgba(8,24,39,.78);
+    border:1px solid rgba(128,210,255,.10);
+    border-radius:16px;
+    padding:12px 14px;
+  }
+  .outBox .ttl{
+    font-size:12px;color:#9fc5df;margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px;
+  }
+  .outText{
+    font-size:24px;font-weight:700;color:#fff6db;word-break:break-word;min-height:32px;
+  }
+  canvas{
+    width:100%;
+    height:620px;
+    display:block;
+    border-radius:16px;
+    background:
+      radial-gradient(circle at top, rgba(31,83,140,.10), transparent 33%),
+      linear-gradient(180deg,#020913,#04111b 50%, #030c14);
+  }
+  .footer{
+    padding:0 18px 18px;
+    color:#83a3be;
+    font-size:13px;
+    text-align:center;
+  }
+
+  /* Presentation overlay */
+  #presentationOverlay{
+    position:fixed;
+    inset:0;
+    display:none;
+    z-index:9999;
+    background:
+      radial-gradient(circle at top, rgba(68,132,208,.18), transparent 35%),
+      radial-gradient(circle at bottom right, rgba(255,82,132,.12), transparent 28%),
+      linear-gradient(180deg,#020913,#071524 55%,#030b14);
+  }
+  #presentationOverlay.active{display:block}
+  .presTop{
+    position:absolute;
+    top:12px;left:16px;right:16px;
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    z-index:2;
+  }
+  .presInfo{
+    color:#cceeff;font-size:14px;opacity:.88;
+    background:rgba(8,24,39,.6);
+    padding:8px 12px;border-radius:999px;border:1px solid rgba(128,210,255,.12);
+  }
+  .presCtrls{
+    display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;
+  }
+  .presBtn{
+    border:1px solid rgba(128,210,255,.16);
+    background:rgba(10,36,58,.78);
+    color:#eef8ff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;
+  }
+  .presBtn:hover{filter:brightness(1.08)}
+  .presStage{
+    position:absolute;inset:70px 30px 92px 30px;
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+  #slideText{
+    max-width:92%;
+    max-height:92%;
+    text-align:center;
+    white-space:pre-wrap;
+    word-break:break-word;
+    line-height:1.25;
+    font-weight:800;
+    padding:10px;
+  }
+  .presBottom{
+    position:absolute;left:16px;right:16px;bottom:16px;
+    display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;
+    color:#b7d8f2;font-size:13px;
+  }
+  .hint{
+    background:rgba(8,24,39,.6);
+    border:1px solid rgba(128,210,255,.12);
+    padding:8px 12px;border-radius:999px;
+  }
+
+  @media (max-width: 1020px){
+    .main{grid-template-columns:1fr}
+    .outputBar{grid-template-columns:1fr}
+    canvas{height:520px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Text Builder • Gõ chữ Telex + Chế độ trình chiếu</h1>
+    <div class="sub">
+      Bạn có thể gõ theo quy ước Telex hoặc chọn từng chữ cái, sau đó dùng <b>Trình chiếu</b> để hiển thị giống PowerPoint.
+      Hỗ trợ: hiện chữ từng bước, chuyển slide, lùi slide, toàn màn hình, tự co chữ và tự xuống dòng để không bị che lấp.
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="panel">
+      <h3>Nhập chữ</h3>
+
+      <div class="row">
+        <label>Chuỗi gõ thô (Telex)</label>
+        <input id="rawInput" type="text" value="HUNGF" />
+        <div class="small">Ví dụ: <b>HUNGF → HÙNG</b>, <b>HOAFNG → HOÀNG</b>, <b>DDOANF → ĐOÀN</b>.</div>
+      </div>
+
+      <div class="row">
+        <div class="btns">
+          <button id="spaceBtn">␣ Khoảng trắng</button>
+          <button id="backBtn">⌫ Xóa 1 ký tự</button>
+          <button id="clearBtn">🗑 Xóa hết</button>
+          <button id="exampleBtn">⭐ Ví dụ HUNGF</button>
+          <button id="previewBtn">▶ Hiện lại chữ</button>
+          <button id="addSlideBtn">➕ Thêm vào slide</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <label>Bảng chữ cái</label>
+        <div class="kbdGrid" id="letterGrid"></div>
+      </div>
+
+      <div class="row">
+        <label>Phím dấu / biến âm</label>
+        <div class="kbdGrid" id="toneGrid"></div>
+        <div class="small" style="margin-top:8px">
+          Quy ước: <b>S</b> sắc, <b>F</b> huyền, <b>R</b> hỏi, <b>X</b> ngã, <b>J</b> nặng, <b>W</b> ă/ơ/ư, <b>AA</b> â, <b>EE</b> ê, <b>OO</b> ô, <b>DD</b> đ.
+        </div>
+      </div>
+
+      <h3 style="margin-top:18px">Định dạng</h3>
+
+      <div class="row">
+        <label>Phông chữ</label>
+        <select id="fontFamily">
+          <option value="Segoe UI">Segoe UI</option>
+          <option value="Arial">Arial</option>
+          <option value="Tahoma">Tahoma</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Verdana">Verdana</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label>Cỡ chữ cơ sở</label>
+        <input id="fontSize" type="range" min="60" max="220" step="2" value="150" />
+        <div class="value" id="fontSizeVal">150 px</div>
+      </div>
+
+      <div class="row">
+        <label>Màu chữ</label>
+        <input id="textColor" type="color" value="#ff3b5c" />
+      </div>
+
+      <div class="row">
+        <label>Màu viền</label>
+        <input id="strokeColor" type="color" value="#ffffff" />
+      </div>
+
+      <div class="row">
+        <label>Kiểu hiển thị</label>
+        <select id="renderStyle">
+          <option value="fill">Tô màu</option>
+          <option value="stroke">Chỉ viền</option>
+          <option value="both">Tô + viền</option>
+          <option value="neon">Neon phát sáng</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label>Độ dày viền</label>
+        <input id="strokeWidth" type="range" min="1" max="10" step="0.5" value="3" />
+        <div class="value" id="strokeWidthVal">3 px</div>
+      </div>
+
+      <div class="row">
+        <label>Tốc độ hiện chữ</label>
+        <input id="speed" type="range" min="0.4" max="3" step="0.1" value="1.2" />
+        <div class="value" id="speedVal">1.2×</div>
+      </div>
+
+      <h3 style="margin-top:18px">Danh sách slide</h3>
+      <div class="row">
+        <label>Mỗi dòng là 1 slide (có thể nhập theo Telex)</label>
+        <textarea id="slidesInput">THPT QUANGR HAF
+LOPWS 10A1
+CHAFO MUWFNG QUYS PHUJ HUYNH</textarea>
+        <div class="small">Bạn có thể nhập trực tiếp tiếng Việt hoặc nhập theo Telex. Khi trình chiếu, hệ thống sẽ tự chuyển sang tiếng Việt.</div>
+      </div>
+
+      <div class="row">
+        <div class="btns">
+          <button id="buildSlidesBtn">📝 Cập nhật slide</button>
+          <button id="presentBtn">🎬 Trình chiếu</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="viewer">
+      <div class="outputBar">
+        <div class="outBox">
+          <div class="ttl">Chuỗi Telex</div>
+          <div class="outText" id="rawView">HUNGF</div>
+        </div>
+        <div class="outBox">
+          <div class="ttl">Kết quả tiếng Việt</div>
+          <div class="outText" id="finalView">HÙNG</div>
+        </div>
+      </div>
+      <canvas id="cv" width="920" height="620"></canvas>
+    </div>
+  </div>
+
+  <div class="footer">
+    Phím tắt khi trình chiếu: <b>Space / →</b> chạy tiếp hoặc sang slide, <b>←</b> lùi slide, <b>Esc</b> thoát, <b>F</b> bật/tắt toàn màn hình.
+  </div>
+</div>
+
+<div id="presentationOverlay">
+  <div class="presTop">
+    <div class="presInfo" id="presInfo">Slide 1/1</div>
+    <div class="presCtrls">
+      <button class="presBtn" id="prevSlideBtn">◀ Trước</button>
+      <button class="presBtn" id="nextSlideBtn">▶ Tiếp</button>
+      <button class="presBtn" id="replaySlideBtn">↺ Chạy lại</button>
+      <button class="presBtn" id="fullscreenBtn">⛶ Toàn màn hình</button>
+      <button class="presBtn" id="exitPresBtn">✕ Thoát</button>
+    </div>
+  </div>
+  <div class="presStage">
+    <div id="slideText"></div>
+  </div>
+  <div class="presBottom">
+    <div class="hint">Space / → : tiếp</div>
+    <div class="hint">← : lùi</div>
+    <div class="hint">Esc : thoát</div>
+    <div class="hint">F : toàn màn hình</div>
+  </div>
+</div>
+
+<script>
+const rawInput = document.getElementById('rawInput');
+const rawView = document.getElementById('rawView');
+const finalView = document.getElementById('finalView');
+const slidesInput = document.getElementById('slidesInput');
+
+const fontFamily = document.getElementById('fontFamily');
+const fontSize = document.getElementById('fontSize');
+const fontSizeVal = document.getElementById('fontSizeVal');
+const textColor = document.getElementById('textColor');
+const strokeColor = document.getElementById('strokeColor');
+const renderStyle = document.getElementById('renderStyle');
+const strokeWidth = document.getElementById('strokeWidth');
+const strokeWidthVal = document.getElementById('strokeWidthVal');
+const speed = document.getElementById('speed');
+const speedVal = document.getElementById('speedVal');
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+const overlay = document.getElementById('presentationOverlay');
+const slideText = document.getElementById('slideText');
+const presInfo = document.getElementById('presInfo');
+
+let reveal = 0;
+let targetText = 'HÙNG';
+let lastTime = 0;
+
+let slides = [];
+let currentSlide = 0;
+let presentationMode = false;
+let slideProgress = 0;
+let slideTimer = null;
+
+function updateVals(){
+  fontSizeVal.textContent = fontSize.value + ' px';
+  strokeWidthVal.textContent = Number(strokeWidth.value).toFixed(1).replace('.0','') + ' px';
+  speedVal.textContent = Number(speed.value).toFixed(1) + '×';
+}
+
+function makeGrid(id, arr){
+  const box = document.getElementById(id);
+  box.innerHTML = '';
+  arr.forEach(item => {
+    const d = document.createElement('div');
+    d.className = 'key' + (item.length > 2 ? ' small' : '');
+    d.textContent = item;
+    d.addEventListener('click', () => appendRaw(item));
+    box.appendChild(d);
+  });
+}
+makeGrid('letterGrid', ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']);
+makeGrid('toneGrid', ['S','F','R','X','J','W','AA','EE','OO','DD']);
+
+document.getElementById('spaceBtn').onclick = () => appendRaw(' ');
+document.getElementById('backBtn').onclick = () => { rawInput.value = rawInput.value.slice(0,-1); processText(); };
+document.getElementById('clearBtn').onclick = () => { rawInput.value = ''; processText(); };
+document.getElementById('exampleBtn').onclick = () => { rawInput.value = 'HUNGF'; processText(); };
+document.getElementById('previewBtn').onclick = () => { reveal = 0; };
+document.getElementById('addSlideBtn').onclick = () => {
+  const text = finalView.textContent.trim();
+  if(text){
+    slidesInput.value = slidesInput.value.trim() ? slidesInput.value.trim() + "\n" + text : text;
+    buildSlides();
+  }
+};
+document.getElementById('buildSlidesBtn').onclick = buildSlides;
+document.getElementById('presentBtn').onclick = startPresentation;
+
+document.getElementById('prevSlideBtn').onclick = previousSlide;
+document.getElementById('nextSlideBtn').onclick = nextSlideAction;
+document.getElementById('replaySlideBtn').onclick = () => showSlide(currentSlide, true);
+document.getElementById('fullscreenBtn').onclick = toggleFullscreen;
+document.getElementById('exitPresBtn').onclick = exitPresentation;
+
+rawInput.addEventListener('input', processText);
+[fontFamily, fontSize, textColor, strokeColor, renderStyle, strokeWidth, speed].forEach(el => el.addEventListener('input', () => {
+  updateVals();
+  if(presentationMode) applySlideStyle();
+}));
+
+function appendRaw(txt){
+  rawInput.value += txt;
+  processText();
+}
+
+function isVowel(ch){
+  return 'aeiouyăâêôơưAEIOUYĂÂÊÔƠƯ'.includes(ch);
+}
+function isToneMark(ch){
+  return 'sfrxjSFRXJ'.includes(ch);
+}
+function isUpper(ch){
+  return ch === ch.toUpperCase() && ch !== ch.toLowerCase();
+}
+const toneMap = {
+  a:{s:'á',f:'à',r:'ả',x:'ã',j:'ạ'},
+  ă:{s:'ắ',f:'ằ',r:'ẳ',x:'ẵ',j:'ặ'},
+  â:{s:'ấ',f:'ầ',r:'ẩ',x:'ẫ',j:'ậ'},
+  e:{s:'é',f:'è',r:'ẻ',x:'ẽ',j:'ẹ'},
+  ê:{s:'ế',f:'ề',r:'ể',x:'ễ',j:'ệ'},
+  i:{s:'í',f:'ì',r:'ỉ',x:'ĩ',j:'ị'},
+  o:{s:'ó',f:'ò',r:'ỏ',x:'õ',j:'ọ'},
+  ô:{s:'ố',f:'ồ',r:'ổ',x:'ỗ',j:'ộ'},
+  ơ:{s:'ớ',f:'ờ',r:'ở',x:'ỡ',j:'ợ'},
+  u:{s:'ú',f:'ù',r:'ủ',x:'ũ',j:'ụ'},
+  ư:{s:'ứ',f:'ừ',r:'ử',x:'ữ',j:'ự'},
+  y:{s:'ý',f:'ỳ',r:'ỷ',x:'ỹ',j:'ỵ'}
+};
+const deaccentBase = {
+  'á':'a','à':'a','ả':'a','ã':'a','ạ':'a',
+  'ắ':'ă','ằ':'ă','ẳ':'ă','ẵ':'ă','ặ':'ă',
+  'ấ':'â','ầ':'â','ẩ':'â','ẫ':'â','ậ':'â',
+  'é':'e','è':'e','ẻ':'e','ẽ':'e','ẹ':'e',
+  'ế':'ê','ề':'ê','ể':'ê','ễ':'ê','ệ':'ê',
+  'í':'i','ì':'i','ỉ':'i','ĩ':'i','ị':'i',
+  'ó':'o','ò':'o','ỏ':'o','õ':'o','ọ':'o',
+  'ố':'ô','ồ':'ô','ổ':'ô','ỗ':'ô','ộ':'ô',
+  'ớ':'ơ','ờ':'ơ','ở':'ơ','ỡ':'ơ','ợ':'ơ',
+  'ú':'u','ù':'u','ủ':'u','ũ':'u','ụ':'u',
+  'ứ':'ư','ừ':'ư','ử':'ư','ữ':'ư','ự':'ư',
+  'ý':'y','ỳ':'y','ỷ':'y','ỹ':'y','ỵ':'y'
+};
+function preserveCase(src, out){
+  return isUpper(src) ? out.toUpperCase() : out;
+}
+function replaceDoubleLetters(str){
+  let arr = str.split('');
+  for(let i=0; i<arr.length-1; i++){
+    const a = arr[i], b = arr[i+1];
+    if((a==='d' && b==='d') || (a==='D' && b==='D')){ arr.splice(i,2,preserveCase(a,'đ')); i--; continue; }
+    if((a==='a'&&b==='a') || (a==='A'&&b==='A')){ arr.splice(i,2,preserveCase(a,'â')); i--; continue; }
+    if((a==='e'&&b==='e') || (a==='E'&&b==='E')){ arr.splice(i,2,preserveCase(a,'ê')); i--; continue; }
+    if((a==='o'&&b==='o') || (a==='O'&&b==='O')){ arr.splice(i,2,preserveCase(a,'ô')); i--; continue; }
+  }
+  return arr.join('');
+}
+function replaceW(str){
+  let arr = str.split('');
+  for(let i=0; i<arr.length-1; i++){
+    const a = arr[i], b = arr[i+1];
+    const lowA = a.toLowerCase(), lowB = b.toLowerCase();
+    if(lowB !== 'w') continue;
+    if(lowA === 'a'){ arr.splice(i,2,preserveCase(a,'ă')); i--; continue; }
+    if(lowA === 'o'){ arr.splice(i,2,preserveCase(a,'ơ')); i--; continue; }
+    if(lowA === 'u'){ arr.splice(i,2,preserveCase(a,'ư')); i--; continue; }
+  }
+  return arr.join('');
+}
+function toneTargetIndex(chars){
+  let pos = [];
+  for(let i=0;i<chars.length;i++){
+    const base = deaccentBase[chars[i].toLowerCase()] || chars[i].toLowerCase();
+    if(isVowel(base)) pos.push(i);
+  }
+  if(pos.length === 0) return -1;
+  if(pos.length === 1) return pos[0];
+  const priority = ['ă','â','ê','ô','ơ','ư'];
+  for(const idx of pos){
+    const c = (deaccentBase[chars[idx].toLowerCase()] || chars[idx].toLowerCase());
+    if(priority.includes(c)) return idx;
+  }
+  if(chars.length >= 2){
+    const c0 = chars[0].toLowerCase();
+    const c1 = chars[1].toLowerCase();
+    if(c0 === 'q' && c1 === 'u' && pos.length >= 2) pos = pos.filter(v => v !== 1);
+    if(c0 === 'g' && c1 === 'i' && pos.length >= 2) pos = pos.filter(v => v !== 1);
+    if(pos.length === 1) return pos[0];
+  }
+  const last = pos[pos.length-1];
+  const lastChar = (deaccentBase[chars[last].toLowerCase()] || chars[last].toLowerCase());
+  if(['i','u','y'].includes(lastChar) && pos.length >= 2) return pos[pos.length-2];
+  if(pos.length === 2) return pos[0];
+  return pos[1];
+}
+function applyTone(str, tone){
+  let chars = str.split('');
+  const idx = toneTargetIndex(chars);
+  if(idx < 0) return str;
+  const ch = chars[idx];
+  const lower = ch.toLowerCase();
+  const base = deaccentBase[lower] || lower;
+  if(!toneMap[base]) return str;
+  const mapped = toneMap[base][tone.toLowerCase()];
+  chars[idx] = preserveCase(ch, mapped);
+  return chars.join('');
+}
+function processWord(word){
+  if(!word) return word;
+  let tone = '';
+  let remain = '';
+  for(let i=0; i<word.length; i++){
+    const ch = word[i];
+    if(isToneMark(ch)) tone = ch; else remain += ch;
+  }
+  remain = replaceDoubleLetters(remain);
+  remain = replaceW(remain);
+  remain = replaceDoubleLetters(remain);
+  remain = replaceW(remain);
+  if(tone) remain = applyTone(remain, tone);
+  return remain;
+}
+function processLine(raw){
+  return raw.split(/(\s+)/).map(p => /\s+/.test(p) ? p : processWord(p)).join('');
+}
+function processText(){
+  const raw = rawInput.value;
+  rawView.textContent = raw || ' ';
+  const out = processLine(raw);
+  finalView.textContent = out || ' ';
+  targetText = out || ' ';
+  reveal = 0;
+}
+processText();
+
+function buildSlides(){
+  const lines = slidesInput.value.split('\n').map(s => s.trim()).filter(Boolean);
+  if(lines.length === 0){
+    const current = finalView.textContent.trim();
+    slides = current ? [current] : [''];
+  }else{
+    slides = lines.map(line => processLine(line));
+  }
+}
+buildSlides();
+
+function resizeCanvas(){
+  const rect = cv.getBoundingClientRect();
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  cv.width = rect.width * dpr;
+  cv.height = rect.height * dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  if(presentationMode) fitSlideText();
+});
+
+function drawBackground(){
+  const w = cv.clientWidth, h = cv.clientHeight;
+  const grad = ctx.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0,'#020b14');
+  grad.addColorStop(1,'#04111b');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,w,h);
+
+  ctx.strokeStyle = 'rgba(120,190,255,.06)';
+  ctx.lineWidth = 1;
+  for(let x=0; x<w; x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+  for(let y=0; y<h; y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+
+  ctx.strokeStyle = 'rgba(180,220,255,.10)';
+  ctx.beginPath(); ctx.moveTo(0,h/2); ctx.lineTo(w,h/2); ctx.stroke();
+
+  ctx.fillStyle = 'rgba(222,242,255,.85)';
+  ctx.font = '16px Segoe UI';
+  ctx.fillText('Xem trước chữ tiếng Việt theo quy ước Telex', 16, 28);
+}
+
+function wrapLinesForCanvas(text, maxWidth, fontSpec){
+  ctx.font = fontSpec;
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for(const word of words){
+    const test = line ? line + ' ' + word : word;
+    if(ctx.measureText(test).width <= maxWidth || !line){
+      line = test;
+    } else {
+      lines.push(line);
+      line = word;
+    }
+  }
+  if(line) lines.push(line);
+  return lines;
+}
+
+function renderText(){
+  const w = cv.clientWidth, h = cv.clientHeight;
+  const text = targetText || ' ';
+  let fsize = Number(fontSize.value);
+  const font = fontFamily.value;
+  const style = renderStyle.value;
+  const sw = Number(strokeWidth.value);
+
+  let lines = [text];
+  while(true){
+    const fontSpec = `700 ${fsize}px "${font}"`;
+    ctx.font = fontSpec;
+    lines = wrapLinesForCanvas(text, w*0.86, fontSpec);
+    const totalHeight = lines.length * fsize * 1.25;
+    const maxLineWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
+    if((maxLineWidth <= w*0.88 && totalHeight <= h*0.82) || fsize <= 42) break;
+    fsize -= 4;
+  }
+
+  const lineHeight = fsize * 1.25;
+  const totalHeight = lines.length * lineHeight;
+  const startY = h/2 - totalHeight/2 + lineHeight/2 + 20;
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `700 ${fsize}px "${font}"`;
+
+  lines.forEach((line,index)=>{
+    const x = w/2;
+    const y = startY + index*lineHeight;
+    const visible = Math.min(1, reveal * lines.length - index);
+    if(visible <= 0) return;
+
+    ctx.save();
+    ctx.globalAlpha = visible;
+
+    if(style === 'fill' || style === 'both'){
+      ctx.fillStyle = textColor.value;
+      ctx.fillText(line,x,y);
+    }
+    if(style === 'stroke' || style === 'both'){
+      ctx.strokeStyle = strokeColor.value;
+      ctx.lineWidth = sw;
+      ctx.strokeText(line,x,y);
+    }
+    if(style === 'neon'){
+      ctx.fillStyle = textColor.value;
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = textColor.value;
+      ctx.fillText(line,x,y);
+      ctx.strokeStyle = strokeColor.value;
+      ctx.lineWidth = sw;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = strokeColor.value;
+      ctx.strokeText(line,x,y);
+    }
+    ctx.restore();
+  });
+
+  ctx.restore();
+}
+
+function animate(ts){
+  if(!lastTime) lastTime = ts;
+  const dt = (ts - lastTime)/1000;
+  lastTime = ts;
+
+  reveal += dt * 0.55 * Number(speed.value);
+  if(reveal > 1) reveal = 1;
+
+  drawBackground();
+  renderText();
+
+  requestAnimationFrame(animate);
+}
+
+function applySlideStyle(){
+  slideText.style.fontFamily = fontFamily.value;
+  slideText.style.color = textColor.value;
+  slideText.style.webkitTextStroke = '0px transparent';
+  slideText.style.textShadow = 'none';
+
+  const style = renderStyle.value;
+  const sw = Number(strokeWidth.value);
+
+  if(style === 'fill'){
+    slideText.style.webkitTextStroke = '0px transparent';
+  } else if(style === 'stroke'){
+    slideText.style.color = 'transparent';
+    slideText.style.webkitTextStroke = `${sw}px ${strokeColor.value}`;
+  } else if(style === 'both'){
+    slideText.style.webkitTextStroke = `${sw}px ${strokeColor.value}`;
+  } else if(style === 'neon'){
+    slideText.style.webkitTextStroke = `${Math.max(1, sw/1.5)}px ${strokeColor.value}`;
+    slideText.style.textShadow = `0 0 12px ${textColor.value}, 0 0 20px ${textColor.value}, 0 0 28px ${strokeColor.value}`;
+  }
+}
+
+function fitSlideText(){
+  const stage = document.querySelector('.presStage');
+  let size = Number(fontSize.value) * 1.35;
+  slideText.style.fontSize = size + 'px';
+  slideText.style.lineHeight = '1.2';
+  slideText.style.maxWidth = '92%';
+  slideText.style.maxHeight = '92%';
+  while((slideText.scrollWidth > stage.clientWidth*0.92 || slideText.scrollHeight > stage.clientHeight*0.92) && size > 32){
+    size -= 4;
+    slideText.style.fontSize = size + 'px';
+  }
+}
+
+function getSlidesForPresentation(){
+  buildSlides();
+  if(slides.length === 0){
+    const current = finalView.textContent.trim();
+    return [current || ''];
+  }
+  return slides;
+}
+
+function showSlide(index, replay=false){
+  const arr = getSlidesForPresentation();
+  currentSlide = Math.max(0, Math.min(index, arr.length-1));
+  const text = arr[currentSlide] || '';
+  presInfo.textContent = `Slide ${currentSlide+1}/${arr.length}`;
+  applySlideStyle();
+  slideText.textContent = '';
+  fitSlideText();
+
+  if(slideTimer) clearInterval(slideTimer);
+  slideProgress = 0;
+  const chars = Array.from(text);
+  const interval = Math.max(15, 45 / Number(speed.value));
+
+  slideTimer = setInterval(() => {
+    slideProgress++;
+    if(slideProgress >= chars.length){
+      slideProgress = chars.length;
+      clearInterval(slideTimer);
+    }
+    slideText.textContent = chars.slice(0, slideProgress).join('');
+    applySlideStyle();
+    fitSlideText();
+  }, interval);
+}
+
+function nextSlideAction(){
+  const arr = getSlidesForPresentation();
+  const fullText = arr[currentSlide] || '';
+  if(slideProgress < Array.from(fullText).length){
+    if(slideTimer) clearInterval(slideTimer);
+    slideProgress = Array.from(fullText).length;
+    slideText.textContent = fullText;
+    applySlideStyle();
+    fitSlideText();
+    return;
+  }
+  if(currentSlide < arr.length - 1){
+    showSlide(currentSlide + 1, true);
+  }
+}
+
+function previousSlide(){
+  const arr = getSlidesForPresentation();
+  if(currentSlide > 0){
+    showSlide(currentSlide - 1, true);
+  }
+}
+
+function startPresentation(){
+  presentationMode = true;
+  overlay.classList.add('active');
+  showSlide(0, true);
+}
+
+function exitPresentation(){
+  presentationMode = false;
+  overlay.classList.remove('active');
+  if(slideTimer) clearInterval(slideTimer);
+  if(document.fullscreenElement){
+    document.exitFullscreen().catch(()=>{});
+  }
+}
+
+function toggleFullscreen(){
+  if(!document.fullscreenElement){
+    overlay.requestFullscreen?.().catch(()=>{});
+  } else {
+    document.exitFullscreen?.().catch(()=>{});
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if(!presentationMode) return;
+  if(e.key === 'ArrowRight' || e.key === ' '){
+    e.preventDefault();
+    nextSlideAction();
+  } else if(e.key === 'ArrowLeft'){
+    e.preventDefault();
+    previousSlide();
+  } else if(e.key === 'Escape'){
+    e.preventDefault();
+    exitPresentation();
+  } else if(e.key.toLowerCase() === 'f'){
+    e.preventDefault();
+    toggleFullscreen();
+  }
+});
+
+updateVals();
+resizeCanvas();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

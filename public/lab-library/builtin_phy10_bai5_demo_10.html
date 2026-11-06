@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Hai đồ thị d-t - dừng đồ thị 1</title>
+<style>
+body{margin:0;background:#050505;color:white;font-family:Arial}
+.wrap{display:flex;height:100vh}
+.panel{width:300px;background:#111;padding:15px}
+.main{flex:1;padding:15px}
+h2{color:#ffd700}
+label{display:block;color:#ffd700;margin:8px}
+input,select{background:#222;color:white;padding:6px;width:100px}
+button{width:100%;padding:10px;margin:5px;background:#ffd700;border:0;border-radius:8px;font-weight:bold}
+svg{background:#000;border:1px solid #555;width:100%;height:80vh}
+.eq{color:#ffd700;font-size:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="panel">
+<h2>Điều khiển</h2>
+<label>d₀₁<input id="d01" value="5"></label>
+<label>v₁<input id="v1" value="3"></label>
+<label>d₀₂<input id="d02" value="20"></label>
+<label>v₂<input id="v2" value="1"></label>
+<label>Bước t/ô<input id="stepT" value="5"></label>
+<label>Bước d/ô<input id="stepD" value="10"></label>
+
+<button id="draw1">Vẽ đồ thị 1</button>
+<button id="stop1">Dừng đồ thị 1</button>
+<button id="draw2">Vẽ đồ thị 2</button>
+<button id="auto">Tự động</button>
+<button id="reset">Làm lại</button>
+</div>
+
+<div class="main">
+<div id="eq" class="eq"></div>
+<svg id="svg" viewBox="0 0 800 650"></svg>
+</div>
+</div>
+
+<script>
+let p1=[],p2=[];
+let n1=0,n2=0;
+let running1=false,running2=false;
+let timer=null;
+
+function makeData(){
+ let d01=+d01el().value,v1=+v1el().value;
+ let d02=+d02el().value,v2=+v2el().value;
+ let ts=+stepTel().value;
+
+ p1=[];p2=[];
+ for(let i=0;i<=10;i++){
+  let t=i*ts;
+  p1.push({t,d:d01+v1*t});
+  p2.push({t,d:d02+v2*t});
+ }
+ eq.innerHTML=`d₁=${d01}+${v1}t &nbsp;&nbsp; | &nbsp;&nbsp; d₂=${d02}+${v2}t`;
+ draw();
+}
+
+function d01el(){return document.getElementById("d01")}
+function v1el(){return document.getElementById("v1")}
+function d02el(){return document.getElementById("d02")}
+function v2el(){return document.getElementById("v2")}
+function stepTel(){return document.getElementById("stepT")}
+
+function draw(){
+ let s=svg;
+ s.innerHTML="";
+ let ox=100,oy=550,size=400;
+ let dt=+stepTel().value,dd=+stepDel().value;
+
+ for(let i=0;i<=10;i++){
+ let x=ox+i*size/10,y=oy-i*size/10;
+ s.innerHTML+=`<line x1="${x}" y1="150" x2="${x}" y2="${oy}" stroke="#333"/>
+ <line x1="${ox}" y1="${y}" x2="${ox+size}" y2="${y}" stroke="#333"/>
+ <text x="${x-8}" y="${oy+25}" fill="white">${i*dt}</text>
+ <text x="45" y="${y+5}" fill="white">${i*dd}</text>`;
+ }
+ s.innerHTML+=`
+ <defs>
+ <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+ <path d="M0,0 L10,3 L0,6 Z" fill="white"/>
+ </marker>
+ </defs>
+ <line x1="100" y1="550" x2="540" y2="550" stroke="white" stroke-width="3" marker-end="url(#arrow)"/>
+ <line x1="100" y1="550" x2="100" y2="120" stroke="white" stroke-width="3" marker-end="url(#arrow)"/>
+ <text x="550" y="555" fill="white" font-size="20">t(s)</text>
+ <text x="65" y="105" fill="white" font-size="20">d(m)</text>
+ <text x="90" y="575" fill="white" font-size="18">0</text>`;
+
+ drawPart(p1.slice(0,n1),"#ffd700");
+ drawPart(p2.slice(0,n2),"#00bfff");
+}
+function stepDel(){return document.getElementById("stepD")}
+
+function drawPart(arr,c){
+ let ox=100,oy=550,size=400,dt=+stepTel().value,dd=+stepDel().value;
+ let pts=[];
+ arr.forEach(a=>{
+ let x=ox+a.t/(10*dt)*size;
+ let y=oy-a.d/(10*dd)*size;
+ if(y<150)return;
+ pts.push([x,y]);
+ svg.innerHTML+=`<circle cx="${x}" cy="${y}" r="7" fill="${c}"/>`;
+ });
+ if(pts.length>1)
+ svg.innerHTML+=`<polyline points="${pts.map(x=>x.join(",")).join(" ")}" fill="none" stroke="${c}" stroke-width="5"/>`;
+}
+
+draw1.onclick=()=>{
+ if(n1<p1.length){n1++;draw()}
+}
+stop1.onclick=()=>{
+ running1=false;
+ clearInterval(timer);
+}
+draw2.onclick=()=>{
+ if(n2<p2.length){n2++;draw()}
+}
+auto.onclick=()=>{
+ clearInterval(timer);
+ timer=setInterval(()=>{
+  if(running1&&n1<p1.length)n1++;
+  if(running2&&n2<p2.length)n2++;
+  draw();
+ },700);
+}
+reset.onclick=()=>{n1=0;n2=0;draw()}
+makeData();
+</script>
+</body>
+</html>

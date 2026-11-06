@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mô phỏng thí nghiệm điều chế khí Cl₂</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --blue:#0f3b75;
+      --blue2:#155e75;
+      --light:#eef6ff;
+      --border:#cfe0f3;
+      --text:#111827;
+      --muted:#64748b;
+      --green:#16a34a;
+      --orange:#f59e0b;
+      --red:#dc2626;
+      --purple:#7c3aed;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg,#eaf4ff,#f8fbff 46%,#eef6ff);
+      color: var(--text);
+    }
+
+    .app {
+      width: min(1450px, 97vw);
+      margin: 16px auto;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, .15);
+    }
+
+    header {
+      background: linear-gradient(135deg,var(--blue),var(--blue2));
+      color: white;
+      padding: 16px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 27px;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25);
+      padding: 9px 13px;
+      border-radius: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1.2fr 1.2fr .9fr;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .tool-card {
+      background: white;
+      border: 1px solid #dbe7f3;
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      min-height: 62px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 15px;
+      color: white;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: .18s;
+      box-shadow: 0 4px 10px rgba(15,23,42,.12);
+    }
+    button:hover { transform: translateY(-1px); filter: brightness(1.04); }
+    #startBtn { background: var(--green); }
+    #pauseBtn { background: var(--orange); }
+    #resetBtn { background: #2563eb; }
+    #prevBtn, #nextBtn { background: #475569; }
+    #autoBtn { background: #7c3aed; }
+
+    .range-wrap {
+      display: grid;
+      grid-template-columns: 120px 1fr 54px;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 250px;
+      font-weight: 800;
+      color: #0f2f63;
+    }
+    input[type="range"] { width: 100%; accent-color: #2563eb; }
+    .value-box {
+      text-align: right;
+      color: #334155;
+      font-weight: 900;
+      background:#f1f5f9;
+      border-radius: 9px;
+      padding: 7px 8px;
+    }
+
+    .toggles {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      color:#334155;
+      white-space: nowrap;
+    }
+    .toggle input { width: 17px; height: 17px; accent-color: #2563eb; }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1.63fr .82fr;
+      gap: 16px;
+      padding: 18px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid #dbe7f3;
+      border-radius: 18px;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, .07);
+    }
+    .card-title {
+      background: #f1f5f9;
+      color: #0f2f63;
+      font-weight: 900;
+      padding: 11px 15px;
+      border-bottom: 1px solid #dbe7f3;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .status-pill {
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      background:#eff6ff;
+      color:#1d4ed8;
+      border:1px solid #bfdbfe;
+      border-radius: 999px;
+      padding:6px 11px;
+      font-size:13px;
+      font-weight:900;
+    }
+
+    canvas {
+      display:block;
+      width:100%;
+      height:auto;
+      background:#ffffff;
+    }
+
+    .side {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .steps {
+      padding: 12px;
+      display: grid;
+      gap: 9px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      background: #f8fafc;
+      transition:.18s;
+    }
+    .step.active {
+      background: #eff6ff;
+      border-color: #60a5fa;
+      transform: translateX(2px);
+      box-shadow: 0 5px 14px rgba(37,99,235,.13);
+    }
+    .num {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:white;
+      background:#94a3b8;
+      font-weight:900;
+      margin-top: 1px;
+    }
+    .step.active .num { background:#2563eb; }
+    .step b { color:#0f2f63; }
+    .step div:last-child { line-height: 1.45; font-size: 14.5px; }
+
+    .equation {
+      margin: 0 18px 18px;
+      border: 1px solid #fed7aa;
+      background: linear-gradient(180deg,#fff7ed,#fffaf2);
+      border-radius: 16px;
+      padding: 13px 16px;
+      text-align: center;
+      font-size: 19px;
+      font-weight: 900;
+      color:#7c2d12;
+      box-shadow: 0 4px 10px rgba(251,146,60,.12);
+    }
+    .equation small {
+      display:block;
+      font-size: 14px;
+      color:#9a3412;
+      margin-bottom: 5px;
+    }
+
+    .reagents {
+      padding: 12px;
+      display: grid;
+      grid-template-columns: repeat(2,1fr);
+      gap: 10px;
+    }
+    .bottle-card {
+      border:1px solid #e2e8f0;
+      border-radius: 14px;
+      background: #f8fafc;
+      min-height: 86px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 43px 1fr;
+      gap: 9px;
+      align-items: center;
+    }
+    .mini-bottle {
+      width: 34px;
+      height: 54px;
+      border: 2px solid #94a3b8;
+      border-radius: 8px 8px 12px 12px;
+      position: relative;
+      background: rgba(255,255,255,.72);
+      margin: auto;
+      overflow:hidden;
+    }
+    .mini-bottle::before {
+      content:"";
+      position:absolute;
+      top:-14px;
+      left:9px;
+      width:13px;
+      height:18px;
+      border:2px solid #94a3b8;
+      border-bottom:0;
+      border-radius:4px 4px 0 0;
+      background:white;
+    }
+    .fill {
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height:42%;
+      background:#93c5fd;
+      opacity:.85;
+    }
+    .powder { background:#1f2937; }
+    .acid { background:#dbeafe; }
+    .base { background:#bfdbfe; }
+    .dry { background:#fde68a; }
+    .cotton { background:#f8fafc; }
+    .reagent-name { font-weight:900; color:#0f2f63; font-size:14.5px; }
+    .reagent-use { color:#475569; font-size:13px; line-height:1.35; margin-top:2px; }
+
+    .notice {
+      margin: 0 18px 18px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 15px;
+      padding: 12px 14px;
+      line-height: 1.45;
+      color:#14532d;
+      font-size: 15px;
+    }
+    .notice b { color:#166534; }
+
+    .note-card {
+      padding: 13px 14px;
+      line-height: 1.45;
+      font-size: 14.5px;
+      color:#334155;
+    }
+    .note-card b { color:#0f2f63; }
+    .warning {
+      color:#7f1d1d;
+      background:#fef2f2;
+      border:1px solid #fecaca;
+      border-radius:12px;
+      padding:10px;
+      margin-top: 10px;
+    }
+
+    @media(max-width: 1120px){
+      .toolbar { grid-template-columns: 1fr; }
+      .main { grid-template-columns: 1fr; }
+      .subtitle { white-space: normal; }
+    }
+    @media(max-width: 680px){
+      header h1 { font-size: 22px; }
+      .reagents { grid-template-columns:1fr; }
+      .range-wrap { grid-template-columns: 1fr; }
+      button { width: 100%; }
+      .tool-card { align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>🧪 Mô phỏng thí nghiệm điều chế khí Cl₂ trong phòng thí nghiệm</h1>
+      <div class="subtitle">MnO₂ + HCl đặc, đun nóng → Cl₂</div>
+    </header>
+
+    <div class="toolbar">
+      <div class="tool-card">
+        <button id="startBtn">▶ Bắt đầu</button>
+        <button id="pauseBtn">⏸ Tạm dừng</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+        <button id="autoBtn">✨ Tự chạy từng bước</button>
+      </div>
+      <div class="tool-card">
+        <button id="prevBtn">← Bước trước</button>
+        <button id="nextBtn">Bước tiếp →</button>
+        <label class="range-wrap">
+          <span>Tốc độ</span>
+          <input id="speedRange" type="range" min="0.4" max="2.6" step="0.1" value="1" />
+          <span id="speedValue" class="value-box">1.0x</span>
+        </label>
+      </div>
+      <div class="tool-card toggles">
+        <label class="toggle"><input id="showGas" type="checkbox" checked /> Hạt khí Cl₂</label>
+        <label class="toggle"><input id="showLabels" type="checkbox" checked /> Nhãn chú thích</label>
+        <label class="toggle"><input id="showBubbles" type="checkbox" checked /> Bọt khí</label>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="card">
+        <div class="card-title">
+          <span>Bộ dụng cụ mô phỏng</span>
+          <span id="statusText" class="status-pill">Đang ở bước 1</span>
+        </div>
+        <canvas id="labCanvas" width="1000" height="620"></canvas>
+      </div>
+
+      <div class="side">
+        <div class="card">
+          <div class="card-title">Các bước thí nghiệm</div>
+          <div class="steps" id="stepsBox"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Lọ đựng chất và vai trò</div>
+          <div class="reagents">
+            <div class="bottle-card"><div class="mini-bottle"><div class="fill powder"></div></div><div><div class="reagent-name">MnO₂ rắn</div><div class="reagent-use">Chất oxi hóa, đặt trong bình cầu.</div></div></div>
+            <div class="bottle-card"><div class="mini-bottle"><div class="fill acid"></div></div><div><div class="reagent-name">HCl đặc</div><div class="reagent-use">Nhỏ qua phễu chiết, phản ứng tạo Cl₂.</div></div></div>
+            <div class="bottle-card"><div class="mini-bottle"><div class="fill base"></div></div><div><div class="reagent-name">Nước/NaCl bão hòa</div><div class="reagent-use">Rửa khí, hạn chế hơi HCl lẫn theo.</div></div></div>
+            <div class="bottle-card"><div class="mini-bottle"><div class="fill dry"></div></div><div><div class="reagent-name">H₂SO₄ đặc</div><div class="reagent-use">Làm khô khí Cl₂ trước khi thu.</div></div></div>
+            <div class="bottle-card"><div class="mini-bottle"><div class="fill cotton"></div></div><div><div class="reagent-name">Bông tẩm NaOH</div><div class="reagent-use">Hấp thụ Cl₂ dư, bảo đảm an toàn.</div></div></div>
+            <div class="bottle-card"><div class="mini-bottle"><div class="fill" style="background:#d9f99d"></div></div><div><div class="reagent-name">Cl₂ khô</div><div class="reagent-use">Khí thu được có màu vàng lục, độc.</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="equation">
+      <small>Phương trình phản ứng chính</small>
+      MnO₂ + 4HCl đặc <span style="color:#dc2626">→</span> MnCl₂ + Cl₂↑ + 2H₂O
+    </div>
+
+    <div class="notice">
+      <b>Lưu ý an toàn:</b> Cl₂ là khí độc, thí nghiệm thật phải tiến hành trong tủ hút hoặc nơi thông gió tốt. Bông tẩm NaOH ở cuối hệ dùng để hấp thụ khí Cl₂ dư, không để khí thoát trực tiếp ra ngoài.
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('labCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const autoBtn = document.getElementById('autoBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const speedRange = document.getElementById('speedRange');
+    const speedValue = document.getElementById('speedValue');
+    const statusText = document.getElementById('statusText');
+    const stepsBox = document.getElementById('stepsBox');
+
+    const showGas = document.getElementById('showGas');
+    const showLabels = document.getElementById('showLabels');
+    const showBubbles = document.getElementById('showBubbles');
+
+    const steps = [
+      { title:'Chuẩn bị bình cầu', text:'Cho một lượng MnO₂ rắn vào bình cầu, lắp nút cao su, phễu chiết và ống dẫn khí.' },
+      { title:'Nhỏ HCl đặc', text:'Rót HCl đặc vào phễu chiết, mở khóa cho axit nhỏ từng giọt xuống MnO₂.' },
+      { title:'Đun nóng nhẹ', text:'Đun bình cầu để phản ứng xảy ra nhanh hơn, khí Cl₂ màu vàng lục bắt đầu sinh ra.' },
+      { title:'Rửa khí', text:'Dẫn khí qua Bình (1) chứa nước hoặc NaCl bão hòa để giữ lại hơi HCl lẫn theo.' },
+      { title:'Làm khô khí', text:'Dẫn khí qua Bình (2) chứa H₂SO₄ đặc để loại hơi nước, thu khí Cl₂ khô hơn.' },
+      { title:'Thu và xử lí khí dư', text:'Khí Cl₂ khô được dẫn vào bình tam giác; bông tẩm NaOH hấp thụ khí dư ở miệng bình.' }
+    ];
+
+    let running = false;
+    let autoMode = false;
+    let stepIndex = 0;
+    let simTime = 0;
+    let last = 0;
+    let speed = 1;
+
+    function buildSteps(){
+      stepsBox.innerHTML = '';
+      steps.forEach((s,i)=>{
+        const div = document.createElement('div');
+        div.className = 'step' + (i === stepIndex ? ' active' : '');
+        div.innerHTML = `<div class="num">${i+1}</div><div><b>${s.title}</b><br>${s.text}</div>`;
+        div.addEventListener('click',()=>{ stepIndex=i; simTime=i*5; running=false; autoMode=false; updateStepBox(); });
+        stepsBox.appendChild(div);
+      });
+    }
+
+    function updateStepBox(){
+      [...stepsBox.children].forEach((el,i)=>el.classList.toggle('active', i===stepIndex));
+      statusText.textContent = `Đang ở bước ${stepIndex+1}: ${steps[stepIndex].title}`;
+    }
+
+    function setStep(i){
+      stepIndex = Math.max(0, Math.min(steps.length-1, i));
+      simTime = stepIndex * 5 + 0.3;
+      updateStepBox();
+    }
+
+    function reset(){
+      running = false;
+      autoMode = false;
+      stepIndex = 0;
+      simTime = 0;
+      last = 0;
+      updateStepBox();
+    }
+
+    function roundRect(ctx,x,y,w,h,r){
+      ctx.beginPath();
+      ctx.moveTo(x+r,y);
+      ctx.lineTo(x+w-r,y);
+      ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+      ctx.lineTo(x+w,y+h-r);
+      ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+      ctx.lineTo(x+r,y+h);
+      ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+      ctx.lineTo(x,y+r);
+      ctx.quadraticCurveTo(x,y,x+r,y);
+      ctx.closePath();
+    }
+
+    function textLabel(text,x,y,color='#0f172a',align='center',size=15){
+      if(!showLabels.checked) return;
+      ctx.save();
+      ctx.font = `bold ${size}px Arial`;
+      ctx.textAlign = align;
+      ctx.textBaseline = 'middle';
+      const w = ctx.measureText(text).width;
+      const px = align === 'left' ? x : x - w/2;
+      ctx.fillStyle = 'rgba(255,255,255,.92)';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.2;
+      roundRect(ctx, px-7, y-14, w+14, 24, 7);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.fillText(text,x,y);
+      ctx.restore();
+    }
+
+    function line(x1,y1,x2,y2,color='#111827',width=3,dash=null){
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      if(dash) ctx.setLineDash(dash);
+      ctx.beginPath();
+      ctx.moveTo(x1,y1);
+      ctx.lineTo(x2,y2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function arrow(x1,y1,x2,y2,color='#111827',width=3,label=''){
+      line(x1,y1,x2,y2,color,width);
+      const a = Math.atan2(y2-y1,x2-x1);
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.translate(x2,y2);
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(0,0); ctx.lineTo(-12,-7); ctx.lineTo(-12,7); ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      if(label) textLabel(label,(x1+x2)/2,(y1+y2)/2-18,color,'center',15);
+    }
+
+    function drawStand(){
+      ctx.save();
+      ctx.fillStyle = '#1f2937';
+      roundRect(ctx,45,530,160,18,5); ctx.fill();
+      roundRect(ctx,90,84,14,460,5); ctx.fill();
+      roundRect(ctx,66,270,150,12,5); ctx.fill();
+      ctx.strokeStyle = '#111827'; ctx.lineWidth=2;
+      ctx.strokeRect(90,84,14,460);
+      ctx.fillStyle = '#374151';
+      ctx.beginPath(); ctx.arc(103,276,15,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#111827'; ctx.beginPath(); ctx.arc(103,276,5,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawFlask(cx,cy,progress){
+      ctx.save();
+      // neck
+      ctx.strokeStyle = '#111827'; ctx.lineWidth = 3;
+      ctx.fillStyle = 'rgba(255,255,255,.54)';
+      roundRect(ctx,cx-23,cy-168,46,92,8); ctx.fill(); ctx.stroke();
+      // round flask
+      ctx.beginPath();
+      ctx.arc(cx,cy-42,76,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,.62)'; ctx.fill(); ctx.stroke();
+      // bottom liquid / powder
+      ctx.save();
+      ctx.beginPath(); ctx.arc(cx,cy-42,73,0,Math.PI*2); ctx.clip();
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillRect(cx-75,cy+6,150,28);
+      // black MnO2 particles
+      for(let i=0;i<34;i++){
+        const x = cx-47 + (i*29 % 95);
+        const y = cy+8 + ((i*17)%25);
+        ctx.fillStyle = i%3 ? '#1f2937' : '#111827';
+        ctx.beginPath(); ctx.arc(x,y,3+(i%3),0,Math.PI*2); ctx.fill();
+      }
+      // green chlorine in flask from step 3 on
+      const gasAlpha = Math.max(0, Math.min(0.35, progress));
+      ctx.fillStyle = `rgba(180, 210, 70, ${gasAlpha})`;
+      ctx.fillRect(cx-72,cy-112,144,116);
+      ctx.restore();
+      // stopper
+      ctx.fillStyle='#2f1d12'; roundRect(ctx,cx-30,cy-177,60,20,5); ctx.fill();
+      ctx.strokeStyle='#111827'; ctx.stroke();
+      textLabel('MnO₂',cx,cy+18,'#111827','center',16);
+      ctx.restore();
+    }
+
+    function drawFunnel(cx,cy,dropProgress){
+      ctx.save();
+      ctx.strokeStyle='#111827'; ctx.lineWidth=2.5;
+      // bulb funnel
+      ctx.beginPath();
+      ctx.moveTo(cx-34,cy-197);
+      ctx.quadraticCurveTo(cx-28,cy-242,cx,cy-243);
+      ctx.quadraticCurveTo(cx+28,cy-242,cx+34,cy-197);
+      ctx.closePath();
+      ctx.fillStyle='rgba(255,255,255,.72)'; ctx.fill(); ctx.stroke();
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx-29,cy-199); ctx.quadraticCurveTo(cx-22,cy-232,cx,cy-234); ctx.quadraticCurveTo(cx+22,cy-232,cx+29,cy-199); ctx.closePath(); ctx.clip();
+      ctx.fillStyle='rgba(191,219,254,.72)'; ctx.fillRect(cx-31,cy-216,62,23);
+      ctx.restore();
+      // tube
+      roundRect(ctx,cx-7,cy-198,14,96,4); ctx.fillStyle='rgba(255,255,255,.72)'; ctx.fill(); ctx.stroke();
+      // valve
+      ctx.fillStyle='#111827'; roundRect(ctx,cx-20,cy-150,40,8,3); ctx.fill();
+      textLabel('HCl đặc',cx+55,cy-217,'#0f2f63','left',15);
+      if(dropProgress>0){
+        ctx.fillStyle='#3b82f6';
+        for(let i=0;i<5;i++){
+          const yy = cy-124 + ((dropProgress*80 + i*22) % 74);
+          ctx.beginPath(); ctx.arc(cx,yy,3.3,0,Math.PI*2); ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawBurner(cx,cy,on){
+      ctx.save();
+      ctx.fillStyle='#1f2937'; roundRect(ctx,cx-30,cy+18,60,13,4); ctx.fill();
+      ctx.fillStyle='#60a5fa'; roundRect(ctx,cx-18,cy-8,36,28,10); ctx.fill();
+      ctx.strokeStyle='#2563eb'; ctx.lineWidth=2; ctx.stroke();
+      if(on){
+        const flicker = Math.sin(simTime*7)*5;
+        ctx.fillStyle='rgba(249,115,22,.9)';
+        ctx.beginPath();
+        ctx.moveTo(cx,cy-72-flicker);
+        ctx.bezierCurveTo(cx-25,cy-38,cx-20,cy-7,cx,cy-8);
+        ctx.bezierCurveTo(cx+24,cy-8,cx+22,cy-40,cx,cy-72-flicker);
+        ctx.fill();
+        ctx.fillStyle='rgba(254,240,138,.95)';
+        ctx.beginPath();
+        ctx.moveTo(cx,cy-52);
+        ctx.bezierCurveTo(cx-12,cy-31,cx-8,cy-13,cx,cy-13);
+        ctx.bezierCurveTo(cx+12,cy-13,cx+10,cy-31,cx,cy-52);
+        ctx.fill();
+      }
+      textLabel('đèn cồn',cx,cy+50,'#475569','center',13);
+      ctx.restore();
+    }
+
+    function drawWashBottle(cx,cy,label,solution,color,active,bottleNo){
+      ctx.save();
+      ctx.strokeStyle='#111827'; ctx.lineWidth=3;
+      ctx.fillStyle='rgba(255,255,255,.62)';
+      roundRect(ctx,cx-58,cy-155,116,154,20); ctx.fill(); ctx.stroke();
+      // neck and stopper
+      roundRect(ctx,cx-34,cy-177,68,28,8); ctx.fillStyle='#2f1d12'; ctx.fill(); ctx.strokeStyle='#111827'; ctx.stroke();
+      // liquid clipped
+      ctx.save();
+      roundRect(ctx,cx-55,cy-152,110,150,18); ctx.clip();
+      ctx.fillStyle=color; ctx.globalAlpha=.55; ctx.fillRect(cx-55,cy-70,110,72);
+      ctx.globalAlpha=1;
+      ctx.strokeStyle='rgba(37,99,235,.5)'; ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(cx-55,cy-70);
+      for(let x=cx-55;x<=cx+55;x+=8){ ctx.lineTo(x, cy-70 + Math.sin((x+simTime*20)/12)*3); }
+      ctx.stroke();
+      // bubbles
+      if(active && showBubbles.checked){
+        ctx.fillStyle='rgba(187,247,208,.55)'; ctx.strokeStyle='rgba(22,163,74,.65)'; ctx.lineWidth=1.2;
+        for(let i=0;i<12;i++){
+          const bx = cx-35 + (i*17 % 72);
+          const by = cy-8 - ((simTime*35 + i*23) % 63);
+          const r = 3 + (i%3);
+          ctx.beginPath(); ctx.arc(bx,by,r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        }
+      }
+      ctx.restore();
+      // inner tubes
+      line(cx-26,cy-166,cx-26,cy-22,'#111827',3);
+      line(cx+28,cy-166,cx+28,cy-116,'#111827',3);
+      textLabel(label,cx,cy+26,'#0f2f63','center',16);
+      textLabel(solution,cx,cy-100,'#2563eb','center',13);
+      ctx.restore();
+    }
+
+    function drawConicalFlask(cx,cy,active){
+      ctx.save();
+      ctx.strokeStyle='#111827'; ctx.lineWidth=3;
+      ctx.fillStyle='rgba(255,255,255,.62)';
+      ctx.beginPath();
+      ctx.moveTo(cx-28,cy-172);
+      ctx.lineTo(cx-42,cy-80);
+      ctx.lineTo(cx-94,cy);
+      ctx.quadraticCurveTo(cx,cy+18,cx+94,cy);
+      ctx.lineTo(cx+42,cy-80);
+      ctx.lineTo(cx+28,cy-172);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // neck
+      roundRect(ctx,cx-31,cy-188,62,30,10); ctx.fillStyle='rgba(255,255,255,.72)'; ctx.fill(); ctx.stroke();
+      // gas color inside
+      const alpha = active ? Math.min(.35, .12 + (Math.sin(simTime*2)+1)*.04) : .05;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx-28,cy-172); ctx.lineTo(cx-42,cy-80); ctx.lineTo(cx-94,cy); ctx.quadraticCurveTo(cx,cy+18,cx+94,cy); ctx.lineTo(cx+42,cy-80); ctx.lineTo(cx+28,cy-172); ctx.closePath(); ctx.clip();
+      ctx.fillStyle=`rgba(190,215,65,${alpha})`; ctx.fillRect(cx-93,cy-160,186,168);
+      ctx.restore();
+      // cotton
+      ctx.fillStyle='#f8fafc'; ctx.strokeStyle='#94a3b8'; ctx.lineWidth=2;
+      for(let i=0;i<7;i++){
+        ctx.beginPath(); ctx.arc(cx-10+i*7,cy-188+(i%2)*5,12,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      }
+      textLabel('bông tẩm NaOH',cx+56,cy-206,'#7c3aed','left',14);
+      textLabel('Cl₂ khô',cx,cy-50,'#527015','center',17);
+      ctx.restore();
+    }
+
+    function drawTubePath(progressMax){
+      ctx.save();
+      ctx.strokeStyle='#334155'; ctx.lineWidth=9; ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.beginPath();
+      ctx.moveTo(270,260); ctx.bezierCurveTo(330,270,335,287,360,305);
+      ctx.lineTo(396,305); ctx.bezierCurveTo(430,305,432,255,475,255);
+      ctx.lineTo(535,255); ctx.bezierCurveTo(570,255,574,305,614,305);
+      ctx.lineTo(650,305); ctx.bezierCurveTo(688,305,696,254,735,255);
+      ctx.lineTo(815,255); ctx.bezierCurveTo(846,256,845,315,840,355);
+      ctx.stroke();
+      ctx.strokeStyle='#e5e7eb'; ctx.lineWidth=5; ctx.stroke();
+      ctx.restore();
+
+      if(showLabels.checked){
+        arrow(300,238,342,250,'#8a5a00',2,'Cl₂');
+        arrow(514,226,560,226,'#8a5a00',2,'Cl₂');
+        arrow(698,226,750,226,'#8a5a00',2,'Cl₂');
+      }
+
+      if(showGas.checked && progressMax > 0){
+        const points = sampleTubePoints();
+        const count = Math.floor(progressMax * 72);
+        for(let i=0;i<count;i++){
+          const phase = (simTime*0.055*speed + i/count) % 1;
+          if(phase > progressMax + 0.04) continue;
+          const p = getPoint(points, phase);
+          const r = 3.5 + (i%3);
+          ctx.save();
+          ctx.fillStyle='rgba(181, 201, 54, .78)';
+          ctx.strokeStyle='rgba(107,114,15,.85)';
+          ctx.lineWidth=1;
+          ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+
+    function sampleTubePoints(){
+      const pts=[];
+      function add(x,y){pts.push({x,y});}
+      function bez(p0,p1,p2,p3,n){
+        for(let i=0;i<=n;i++){
+          const t=i/n, u=1-t;
+          add(u*u*u*p0.x+3*u*u*t*p1.x+3*u*t*t*p2.x+t*t*t*p3.x,
+              u*u*u*p0.y+3*u*u*t*p1.y+3*u*t*t*p2.y+t*t*t*p3.y);
+        }
+      }
+      bez({x:270,y:260},{x:330,y:270},{x:335,y:287},{x:360,y:305},35);
+      for(let x=360;x<=396;x+=5)add(x,305);
+      bez({x:396,y:305},{x:430,y:305},{x:432,y:255},{x:475,y:255},35);
+      for(let x=475;x<=535;x+=5)add(x,255);
+      bez({x:535,y:255},{x:570,y:255},{x:574,y:305},{x:614,y:305},35);
+      for(let x=614;x<=650;x+=5)add(x,305);
+      bez({x:650,y:305},{x:688,y:305},{x:696,y:254},{x:735,y:255},35);
+      for(let x=735;x<=815;x+=5)add(x,255);
+      bez({x:815,y:255},{x:846,y:256},{x:845,y:315},{x:840,y:355},45);
+      return pts;
+    }
+
+    function getPoint(points, frac){
+      const idx = Math.max(0, Math.min(points.length-1, Math.floor(frac*(points.length-1))));
+      return points[idx];
+    }
+
+    function drawBackground(){
+      const g = ctx.createLinearGradient(0,0,0,canvas.height);
+      g.addColorStop(0,'#f8fbff'); g.addColorStop(1,'#eef6ff');
+      ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height);
+      // lab bench
+      ctx.fillStyle='#d6a46a'; ctx.fillRect(0,530,1000,90);
+      ctx.fillStyle='#c78f52'; ctx.fillRect(0,530,1000,12);
+      // soft window
+      ctx.fillStyle='rgba(219,234,254,.42)'; roundRect(ctx,790,55,155,155,16); ctx.fill();
+      ctx.strokeStyle='rgba(147,197,253,.45)'; ctx.lineWidth=2; ctx.stroke();
+      line(867,55,867,210,'rgba(147,197,253,.35)',2);
+      line(790,132,945,132,'rgba(147,197,253,.35)',2);
+    }
+
+    function drawProcedureBanner(){
+      ctx.save();
+      roundRect(ctx,26,18,412,62,16);
+      ctx.fillStyle='rgba(255,255,255,.82)'; ctx.fill();
+      ctx.strokeStyle='#bfdbfe'; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle='#0f2f63'; ctx.font='900 18px Arial'; ctx.textAlign='left'; ctx.fillText(`Bước ${stepIndex+1}: ${steps[stepIndex].title}`,46,43);
+      ctx.fillStyle='#475569'; ctx.font='bold 13px Arial'; ctx.fillText(steps[stepIndex].text.slice(0,64) + (steps[stepIndex].text.length>64?'...':''),46,64);
+      ctx.restore();
+    }
+
+    function drawReactionCloud(active){
+      if(!active) return;
+      ctx.save();
+      for(let i=0;i<12;i++){
+        const x=205 + Math.sin(simTime*2+i)*35 + (i%4)*7;
+        const y=432 - ((simTime*18+i*19)%120);
+        ctx.fillStyle='rgba(187, 207, 66, .45)';
+        ctx.beginPath(); ctx.arc(x,y,5+(i%4),0,Math.PI*2); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawScene(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      drawBackground();
+      drawProcedureBanner();
+
+      const local = simTime - stepIndex*5;
+      const acidProgress = stepIndex >= 1 ? Math.min(1, Math.max(0, local/2)) : 0;
+      const heatOn = stepIndex >= 2;
+      const reactionActive = stepIndex >= 2;
+      let gasProgress = 0;
+      if(stepIndex >= 2){
+        gasProgress = Math.min(1, Math.max(0, (simTime-10)/13));
+        if(stepIndex === 3) gasProgress = Math.min(.55, gasProgress);
+        if(stepIndex === 4) gasProgress = Math.min(.78, gasProgress);
+        if(stepIndex >=5) gasProgress = Math.min(1, gasProgress + .18);
+      }
+
+      drawStand();
+      drawBurner(198,515,heatOn);
+      drawFlask(200,478,reactionActive ? .32 : 0);
+      drawFunnel(200,478,acidProgress);
+      drawTubePath(gasProgress);
+      drawWashBottle(440,470,'Bình (1)','rửa HCl', 'rgba(147,197,253,.72)', stepIndex>=3, 1);
+      drawWashBottle(622,470,'Bình (2)','H₂SO₄ đặc', 'rgba(253,230,138,.78)', stepIndex>=4, 2);
+      drawConicalFlask(840,512,stepIndex>=5);
+      drawReactionCloud(reactionActive);
+
+      if(stepIndex===0){
+        textLabel('Lắp bình cầu, phễu chiết, ống dẫn khí',370,128,'#2563eb','center',15);
+      }
+      if(stepIndex===1){
+        textLabel('HCl đặc nhỏ xuống MnO₂',256,150,'#2563eb','left',15);
+      }
+      if(stepIndex===2){
+        textLabel('Đun nóng nhẹ: bắt đầu sinh khí Cl₂',245,385,'#dc2626','left',15);
+      }
+      if(stepIndex===3){
+        textLabel('Bình (1) rửa khí, giữ bớt hơi HCl',404,205,'#2563eb','left',15);
+      }
+      if(stepIndex===4){
+        textLabel('Bình (2) làm khô khí Cl₂',592,205,'#b45309','left',15);
+      }
+      if(stepIndex===5){
+        textLabel('NaOH hấp thụ khí Cl₂ dư',735,110,'#7c3aed','left',15);
+      }
+
+      // equation card on canvas
+      ctx.save();
+      roundRect(ctx,305,560,465,42,13);
+      ctx.fillStyle='rgba(255,247,237,.92)'; ctx.fill();
+      ctx.strokeStyle='#fed7aa'; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.fillStyle='#7c2d12'; ctx.font='900 17px Arial'; ctx.textAlign='center';
+      ctx.fillText('MnO₂ + 4HCl đặc → MnCl₂ + Cl₂↑ + 2H₂O',537,586);
+      ctx.restore();
+    }
+
+    function animate(ts){
+      if(!last) last = ts;
+      const dt = Math.min(.05,(ts-last)/1000);
+      last = ts;
+      speed = Number(speedRange.value);
+      speedValue.textContent = speed.toFixed(1)+'x';
+
+      if(running){
+        simTime += dt * speed;
+        if(autoMode){
+          const newStep = Math.min(steps.length-1, Math.floor(simTime/5));
+          if(newStep !== stepIndex){ stepIndex = newStep; updateStepBox(); }
+          if(simTime >= steps.length*5-0.2){ running=false; autoMode=false; stepIndex=steps.length-1; updateStepBox(); }
+        }
+      }
+      drawScene();
+      requestAnimationFrame(animate);
+    }
+
+    startBtn.addEventListener('click',()=>{ running=true; autoMode=false; });
+    pauseBtn.addEventListener('click',()=>{ running=false; autoMode=false; });
+    resetBtn.addEventListener('click',reset);
+    autoBtn.addEventListener('click',()=>{ reset(); running=true; autoMode=true; });
+    prevBtn.addEventListener('click',()=>{ running=false; autoMode=false; setStep(stepIndex-1); });
+    nextBtn.addEventListener('click',()=>{ running=false; autoMode=false; setStep(stepIndex+1); });
+
+    [showGas, showLabels, showBubbles].forEach(el=>el.addEventListener('change',drawScene));
+
+    buildSteps();
+    updateStepBox();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

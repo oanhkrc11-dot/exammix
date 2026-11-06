@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>109 · Máy khử rung sử dụng bộ giảm chấn · 3D PRO</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#06111b;color:#eef8fb}
+#app{display:grid;grid-template-columns:285px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#57dcff;font-weight:800}.desc{font-size:10px;color:#abc4cf;line-height:1.4}h1{font-size:17px;margin:4px 0 7px;line-height:1.08}
+.model{font-size:9px;background:#0b2230;border:1px solid #21495a;border-radius:9px;padding:7px;color:#d9edf5;line-height:1.35}
+.ctrl{display:grid;grid-template-columns:90px 1fr 72px;gap:5px;align-items:center;margin:5px 0}.ctrl label,.ctrl output{font-size:9px}.ctrl output{color:#75ebff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9px;padding:7px 5px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800;cursor:pointer}.primary{background:#0f7da7}.warn{background:#a13b3b}
+#view{position:relative;background:radial-gradient(circle at 52% 28%,#173f58 0,#0a263b 40%,#061725 72%,#030b13 100%)}#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label{position:absolute;transform:translate(-50%,-50%);background:#f4fafcf0;color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9px;white-space:nowrap}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10px;font-weight:700}
+#hud{position:absolute;right:12px;top:12px;z-index:7;background:#07141ce8;border:1px solid #316376;border-radius:10px;padding:8px 10px;min-width:235px}.hrow{display:flex;justify-content:space-between;gap:14px;font-size:9px;margin:3px 0}.hrow span{color:#9fc0cd}
+#note{position:absolute;left:12px;bottom:50px;z-index:7;width:650px;background:#07141ce8;border:1px solid #316376;border-radius:9px;padding:7px;font-size:9px;line-height:1.35;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700;color:#ffe082}
+#meter{position:absolute;left:12px;bottom:12px;z-index:7;display:flex;align-items:center;gap:8px;background:#07141ce8;border:1px solid #316376;border-radius:9px;padding:7px 10px;font-size:9px}
+.bar{width:170px;height:10px;background:#102935;border:1px solid #356579;border-radius:999px;overflow:hidden}.fill{height:100%;width:0%;background:linear-gradient(90deg,#4dd0e1,#ffd166,#ff6b55)}
+.rec{font-size:9px;color:#bcd2db;margin-top:6px}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D CINEMATIC</div>
+<h1>109 · Máy khử rung sử dụng bộ giảm chấn</h1>
+<p class="desc">Máy có rôto lệch tâm tạo ngoại lực tuần hoàn. Lò xo đỡ máy và bộ giảm chấn nhớt làm giảm biên độ rung cơ học.</p>
+<div class="model"><b>Mô hình hóa:</b> máy được quy về hệ 1 bậc tự do \(m-k-c\), chịu lực tuần hoàn \(F_0\cos\omega t\). Bỏ qua chuyển động quay phức tạp, phi tuyến gối đỡ và rung theo nhiều phương.</div>
+
+<div class="ctrl"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctrl"><label>Khối lượng m</label><input id="mass" type="range" min="20" max="120" step="2" value="55"><output id="massOut"></output></div>
+<div class="ctrl"><label>Độ cứng k</label><input id="k" type="range" min="1500" max="12000" step="100" value="5000"><output id="kOut"></output></div>
+<div class="ctrl"><label>Giảm chấn c</label><input id="c" type="range" min="0" max="1600" step="25" value="650"><output id="cOut"></output></div>
+<div class="ctrl"><label>Lực cưỡng bức F₀</label><input id="F0" type="range" min="20" max="700" step="10" value="250"><output id="F0Out"></output></div>
+<div class="ctrl"><label>Tần số cưỡng bức</label><input id="f" type="range" min=".2" max="4" step=".01" value="1.15"><output id="fOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showForce" type="checkbox" checked> Véc tơ lực</label>
+<label class="check"><input id="showDamper" type="checkbox" checked> Bộ giảm chấn</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị x(t)</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Bắt đầu</button><button id="pauseBtn" class="btn">⏸ Tạm dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Fit toàn cảnh</button>
+<button id="resBtn" class="btn">Gần cộng hưởng</button><button id="noDamperBtn" class="btn">Bỏ giảm chấn</button>
+<button id="strongDamperBtn" class="btn">Giảm chấn mạnh</button><button id="demoBtn" class="btn">Chạy tình huống</button>
+<button id="cameraBtn" class="btn">🎬 Camera tự động</button><button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button>
+<button id="recordBtn" class="btn warn">🎥 Bắt đầu quay</button><button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+<div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view">
+<div id="three"></div><div id="labels"></div>
+<div id="formula">m x¨ + c x˙ + kx = F₀ cos(2πft)</div>
+<div id="hud">
+<div class="hrow"><span>Tần số riêng f₀</span><b id="f0Hud"></b></div>
+<div class="hrow"><span>Tần số cưỡng bức f</span><b id="fHud"></b></div>
+<div class="hrow"><span>Tỉ số f/f₀</span><b id="ratioHud"></b></div>
+<div class="hrow"><span>Li độ x</span><b id="xHud"></b></div>
+<div class="hrow"><span>Vận tốc v</span><b id="vHud"></b></div>
+<div class="hrow"><span>Biên độ gần đây</span><b id="ampHud"></b></div>
+<div class="hrow"><span>Trạng thái</span><b id="statusHud"></b></div>
+</div>
+<div id="note">Quan sát: khi \(f\) gần \(f_0\), máy rung mạnh. Tăng hệ số giảm chấn \(c\) làm biên độ giảm và dao động tắt nhanh hơn. Biên độ chuyển động 3D được phóng đại trực quan; số liệu x, v được tính từ phương trình động lực học.</div>
+<div id="meter"><b>Mức rung:</b><div class="bar"><div id="vibFill" class="fill"></div></div><span id="vibText">Thấp</span></div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id),view=$('view');
+const state={running:true,t:0,speed:1,m:55,k:5000,c:650,F0:250,f:1.15,x:0,v:0,hist:[],amp:0,cameraAuto:false,cameraT:0,record:{rec:null,chunks:[],timer:null,start:0}};
+const f0=()=>Math.sqrt(state.k/state.m)/(2*Math.PI),w=()=>2*Math.PI*state.f,force=()=>state.F0*Math.cos(w()*state.t);
+
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=7;controls.maxDistance=28;
+controls.addEventListener('start',()=>{if(state.cameraAuto)setCameraAuto(false)});
+scene.add(new THREE.HemisphereLight(0xffffff,0x172832,4.4));const dl=new THREE.DirectionalLight(0xffffff,4.2);dl.position.set(7,10,8);scene.add(dl);
+
+const lab=new THREE.Group();lab.position.y=-.4;scene.add(lab);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(17,12),new THREE.MeshStandardMaterial({color:0x102530,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.9;lab.add(floor);
+const grid=new THREE.GridHelper(17,28,0x2e586a,0x123345);grid.position.y=-2.89;lab.add(grid);
+
+/* industrial foundation */
+const base=new THREE.Mesh(new THREE.BoxGeometry(7.5,.55,5.2),new THREE.MeshStandardMaterial({color:0x596b74,metalness:.3,roughness:.65}));base.position.y=-2.55;lab.add(base);
+const padMat=new THREE.MeshStandardMaterial({color:0x2f414a,metalness:.45,roughness:.35});
+for(const x of [-2.35,2.35])for(const z of [-1.45,1.45]){const p=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.35,18),padMat);p.position.set(x,-2.14,z);lab.add(p)}
+
+const machine=new THREE.Group();lab.add(machine);machine.position.y=-.7;
+const body=new THREE.Mesh(new THREE.BoxGeometry(4.8,2.1,3.0),new THREE.MeshStandardMaterial({color:0x4f6671,metalness:.5,roughness:.32}));machine.add(body);
+const motor=new THREE.Mesh(new THREE.CylinderGeometry(.85,.85,1.8,32),new THREE.MeshStandardMaterial({color:0x284957,metalness:.55,roughness:.3}));motor.rotation.z=Math.PI/2;motor.position.set(-.6,.1,0);machine.add(motor);
+const rotorDisc=new THREE.Mesh(new THREE.CylinderGeometry(.72,.72,.18,40),new THREE.MeshStandardMaterial({color:0xa8c9d8,metalness:.7,roughness:.18}));rotorDisc.rotation.z=Math.PI/2;rotorDisc.position.set(.35,.1,0);machine.add(rotorDisc);
+const ecc=new THREE.Mesh(new THREE.SphereGeometry(.18,16,12),new THREE.MeshStandardMaterial({color:0xff6b55,emissive:0x6f1111,emissiveIntensity:.5}));machine.add(ecc);
+
+/* spring/damper supports */
+const susp=new THREE.Group();lab.add(susp);
+function springGeom(a,b,turns=16,amp=.13){
+ const pts=[],dir=b.clone().sub(a),L=dir.length(),u=dir.clone().normalize(),n=new THREE.Vector3(0,0,1);
+ for(let i=0;i<=turns;i++){const t=i/turns,p=a.clone().addScaledVector(u,L*t);if(i&&i<turns)p.addScaledVector(n,(i%2?1:-1)*amp);pts.push(p)}return pts
+}
+const springLines=[],damperLines=[];
+for(const sx of [-1.8,1.8]){
+ const sp=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0x69e3a6}));susp.add(sp);springLines.push({line:sp,sx});
+ const dm=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xffc05a}));susp.add(dm);damperLines.push({line:dm,sx:sx*.72});
+}
+
+const forceArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1.4,0xff6b55,.28,.16);lab.add(forceArrow);
+
+/* graph */
+const gc=document.createElement('canvas');gc.width=820;gc.height=350;const gctx=gc.getContext('2d'),gtex=new THREE.CanvasTexture(gc);
+const graphFrame=new THREE.Mesh(new THREE.BoxGeometry(5.2,2.45,.12),new THREE.MeshStandardMaterial({color:0xeaf3f6}));graphFrame.position.set(4.4,2.4,-2.9);lab.add(graphFrame);
+const graphPlane=new THREE.Mesh(new THREE.PlaneGeometry(4.95,2.22),new THREE.MeshBasicMaterial({map:gtex,side:THREE.DoubleSide}));graphPlane.position.set(4.4,2.4,-2.82);lab.add(graphPlane);
+function drawGraph(){
+ gctx.fillStyle='#f8fafb';gctx.fillRect(0,0,820,350);gctx.fillStyle='#263b45';gctx.font='bold 24px Segoe UI';gctx.fillText('LI ĐỘ MÁY x(t)',315,30);
+ gctx.strokeStyle='#687b84';gctx.lineWidth=2;gctx.beginPath();gctx.moveTo(55,175);gctx.lineTo(755,175);gctx.stroke();
+ const tmin=Math.max(0,state.t-12);let ma=.002;for(const p of state.hist)if(p.t>=tmin)ma=Math.max(ma,Math.abs(p.x));
+ if(state.hist.length>1){gctx.strokeStyle='#8c42bd';gctx.lineWidth=4;gctx.beginPath();let first=true;for(const p of state.hist){if(p.t<tmin)continue;const X=55+700*(p.t-tmin)/12,Y=175-115*p.x/ma;if(first){gctx.moveTo(X,Y);first=false}else gctx.lineTo(X,Y)}gctx.stroke()}
+ gctx.fillStyle='#50656f';gctx.font='17px Segoe UI';gctx.fillText('t (s)',720,330);gctx.fillText('x',20,60);gtex.needsUpdate=true;
+}
+
+/* labels */
+const labels=$('labels');function mk(t){const e=document.createElement('div');e.className='label';e.textContent=t;labels.appendChild(e);return e}
+const lM=mk('Máy rung'),lR=mk('Khối lệch tâm'),lS=mk('Lò xo'),lD=mk('Bộ giảm chấn');
+function project(el,p){const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=(q.z>1||!$('showLabels').checked)?'none':'block'}
+
+/* physics RK4 */
+function acc(t,x,v){return (state.F0*Math.cos(2*Math.PI*state.f*t)-state.c*v-state.k*x)/state.m}
+function rk4(h){
+ const t=state.t,x=state.x,v=state.v;
+ const k1x=v,k1v=acc(t,x,v);
+ const k2x=v+.5*h*k1v,k2v=acc(t+.5*h,x+.5*h*k1x,v+.5*h*k1v);
+ const k3x=v+.5*h*k2v,k3v=acc(t+.5*h,x+.5*h*k2x,v+.5*h*k2v);
+ const k4x=v+h*k3v,k4v=acc(t+h,x+h*k3x,v+h*k3v);
+ state.x+=(h/6)*(k1x+2*k2x+2*k3x+k4x);state.v+=(h/6)*(k1v+2*k2v+2*k3v+k4v);state.t+=h;
+}
+function updatePhysics(dt){
+ if(!state.running)return;
+ const total=dt*state.speed,steps=Math.max(1,Math.ceil(total/.004)),h=total/steps;
+ for(let i=0;i<steps;i++)rk4(h);
+ state.hist.push({t:state.t,x:state.x});while(state.hist.length&&state.hist[0].t<state.t-12.5)state.hist.shift();
+ state.amp=Math.max(state.amp*.994,Math.abs(state.x));
+}
+
+/* visuals */
+function updateVisuals(){
+ const vx=THREE.MathUtils.clamp(state.x*18,-1.35,1.35);
+ machine.position.x=vx;
+ const ang=w()*state.t,rad=.48;ecc.position.set(.35,rad*Math.cos(ang),rad*Math.sin(ang));
+ springLines.forEach(o=>{o.line.geometry.dispose();o.line.geometry=new THREE.BufferGeometry().setFromPoints(springGeom(new THREE.Vector3(o.sx,-2.15,1.05),new THREE.Vector3(vx+o.sx,-1.68,1.05)))});
+ damperLines.forEach(o=>{o.line.geometry.dispose();o.line.geometry=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(o.sx,-2.15,-1.05),new THREE.Vector3(vx+o.sx,-1.68,-1.05)])});
+ const Fx=force();forceArrow.position.set(vx,.2,1.7);forceArrow.setDirection(new THREE.Vector3(Fx>=0?1:-1,0,0));forceArrow.setLength(.6+1.5*Math.min(1,Math.abs(Fx)/700),.28,.16);
+ forceArrow.visible=$('showForce').checked;susp.visible=$('showDamper').checked;grid.visible=$('showGrid').checked;graphFrame.visible=graphPlane.visible=$('showGraph').checked;drawGraph();
+}
+
+/* automatic camera */
+const shots=[
+ {p:new THREE.Vector3(11,6.5,14),t:new THREE.Vector3(0,-.6,0),d:4.5},
+ {p:new THREE.Vector3(-10,4.6,11),t:new THREE.Vector3(0,-.8,0),d:4.2},
+ {p:new THREE.Vector3(0,7.8,12),t:new THREE.Vector3(0,-.7,0),d:4.0},
+ {p:new THREE.Vector3(7,2.6,6),t:new THREE.Vector3(.3,-.6,0),d:3.8},
+ {p:new THREE.Vector3(-6,2.4,-7),t:new THREE.Vector3(0,-.7,0),d:4.2}
+];
+function ease(u){return u*u*(3-2*u)}
+function cameraSample(time){let total=shots.reduce((a,b)=>a+b.d,0),tt=((time%total)+total)%total;for(let i=0;i<shots.length;i++){const a=shots[i],b=shots[(i+1)%shots.length];if(tt<=a.d){const u=ease(tt/a.d);return{p:new THREE.Vector3().lerpVectors(a.p,b.p,u),t:new THREE.Vector3().lerpVectors(a.t,b.t,u)}}tt-=a.d}return{p:shots[0].p.clone(),t:shots[0].t.clone()}}
+function setCameraAuto(on){state.cameraAuto=on;controls.enabled=!on;$('cameraBtn').textContent=on?'🎬 Dừng camera tự động':'🎬 Camera tự động';$('cameraBtn').classList.toggle('primary',on);if(on)state.cameraT=0;else fit()}
+function updateCamera(dt){if(!state.cameraAuto)return;state.cameraT+=dt*.9;const q=cameraSample(state.cameraT);camera.position.copy(q.p);controls.target.copy(q.t);camera.lookAt(q.t)}
+
+/* UI */
+function statusText(){const r=state.f/f0(),d=Math.abs(r-1);if(d<.04)return state.c<300?'Cộng hưởng rất mạnh':'Gần cộng hưởng';if(state.c>1100)return'Giảm chấn mạnh';return'Rung cưỡng bức'}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('massOut').value=state.m.toFixed(0)+' kg';$('kOut').value=state.k.toFixed(0)+' N/m';$('cOut').value=state.c.toFixed(0)+' N·s/m';$('F0Out').value=state.F0.toFixed(0)+' N';$('fOut').value=state.f.toFixed(2)+' Hz';
+ $('f0Hud').textContent=f0().toFixed(2)+' Hz';$('fHud').textContent=state.f.toFixed(2)+' Hz';$('ratioHud').textContent=(state.f/f0()).toFixed(2);$('xHud').textContent=(state.x*1000).toFixed(2)+' mm';$('vHud').textContent=state.v.toFixed(3)+' m/s';$('ampHud').textContent=(state.amp*1000).toFixed(1)+' mm';$('statusHud').textContent=state.running?statusText():'Tạm dừng';
+ const p=Math.min(100,state.amp/.06*100);$('vibFill').style.width=p.toFixed(1)+'%';$('vibText').textContent=p<25?'Thấp':p<55?'Trung bình':p<80?'Cao':'Rất cao'
+}
+function sync(reset=true){state.speed=+$('speed').value;state.m=+$('mass').value;state.k=+$('k').value;state.c=+$('c').value;state.F0=+$('F0').value;state.f=+$('f').value;if(reset){state.t=0;state.x=0;state.v=0;state.hist=[];state.amp=0}updateUI()}
+['mass','k','c','F0','f'].forEach(id=>$(id).addEventListener('input',()=>sync(true)));$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;$('resBtn').onclick=()=>{$('f').value=f0().toFixed(2);sync(true)};
+$('noDamperBtn').onclick=()=>{$('c').value=0;sync(true)};$('strongDamperBtn').onclick=()=>{$('c').value=1400;sync(true)};
+$('demoBtn').onclick=()=>{$('c').value=250;$('F0').value=420;$('f').value=f0().toFixed(2);sync(true);state.running=true};
+$('cameraBtn').onclick=()=>setCameraAuto(!state.cameraAuto);
+$('resetBtn').onclick=()=>{setCameraAuto(false);Object.assign(state,{running:true,t:0,speed:1,m:55,k:5000,c:650,F0:250,f:1.15,x:0,v:0,hist:[],amp:0});for(const [id,v] of [['speed',1],['mass',55],['k',5000],['c',650],['F0',250],['f',1.15]])$(id).value=v;sync(true);fit()};
+$('fitBtn').onclick=fit;$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fit()},80));
+
+/* recording */
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function recClock(){const z=Math.floor((performance.now()-state.record.start)/1000);$('recTime').textContent=String(Math.floor(z/60)).padStart(2,'0')+':'+String(z%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!renderer.domElement.captureStream||!window.MediaRecorder)return;const m=mime(),stream=renderer.domElement.captureStream(30);state.record.chunks=[];state.record.rec=new MediaRecorder(stream,m?{mimeType:m,videoBitsPerSecond:8500000}:{videoBitsPerSecond:8500000});state.record.rec.ondataavailable=e=>{if(e.data.size)state.record.chunks.push(e.data)};state.record.rec.onstop=()=>{clearInterval(state.record.timer);const real=state.record.rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(state.record.chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`109_May_khu_rung_bo_giam_chan.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true;$('recLabel').textContent='Đã xuất video'};state.record.rec.start(1000);state.record.start=performance.now();state.record.timer=setInterval(recClock,250);$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false;$('recLabel').textContent='Đang quay'};
+$('stopRecordBtn').onclick=()=>{if(state.record.rec&&state.record.rec.state==='recording')state.record.rec.stop()};
+
+function fit(){controls.target.set(.2,-.6,0);camera.position.set(11,6.5,14);camera.lookAt(controls.target);controls.update()}
+function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}
+window.addEventListener('resize',resize);
+
+resize();fit();updateUI();let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);const dt=Math.min(.033,(now-last)/1000);last=now;
+ updatePhysics(dt);updateVisuals();updateCamera(dt);updateUI();
+ project(lM,new THREE.Vector3(machine.position.x,1.1,0));project(lR,new THREE.Vector3(machine.position.x+.35,.75,.6));project(lS,new THREE.Vector3(-1.8,-1.15,1.05));project(lD,new THREE.Vector3(-1.3,-1.15,-1.05));
+ if(controls.enabled)controls.update();renderer.render(scene,camera)
+}
+requestAnimationFrame(animate);
+</script>
+</body></html>

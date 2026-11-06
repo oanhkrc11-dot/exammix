@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mô phỏng giao thoa sóng mặt nước - GV Nguyễn Huy Hùng</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #eef5ff;
+      color: #0f172a;
+    }
+
+    .app {
+      width: min(1420px, 97vw);
+      margin: 18px auto;
+      background: #ffffff;
+      border: 1px solid #d9e6f5;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 14px 38px rgba(15, 23, 42, 0.14);
+    }
+
+    header {
+      background: #0b3b78;
+      color: white;
+      padding: 18px 24px;
+    }
+
+    header h1 {
+      margin: 0 0 6px;
+      font-size: 31px;
+    }
+
+    header p {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.55;
+      opacity: 0.96;
+    }
+
+    .teacherName {
+      margin: 0 0 10px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: #dbeafe;
+      text-transform: none;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #fff;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 11px 18px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.18s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    #startBtn { background: #16a34a; }
+    #pauseBtn { background: #f59e0b; color: #111827; }
+    #resetBtn { background: #2563eb; }
+
+    .box {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 15px;
+    }
+
+    input[type="range"] {
+      width: 140px;
+      accent-color: #2563eb;
+    }
+
+    input[type="checkbox"] {
+      transform: scale(1.15);
+      accent-color: #2563eb;
+    }
+
+    select {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 7px 9px;
+      background: #fff;
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1.28fr 0.92fr;
+      gap: 16px;
+      padding: 18px 18px 0;
+    }
+
+    .bottomRow {
+      display: none;
+      padding: 16px 18px 0;
+    }
+
+    .modeDock {
+      margin: 14px 18px 0;
+      padding: 14px 18px;
+      border: 1px solid #dbe5f2;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .modeDockLabel {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0b3b78;
+    }
+
+    .modeHint {
+      font-size: 14px;
+      color: #475569;
+      font-weight: 600;
+    }
+
+    .card {
+      border: 1px solid #dbe5f2;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .cardTitle {
+      padding: 12px 16px;
+      font-weight: 700;
+      color: #0b3b78;
+      border-bottom: 1px solid #e8eef8;
+      background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: white;
+    }
+
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      padding: 16px 18px 18px;
+    }
+
+    .note {
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid #dbe5f2;
+      line-height: 1.55;
+      font-size: 15px;
+      background: #f8fbff;
+    }
+
+    .note b { color: #0b3b78; }
+    .blue { background: #eff6ff; border-color: #bfdbfe; }
+    .green { background: #f0fdf4; border-color: #bbf7d0; }
+    .amber { background: #fffbeb; border-color: #fde68a; }
+
+    .sourceToggle {
+      display: inline-flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .sourceToggle button {
+      border: 2px solid #1d4ed8;
+      background: linear-gradient(180deg, #93c5fd 0%, #60a5fa 100%);
+      color: #dc2626;
+      border-radius: 14px;
+      padding: 11px 22px;
+      min-width: 132px;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.18);
+    }
+
+    .sourceToggle button.active {
+      background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+      color: #ef4444;
+      border-color: #1e3a8a;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 1020px) {
+      .main { grid-template-columns: 1fr; }
+      .notes { grid-template-columns: 1fr; }
+      header h1 { font-size: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="teacherName">GV Nguyễn Huy Hùng</div>
+      <h1>Mô phỏng HTML/JavaScript: Giao thoa sóng trên mặt nước</h1>
+      <p>
+        Cả ba vùng mô phỏng đều được chuyển sang giao thoa sóng mặt nước. Bên trái là mô phỏng hai cần rung nhìn từ trên xuống,
+        bên phải là mặt nước nhìn từ trên xuống để thấy rõ các vân giao thoa gần dạng hypebol,
+        bên phải là ảnh giao thoa nhìn từ trên xuống với các vân gần dạng hypebol.
+      </p>
+    </header>
+
+    <div class="controls">
+      <button id="startBtn">▶ Bắt đầu</button>
+      <button id="pauseBtn">⏸ Tạm dừng</button>
+      <button id="resetBtn">↻ Đặt lại</button>
+
+      <label class="box">
+        Biên độ A:
+        <input id="ampSlider" type="range" min="10" max="40" step="2" value="22">
+        <b><span id="ampValue">22</span> px</b>
+      </label>
+
+      <label class="box">
+        Tần số f:
+        <input id="freqSlider" type="range" min="0.4" max="2.0" step="0.1" value="1.0">
+        <b><span id="freqValue">1.0</span> Hz</b>
+      </label>
+
+      <label class="box">
+        Bước sóng λ:
+        <input id="lambdaSlider" type="range" min="70" max="180" step="5" value="110">
+        <b><span id="lambdaValue">110</span> px</b>
+      </label>
+
+      <label class="box">
+        Khoảng cách S₁S₂:
+        <input id="sourceSepSlider" type="range" min="50" max="160" step="5" value="100">
+        <b><span id="sourceSepValue">100</span> px</b>
+      </label>
+
+      <label class="box">
+        Pha hai nguồn:
+        <select id="phaseMode">
+          <option value="same" selected>Cùng pha</option>
+          <option value="opposite">Ngược pha</option>
+        </select>
+      </label>
+
+      <label class="box">
+        <input id="showTrails" type="checkbox" checked>
+        Hiện quỹ đạo mẫu
+      </label>
+
+      <label class="box">
+        <input id="showLabels" type="checkbox" checked>
+        Hiện chú thích còn lại
+      </label>
+    </div>
+
+    <div class="main">
+      <div class="card">
+        <div class="cardTitle">Mặt nước theo trường hợp đã chọn</div>
+        <canvas id="sectionCanvas" width="880" height="560"></canvas>
+      </div>
+
+      <div class="card">
+        <div class="cardTitle">Hình ảnh sóng nhìn từ trên xuống</div>
+        <canvas id="rightCanvas" width="580" height="560"></canvas>
+      </div>
+    </div>
+
+    <div class="modeDock">
+      <div class="modeDockLabel">Chọn số nguồn</div>
+      <div class="sourceToggle">
+        <button id="mode1Btn" type="button">1 nguồn</button>
+        <button id="mode2Btn" type="button" class="active">2 nguồn</button>
+      </div>
+      <div class="modeHint">Nhấn trực tiếp để chuyển nhanh giữa mô phỏng một nguồn và giao thoa hai nguồn</div>
+      <b><span id="sourceModeValue">2 nguồn</span></b>
+    </div>
+
+    <div class="bottomRow">
+      <div class="card">
+        <div class="cardTitle">Sơ đồ minh họa cho trường hợp đang chọn</div>
+        <canvas id="particleCanvas" width="1260" height="320"></canvas>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note blue">
+        <b>Trường hợp 1 nguồn:</b> mặt nước xuất hiện các đường tròn đồng tâm lan truyền ra từ nguồn.
+      </div>
+      <div class="note green">
+        <b>Trường hợp 2 nguồn:</b> hai nguồn kết hợp tạo hệ vân giao thoa, các dãy cực đại và cực tiểu gần dạng hypebol.
+      </div>
+      <div class="note amber">
+        <b>Quan sát:</b> dùng nút chọn 1 nguồn hoặc 2 nguồn để học sinh thấy rõ sự khác nhau giữa sóng tròn đồng tâm và giao thoa hypebol.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sectionCanvas = document.getElementById('sectionCanvas');
+    const sctx = sectionCanvas.getContext('2d');
+
+    const rightCanvas = document.getElementById('rightCanvas');
+    const rctx = rightCanvas.getContext('2d');
+
+    const particleCanvas = document.getElementById('particleCanvas');
+    const pctx = particleCanvas.getContext('2d');
+
+    const swimmerFace1 = new Image(); swimmerFace1.src = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCABgAGADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9Evi2geHSwf78n8hXh3jCHNsRXunxXGYtM/35P5CvFvF0W60fIrCoR9ozNCs9Lk0iaSe7eO/U4jiC/I341He+MNI8D6XPqWt6jHp9hbqXeZyADgZIUHkmuE8b/ErTPhroUuoX8kf7qMssRbliBnH41+Y37Rv7Q+v/ABt8SefNPJZ6QDi109HIRQO5FZqLlsaqPU+6/Gv/AAUV+HdhcSw2SXuqRDI3LGF/lXl2o/8ABRrR7S6D6b4blu0Y8LPMUI/KvgKSWWIqJWKk88GooyZS7N83HGa0jB7hyn1/4s/4KM+NL69Z9J0ex05QCEMjeYB7nPWvK2/bK+MLz3Ey+MLhFlOSqKoQD0UYrxNRuYYwDSJ+7b5zkCtRxSPvT9nj9ue405YIPG1019GDh5yBuHTmvv8A8E+P9A+I+gxat4a1SLU7JgMkEB0Pptr8E1uREylTgd8V9GfsXeL9X0b4s2Mtvrj6Zp8WRdQSSYikQ+3TNc9mnc0cD9QNeRf7XdlIKsOOuRXsf7OChbPXgP8AnrD/AOgtXzXqXxG02TWljW7WZGwfMUgqM19Jfs3SGS0188FDLCVYdCNjVhSf72xk1Y6r4rAmDTcdd7/yFeJfEC+g0jQrq+u5kt7aCNpJHc4wAK9v+Kf+q07/AHpP/QRX5y/8FE/jCPC3guLwnbyst3qwJm2nBEfdfpXTUetiFH3rnyR+0d+0AnxZ1iRNMjkttMt22iR2wZR9K+c7ud3uZG3cdquXFz9pmVz0XoKpSr51ziMcE9B3q4xsrmt+gwl5yGY7gKuWNnNdosUMZJY7civRvAHwfn8UQ+a8Uiqf4cV7d4K/Z/03T7hXnhZlAB2k9D61wVcdCloetRy+dW0mfK03hfU7eUAW8jk9Nqk1Xfw5qAJ32kyjuShr76h8AaXZBQlopYcBmXJFVtR8DWNxC6iJQx6fKK4f7UjtY9P+x3bQ+A3s5ImKyIyMO5HSr+ma7daLcNPbSeVKy7W9xX1V4n+ClrqMLYhjBbJyFrxrxt8C9Q0CIXFnm4HXA6iu+ljaVVWe5wVsvqUtVqS/D74t+JD5+nNqTeXOPlZuuR0Ga/WD/glv4tvfFHgXxgt/etez2l3axku2WTMbnH6V+KttNPoGpwySQMskTbiG4JNfq/8A8EX9Qm1fRfi5eyrsE2o6cQo7HyZs/wBK64xXNzI8ecZLdWPun4vXK2ljYyuwRE81mZugAUV+KP8AwUB8a23jD4twz2k/mQxWxQDPAOccV+yP7SdxBD4RRZ3CLIsy9cZ+UV+Cnx+tEh8d30KTrOInc5Vt2B6USTc7GSaueaQDPHX610XgfQRfa7ZRlRIXlHGOOtczCfMYemRX0F+zr4R+130uqPHutoflUkZ57VNeoqVN3O7B0nWqpNH0L4W0SHSNPjihQRMVGQoxXR2sHlnIHzHr71HYRAIueprfsbBXXd3r4qb9pJu5+h017OKVhbPTXucMV6d6S+0QgE4HrXRWDi3jxtGfpV6e7guISrqq474qoUotFOtZWPNJtOKggjNYGraTHNC6bVBPA4r0XULeNywT1rl9Yh2Rv0GKjk5NUCfOtT5f+L3gG0vFMkEKxXKjJKqBmvtv/gidG9v4f+LcEmQ0d/poI9P3M/8AhXzB8QLczSBl9Oa+xf8Agkbpn9nx/F1gMCW+0w9P+mE3+NfRZdXlJ8kj5PNqHLHnR9dftBeFrDxh4ct9M1GBZoJfMHzE5HyjpivxT+Mv7PHiCf4k+I1trKw0q3tJmjtrNJSzTIOc/iK/cH4s7tmlAHGXkz+Qr8+vHmhWc3xA1S7kjUzQXDHzCfuV24qs6OqPNy2hHEVHGR+aFz4P1fS7s2t1ZmyuAMqtyNm//wCvX1P8CbrR9L8IWmnw3UP9obt88bnkMfSqHx40yHxx438LW9uvmBZ2WWRB1AOTWf42+ET2UjX2iOw6s0attIPqDXn1qscRBKT1PXhRnhKrqRV0e9G9iiQFzjHNQy+OktQWgOFXhi3b3r5e0n4t+ItDvLfSLyMah5xKqLkkCPB65HLCvR9E+Kul2MpGpQ6fcYGDGlx5ZJ+jf1rkWDULPc9KONVdNrSx63oHxf0K8uGiu9Risedo8zoxruImivoFls7uK7R+VaM5r5yvfG/gvXpXL6J5J28MiiVfzXiuu+HGqaRp7ltLv/MUk/uPNzj8O1VOMUuwU5O+rPSJnulnKkVlawpKtu6mtKTxXDGuXIU4xk15v8Qviq2ky4t7Jr04wETr9a5uXmdkeh7VJGB4og3s496+zP8AglfD5Vr8UB63mn/+iZa/OvVvjJcXN4EutJmsQf746mv0L/4JP6jHqumfE+4jOd17p+R6fuZa9DA0pQrXZ4ua1I1MM7bqx7T+2l8UdW+GWmeFZtJht5Zbq4uFc3H3VVUQ/wBa+Ox4jufE0t/q0sEYvb4ZMEY+WvpX/gofA11ZeAoVAO65vTz7RR18y+FIJvs1vJeSR2SuMxs7BdyjqRnrUY5znWcUtFb8iMrjTp0FUlu7/mcvJptizQTpAqNGWJBGCrGmyok06RKpK4weO1aN5cwXV3I8Ey3MLtlJE5Vh7HvWhpscL4+XDA9xXkapntwSU20cbr3wm0/UU+2tb+dMQR5gXkew965h/hdZ2kbRnT4ZgwyROuWr6R0i0sdRg+z3EvkjHDdMH1zXO+J/C0NlKTb36yA8/Pya7Y1JtbilTjJ3aPme/wDhJO1zG2l6b9g2PnzInwK0vEXh+28P+FfMuYXutTc+XDNFlTG7cK24c8E17VBpoZiBdQOV6r6fWrtx4WsHCT3KpMf4V/hFHtZLdk/V7rQ+bvGkvjDwlpcczatJeosKsZJ4A/zY6Fv8azY/Fl34ct0ubiMahcGNZZA1sSqk816z8W9Kg1iIW5MiwvhGVDgOAe9c1ZeHV1DT28m4aOXujcggDArWNaL3MZ4ea0RwGp/Ey28V2/kzadaI5HA2srD86+/v+CQdnNaaF8UQ8DRQtf2HlsejfuZc4+nFfE2sfDOe8CyyiJTH91guCPxr9AP+CVUTad4I8eabImHt9Ugfd/eDxsR/KvRwtTnqKx4uPpunQldb2Ol/4KDtL5vw4jibDSXV+MAZz+5jr4b/AGw/BmpQ+AvhfqNnLdQQXMzWc8kLlNpY8A47mv0J/bZ8Jah4jHgS6sBEp0+9uJXkmOFAMaDH41wvjf4N2fxN+Ddz4QvCsd3NFutrn/n3nHKsPSvXp4OVSU6j2ex4lXGQp4elTT1V7/efJWhNHb6Zp8SAbVjA4roLeQo+RwK4nRBe6O82iaxbm11jSpvs91D2Drxn6Ec12Vs/mRjvivj61N056n2mGrKpBNGlJq72cbNu4Az1rjNQ8RX3irUlsbByoztebt7iugfT2vImDn5Ofl9awZPF2keBL9EupPsyzMERUXOWNRB9EdkmoK7Okt9GHhUxm4kdrOQfPOVJKn39q17a70u5lVbfVIJ4T1kjOSvqMVnr8S9IFuIrtpYi4OEnhJ3gdcDvXC+J7Dw/reowXmlXa6ZKSd8tn8g6d071u4LqYwruWxf+KMVst0kdldfaR03YrnvCM9uZHs7j5LhT27iuf8SaLq9tdq9r4pmmhAwEeFcH8ad4fWR77znk8+VQAzhcGocUtkdKm18R6Dq2jLDCzRzsvt1r60/4Job1sfiOjSBwt7ZYwMH/AFUlfH17rafZnUt8y+vevtD/AIJuac1n4f8AHE0gIkuLy1kOfTy3xXpZdCTm5dEeBnNSKpKC3Z//2Q==';
+    const swimmerFace2 = new Image(); swimmerFace2.src = 'data:image/jpeg;base64,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';
+    const swimmerFace3 = new Image(); swimmerFace3.src = 'data:image/jpeg;base64,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';
+    const swimmerFace4 = new Image(); swimmerFace4.src = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCABgAGADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9Uj0NeA67f2Nj8TtdfUFVovM4Df7i178ehr5D/aC8TWPgrWfFniHV50g0ewbfcOTy37tcIvqxPYVhVXMkgML4j+OdE8Li41e/uYdP0yMlmmlO1QPQep9q+UviT/wUg0jRzLY+C9FOtTocLqF98sQPsPSvlD9oP9ozXPjz4p86XdYaDAxSw0uJjsVQeGcd2NcnoXw01rXQriIW8J53Sf4VyNQpfGdtGlOrpFHe/E79rL4l/E+NoNV1821g5DfY9NXyFXnpkc9K8ibxNqEDOUupV3ZDEOQWB6g+tegN8E9Uhxsukb2K1xXiHwLquiM32m3fAPVeRTVSjJ2udXscTh37t0zsfhv+0f41+F8lwdA1f7N9pwJy0YYsB2BPSs/4y/HLxD8cfEEGreIJUaWCEQRRoMKgHf6mvN2ieNyCMH3qMknIrpjTitUc1XEVZL322+pYhZy4K9c17N8PPBLXcEdxKm4suQCOK878BeHn168KZwikV9ZeBtFggsoLcAAomORyTXn4uvye6j1sBhlO02j1T9kHwwth+0B8PpmO3ZqBIVemfIl61+uCfcX6V+X37NVmYfj34D2jhdQOf+/EtfqCn3F+lPLZudOTff8ARGGbxUasUu36sVjhSfavxW/4Ko/GiTU/jTq3w/0u9k/sqwnW51CEDbuumjT5c9wF2mv2nl/1b/Q1+BH7a+lf21+3P8S7Z2xEdYVn45IEEVelUaiuZ9DxadN1JqKOC+D/AMOYrsrqeoR+ax+eKNumD3PvXvem6RGkaqibcdu1YPhG2S08tNoCqMBV6CvRdMtVkwwXivj8RXlXqM/RsJhadCCfUx/7HMxOF6etcvrWnKRJHJGsi/3XGa9NnkEMLMq7s8AAVxviCKRt08kTRoR95xgVnCE09GdNRwlfmR4j4u8H6UYpJBbpHNg9OleK65YpZXhC52V734weG43hJMn0FeNeK7NmlLAAH3r3cJUmp2kfL4/DxcLwWp1XwavbeF7z7RIke3aQWOBivoHw1400EXMAW6V5lI4U55r5N8FWP9oa3FZtIY1mO1sGvqSz0jwB8O9Ht5NURWvmwvkhsyEnpnsPxqcZBOpZbhgK3LTsz6e/Zh163vPjz4JjDAs1+doH/XGWv0/T7i/Svx1/ZN1jT9V/al+HzaP9otrePVWSWGbBH/HvN0YZBr9ik+4v0rpy+PLTkvP/ACOHNpc1WLXb9WJL/qn+hr8If2swg/bt+Khb+HU93/kvDX7vS/6p/oa/A/8AbLneH9un4pCPJL6ntwPe3irvrK8GjzsLLlqxZv8AhqWKREcyRqpAOWYV6Vpt9aLboqyK7HC/Ka+ePD3gZ9SQfa7826k5JDnArs4IZ/CD2/l3seoWgbb5sMm7Z6bvevk6lNJ3ifoEKrlZM9c8Ra6mk6Tvt4kabP8AEOteP+IJfEfi243XN/iIHAT7q4r0fxHcR3Wg2kyAFpFz9OK8m8TaRq+qlYkuJYrMDgwHBzRSnFtFV4XjqtTC1zw/FHM8bzJ56cHa3Brz7xFpDSBmAGAOtdrZ/CuWNhLd6jcyTZ3FmJGaoeIrEWpeLnC5611uolK8Tz/ZJ03pZnj9ldy6HrUE6ffikDD0PNfQXg/SZPEFnqUmoiO6j1DaxDLlgPQHsK8O8SWaoyuBgmvob4WrJJoGnfxExY3Cu3EzSpqa3PLwNP8AeuMj3X9kSyS2/aV+HUICLHDfN5aIMBP3EvGO/wBa/X5PuL9K/Ib9l6YWH7Tvw2Qg7ptTZOR/07zH+lfryn3F+laZa26cm+/6HJnEVGtFLt+rCTmNvoa/Bj9tLR7qH9ub4gXZXEMusgBvUfZ4T/Wv3nk+430Nfit+27o0s37T/ju6jAby9YEh55/494a68TN04XRw4KmqlTXoeNxeGb7WruSS7uZTaY2rBF8v5kVqweHYNEsvs1ojwQsQ0mWJ3EV1ng2yEsDAsQW5ORmk8UIkkkdrb7TtOZGzjAr5iVRyk0foVGlHlUma2n3LTaRCWyyIABUukxWlw1whf5xygzV3T9W8Paf4XVJ5nkuz0ihwxb6e9YEtxa3F5bjTtPvbMq3zvdqEyPwNZwg4u5tKouh0MHhcahE8hkG1QTlzXj3xC00Q3Eu0gjnpXpGp6xcWccgjk/df88//AK9eS+J9Rn1J5Fxj1Oc1rFrmRyTd4vQ8o8SEOowPu8fWvXPgd4iC6Z9knfDxMCue4NeU65btGZA3bms7w74lvINS0+3tz5W2ZSSD15716/J7WnZHzcq/1apzM/Rb9nTULS6/aN+GCIg83+1Cc45/495q/WKP7i/QV+O/7Hd2b39o34cifPnR6kQCeN3+jy81+xEf3F+grfAR5KbT7nDmtT2tSEvL9WK33T9K/N39p74X2Hib4u+MtTIRJVvMMsMZLOwhj5bPH5V+kTdDXxN8fNKlT4jeJ7hGiaKWQbohL5bE+WnPua9RQVRNSPKpVHTmmj4MllGhXE0EeQVcqcjGKwdWMd1OyMzjzB8xU4yK9N+IXg2WwupLuOznAlJYj7wXNeb6jpQu7SaMzGCTacMvBB7V89icLyyutj7TB4xyjYraXq+n6HL5USBpxkfuFMrAAc9OhrtLDQvGXiLTzf2/hm4t7EIG+06ncCEMp6HB5pvw/wDG2r6Dp0NhZ6Rp1s8a4N41uGeQ4xkk963Lix1DxcpbV9SurxgfljEhCKOwAHauS0Utz0Vzz1PMlvdR1K4lhksmRU+9Kjh0P0Irl9aVbe6lQ8V6vLpMekw/Z4E8qHH3RXkPiu6WC/upGI2qf0rmTTloKT5U+Y888UMFmbBLZBGKyPBfhm8u9etpfJfyg+4EdTVnV7k6hebox8vUGuk8IS3USLJHh1U42k96+hoXSt3PlMZBTdz7K/Y90VIv2hvh1I5DTRaiTlnG4f6PL2r9fk+4v0r8dP2MNVN9+0X8Px5UEB/tIhg3Ln/R5uhr9i0+4v0ruhDlTPGqNuyfQU9DXyt8e0+yeJtVeabylmb5CYN6/dXqe1fVJ6GvnLx/qUsnjDxHpkrjeZhNbNgFSgRd6kdyvX8a6qerMloz5K8TafFqVqY0W1uixxiGfaT+B6V4j8QvDH9jaolusJhkmj80IzhunXkV9Wa9oum6hdeXJZWMw3FiAdjH64r5S+LUCap8QrmDS7Jobe3j8pyjFlUDljnPpSrUIzjY9DD4iUHoY2j3PlS4ZCFJ47iu80fWrC3jxK4X3BxXzhYeNtUsdS8lsNZuW8oEcgdua1brWdVv0AhGM+1fKV8PyzsfWUMS5xPRvHfjDT9Nt5ZEkBbGFGc9q+d9SnuPEl24TKwsck9zXUy6BPcnN3I0hHYtVy20FYotyrjA7VMOWkdDpynucNe6ILG1yq446mn+E78aZdMZUJtm+8cZx7102s2RkhwASMdKxtI00wyMsinBOa66WIcVdnn1sKpbH0/+xrd2M37TPw1S2voJmXVCNgOH/wCPeav2ej+4v0Ffir+wr4Rh/wCGpfAuomEf6PettbuGMEvP61+1ScIv0r2aVX2seY+XxVL2U1FH/9k=';
+    const swimmerFace5 = new Image(); swimmerFace5.src = 'data:image/jpeg;base64,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';
+    const swimmerFaces = [swimmerFace1, swimmerFace2, swimmerFace3, swimmerFace4, swimmerFace5];
+
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const ampSlider = document.getElementById('ampSlider');
+    const freqSlider = document.getElementById('freqSlider');
+    const lambdaSlider = document.getElementById('lambdaSlider');
+    const sourceSepSlider = document.getElementById('sourceSepSlider');
+    const mode1Btn = document.getElementById('mode1Btn');
+    const mode2Btn = document.getElementById('mode2Btn');
+    const phaseMode = document.getElementById('phaseMode');
+    const showTrails = document.getElementById('showTrails');
+    const showLabels = document.getElementById('showLabels');
+
+    const ampValue = document.getElementById('ampValue');
+    const freqValue = document.getElementById('freqValue');
+    const lambdaValue = document.getElementById('lambdaValue');
+    const sourceSepValue = document.getElementById('sourceSepValue');
+    const sourceModeValue = document.getElementById('sourceModeValue');
+
+    let A = 22;
+    let f = 1.0;
+    let lambda = 110;
+    let sourceSeparation = 100;
+    let sourceMode = 2;
+    let phaseOffset = 0;
+
+    let running = true;
+    let startTime = null;
+    let pausedTime = 0;
+
+    const SW = sectionCanvas.width;
+    const SH = sectionCanvas.height;
+    const RW = rightCanvas.width;
+    const RH = rightCanvas.height;
+    const PW = particleCanvas.width;
+    const PH = particleCanvas.height;
+
+    const leftX = 50;
+    const rightX = 840;
+    const waterLevel = 210;
+    const bottomY = 520;
+    const sourceX = 160;
+
+    const floatX = 620;
+
+    const fishList = [
+      { x0: 300, y0: waterLevel + 108, size: 0.92, speed: 34, dir: 1, color: '#f59e0b' },
+      { x0: 520, y0: waterLevel + 138, size: 1.05, speed: 30, dir: -1, color: '#ef4444' },
+      { x0: 720, y0: waterLevel + 165, size: 0.82, speed: 38, dir: 1, color: '#14b8a6' }
+    ];
+
+    const shrimpList = [
+      { x0: 250, y0: waterLevel + 108, scale: 0.78, dir: 1, color: '#fb7185' },
+      { x0: 645, y0: waterLevel + 132, scale: 0.86, dir: -1, color: '#f97316' }
+    ];
+
+    const turtleList = [
+      { x0: 430, y0: waterLevel + 126, scale: 1.0, dir: 1 },
+      { x0: 760, y0: waterLevel + 144, scale: 0.84, dir: -1 }
+    ];
+
+    const starfishList = [
+      { x: 350, y: waterLevel + 146, scale: 0.95, color: '#f59e0b' },
+      { x: 565, y: waterLevel + 138, scale: 0.8, color: '#ec4899' }
+    ];
+
+    const particles = [];
+    const xSpacing = 28;
+    const ySpacing = 28;
+
+    for (let y = waterLevel + 20; y < waterLevel + 150; y += ySpacing) {
+      for (let x = sourceX + 16; x < rightX - 20; x += xSpacing) {
+        particles.push({ x0: x, y0: y });
+      }
+    }
+
+    function updateParams() {
+      A = Number(ampSlider.value);
+      f = Number(freqSlider.value);
+      lambda = Number(lambdaSlider.value);
+      sourceSeparation = Number(sourceSepSlider.value);
+      sourceMode = sourceMode === 1 ? 1 : 2;
+      phaseOffset = phaseMode.value === 'opposite' ? Math.PI : 0;
+
+      ampValue.textContent = A;
+      freqValue.textContent = f.toFixed(1);
+      lambdaValue.textContent = lambda;
+      sourceSepValue.textContent = sourceSeparation;
+      sourceModeValue.textContent = sourceMode === 1 ? '1 nguồn' : '2 nguồn';
+      sourceSepSlider.disabled = sourceMode === 1;
+      phaseMode.disabled = sourceMode === 1;
+      mode1Btn.classList.toggle('active', sourceMode === 1);
+      mode2Btn.classList.toggle('active', sourceMode === 2);
+    }
+
+    function waveNumber() {
+      return 2 * Math.PI / lambda;
+    }
+
+    function omega() {
+      return 2 * Math.PI * f;
+    }
+
+    function getTime(timestamp) {
+      if (!running) return pausedTime;
+      if (startTime === null) startTime = timestamp - pausedTime * 1000;
+      return (timestamp - startTime) / 1000;
+    }
+
+    function sourceHeadY(t, localPhase = 0) {
+      return waterLevel - 10 - A * Math.sin(omega() * t + localPhase);
+    }
+
+    function sectionSourcePositions() {
+      const center = 492;
+      const dx = sourceSeparation * 1.55;
+      return { s1: center - dx / 2, s2: center + dx / 2 };
+    }
+
+    function lineInterferenceAt(x, t) {
+      const { s1, s2 } = sectionSourcePositions();
+      const d1 = Math.abs(x - s1);
+      const d2 = Math.abs(x - s2);
+      const atten1 = 1 / Math.sqrt(1 + d1 / 115);
+      const atten2 = 1 / Math.sqrt(1 + d2 / 115);
+      const u1 = 0.72 * A * atten1 * Math.sin(waveNumber() * d1 - omega() * t);
+      const u2 = 0.72 * A * atten2 * Math.sin(waveNumber() * d2 - omega() * t + phaseOffset);
+      return { u: u1 + u2, u1, u2, d1, d2, s1, s2 };
+    }
+
+    function sectionSurfaceY(x, t) {
+      return waterLevel - 0.72 * lineInterferenceAt(x, t).u;
+    }
+
+    function particleMotion(p, t) {
+      const depth = p.y0 - waterLevel;
+      const info = lineInterferenceAt(p.x0, t);
+      const decay = Math.exp(-depth / 88);
+      const localU = info.u * (0.34 + 0.66 * decay);
+      const avgPhase = waveNumber() * ((info.d1 + info.d2) / 2) - omega() * t + phaseOffset / 2;
+      const envelope = Math.min(1.2, Math.abs(localU) / Math.max(6, A));
+      const radiusX = Math.max(0.35, A * 0.10 * decay * (0.45 + 0.55 * envelope));
+      const radiusY = Math.max(0.35, A * 0.13 * decay * (0.55 + 0.55 * envelope));
+
+      return {
+        x: p.x0 + radiusX * Math.cos(avgPhase),
+        y: p.y0 - 0.75 * localU * decay,
+        radiusX,
+        radiusY,
+        depth,
+        envelope
+      };
+    }
+
+    function roundBox(ctx, x, y, w, h, r, fill, stroke) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, r);
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
+    function drawArrow(ctx, x1, y1, x2, y2, color, width = 3) {
+      const ang = Math.atan2(y2 - y1, x2 - x1);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - 10 * Math.cos(ang - Math.PI / 6), y2 - 10 * Math.sin(ang - Math.PI / 6));
+      ctx.lineTo(x2 - 10 * Math.cos(ang + Math.PI / 6), y2 - 10 * Math.sin(ang + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawGenerator(x, y, w, h, t) {
+      roundBox(sctx, x, y, w, h, 14, '#f8fafc', '#94a3b8');
+
+      roundBox(sctx, x + 14, y + 14, w - 28, 32, 8, '#0b3b78', '#0b3b78');
+      sctx.fillStyle = '#dbeafe';
+      sctx.font = 'bold 16px Arial';
+      sctx.textAlign = 'center';
+      sctx.fillText('Máy phát tần số', x + w / 2, y + 35);
+
+      roundBox(sctx, x + 18, y + 58, 72, 26, 8, '#ffffff', '#cbd5e1');
+      sctx.fillStyle = '#0f172a';
+      sctx.font = 'bold 14px Arial';
+      sctx.fillText(f.toFixed(1) + ' Hz', x + 54, y + 76);
+
+      const knobX = x + 126;
+      const knobY = y + 72;
+      sctx.beginPath();
+      sctx.arc(knobX, knobY, 12, 0, Math.PI * 2);
+      sctx.fillStyle = '#e2e8f0';
+      sctx.fill();
+      sctx.strokeStyle = '#64748b';
+      sctx.lineWidth = 2;
+      sctx.stroke();
+
+      const angle = -Math.PI / 2 + (f - 0.4) / (2.0 - 0.4) * Math.PI * 1.4;
+      sctx.beginPath();
+      sctx.moveTo(knobX, knobY);
+      sctx.lineTo(knobX + 9 * Math.cos(angle), knobY + 9 * Math.sin(angle));
+      sctx.strokeStyle = '#2563eb';
+      sctx.lineWidth = 3;
+      sctx.stroke();
+
+      sctx.strokeStyle = '#22c55e';
+      sctx.lineWidth = 2;
+      sctx.beginPath();
+      for (let i = 0; i <= 54; i++) {
+        const px = x + 103 + i;
+        const py = y + 26 + 7 * Math.sin(i / 8 - omega() * t);
+        if (i === 0) sctx.moveTo(px, py);
+        else sctx.lineTo(px, py);
+      }
+      sctx.stroke();
+    }
+
+
+    function drawFish(ctx, x, y, scale, dir, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(dir * scale, scale);
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 18, 9, 0, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(-15, 0);
+      ctx.lineTo(-28, -10);
+      ctx.lineTo(-28, 10);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(-2, -6);
+      ctx.lineTo(8, -16);
+      ctx.lineTo(12, -4);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(10, -2, 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+
+    function drawShrimp(ctx, x, y, scale, dir, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(dir * scale, scale);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, 12, Math.PI * 0.2, Math.PI * 1.55);
+      ctx.stroke();
+
+      for (let i = -8; i <= 6; i += 7) {
+        ctx.beginPath();
+        ctx.moveTo(i, 5);
+        ctx.lineTo(i + 7, 12);
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(10, -2);
+      ctx.lineTo(22, -8);
+      ctx.moveTo(10, 2);
+      ctx.lineTo(22, 8);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-10, -4);
+      ctx.lineTo(-18, -12);
+      ctx.moveTo(-10, 4);
+      ctx.lineTo(-17, 12);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawTurtle(ctx, x, y, scale, dir) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(dir * scale, scale);
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 18, 13, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#84cc16';
+      ctx.fill();
+      ctx.strokeStyle = '#4d7c0f';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(20, -1, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#65a30d';
+      ctx.fill();
+
+      const fins = [[-9,-10], [8,-10], [-9,10], [8,10]];
+      for (const [fx, fy] of fins) {
+        ctx.beginPath();
+        ctx.ellipse(fx, fy, 6, 3.5, fy < 0 ? -0.6 : 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = '#65a30d';
+        ctx.fill();
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(-18, 0);
+      ctx.lineTo(-26, -4);
+      ctx.lineTo(-26, 4);
+      ctx.closePath();
+      ctx.fillStyle = '#65a30d';
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawStarfish(ctx, x, y, scale, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const a1 = -Math.PI / 2 + i * 2 * Math.PI / 5;
+        const a2 = a1 + Math.PI / 5;
+        const x1 = Math.cos(a1) * 10;
+        const y1 = Math.sin(a1) * 10;
+        const x2 = Math.cos(a2) * 4;
+        const y2 = Math.sin(a2) * 4;
+        if (i === 0) ctx.moveTo(x1, y1); else ctx.lineTo(x1, y1);
+        ctx.lineTo(x2, y2);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawSeaSnake(ctx, x, y, length, phase) {
+      ctx.save();
+      ctx.strokeStyle = '#15803d';
+      ctx.lineWidth = 7;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let i = 0; i <= 12; i++) {
+        const px = x + i * (length / 12);
+        const py = y + 10 * Math.sin(i * 0.65 + phase);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(x + length + 4, y + 10 * Math.sin(12 * 0.65 + phase), 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#22c55e';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x + length + 7, y + 10 * Math.sin(12 * 0.65 + phase) - 2, 1.3, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+      ctx.restore();
+    }
+
+
+    function drawDiver(ctx, x, y, phase) {
+      ctx.save();
+      ctx.translate(x, y + 3 * Math.sin(phase));
+      ctx.rotate(-0.08 + 0.04 * Math.sin(phase * 0.8));
+
+      // oxygen tank
+      roundBox(ctx, -34, -18, 14, 28, 4, '#94a3b8', '#475569');
+
+      // body
+      ctx.beginPath();
+      ctx.ellipse(-6, 0, 24, 11, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#1e3a8a';
+      ctx.fill();
+      ctx.strokeStyle = '#1e40af';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // head
+      ctx.beginPath();
+      ctx.arc(22, -2, 9, 0, Math.PI * 2);
+      ctx.fillStyle = '#f1c27d';
+      ctx.fill();
+      ctx.strokeStyle = '#92400e';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // mask
+      roundBox(ctx, 17, -8, 14, 9, 3, '#38bdf8', '#0f172a');
+      ctx.beginPath();
+      ctx.moveTo(31, -4);
+      ctx.lineTo(40, -2);
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // back hose
+      ctx.beginPath();
+      ctx.moveTo(-20, -8);
+      ctx.quadraticCurveTo(-4, -26, 18, -8);
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // arm reaching to net
+      ctx.beginPath();
+      ctx.moveTo(8, 3);
+      ctx.lineTo(42, 14);
+      ctx.strokeStyle = '#f1c27d';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // net pole
+      ctx.beginPath();
+      ctx.moveTo(42, 14);
+      ctx.lineTo(70, 22);
+      ctx.strokeStyle = '#8b5a2b';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // net hoop
+      ctx.beginPath();
+      ctx.ellipse(82, 26, 13, 10, 0.4, 0, Math.PI * 2);
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // net mesh
+      ctx.strokeStyle = 'rgba(71, 85, 105, 0.55)';
+      ctx.lineWidth = 1;
+      for (let i = -8; i <= 8; i += 4) {
+        ctx.beginPath();
+        ctx.moveTo(74 + i, 18);
+        ctx.lineTo(90 + i * 0.25, 34);
+        ctx.stroke();
+      }
+
+      // fish in net
+      ctx.save();
+      ctx.translate(82, 26);
+      ctx.rotate(0.2);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 7, 3.8, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#f97316';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-6, 0);
+      ctx.lineTo(-12, -4);
+      ctx.lineTo(-12, 4);
+      ctx.closePath();
+      ctx.fillStyle = '#f97316';
+      ctx.fill();
+      ctx.restore();
+
+      // legs
+      ctx.beginPath();
+      ctx.moveTo(-22, 6);
+      ctx.lineTo(-42, 18);
+      ctx.moveTo(-12, 8);
+      ctx.lineTo(-30, 26);
+      ctx.strokeStyle = '#1e3a8a';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // fins
+      ctx.beginPath();
+      ctx.moveTo(-42, 18);
+      ctx.lineTo(-56, 14);
+      ctx.lineTo(-48, 24);
+      ctx.closePath();
+      ctx.fillStyle = '#06b6d4';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-30, 26);
+      ctx.lineTo(-44, 22);
+      ctx.lineTo(-36, 32);
+      ctx.closePath();
+      ctx.fillStyle = '#06b6d4';
+      ctx.fill();
+
+      // bubbles
+      for (let i = 0; i < 4; i++) {
+        const bx = 34 + i * 9;
+        const by = -14 - i * 8 + 2 * Math.sin(phase + i);
+        ctx.beginPath();
+        ctx.arc(bx, by, 2.3 - i * 0.2, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawSwimmerTopView(ctx, faceImg, x, y, scale, angle, phase, trunksColor) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.scale(scale, scale);
+
+      // small wake and splash around swimmer
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.ellipse(-18 - i * 8, 3 * Math.sin(phase + i), 16 + i * 4, 5 + i * 1.5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // legs
+      const kick = 5 * Math.sin(phase * 1.7);
+      ctx.strokeStyle = '#d7a06f';
+      ctx.lineWidth = 7;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-28, -5);
+      ctx.lineTo(-48, -10 + kick);
+      ctx.moveTo(-28, 5);
+      ctx.lineTo(-48, 10 - kick);
+      ctx.stroke();
+
+      // swim trunks
+      ctx.fillStyle = trunksColor;
+      ctx.beginPath();
+      ctx.roundRect(-31, -11, 20, 22, 6);
+      ctx.fill();
+
+      // torso
+      const torsoGrad = ctx.createLinearGradient(-12, -13, 18, 13);
+      torsoGrad.addColorStop(0, '#f2c296');
+      torsoGrad.addColorStop(1, '#d99a68');
+      ctx.fillStyle = torsoGrad;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 22, 13, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // arms swimming
+      const armSwing = 14 * Math.sin(phase);
+      ctx.strokeStyle = '#e4ad7d';
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(6, -7);
+      ctx.lineTo(28, -18 - armSwing * 0.35);
+      ctx.moveTo(6, 7);
+      ctx.lineTo(28, 18 + armSwing * 0.35);
+      ctx.stroke();
+
+      // face, clipped into a circle
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(24, 0, 12, 0, Math.PI * 2);
+      ctx.clip();
+      if (faceImg && faceImg.complete) {
+        ctx.drawImage(faceImg, 12, -12, 24, 24);
+      } else {
+        ctx.fillStyle = '#f1c27d';
+        ctx.fillRect(12, -12, 24, 24);
+      }
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(15,23,42,0.55)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(24, 0, 12, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // bubbles
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(39 + i * 7, -4 + 4 * Math.sin(phase + i), 2.2 - i * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawSection(t) {
+      sctx.clearRect(0, 0, SW, SH);
+      sctx.fillStyle = '#ffffff';
+      sctx.fillRect(0, 0, SW, SH);
+
+      sctx.fillStyle = '#0b3b78';
+      sctx.font = 'bold 27px Arial';
+      sctx.textAlign = 'center';
+      sctx.fillText(sourceMode === 1 ? 'Một nguồn sóng nhìn từ trên xuống' : 'Hai nguồn sóng nhìn từ trên xuống', SW / 2, 42);
+
+      drawGenerator(26, 46, 170, 88, t);
+
+      const tankX = 24;
+      const tankY = 154;
+      const tankW = SW - 48;
+      const tankH = 354;
+      const cx = tankX + tankW / 2;
+      const topY = tankY + 42;
+      const lambdaSurf = Math.max(42, Math.min(90, lambda * 0.72));
+      const kSurf = 2 * Math.PI / lambdaSurf;
+      const w = omega();
+      const waveSpeed = lambdaSurf * f;
+
+      let sources = [];
+      if (sourceMode === 1) {
+        sources = [{ x: cx, y: topY, label: 'S' }];
+      } else {
+        const sourceDX = sourceSeparation * 1.55;
+        sources = [
+          { x: cx - sourceDX / 2, y: topY, label: 'S₁' },
+          { x: cx + sourceDX / 2, y: topY, label: 'S₂' }
+        ];
+      }
+
+      // clean top labels and generator connection
+      sctx.fillStyle = '#334155';
+      sctx.font = 'bold 16px Arial';
+      sctx.textAlign = 'center';
+      sctx.fillText(sourceMode === 1 ? 'Một nguồn' : 'Hai nguồn kết hợp', cx, 78);
+      if (sourceMode === 2) {
+        sctx.fillText(phaseMode.value === 'same' ? 'Hai nguồn cùng pha' : 'Hai nguồn ngược pha', 690, 78);
+      }
+
+      sctx.strokeStyle = '#64748b';
+      sctx.lineWidth = 3.2;
+      sctx.beginPath();
+      sctx.moveTo(196, 90);
+      sctx.lineTo(244, 90);
+      sctx.lineTo(244, 118);
+      sctx.lineTo(cx, 118);
+      sctx.lineTo(cx, 150);
+      if (sourceMode === 1) {
+        sctx.lineTo(sources[0].x, 150);
+        sctx.lineTo(sources[0].x, topY - 18);
+      } else {
+        sctx.lineTo(sources[0].x, 150);
+        sctx.lineTo(sources[0].x, topY - 18);
+        sctx.moveTo(cx, 150);
+        sctx.lineTo(sources[1].x, 150);
+        sctx.lineTo(sources[1].x, topY - 18);
+      }
+      sctx.stroke();
+      sctx.beginPath();
+      sctx.arc(196, 90, 6, 0, Math.PI * 2);
+      sctx.fillStyle = '#64748b';
+      sctx.fill();
+
+      if (sourceMode === 2) {
+        drawArrow(sctx, sources[0].x + 6, 136, sources[1].x - 6, 136, '#7c2d12', 2);
+        drawArrow(sctx, sources[1].x - 6, 136, sources[0].x + 6, 136, '#7c2d12', 2);
+        sctx.fillStyle = '#7c2d12';
+        sctx.font = 'bold 18px Arial';
+        sctx.fillText('d = S₁S₂', (sources[0].x + sources[1].x) / 2, 128);
+      }
+
+      drawArrow(sctx, 652, 108, 760, 108, '#111827', 2);
+      drawArrow(sctx, 760, 108, 652, 108, '#111827', 2);
+      sctx.fillStyle = '#111827';
+      sctx.font = 'italic bold 24px Georgia';
+      sctx.fillText('λ', 706, 100);
+
+      roundBox(sctx, tankX, tankY, tankW, tankH, 10, '#c9e8fb', '#9fc6de');
+      const surfaceGrad = sctx.createLinearGradient(0, tankY, 0, tankY + tankH);
+      surfaceGrad.addColorStop(0, '#d6eefb');
+      surfaceGrad.addColorStop(1, '#9ccce7');
+      roundBox(sctx, tankX + 1, tankY + 1, tankW - 2, tankH - 2, 10, surfaceGrad, null);
+
+      sctx.save();
+      sctx.beginPath();
+      sctx.roundRect(tankX, tankY, tankW, tankH, 10);
+      sctx.clip();
+
+      const cell = 4;
+      for (let yy = tankY; yy < tankY + tankH; yy += cell) {
+        for (let xx = tankX; xx < tankX + tankW; xx += cell) {
+          const px = xx + cell * 0.5;
+          const py = yy + cell * 0.5;
+          let u = 0, env = 1;
+          if (sourceMode === 1) {
+            const r = Math.max(4, Math.hypot(px - sources[0].x, py - sources[0].y));
+            u = Math.sin(kSurf * r - w * t);
+          } else {
+            const r1 = Math.max(4, Math.hypot(px - sources[0].x, py - sources[0].y));
+            const r2 = Math.max(4, Math.hypot(px - sources[1].x, py - sources[1].y));
+            const u1 = Math.sin(kSurf * r1 - w * t);
+            const u2 = Math.sin(kSurf * r2 - w * t + phaseOffset);
+            u = 0.5 * (u1 + u2);
+            env = Math.abs(Math.cos((kSurf * (r2 - r1) + phaseOffset) / 2));
+          }
+          const base = 208 + 16 * env + 18 * u;
+          const rr = Math.max(158, Math.min(242, Math.round(base - 14)));
+          const gg = Math.max(198, Math.min(248, Math.round(base + 6)));
+          const bb = Math.max(220, Math.min(255, Math.round(base + 18)));
+          sctx.fillStyle = `rgb(${rr}, ${gg}, ${bb})`;
+          sctx.fillRect(xx, yy, cell + 0.4, cell + 0.4);
+        }
+      }
+
+      const travel = (waveSpeed * t * 0.75) % lambdaSurf;
+      const maxR = Math.hypot(tankW, tankH) + 100;
+      for (const src of sources) {
+        for (let rr = travel; rr < maxR; rr += lambdaSurf) {
+          if (rr < 10) continue;
+          sctx.beginPath();
+          sctx.arc(src.x, src.y, rr, 0, Math.PI * 2);
+          sctx.strokeStyle = sourceMode === 1 ? 'rgba(26, 82, 183, 0.32)' : 'rgba(26, 82, 183, 0.22)';
+          sctx.lineWidth = sourceMode === 1 ? 1.45 : 1.15;
+          sctx.stroke();
+        }
+      }
+
+      // simple water dots
+      for (let y = topY + 20; y < tankY + tankH - 24; y += 24) {
+        for (let x = tankX + 28; x < tankX + tankW - 22; x += 30) {
+          let u = 0;
+          if (sourceMode === 1) {
+            const r = Math.hypot(x - sources[0].x, y - sources[0].y);
+            u = Math.sin(kSurf * r - w * t);
+          } else {
+            const r1 = Math.hypot(x - sources[0].x, y - sources[0].y);
+            const r2 = Math.hypot(x - sources[1].x, y - sources[1].y);
+            u = 0.5 * (Math.sin(kSurf * r1 - w * t) + Math.sin(kSurf * r2 - w * t + phaseOffset));
+          }
+          const rad = 1.7 + 1.2 * Math.abs(u);
+          sctx.beginPath();
+          sctx.arc(x, y, rad, 0, Math.PI * 2);
+          sctx.fillStyle = 'rgba(26, 93, 196, 0.78)';
+          sctx.fill();
+        }
+      }
+
+      // five swimmers based on the five men in the supplied photo
+      const swimmerConfigs = [
+        { x0: tankX + 115, y0: tankY + 190, scale: 0.82, angle: 0.12, speed: 8, color: '#1d4ed8' },
+        { x0: tankX + 260, y0: tankY + 250, scale: 0.78, angle: -0.10, speed: 10, color: '#0f766e' },
+        { x0: tankX + 410, y0: tankY + 178, scale: 0.86, angle: 0.05, speed: 7, color: '#7c3aed' },
+        { x0: tankX + 560, y0: tankY + 266, scale: 0.80, angle: -0.08, speed: 9, color: '#dc2626' },
+        { x0: tankX + 710, y0: tankY + 205, scale: 0.83, angle: 0.11, speed: 11, color: '#0f172a' }
+      ];
+      for (let i = 0; i < swimmerConfigs.length; i++) {
+        const sw = swimmerConfigs[i];
+        const swimX = sw.x0 + 16 * Math.sin(t * 0.18 * sw.speed + i * 1.4);
+        const swimY = sw.y0 + 8 * Math.sin(t * 0.32 + i * 0.9);
+        drawSwimmerTopView(sctx, swimmerFaces[i], swimX, swimY, sw.scale, sw.angle, t * 3.0 + i, sw.color);
+      }
+
+      sctx.restore();
+
+      for (const [idx, src] of sources.entries()) {
+        const localPhase = idx === 0 ? 0 : phaseOffset;
+        const osc = 5 * Math.sin(w * t + localPhase);
+        roundBox(sctx, src.x - 10, src.y - 13 + osc * 0.25, 20, 30, 6, '#ef4444', '#991b1b');
+        sctx.fillStyle = '#fee2e2';
+        sctx.fillRect(src.x - 4, src.y - 7 + osc * 0.25, 8, 18);
+        sctx.fillStyle = '#7f1d1d';
+        sctx.font = 'bold 15px Arial';
+        sctx.textAlign = 'center';
+        sctx.fillText(src.label, src.x, src.y - 18);
+      }
+
+      if (showLabels.checked) {
+        sctx.fillStyle = '#1d4ed8';
+        sctx.font = 'bold 15px Arial';
+        sctx.textAlign = 'left';
+        sctx.fillText('GV Nguyễn Huy Hùng', 38, 28);
+      }
+
+      sctx.strokeStyle = '#2a7fbd';
+      sctx.lineWidth = 5;
+      sctx.beginPath();
+      sctx.moveTo(tankX, tankY + tankH);
+      sctx.lineTo(tankX + tankW, tankY + tankH);
+      sctx.stroke();
+    }
+
+    function drawRightPanel(t) {
+      rctx.clearRect(0, 0, RW, RH);
+      rctx.fillStyle = '#ffffff';
+      rctx.fillRect(0, 0, RW, RH);
+
+      rctx.fillStyle = '#0b3b78';
+      rctx.font = 'bold 23px Arial';
+      rctx.textAlign = 'center';
+      rctx.fillText(sourceMode === 1 ? 'Một nguồn: các mặt sóng tròn đồng tâm' : 'Hai nguồn: vân giao thoa dạng hypebol', RW / 2, 34);
+
+      const tankX = 24;
+      const tankY = 56;
+      const tankW = RW - 48;
+      const tankH = 452;
+      const cx = tankX + tankW / 2;
+      const cy = tankY + tankH / 2;
+      const lambdaVis = Math.max(20, Math.min(38, lambda * 0.22));
+      const kVis = 2 * Math.PI / lambdaVis;
+      const w = omega();
+      const d = sourceSeparation * 1.42;
+      let sources = sourceMode === 1 ? [{x: cx, y: cy}] : [{x: cx - d / 2, y: cy}, {x: cx + d / 2, y: cy}];
+
+      roundBox(rctx, tankX, tankY, tankW, tankH, 18, '#eceff1', '#90a4b8');
+      rctx.save();
+      rctx.beginPath();
+      rctx.roundRect(tankX, tankY, tankW, tankH, 18);
+      rctx.clip();
+
+      const cell = 3;
+      for (let yy = tankY; yy < tankY + tankH; yy += cell) {
+        for (let xx = tankX; xx < tankX + tankW; xx += cell) {
+          const px = xx + cell * 0.5;
+          const py = yy + cell * 0.5;
+          let u = 0, env = 1;
+          if (sourceMode === 1) {
+            const r = Math.max(4, Math.hypot(px - sources[0].x, py - sources[0].y));
+            u = Math.sin(kVis * r - w * t);
+          } else {
+            const r1 = Math.max(4, Math.hypot(px - sources[0].x, py - sources[0].y));
+            const r2 = Math.max(4, Math.hypot(px - sources[1].x, py - sources[1].y));
+            const u1 = Math.sin(kVis * r1 - w * t);
+            const u2 = Math.sin(kVis * r2 - w * t + phaseOffset);
+            u = 0.5 * (u1 + u2);
+            env = Math.abs(Math.cos((kVis * (r2 - r1) + phaseOffset) / 2));
+          }
+          const gray = sourceMode === 1
+            ? Math.max(90, Math.min(236, Math.round(180 + 46 * u)))
+            : Math.max(70, Math.min(238, Math.round(172 + 42 * u + 24 * env)));
+          rctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+          rctx.fillRect(xx, yy, cell + 0.4, cell + 0.4);
+        }
+      }
+
+      const travel = ((lambdaVis * f * t * 0.95) % lambdaVis);
+      const maxR = Math.hypot(tankW, tankH) + 90;
+      for (const src of sources) {
+        for (let rr = travel; rr < maxR; rr += lambdaVis) {
+          if (rr < 8) continue;
+          rctx.beginPath();
+          rctx.arc(src.x, src.y, rr, 0, Math.PI * 2);
+          rctx.strokeStyle = 'rgba(255,255,255,0.22)';
+          rctx.lineWidth = 1.15;
+          rctx.stroke();
+        }
+      }
+
+      if (sourceMode === 2) {
+        for (let yy = tankY + 4; yy < tankY + tankH - 4; yy += 2) {
+          for (let xx = tankX + 4; xx < tankX + tankW - 4; xx += 2) {
+            const r1 = Math.hypot(xx - sources[0].x, yy - sources[0].y);
+            const r2 = Math.hypot(xx - sources[1].x, yy - sources[1].y);
+            const delta = Math.abs(r2 - r1);
+            const norm = delta / lambdaVis;
+            const frac = Math.abs(norm - Math.round(norm));
+            const fracHalf = Math.abs(norm - (Math.floor(norm) + 0.5));
+            const antinodeHit = phaseMode.value === 'same' ? frac < 0.03 : fracHalf < 0.03;
+            const nodeHit = phaseMode.value === 'same' ? fracHalf < 0.03 : frac < 0.03;
+            if (antinodeHit) {
+              rctx.fillStyle = 'rgba(255,255,255,0.14)';
+              rctx.fillRect(xx, yy, 1.3, 1.3);
+            } else if (nodeHit) {
+              rctx.fillStyle = 'rgba(22,22,22,0.16)';
+              rctx.fillRect(xx, yy, 1.1, 1.1);
+            }
+          }
+        }
+      }
+
+      rctx.restore();
+
+      for (const [i, src] of sources.entries()) {
+        rctx.beginPath();
+        rctx.arc(src.x, src.y, 8.5, 0, Math.PI * 2);
+        rctx.fillStyle = '#202020';
+        rctx.fill();
+        rctx.strokeStyle = '#ffffff';
+        rctx.lineWidth = 2;
+        rctx.stroke();
+        rctx.fillStyle = '#111827';
+        rctx.font = 'bold 15px Arial';
+        rctx.textAlign = 'left';
+        rctx.fillText(sourceMode === 1 ? 'S' : (i === 0 ? 'S₁' : 'S₂'), src.x + 12, src.y - 10);
+      }
+    }
+
+    function drawParticleSinePanel(t) {
+      pctx.clearRect(0, 0, PW, PH);
+      pctx.fillStyle = '#ffffff';
+      pctx.fillRect(0, 0, PW, PH);
+
+      pctx.fillStyle = '#0b3b78';
+      pctx.font = 'bold 26px Arial';
+      pctx.textAlign = 'center';
+      pctx.fillText(sourceMode === 1 ? 'Sơ đồ một nguồn sóng tròn đồng tâm' : 'Hai sơ đồ giao thoa sạch, không chèn chữ trong hình', PW / 2, 32);
+
+      function drawCleanInterferenceDiagram(ctx, x, y, w, h, modeOnlyLines = false) {
+        const cx = x + w / 2;
+        const cy = y + h / 2 + 8;
+        const lambdaD = Math.max(18, Math.min(32, lambda * 0.22));
+        const sdx = sourceSeparation * 1.5;
+        const s1x = sourceMode === 1 ? cx : cx - sdx / 2;
+        const s2x = sourceMode === 1 ? cx : cx + sdx / 2;
+
+        ctx.strokeStyle = '#111827';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x, y, w, h);
+        ctx.beginPath();
+        ctx.moveTo(x + 12, cy);
+        ctx.lineTo(x + w - 12, cy);
+        ctx.stroke();
+
+        if (!modeOnlyLines) {
+          ctx.strokeStyle = '#3f3f46';
+          ctx.lineWidth = 1.2;
+          if (sourceMode === 1) {
+            for (let i = 1; i <= 10; i++) {
+              ctx.beginPath();
+              ctx.arc(cx, cy, i * lambdaD * 0.78, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          } else {
+            for (const sx of [s1x, s2x]) {
+              for (let i = 1; i <= 10; i++) {
+                ctx.beginPath();
+                ctx.arc(sx, cy, i * lambdaD * 0.78, 0, Math.PI * 2);
+                ctx.stroke();
+              }
+            }
+          }
+        }
+
+        if (sourceMode === 2) {
+          const samePhase = phaseMode.value === 'same';
+          const antinodeTargets = [];
+          const nodeTargets = [];
+          for (let m = 0; m <= 3; m++) {
+            antinodeTargets.push((samePhase ? m : m + 0.5) * lambdaD);
+            nodeTargets.push((samePhase ? m + 0.5 : m) * lambdaD);
+          }
+          function plotFamily(targets, color, dashed) {
+            ctx.save();
+            ctx.fillStyle = color;
+            let counter = 0;
+            for (let yy = y + 8; yy < y + h - 8; yy += 1.7) {
+              for (let xx = x + 8; xx < x + w - 8; xx += 1.7) {
+                const delta = Math.abs(Math.hypot(xx - s2x, yy - cy) - Math.hypot(xx - s1x, yy - cy));
+                for (const target of targets) {
+                  if (Math.abs(delta - target) < 0.7) {
+                    if (!dashed || (counter % 5 < 3)) ctx.fillRect(xx, yy, 1.35, 1.35);
+                    counter++;
+                    break;
+                  }
+                }
+              }
+            }
+            ctx.restore();
+          }
+          plotFamily(antinodeTargets, '#b91c1c', false);
+          plotFamily(nodeTargets, '#0ea5e9', true);
+        }
+
+        // source dots only, no labels
+        ctx.fillStyle = '#ec4899';
+        ctx.strokeStyle = '#7c2d12';
+        ctx.lineWidth = 1.2;
+        if (sourceMode === 1) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          for (const sx of [s1x, s2x]) {
+            ctx.beginPath();
+            ctx.arc(sx, cy, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+        }
+      }
+
+      if (sourceMode === 1) {
+        drawCleanInterferenceDiagram(pctx, 110, 52, PW - 220, 236, false);
+      } else {
+        drawCleanInterferenceDiagram(pctx, 70, 52, 520, 236, false);
+        drawCleanInterferenceDiagram(pctx, 670, 52, 520, 236, true);
+      }
+    }
+
+    function animate(timestamp) {
+      updateParams();
+      const t = getTime(timestamp);
+      drawSection(t);
+      drawRightPanel(t);
+      drawParticleSinePanel(t);
+      requestAnimationFrame(animate);
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (!running) {
+        running = true;
+        startTime = null;
+      }
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (running) {
+        running = false;
+        if (startTime !== null) {
+          pausedTime = (performance.now() - startTime) / 1000;
+        }
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      ampSlider.value = 22;
+      freqSlider.value = 1.0;
+      lambdaSlider.value = 110;
+      sourceSepSlider.value = 100;
+      sourceMode = 2;
+      phaseMode.value = 'same';
+      showTrails.checked = true;
+      showLabels.checked = true;
+      running = true;
+      startTime = null;
+      pausedTime = 0;
+      updateParams();
+    });
+
+    ampSlider.addEventListener('input', updateParams);
+    freqSlider.addEventListener('input', updateParams);
+    lambdaSlider.addEventListener('input', updateParams);
+    sourceSepSlider.addEventListener('input', updateParams);
+    mode1Btn.addEventListener('click', () => {
+      sourceMode = 1;
+      updateParams();
+    });
+    mode2Btn.addEventListener('click', () => {
+      sourceMode = 2;
+      updateParams();
+    });
+    phaseMode.addEventListener('change', updateParams);
+
+    updateParams();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

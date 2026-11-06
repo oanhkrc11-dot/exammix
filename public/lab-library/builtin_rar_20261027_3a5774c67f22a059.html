@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PHYSICS 11 LAB 11 - Dao động cưỡng bức</title>
+<style>
+:root{
+  --ink:#17313d;--muted:#5b7480;--panel:#dfe9ee;--panel2:#d2e1e8;--line:#adc5d0;
+  --accent:#168aad;--blue:#2f7de1;--orange:#e68a2e;--red:#d95b59;--green:#2ca58d;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#b7ccd6;color:var(--ink);font-family:Inter,Segoe UI,Arial,sans-serif}
+body.dark{--ink:#eefcff;--muted:#bdd4dd;--panel:#0b1c25;--panel2:#0d2732;--line:#285369;background:#17394b}
+#app{display:grid;grid-template-columns:238px 1fr;height:100vh}
+#panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border-right:1px solid var(--line);padding:9px;overflow:auto;scrollbar-width:thin;scrollbar-color:#789baa transparent}
+.eyebrow{font-size:10px;letter-spacing:1.2px;font-weight:800;color:var(--accent);margin-bottom:4px}
+h1{font-size:17px;line-height:1.08;margin:0 0 5px} p{font-size:10.5px;line-height:1.32;margin:0;color:var(--muted)}
+hr{border:0;border-top:1px solid var(--line);margin:8px 0}.section{font-size:10px;font-weight:800;margin-bottom:5px}
+.control{display:grid;grid-template-columns:62px 1fr 52px;align-items:center;gap:5px;margin:5px 0}
+.control label{font-size:10px}.control output{font-size:9.8px;color:var(--accent);font-weight:700;text-align:right}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:7px 0}
+.check{display:flex;align-items:center;gap:5px;padding:6px;border:1px solid var(--line);border-radius:8px;background:rgba(239,245,248,.72);font-size:9.8px}
+body.dark .check{background:#0c2936}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.btn{border:1px solid var(--line);border-radius:8px;background:#eaf2f5;color:var(--ink);padding:7px 5px;font-size:10px;font-weight:800;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff} .btn.record{background:#b94848;border-color:#b94848;color:#fff}
+body.dark .btn{background:#113447;color:#fff;border-color:#315e72} body.dark .btn.record{background:#b94848}
+.recBox{margin-top:7px;border:1px solid var(--line);border-radius:9px;padding:6px;background:rgba(236,243,246,.7);font-size:9.3px;color:var(--muted)}
+body.dark .recBox{background:#0c2936}
+.recStatus{display:flex;justify-content:space-between;align-items:center;gap:6px} .recDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#8499a3;margin-right:4px}
+.recDot.on{background:#d94141;box-shadow:0 0 0 3px rgba(217,65,65,.16)}
+.model{display:none;margin-top:6px;border:1px solid var(--line);background:#eaf2f5;border-radius:8px;padding:7px;font-size:9.2px;line-height:1.32;color:var(--muted)}.model.show{display:block}
+body.dark .model{background:#0b2531}
+#view{position:relative;min-width:0;height:100vh;background:radial-gradient(circle at 55% 34%,#7fa9bb 0%,#5f8fa4 42%,#426f84 72%,#315a6d 100%)}
+body.dark #view{background:radial-gradient(circle at 55% 34%,#315d74 0%,#15394d 44%,#0b2432 100%)}
+#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:6;pointer-events:none}
+.label3d{position:absolute;transform:translate(-50%,-50%);background:rgba(236,243,246,.92);border:1px solid #c4d7df;color:#254653;border-radius:6px;padding:4px 6px;font-size:9.8px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.08)}
+body.dark .label3d{background:rgba(7,28,40,.86);border-color:#4d95b2;color:#effcff}
+#formula{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;background:rgba(229,239,244,.90);border:1px solid #b9ced8;border-radius:9px;padding:6px 10px;font-size:10.5px;color:#20404f}
+body.dark #formula{background:rgba(6,25,35,.82);border-color:#32718a;color:#eefcff}
+#hud{position:absolute;left:12px;bottom:12px;z-index:8;display:flex;gap:9px;align-items:center;background:rgba(226,237,242,.90);border:1px solid #bacfd8;border-radius:11px;padding:7px 9px;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.hudItem{min-width:48px}.hudItem span{display:block;font-size:8.5px;color:#647f8a;margin-bottom:1px}.hudItem b{font-size:10.5px;color:#173c4d}
+body.dark #hud{background:rgba(7,28,40,.87);border-color:#3b7893}.dark .hudItem span{color:#bdd4dd}.dark .hudItem b{color:#eefcff}
+#note{position:absolute;left:12px;bottom:64px;z-index:7;width:235px;background:rgba(229,239,244,.92);border:1px solid #bacfd8;border-radius:9px;padding:7px;font-size:9.5px;color:#466573}
+body.dark #note{background:rgba(7,28,40,.84);color:#dceff6;border-color:#3b7893}
+#hint{position:absolute;right:12px;bottom:12px;z-index:7;font-size:9.5px;color:#dcecf3;background:rgba(34,71,88,.72);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:6px 8px}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;color:#d7e7ed}
+#tooltip{position:absolute;z-index:30;display:none;pointer-events:none;background:#edf4f7;border:1px solid #b9ced8;border-radius:7px;padding:7px 8px;font-size:9.5px;color:#173c4d}
+@media(max-width:1050px){#app{grid-template-columns:226px 1fr}#formula{font-size:9.5px}}
+@media(max-height:760px){#panel{padding-top:7px}.control{margin:4px 0}.btn{padding:6px 4px}}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="eyebrow">PHYSICS 11 LAB · 3D</div>
+<h1>11 · Dao động cưỡng bức</h1>
+<p>Xe trượt nối với giảm chấn và bộ kích thích lực tuyến tính; lực đàn hồi được mô hình hóa như cơ cấu phục hồi ẩn bên trong hệ trượt. Quan sát giai đoạn quá độ và trạng thái ổn định.</p>
+<hr>
+<div class="section">THAM SỐ</div>
+<div class="control"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut">1.00×</output></div>
+<div class="control"><label>Biên độ F₀</label><input id="force" type="range" min="0" max="8" step=".1" value="3.0"><output id="forceOut">3.0 N</output></div>
+<div class="control"><label>Tần số f</label><input id="freq" type="range" min=".2" max="2.0" step=".02" value=".70"><output id="freqOut">0.70 Hz</output></div>
+<div class="control"><label>Lực cản b</label><input id="damping" type="range" min=".05" max="3" step=".05" value=".55"><output id="dampingOut">0.55</output></div>
+<div class="control"><label>Khối lượng m</label><input id="mass" type="range" min=".3" max="2" step=".05" value=".8"><output id="massOut">0.80 kg</output></div>
+<div class="control"><label>Độ cứng k</label><input id="springK" type="range" min="5" max="30" step=".5" value="14"><output id="springKOut">14 N/m</output></div>
+<div class="checks">
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+<label class="check"><input id="showForce" type="checkbox" checked> Ngoại lực</label>
+<label class="check"><input id="showEq" type="checkbox" checked> VTCB</label>
+</div>
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Căn giữa</button>
+<button id="fullscreenBtn" class="btn">⛶ Vừa màn hình</button><button id="themeBtn" class="btn">☀/🌙 Giao diện</button>
+<button id="clearGraphBtn" class="btn">Xóa đồ thị</button><button id="theoryBtn" class="btn">ⓘ Lý thuyết</button>
+<button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button><button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+<div class="recBox">
+ <div class="recStatus"><span><i id="recDot" class="recDot"></i><b id="recLabel">Chưa quay</b></span><b id="recTime">00:00</b></div>
+ <div id="recFormat" style="margin-top:4px">Ưu tiên MP4 nếu trình duyệt hỗ trợ.</div>
+</div>
+<div id="theoryBox" class="model"><b>Mô hình:</b> m x¨ + b x˙ + kx = F₀cos(ωt). Trên hình đã ẩn lò xo để bố cục gọn hơn; lực phục hồi kx vẫn được tính đúng trong mô phỏng. Biên độ ổn định phụ thuộc f, F₀, b, m, k.</div>
+</aside>
+
+<main id="view">
+<div id="three"></div><div id="labels"></div>
+<div id="formula">m x¨ + b x˙ + kx = F₀ cos(ωt)</div>
+<div id="hud">
+  <div class="hudItem"><span>t</span><b id="tHud">0.00 s</b></div>
+  <div class="hudItem"><span>x</span><b id="xHud">0.00 m</b></div>
+  <div class="hudItem"><span>F(t)</span><b id="fHud">3.00 N</b></div>
+  <div class="hudItem"><span>f₀</span><b id="f0Hud">0.67 Hz</b></div>
+</div>
+<div id="note">Thiết bị nối theo một chuỗi cơ khí gọn hơn: khung trái → giảm chấn → xe trượt trên ray → ty của bộ kích thích lực tuyến tính. Lực đàn hồi kx vẫn được mô hình hóa trong phương trình như một cơ cấu phục hồi ẩn; véc tơ cam là lực F(t) tác dụng tại khớp nối bên phải xe.</div>
+<div id="tooltip"></div><div id="credit">Thầy Hùng vật lí</div><div id="hint">Kéo: xoay · Lăn: zoom an toàn · 🎥 quay vùng mô phỏng</div>
+</main>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const state={running:true,paused:false,t:0,speed:1,m:.8,k:14,b:.55,F0:3,f:.70,x:0,v:0,a:0,lastGraphT:-1};
+const GRAPH_WINDOW=15,MAX_DT=.025,X_SCALE=2.2;
+const dom={speed:$('speed'),force:$('force'),freq:$('freq'),damping:$('damping'),mass:$('mass'),springK:$('springK'),speedOut:$('speedOut'),forceOut:$('forceOut'),freqOut:$('freqOut'),dampingOut:$('dampingOut'),massOut:$('massOut'),springKOut:$('springKOut'),showGrid:$('showGrid'),showLabels:$('showLabels'),showForce:$('showForce'),showEq:$('showEq'),startBtn:$('startBtn'),pauseBtn:$('pauseBtn'),resetBtn:$('resetBtn'),fitBtn:$('fitBtn'),fullscreenBtn:$('fullscreenBtn'),themeBtn:$('themeBtn'),clearGraphBtn:$('clearGraphBtn'),theoryBtn:$('theoryBtn'),theoryBox:$('theoryBox'),recordBtn:$('recordBtn'),stopRecordBtn:$('stopRecordBtn'),recDot:$('recDot'),recLabel:$('recLabel'),recTime:$('recTime'),recFormat:$('recFormat'),tooltip:$('tooltip')};
+
+const view=$('view'),scene=new THREE.Scene();scene.fog=new THREE.Fog(0x557f91,28,54);
+const camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=9;controls.maxDistance=34;controls.minPolarAngle=.42;controls.maxPolarAngle=Math.PI/2.08;
+scene.add(new THREE.HemisphereLight(0xf5fbfe,0x4b6d7b,2.8));const key=new THREE.DirectionalLight(0xffffff,2.1);key.position.set(8,14,9);key.castShadow=true;scene.add(key);
+
+const lab=new THREE.Group();scene.add(lab);lab.position.y=-1.55;
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(36,22),new THREE.MeshStandardMaterial({color:0x9cb7c2,roughness:.94}));floor.rotation.x=-Math.PI/2;floor.position.y=-4.9;floor.receiveShadow=true;lab.add(floor);
+const grid=new THREE.GridHelper(36,36,0x7aa5b7,0xa9c0ca);grid.position.y=-4.89;(Array.isArray(grid.material)?grid.material:[grid.material]).forEach(m=>{m.transparent=true;m.opacity=.18});lab.add(grid);
+const back=new THREE.Mesh(new THREE.PlaneGeometry(29,15),new THREE.MeshStandardMaterial({color:0xb7ccd5,roughness:.98,side:THREE.DoubleSide}));back.position.set(0,2.7,-6.2);lab.add(back);
+
+// apparatus
+const table=new THREE.Mesh(new THREE.BoxGeometry(11,.35,3.5),new THREE.MeshStandardMaterial({color:0xcbd8de,roughness:.45,metalness:.26}));table.position.set(-2.4,-2.9,0);lab.add(table);
+const wall=new THREE.Mesh(new THREE.BoxGeometry(.45,5.8,3.2),new THREE.MeshStandardMaterial({color:0xdbe5e9,roughness:.5,metalness:.2}));wall.position.set(-7.0,-.15,0);lab.add(wall);
+// Hai ray dẫn hướng thật cho xe trượt
+const railMat=new THREE.MeshStandardMaterial({color:0x728891,roughness:.28,metalness:.78});
+for(const z of [-.62,.62]){
+  const rail=new THREE.Mesh(new THREE.BoxGeometry(10.0,.10,.11),railMat);
+  rail.position.set(-2.25,-2.68,z);lab.add(rail);
+}
+// Bản gá cố định bên trái: lò xo và giảm chấn đều bắt vào cùng khung
+const leftBracket=new THREE.Mesh(new THREE.BoxGeometry(.28,1.75,1.8),new THREE.MeshStandardMaterial({color:0xa8bbc4,roughness:.38,metalness:.52}));
+leftBracket.position.set(-6.68,-1.78,0);lab.add(leftBracket);
+
+
+
+const cart=new THREE.Group();lab.add(cart);
+const body=new THREE.Mesh(new THREE.BoxGeometry(1.05,.72,.92),new THREE.MeshStandardMaterial({color:0x247db8,roughness:.2,metalness:.28}));body.castShadow=true;cart.add(body);
+for(const z of [-.34,.34])for(const x of [-.33,.33]){const wh=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.12,18),new THREE.MeshStandardMaterial({color:0x34454d,roughness:.7}));wh.rotation.x=Math.PI/2;wh.position.set(x,-.45,z);cart.add(wh)}
+
+const eqMarker=new THREE.Mesh(new THREE.BoxGeometry(.035,1.55,.08),new THREE.MeshBasicMaterial({color:0xf0c34b,transparent:true,opacity:.8}));eqMarker.position.set(-2.0,-1.45,.72);lab.add(eqMarker);
+
+// Bộ giảm chấn thật: thân cố định ở trái, ty piston nối trực tiếp vào xe
+const damperBody=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,1.65,22),
+  new THREE.MeshStandardMaterial({color:0x657b86,roughness:.28,metalness:.68}));
+damperBody.rotation.z=Math.PI/2;damperBody.position.set(-5.65,-2.05,-.58);lab.add(damperBody);
+const damperRod=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,1,16),
+  new THREE.MeshStandardMaterial({color:0xe8eef1,roughness:.18,metalness:.88}));
+damperRod.rotation.z=Math.PI/2;lab.add(damperRod);
+const damperJointFixed=new THREE.Mesh(new THREE.SphereGeometry(.09,16,12),
+  new THREE.MeshStandardMaterial({color:0x536a75,roughness:.35,metalness:.45}));
+damperJointFixed.position.set(-4.82,-2.05,-.58);lab.add(damperJointFixed);
+const damperJointCart=new THREE.Mesh(new THREE.SphereGeometry(.09,16,12),
+  new THREE.MeshStandardMaterial({color:0xe0e7ea,roughness:.25,metalness:.7}));
+lab.add(damperJointCart);
+
+// Bộ kích thích lực tuyến tính (linear shaker) cố định ở phải.
+// Ty kích thích trượt trong thân và NỐI TRỰC TIẾP với xe, phù hợp mô hình ngoại lực F(t).
+const actuatorStand=new THREE.Mesh(new THREE.BoxGeometry(1.55,1.55,1.65),
+  new THREE.MeshStandardMaterial({color:0x718b97,roughness:.34,metalness:.52}));
+actuatorStand.position.set(2.15,-2.05,0);lab.add(actuatorStand);
+const actuatorCoil=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,1.15,28),
+  new THREE.MeshStandardMaterial({color:0x48636f,roughness:.30,metalness:.62}));
+actuatorCoil.rotation.z=Math.PI/2;actuatorCoil.position.set(1.38,-1.72,0);lab.add(actuatorCoil);
+const actuatorRod=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,1,16),
+  new THREE.MeshStandardMaterial({color:0xf0f3f4,roughness:.16,metalness:.92}));
+actuatorRod.rotation.z=Math.PI/2;lab.add(actuatorRod);
+const forceSensor=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.28,20),
+  new THREE.MeshStandardMaterial({color:0xe68a2e,roughness:.25,metalness:.25}));
+forceSensor.rotation.z=Math.PI/2;lab.add(forceSensor);
+const cartRightJoint=new THREE.Mesh(new THREE.SphereGeometry(.10,18,14),
+  new THREE.MeshStandardMaterial({color:0xf2d083,roughness:.25,metalness:.25}));
+lab.add(cartRightJoint);
+
+const forceArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1,0xe68a2e,.28,.16);lab.add(forceArrow);
+
+// one graph board
+const wc=document.createElement('canvas');wc.width=1050;wc.height=450;const wg=wc.getContext('2d'),wtex=new THREE.CanvasTexture(wc);wtex.colorSpace=THREE.SRGBColorSpace;
+const frame=new THREE.Mesh(new THREE.BoxGeometry(7.7,3.35,.13),new THREE.MeshStandardMaterial({color:0xdce6ea,roughness:.44,metalness:.03}));frame.position.set(5.15,1.2,-1.35);lab.add(frame);
+const board=new THREE.Mesh(new THREE.PlaneGeometry(7.45,3.1),new THREE.MeshBasicMaterial({map:wtex,side:THREE.DoubleSide}));board.position.set(5.15,1.2,-1.27);lab.add(board);
+
+const labelsHost=$('labels');function mkLabel(t){const e=document.createElement('div');e.className='label3d';e.textContent=t;labelsHost.appendChild(e);return e}
+const lMass=mkLabel('Xe trượt'),lMotor=mkLabel('Bộ kích thích lực tuyến tính'),lDamper=mkLabel('Giảm chấn'),lEq=mkLabel('VTCB');
+function projectLabel(el,pos){const p=pos.clone().project(camera);if(p.z>1){el.style.display='none';return}el.style.display=dom.showLabels.checked?'block':'none';el.style.left=((p.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-p.y*.5+.5)*view.clientHeight)+'px'}
+
+function omegaDrive(){return 2*Math.PI*state.f}
+function forceNow(){return state.F0*Math.cos(omegaDrive()*state.t)}
+function naturalFreq(){return Math.sqrt(state.k/state.m)/(2*Math.PI)}
+function accel(x,v,t){return(state.F0*Math.cos(omegaDrive()*t)-state.b*v-state.k*x)/state.m}
+function integrate(dt){
+ const maxStep=.0035,n=Math.max(1,Math.ceil(dt/maxStep)),h=dt/n;
+ for(let i=0;i<n;i++){state.a=accel(state.x,state.v,state.t);state.v+=state.a*h;state.x+=state.v*h;state.t+=h}
+}
+function updatePhysics(dt){
+ if(state.running&&!state.paused)integrate(dt*state.speed);
+ else state.a=accel(state.x,state.v,state.t);
+ if(state.running&&!state.paused && state.t-state.lastGraphT>=.035){state.lastGraphT=state.t;pushGraph()}
+}
+function cartX(){return -2.0+state.x*X_SCALE}
+function updateVisuals(){
+ const cx=cartX();cart.position.set(cx,-2.25,0);
+
+ // Giảm chấn: ty piston nối đúng từ thân cố định đến khớp trên xe
+ const dA=new THREE.Vector3(-4.82,-2.05,-.58),dB=new THREE.Vector3(cx-.53,-2.05,-.58);
+ const dMid=dA.clone().add(dB).multiplyScalar(.5),dVec=dB.clone().sub(dA),dLen=Math.max(.2,dVec.length());
+ damperRod.position.copy(dMid);damperRod.scale.y=dLen;
+ damperJointCart.position.copy(dB);
+
+ // Bộ kích thích lực tuyến tính: thân cố định bên phải, ty nối thẳng vào khớp phải xe
+ const aFixed=new THREE.Vector3(.80,-1.72,0),aCart=new THREE.Vector3(cx+.58,-1.72,0);
+ const aMid=aFixed.clone().add(aCart).multiplyScalar(.5),aVec=aCart.clone().sub(aFixed),aLen=Math.max(.18,aVec.length());
+ actuatorRod.position.copy(aMid);actuatorRod.scale.y=aLen;
+ forceSensor.position.copy(aCart.clone().add(new THREE.Vector3(.16,0,0)));
+ cartRightJoint.position.copy(aCart);
+
+ eqMarker.visible=dom.showEq.checked;grid.visible=dom.showGrid.checked;
+
+ // Véc tơ ngoại lực đặt ngay tại điểm nối actuator–xe
+ const F=forceNow(),sg=Math.sign(F)||1;
+ forceArrow.visible=dom.showForce.checked;
+ forceArrow.position.copy(aCart.clone().add(new THREE.Vector3(0,.34,.05)));
+ forceArrow.setDirection(new THREE.Vector3(sg,0,0));
+ forceArrow.setLength(.35+Math.min(1.7,Math.abs(F)*.22),.25,.14);
+
+ projectLabel(lMass,new THREE.Vector3(cx,-1.42,.95));
+ projectLabel(lMotor,new THREE.Vector3(1.85,-2.92,.05));
+ projectLabel(lDamper,new THREE.Vector3(-5.55,-2.72,-.45));
+ projectLabel(lEq,new THREE.Vector3(-2.0,-.55,.75));
+ drawWorldGraph()
+}
+
+let data=[];
+function pushGraph(){data.push({t:state.t,x:state.x});const t0=state.t-GRAPH_WINDOW;while(data.length&&data[0].t<t0)data.shift()}
+function clearGraph(){data=[];state.lastGraphT=-1}
+function drawWorldGraph(){
+ const w=wc.width,h=wc.height;wg.fillStyle='#e9f0f3';wg.fillRect(0,0,w,h);wg.strokeStyle='#c5d4da';wg.lineWidth=2;
+ for(let i=0;i<=10;i++){const x=80+(w-130)*i/10;wg.beginPath();wg.moveTo(x,65);wg.lineTo(x,h-55);wg.stroke()}
+ for(let j=0;j<=6;j++){const y=65+(h-120)*j/6;wg.beginPath();wg.moveTo(80,y);wg.lineTo(w-50,y);wg.stroke()}
+ wg.strokeStyle='#314650';wg.lineWidth=4;wg.beginPath();wg.moveTo(80,h/2);wg.lineTo(w-50,h/2);wg.stroke();wg.beginPath();wg.moveTo(80,65);wg.lineTo(80,h-55);wg.stroke();
+ wg.fillStyle='#29424e';wg.font='bold 28px Segoe UI';wg.fillText('DAO ĐỘNG CƯỠNG BỨC  x(t)',320,38);
+ const maxAbs=Math.max(.35,...data.map(p=>Math.abs(p.x))),tMax=data.length?data[data.length-1].t:GRAPH_WINDOW,tMin=Math.max(0,tMax-GRAPH_WINDOW),X=t=>80+(w-130)*(t-tMin)/GRAPH_WINDOW,Y=x=>h/2-x/(maxAbs*1.18)*(h-130)/2;
+ wg.strokeStyle='#2f7de1';wg.lineWidth=5;wg.beginPath();let first=true;
+ for(const p of data){if(p.t<tMin)continue;const px=X(p.t),py=Y(p.x);if(first){wg.moveTo(px,py);first=false}else wg.lineTo(px,py)}wg.stroke();
+ if(data.length){const last=data[data.length-1],px=X(last.t),py=Y(last.x);wg.fillStyle='#2f7de1';wg.beginPath();wg.arc(px,py,9,0,Math.PI*2);wg.fill();wg.strokeStyle='rgba(49,70,80,.24)';wg.setLineDash([8,8]);wg.beginPath();wg.moveTo(px,65);wg.lineTo(px,h-55);wg.stroke();wg.setLineDash([])}
+ // bottom status instead of a second graph
+ const f0=naturalFreq(),ratio=state.f/f0;wg.fillStyle='#536c77';wg.font='18px Segoe UI';wg.fillText(`f = ${state.f.toFixed(2)} Hz   ·   f₀ = ${f0.toFixed(2)} Hz   ·   f/f₀ = ${ratio.toFixed(2)}`,300,h-18);
+ wtex.needsUpdate=true
+}
+function fmt(n,d=2){return(Math.abs(n)<1e-9?0:n).toFixed(d)}
+function updateUI(){
+ dom.speedOut.value=state.speed.toFixed(2)+'×';dom.forceOut.value=state.F0.toFixed(1)+' N';dom.freqOut.value=state.f.toFixed(2)+' Hz';dom.dampingOut.value=state.b.toFixed(2);dom.massOut.value=state.m.toFixed(2)+' kg';dom.springKOut.value=state.k.toFixed(1)+' N/m';
+ $('tHud').textContent=fmt(state.t)+' s';$('xHud').textContent=fmt(state.x)+' m';$('fHud').textContent=fmt(forceNow())+' N';$('f0Hud').textContent=fmt(naturalFreq())+' Hz'
+}
+function applyAndRestart(){
+ state.speed=+dom.speed.value;state.F0=+dom.force.value;state.f=+dom.freq.value;state.b=+dom.damping.value;state.m=+dom.mass.value;state.k=+dom.springK.value;state.x=0;state.v=0;state.t=0;state.lastGraphT=-1;clearGraph();pushGraph();updateUI()
+}
+[dom.force,dom.freq,dom.damping,dom.mass,dom.springK].forEach(e=>e.addEventListener('input',applyAndRestart));
+dom.speed.addEventListener('input',()=>{state.speed=+dom.speed.value;updateUI()});
+dom.startBtn.onclick=()=>{state.running=true;state.paused=false};dom.pauseBtn.onclick=()=>state.paused=true;
+dom.themeBtn.onclick=()=>document.body.classList.toggle('dark');dom.theoryBtn.onclick=()=>dom.theoryBox.classList.toggle('show');
+dom.fullscreenBtn.onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){console.warn(e)}};
+document.addEventListener('fullscreenchange',()=>{dom.fullscreenBtn.textContent=document.fullscreenElement?'🗗 Thoát toàn màn hình':'⛶ Vừa màn hình';setTimeout(()=>{resize();fitCamera()},80)});
+dom.resetBtn.onclick=()=>{dom.speed.value=1;dom.force.value=3;dom.freq.value=.70;dom.damping.value=.55;dom.mass.value=.8;dom.springK.value=14;Object.assign(state,{running:true,paused:false,t:0,speed:1,m:.8,k:14,b:.55,F0:3,f:.70,x:0,v:0,a:0,lastGraphT:-1});clearGraph();pushGraph();fitCamera();updateUI()};
+dom.fitBtn.onclick=fitCamera;dom.clearGraphBtn.onclick=()=>{clearGraph();pushGraph()};
+
+// CAMERA / RECORDING
+let mediaRecorder=null,recordedChunks=[],recStartedAt=0,recTimer=null,recordExt='webm',recordMime='';
+function pickRecorderMime(){
+ const candidates=[
+   ['video/mp4;codecs=avc1.42E01E','mp4'],
+   ['video/mp4','mp4'],
+   ['video/webm;codecs=vp9','webm'],
+   ['video/webm;codecs=vp8','webm'],
+   ['video/webm','webm']
+ ];
+ for(const [mime,ext] of candidates){if(window.MediaRecorder&&MediaRecorder.isTypeSupported(mime))return {mime,ext}}
+ return {mime:'',ext:'webm'}
+}
+function updateRecClock(){
+ const s=Math.max(0,Math.floor((performance.now()-recStartedAt)/1000));dom.recTime.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')
+}
+async function startRecording(){
+ if(mediaRecorder&&mediaRecorder.state==='recording')return;
+ if(!renderer.domElement.captureStream||!window.MediaRecorder){dom.recLabel.textContent='Trình duyệt chưa hỗ trợ quay';return}
+ const picked=pickRecorderMime();recordMime=picked.mime;recordExt=picked.ext;
+ const stream=renderer.domElement.captureStream(30);
+ try{mediaRecorder=new MediaRecorder(stream,recordMime?{mimeType:recordMime,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000})}catch(err){mediaRecorder=new MediaRecorder(stream);recordExt='webm';recordMime=mediaRecorder.mimeType||'video/webm'}
+ recordedChunks=[];
+ mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size)recordedChunks.push(e.data)};
+ mediaRecorder.onstop=()=>{
+   clearInterval(recTimer);recTimer=null;dom.recDot.classList.remove('on');dom.recLabel.textContent='Đã dừng';
+   const actualMime=mediaRecorder.mimeType||recordMime||'video/webm';if(actualMime.includes('mp4'))recordExt='mp4';else recordExt='webm';
+   const blob=new Blob(recordedChunks,{type:actualMime}),url=URL.createObjectURL(blob),a=document.createElement('a');
+   a.href=url;a.download=`011_Dao_dong_cuong_buc.${recordExt}`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+   dom.recordBtn.disabled=false;dom.stopRecordBtn.disabled=true;dom.recFormat.textContent=recordExt==='mp4'?'Đã xuất MP4.':'Trình duyệt chưa ghi MP4 trực tiếp; đã xuất WebM.';
+ };
+ mediaRecorder.start(1000);recStartedAt=performance.now();updateRecClock();recTimer=setInterval(updateRecClock,250);dom.recDot.classList.add('on');dom.recLabel.textContent='Đang quay';dom.recordBtn.disabled=true;dom.stopRecordBtn.disabled=false;
+ dom.recFormat.textContent=recordExt==='mp4'?'Đang ghi MP4 · 30 fps':'Đang ghi WebM · 30 fps (trình duyệt chưa hỗ trợ MP4 trực tiếp)';
+}
+function stopRecording(){if(mediaRecorder&&mediaRecorder.state==='recording')mediaRecorder.stop()}
+dom.recordBtn.onclick=startRecording;dom.stopRecordBtn.onclick=stopRecording;
+
+function fitCamera(){
+ const important=new THREE.Box3();[wall,table,frame,board,cart,actuatorStand,actuatorCoil,damperBody].forEach(o=>important.expandByObject(o));important.expandByScalar(.72);
+ const size=important.getSize(new THREE.Vector3()),center=important.getCenter(new THREE.Vector3()),maxDim=Math.max(size.x,size.y,size.z),fov=camera.fov*Math.PI/180,dist=maxDim/(2*Math.tan(fov/2))*1.23;
+ camera.position.set(center.x+dist*.62,center.y+dist*.02,center.z+dist*.66);controls.target.set(center.x+.15,center.y-.9,center.z);controls.update()
+}
+function keepSafeZoom(){const dist=camera.position.distanceTo(controls.target),minSafe=10.9;if(dist<minSafe){const dir=camera.position.clone().sub(controls.target).normalize();camera.position.copy(controls.target.clone().add(dir.multiplyScalar(minSafe)));controls.update()}}
+controls.addEventListener('change',keepSafeZoom);
+
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();
+renderer.domElement.addEventListener('pointermove',e=>{const r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(mouse,camera);const hit=raycaster.intersectObject(body,false);if(hit.length){dom.tooltip.style.display='block';dom.tooltip.style.left=(e.clientX-r.left+14)+'px';dom.tooltip.style.top=(e.clientY-r.top+14)+'px';dom.tooltip.innerHTML=`<b>Vật dao động</b><br>x = ${fmt(state.x)} m<br>v = ${fmt(state.v)} m/s<br>F(t) = ${fmt(forceNow())} N`}else dom.tooltip.style.display='none'});
+renderer.domElement.addEventListener('pointerleave',()=>dom.tooltip.style.display='none');
+
+function resize(){const w=view.clientWidth,h=view.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}
+window.addEventListener('resize',()=>{resize();keepSafeZoom()});
+resize();applyAndRestart();fitCamera();
+
+let last=performance.now();
+function animate(now){requestAnimationFrame(animate);let dt=(now-last)/1000;last=now;dt=Math.min(MAX_DT,Math.max(0,dt));updatePhysics(dt);updateVisuals();updateUI();controls.update();keepSafeZoom();renderer.render(scene,camera)}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

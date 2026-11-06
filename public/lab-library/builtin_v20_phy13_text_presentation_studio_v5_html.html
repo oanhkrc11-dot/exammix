@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Text Presentation Studio v5</title>
+<style>
+  :root{
+    --bg:#07131f;
+    --panel:#0d2238;
+    --panel2:#122d47;
+    --stage:#040c15;
+    --text:#eef7ff;
+    --muted:#a3c4df;
+    --accent:#69e3ff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Segoe UI, Arial, sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(circle at top, rgba(83,161,255,.12), transparent 35%),
+      radial-gradient(circle at bottom right, rgba(255,90,130,.10), transparent 28%),
+      linear-gradient(180deg,#04101a,#081523 60%,#05111b);
+  }
+  .wrap{
+    width:min(1440px,96vw);
+    margin:14px auto;
+    background:rgba(5,14,24,.95);
+    border:1px solid rgba(120,205,255,.10);
+    border-radius:22px;
+    overflow:hidden;
+    box-shadow:0 10px 40px rgba(0,0,0,.38);
+  }
+  .top{
+    padding:18px 22px 14px;
+    border-bottom:1px solid rgba(120,205,255,.10);
+    background:linear-gradient(180deg, rgba(14,37,61,.96), rgba(8,22,38,.96));
+  }
+  h1{
+    margin:0 0 6px;
+    font-size:clamp(26px,4vw,40px);
+    background:linear-gradient(90deg,#ff89ae,#ffd27a,#7ef1bd,#78dcff,#bf97ff);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .sub{font-size:14px;line-height:1.55;color:var(--muted)}
+  .main{
+    display:grid;
+    grid-template-columns:420px 1fr;
+    gap:18px;
+    padding:18px;
+  }
+  .panel{
+    background:linear-gradient(180deg, rgba(12,31,51,.96), rgba(8,20,34,.96));
+    border:1px solid rgba(120,205,255,.10);
+    border-radius:18px;
+    padding:15px;
+  }
+  .panel h3{
+    margin:0 0 12px;
+    color:#c7efff;
+    font-size:16px;
+  }
+  .row{margin-bottom:12px}
+  label{
+    display:block;
+    font-size:13px;
+    color:#b7d8ef;
+    margin-bottom:6px;
+  }
+  input[type=text], textarea, select, input[type=color], input[type=range], input[type=number]{
+    width:100%;
+    background:#091828;
+    color:var(--text);
+    border:1px solid rgba(120,205,255,.16);
+    border-radius:10px;
+    padding:10px 12px;
+    outline:none;
+    font-family:inherit;
+  }
+  input[type=color]{height:44px;padding:4px}
+  input[type=range]{padding:0;height:36px}
+  textarea{min-height:140px;resize:vertical}
+  .small{font-size:13px;color:#9bbbd5;line-height:1.55}
+  .value{font-size:12px;color:#8db0cb;margin-top:4px}
+  .btns{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  button{
+    border:1px solid rgba(120,205,255,.16);
+    border-radius:999px;
+    padding:10px 14px;
+    color:var(--text);
+    background:linear-gradient(180deg,#17618c,#113b5a);
+    cursor:pointer;
+    font-weight:700;
+    font-family:inherit;
+  }
+  button:hover{filter:brightness(1.08)}
+  .viewer{
+    background:linear-gradient(180deg, rgba(4,15,26,.98), rgba(2,10,18,.98));
+    border:1px solid rgba(120,205,255,.10);
+    border-radius:20px;
+    padding:14px;
+    min-height:780px;
+  }
+  .infoRow{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:12px;
+  }
+  .outBox{
+    background:rgba(8,24,39,.78);
+    border:1px solid rgba(120,205,255,.10);
+    border-radius:16px;
+    padding:12px 14px;
+  }
+  .ttl{
+    font-size:12px;color:#9fc5df;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;
+  }
+  .outText{font-size:22px;font-weight:700;color:#fff6db;min-height:32px;word-break:break-word}
+  .stage{
+    position:relative;
+    height:640px;
+    border-radius:18px;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at top, rgba(33,82,136,.14), transparent 34%),
+      linear-gradient(180deg,#020914,#04111b 52%,#030c14);
+    border:1px solid rgba(120,205,255,.10);
+  }
+  .stageText{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    white-space:pre-wrap;
+    word-break:break-word;
+    font-weight:800;
+    line-height:1.22;
+    padding:32px;
+    z-index:2;
+  }
+  .stageCanvas{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    z-index:1;
+  }
+  .footer{
+    padding:0 18px 18px;
+    text-align:center;
+    font-size:13px;
+    color:#84a6c1;
+  }
+
+  /* Overlay clean full screen */
+  #cleanOverlay{
+    position:fixed;
+    inset:0;
+    background:
+      radial-gradient(circle at top, rgba(33,82,136,.14), transparent 34%),
+      linear-gradient(180deg,#020914,#04111b 52%,#030c14);
+    display:none;
+    z-index:9999;
+  }
+  #cleanOverlay.active{display:block}
+  #cleanStage{
+    position:absolute;
+    inset:0;
+    overflow:hidden;
+  }
+  #cleanText{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    white-space:pre-wrap;
+    word-break:break-word;
+    font-weight:800;
+    line-height:1.22;
+    padding:48px;
+    z-index:2;
+  }
+  #cleanCanvas{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    z-index:1;
+  }
+
+  /* Animation classes */
+  .anim-fade{ animation: fadeIn .9s ease both; }
+  .anim-zoom{ animation: zoomIn .9s ease both; }
+  .anim-fly-left{ animation: flyLeft 1s ease both; }
+  .anim-fly-right{ animation: flyRight 1s ease both; }
+  .anim-fly-up{ animation: flyUp 1s ease both; }
+  .anim-fly-down{ animation: flyDown 1s ease both; }
+  .anim-wipe-h{ animation: wipeH 1.1s ease both; }
+  .anim-wipe-v{ animation: wipeV 1.1s ease both; }
+
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes zoomIn{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}
+  @keyframes flyLeft{from{opacity:0;transform:translateX(-220px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes flyRight{from{opacity:0;transform:translateX(220px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes flyUp{from{opacity:0;transform:translateY(180px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes flyDown{from{opacity:0;transform:translateY(-180px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes wipeH{from{clip-path:inset(0 100% 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
+  @keyframes wipeV{from{clip-path:inset(100% 0 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
+
+  @media (max-width:1060px){
+    .main{grid-template-columns:1fr}
+    .infoRow{grid-template-columns:1fr}
+    .stage{height:520px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Motion Text Studio v5 • Trình chiếu sạch + hiệu ứng kiểu PPT</h1>
+    <div class="sub">
+      Có nút <b>Toàn màn hình sạch</b> để trình chiếu không hiện công cụ nào. Hỗ trợ hiệu ứng kiểu PowerPoint:
+      <b>chạy ngang, chạy dọc, hiện ra, zoom, gõ chữ</b>, và thêm trang trí <b>pháo hoa</b>, <b>chim bay</b>.
+      Thoát trình chiếu bằng <b>Esc</b>.
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="panel">
+      <h3>Nội dung</h3>
+      <div class="row">
+        <label>Dòng hiện tại</label>
+        <input id="currentInput" type="text" value="CHÀO MỪNG QUÝ PHỤ HUYNH" />
+      </div>
+      <div class="row">
+        <label>Mỗi dòng là 1 slide</label>
+        <textarea id="slidesInput">THPT QUẢNG HÀ
+LỚP 10A1
+CHÀO MỪNG QUÝ PHỤ HUYNH</textarea>
+        <div class="small">Có thể dùng tiếng Việt trực tiếp hoặc gõ Telex, ví dụ: THPT QUANGR HAF.</div>
+      </div>
+
+      <h3>Định dạng</h3>
+      <div class="row">
+        <label>Font chữ</label>
+        <select id="fontFamily">
+          <option value="Segoe UI">Segoe UI</option>
+          <option value="Arial">Arial</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Tahoma">Tahoma</option>
+          <option value="Verdana">Verdana</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Trebuchet MS">Trebuchet MS</option>
+          <option value="Courier New">Courier New</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Cỡ chữ cơ sở</label>
+        <input id="fontSize" type="range" min="60" max="220" value="140">
+        <div class="value" id="fontSizeVal">140 px</div>
+      </div>
+      <div class="row">
+        <label>Màu chữ</label>
+        <input id="textColor" type="color" value="#ffeb8a">
+      </div>
+      <div class="row">
+        <label>Màu viền</label>
+        <input id="strokeColor" type="color" value="#ffffff">
+      </div>
+      <div class="row">
+        <label>Kiểu chữ</label>
+        <select id="textStyle">
+          <option value="fill">Tô màu</option>
+          <option value="stroke">Chỉ viền</option>
+          <option value="both">Tô + viền</option>
+          <option value="neon">Neon phát sáng</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Độ dày viền</label>
+        <input id="strokeWidth" type="range" min="1" max="10" step="0.5" value="3">
+        <div class="value" id="strokeWidthVal">3 px</div>
+      </div>
+
+      <h3>Hiệu ứng</h3>
+      <div class="row">
+        <label>Kiểu xuất hiện</label>
+        <select id="effectSelect">
+          <option value="fade">Hiện ra (Fade)</option>
+          <option value="zoom">Phóng to (Zoom)</option>
+          <option value="fly-left">Chạy từ trái sang</option>
+          <option value="fly-right">Chạy từ phải sang</option>
+          <option value="fly-up">Chạy từ dưới lên</option>
+          <option value="fly-down">Chạy từ trên xuống</option>
+          <option value="wipe-h">Lộ dần ngang</option>
+          <option value="wipe-v">Lộ dần dọc</option>
+          <option value="typewriter">Gõ chữ từng ký tự</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Trang trí bổ sung</label>
+        <select id="decorationSelect">
+          <option value="none">Không</option>
+          <option value="fireworks">Pháo hoa</option>
+          <option value="birds">Chim bay</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Tốc độ</label>
+        <input id="speed" type="range" min="0.5" max="3" step="0.1" value="1.2">
+        <div class="value" id="speedVal">1.2×</div>
+      </div>
+
+      <div class="row">
+        <div class="btns">
+          <button id="previewBtn">▶ Xem trước</button>
+          <button id="updateSlidesBtn">📝 Cập nhật slide</button>
+          <button id="presentBtn">🎬 Trình chiếu</button>
+          <button id="presentCleanBtn">🖥 Toàn màn hình sạch</button>
+        </div>
+      </div>
+
+      <div class="small">
+        <b>Phím tắt trình chiếu:</b> Space / → sang bước tiếp theo hoặc sang slide, ← lùi slide, Esc thoát.
+      </div>
+    </div>
+
+    <div class="viewer">
+      <div class="infoRow">
+        <div class="outBox">
+          <div class="ttl">Slide hiện tại</div>
+          <div class="outText" id="currentView">CHÀO MỪNG QUÝ PHỤ HUYNH</div>
+        </div>
+        <div class="outBox">
+          <div class="ttl">Tổng số slide</div>
+          <div class="outText" id="countView">3</div>
+        </div>
+      </div>
+      <div class="stage" id="previewStage">
+        <canvas class="stageCanvas" id="previewCanvas"></canvas>
+        <div class="stageText" id="previewText"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Nút <b>Toàn màn hình sạch</b> sẽ mở một màn hình chỉ còn hiệu ứng chữ và trang trí, không hiện công cụ nào.
+  </div>
+</div>
+
+<div id="cleanOverlay">
+  <div id="cleanStage">
+    <canvas id="cleanCanvas"></canvas>
+    <div id="cleanText"></div>
+  </div>
+</div>
+
+<script>
+const currentInput = document.getElementById('currentInput');
+const slidesInput = document.getElementById('slidesInput');
+const fontFamily = document.getElementById('fontFamily');
+const fontSize = document.getElementById('fontSize');
+const fontSizeVal = document.getElementById('fontSizeVal');
+const textColor = document.getElementById('textColor');
+const strokeColor = document.getElementById('strokeColor');
+const textStyle = document.getElementById('textStyle');
+const strokeWidth = document.getElementById('strokeWidth');
+const strokeWidthVal = document.getElementById('strokeWidthVal');
+const effectSelect = document.getElementById('effectSelect');
+const decorationSelect = document.getElementById('decorationSelect');
+const speed = document.getElementById('speed');
+const speedVal = document.getElementById('speedVal');
+
+const previewText = document.getElementById('previewText');
+const previewStage = document.getElementById('previewStage');
+const previewCanvas = document.getElementById('previewCanvas');
+const currentView = document.getElementById('currentView');
+const countView = document.getElementById('countView');
+
+const cleanOverlay = document.getElementById('cleanOverlay');
+const cleanText = document.getElementById('cleanText');
+const cleanCanvas = document.getElementById('cleanCanvas');
+
+let slides = [];
+let currentSlide = 0;
+let inPresentation = false;
+let typeTimer = null;
+let animating = false;
+let lastTs = 0;
+
+// ----- Telex convert -----
+function isVowel(ch){ return 'aeiouyăâêôơưAEIOUYĂÂÊÔƠƯ'.includes(ch); }
+function isToneMark(ch){ return 'sfrxjSFRXJ'.includes(ch); }
+function isUpper(ch){ return ch === ch.toUpperCase() && ch !== ch.toLowerCase(); }
+function preserveCase(src,out){ return isUpper(src) ? out.toUpperCase() : out; }
+const toneMap = {
+  a:{s:'á',f:'à',r:'ả',x:'ã',j:'ạ'},
+  ă:{s:'ắ',f:'ằ',r:'ẳ',x:'ẵ',j:'ặ'},
+  â:{s:'ấ',f:'ầ',r:'ẩ',x:'ẫ',j:'ậ'},
+  e:{s:'é',f:'è',r:'ẻ',x:'ẽ',j:'ẹ'},
+  ê:{s:'ế',f:'ề',r:'ể',x:'ễ',j:'ệ'},
+  i:{s:'í',f:'ì',r:'ỉ',x:'ĩ',j:'ị'},
+  o:{s:'ó',f:'ò',r:'ỏ',x:'õ',j:'ọ'},
+  ô:{s:'ố',f:'ồ',r:'ổ',x:'ỗ',j:'ộ'},
+  ơ:{s:'ớ',f:'ờ',r:'ở',x:'ỡ',j:'ợ'},
+  u:{s:'ú',f:'ù',r:'ủ',x:'ũ',j:'ụ'},
+  ư:{s:'ứ',f:'ừ',r:'ử',x:'ữ',j:'ự'},
+  y:{s:'ý',f:'ỳ',r:'ỷ',x:'ỹ',j:'ỵ'}
+};
+const deaccentBase = {
+  'á':'a','à':'a','ả':'a','ã':'a','ạ':'a',
+  'ắ':'ă','ằ':'ă','ẳ':'ă','ẵ':'ă','ặ':'ă',
+  'ấ':'â','ầ':'â','ẩ':'â','ẫ':'â','ậ':'â',
+  'é':'e','è':'e','ẻ':'e','ẽ':'e','ẹ':'e',
+  'ế':'ê','ề':'ê','ể':'ê','ễ':'ê','ệ':'ê',
+  'í':'i','ì':'i','ỉ':'i','ĩ':'i','ị':'i',
+  'ó':'o','ò':'o','ỏ':'o','õ':'o','ọ':'o',
+  'ố':'ô','ồ':'ô','ổ':'ô','ỗ':'ô','ộ':'ô',
+  'ớ':'ơ','ờ':'ơ','ở':'ơ','ỡ':'ơ','ợ':'ơ',
+  'ú':'u','ù':'u','ủ':'u','ũ':'u','ụ':'u',
+  'ứ':'ư','ừ':'ư','ử':'ư','ữ':'ư','ự':'ư',
+  'ý':'y','ỳ':'y','ỷ':'y','ỹ':'y','ỵ':'y'
+};
+function replaceDoubleLetters(str){
+  let arr = str.split('');
+  for(let i=0;i<arr.length-1;i++){
+    const a = arr[i], b = arr[i+1];
+    if((a==='d'&&b==='d')||(a==='D'&&b==='D')){arr.splice(i,2,preserveCase(a,'đ'));i--;continue;}
+    if((a==='a'&&b==='a')||(a==='A'&&b==='A')){arr.splice(i,2,preserveCase(a,'â'));i--;continue;}
+    if((a==='e'&&b==='e')||(a==='E'&&b==='E')){arr.splice(i,2,preserveCase(a,'ê'));i--;continue;}
+    if((a==='o'&&b==='o')||(a==='O'&&b==='O')){arr.splice(i,2,preserveCase(a,'ô'));i--;continue;}
+  }
+  return arr.join('');
+}
+function replaceW(str){
+  let arr = str.split('');
+  for(let i=0;i<arr.length-1;i++){
+    const a = arr[i], b = arr[i+1];
+    const la = a.toLowerCase(), lb = b.toLowerCase();
+    if(lb!=='w') continue;
+    if(la==='a'){arr.splice(i,2,preserveCase(a,'ă'));i--;continue;}
+    if(la==='o'){arr.splice(i,2,preserveCase(a,'ơ'));i--;continue;}
+    if(la==='u'){arr.splice(i,2,preserveCase(a,'ư'));i--;continue;}
+  }
+  return arr.join('');
+}
+function toneTargetIndex(chars){
+  let pos=[];
+  for(let i=0;i<chars.length;i++){
+    const base = deaccentBase[chars[i].toLowerCase()] || chars[i].toLowerCase();
+    if(isVowel(base)) pos.push(i);
+  }
+  if(pos.length===0) return -1;
+  if(pos.length===1) return pos[0];
+  const priority = ['ă','â','ê','ô','ơ','ư'];
+  for(const idx of pos){
+    const c = (deaccentBase[chars[idx].toLowerCase()] || chars[idx].toLowerCase());
+    if(priority.includes(c)) return idx;
+  }
+  if(chars.length>=2){
+    const c0=chars[0].toLowerCase(), c1=chars[1].toLowerCase();
+    if(c0==='q'&&c1==='u'&&pos.length>=2) pos = pos.filter(v=>v!==1);
+    if(c0==='g'&&c1==='i'&&pos.length>=2) pos = pos.filter(v=>v!==1);
+    if(pos.length===1) return pos[0];
+  }
+  const last = pos[pos.length-1];
+  const lastChar = (deaccentBase[chars[last].toLowerCase()] || chars[last].toLowerCase());
+  if(['i','u','y'].includes(lastChar) && pos.length>=2) return pos[pos.length-2];
+  if(pos.length===2) return pos[0];
+  return pos[1];
+}
+function applyTone(str,tone){
+  let chars=str.split('');
+  const idx=toneTargetIndex(chars);
+  if(idx<0) return str;
+  const ch=chars[idx];
+  const lower=ch.toLowerCase();
+  const base=deaccentBase[lower]||lower;
+  if(!toneMap[base]) return str;
+  const mapped=toneMap[base][tone.toLowerCase()];
+  chars[idx]=preserveCase(ch,mapped);
+  return chars.join('');
+}
+function processWord(word){
+  if(!word) return word;
+  let tone=''; let remain='';
+  for(let i=0;i<word.length;i++){
+    const ch=word[i];
+    if(isToneMark(ch)) tone=ch; else remain+=ch;
+  }
+  remain = replaceDoubleLetters(remain);
+  remain = replaceW(remain);
+  remain = replaceDoubleLetters(remain);
+  remain = replaceW(remain);
+  if(tone) remain = applyTone(remain,tone);
+  return remain;
+}
+function processLine(raw){
+  return raw.split(/(\s+)/).map(p => /\s+/.test(p) ? p : processWord(p)).join('');
+}
+
+// ----- UI update -----
+function updateVals(){
+  fontSizeVal.textContent = fontSize.value + ' px';
+  strokeWidthVal.textContent = Number(strokeWidth.value).toFixed(1).replace('.0','') + ' px';
+  speedVal.textContent = Number(speed.value).toFixed(1) + '×';
+}
+function buildSlides(){
+  const lines = slidesInput.value.split('\n').map(s => s.trim()).filter(Boolean);
+  slides = lines.length ? lines.map(processLine) : [processLine(currentInput.value.trim())];
+  countView.textContent = slides.length;
+  if(slides.length && (!currentInput.value.trim() || currentView.textContent !== processLine(currentInput.value.trim()))){
+    currentView.textContent = slides[0];
+  }
+}
+function updateCurrentFromInput(){
+  const text = processLine(currentInput.value || '');
+  currentView.textContent = text || ' ';
+  return text || ' ';
+}
+
+// ----- fitting and styling -----
+function applyTextStyle(el){
+  el.style.fontFamily = fontFamily.value;
+  el.style.color = textColor.value;
+  el.style.textShadow = 'none';
+  el.style.webkitTextStroke = '0 transparent';
+  const sw = Number(strokeWidth.value);
+  if(textStyle.value === 'fill'){
+    el.style.webkitTextStroke = '0 transparent';
+  } else if(textStyle.value === 'stroke'){
+    el.style.color = 'transparent';
+    el.style.webkitTextStroke = `${sw}px ${strokeColor.value}`;
+  } else if(textStyle.value === 'both'){
+    el.style.color = textColor.value;
+    el.style.webkitTextStroke = `${sw}px ${strokeColor.value}`;
+  } else if(textStyle.value === 'neon'){
+    el.style.color = textColor.value;
+    el.style.webkitTextStroke = `${Math.max(1, sw/1.5)}px ${strokeColor.value}`;
+    el.style.textShadow = `0 0 10px ${textColor.value}, 0 0 20px ${textColor.value}, 0 0 28px ${strokeColor.value}`;
+  }
+}
+function fitText(el, container){
+  let size = Number(fontSize.value);
+  el.style.fontSize = size + 'px';
+  el.style.lineHeight = '1.22';
+  applyTextStyle(el);
+  while((el.scrollWidth > container.clientWidth*0.92 || el.scrollHeight > container.clientHeight*0.88) && size > 28){
+    size -= 4;
+    el.style.fontSize = size + 'px';
+  }
+}
+
+// ----- animations -----
+function clearAnimClasses(el){
+  el.classList.remove('anim-fade','anim-zoom','anim-fly-left','anim-fly-right','anim-fly-up','anim-fly-down','anim-wipe-h','anim-wipe-v');
+}
+function runTextAnimation(el, text, container){
+  clearInterval(typeTimer);
+  animating = true;
+  clearAnimClasses(el);
+  el.textContent = '';
+  applyTextStyle(el);
+  fitText(el, container);
+
+  const effect = effectSelect.value;
+  const dur = 900 / Number(speed.value);
+
+  if(effect === 'typewriter'){
+    const chars = Array.from(text);
+    let i = 0;
+    const step = Math.max(20, 55 / Number(speed.value));
+    typeTimer = setInterval(() => {
+      i++;
+      el.textContent = chars.slice(0,i).join('');
+      applyTextStyle(el);
+      fitText(el, container);
+      if(i >= chars.length){
+        clearInterval(typeTimer);
+        animating = false;
+      }
+    }, step);
+  } else {
+    el.textContent = text;
+    fitText(el, container);
+    const cls = {
+      'fade':'anim-fade',
+      'zoom':'anim-zoom',
+      'fly-left':'anim-fly-left',
+      'fly-right':'anim-fly-right',
+      'fly-up':'anim-fly-up',
+      'fly-down':'anim-fly-down',
+      'wipe-h':'anim-wipe-h',
+      'wipe-v':'anim-wipe-v'
+    }[effect];
+    void el.offsetWidth;
+    if(cls) el.classList.add(cls);
+    setTimeout(() => { animating = false; }, dur + 120);
+  }
+}
+
+// ----- canvas decorations -----
+function setupCanvas(canvas){
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return ctx;
+}
+let previewCtx = null;
+let cleanCtx = null;
+
+let fireworks = [];
+let birds = [];
+
+function initDecorations(canvas){
+  const rect = canvas.getBoundingClientRect();
+  fireworks = [];
+  birds = [];
+  for(let i=0;i<4;i++) makeFirework(rect.width, rect.height);
+  for(let i=0;i<7;i++) birds.push({
+    x: Math.random()*rect.width,
+    y: 60 + Math.random()*rect.height*0.45,
+    speed: 1 + Math.random()*2.2,
+    size: 16 + Math.random()*18,
+    wing: Math.random()*Math.PI*2
+  });
+}
+function makeFirework(w,h){
+  const x = 80 + Math.random()*(w-160);
+  const y = 80 + Math.random()*(h*0.55);
+  const hue = Math.floor(Math.random()*360);
+  const particles = [];
+  for(let i=0;i<26;i++){
+    const angle = (Math.PI*2*i)/26;
+    const sp = 1.2 + Math.random()*2.7;
+    particles.push({
+      x,y,
+      vx: Math.cos(angle)*sp,
+      vy: Math.sin(angle)*sp,
+      life: 40 + Math.random()*28,
+      max: 40 + Math.random()*28
+    });
+  }
+  fireworks.push({hue, particles});
+}
+function drawBird(ctx,b){
+  ctx.save();
+  ctx.translate(b.x,b.y);
+  ctx.strokeStyle = 'rgba(255,255,255,.75)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-b.size,0);
+  ctx.quadraticCurveTo(-b.size/2, -Math.sin(b.wing)*8, 0, 0);
+  ctx.quadraticCurveTo(b.size/2, -Math.sin(b.wing)*8, b.size, 0);
+  ctx.stroke();
+  ctx.restore();
+}
+function updateDecoration(canvas, ctx, dt){
+  const w = canvas.getBoundingClientRect().width;
+  const h = canvas.getBoundingClientRect().height;
+  ctx.clearRect(0,0,w,h);
+  const mode = decorationSelect.value;
+  if(mode === 'none') return;
+
+  if(mode === 'fireworks'){
+    if(fireworks.length < 5 && Math.random() < 0.02*dt*60) makeFirework(w,h);
+    fireworks.forEach(fw => {
+      fw.particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.015;
+        p.life -= 1;
+        const alpha = Math.max(0, p.life/p.max);
+        ctx.beginPath();
+        ctx.fillStyle = `hsla(${fw.hue}, 100%, 65%, ${alpha})`;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = `hsla(${fw.hue},100%,65%,1)`;
+        ctx.arc(p.x,p.y,2.4,0,Math.PI*2);
+        ctx.fill();
+      });
+    });
+    fireworks = fireworks.filter(fw => fw.particles.some(p => p.life > 0));
+  }
+
+  if(mode === 'birds'){
+    ctx.shadowBlur = 0;
+    birds.forEach(b => {
+      b.x += b.speed;
+      b.wing += 0.18;
+      if(b.x > w + 40){
+        b.x = -40;
+        b.y = 60 + Math.random()*h*0.45;
+      }
+      drawBird(ctx,b);
+    });
+  }
+}
+function loop(ts){
+  if(!lastTs) lastTs = ts;
+  const dt = (ts - lastTs)/16.7;
+  lastTs = ts;
+  if(previewCtx) updateDecoration(previewCanvas, previewCtx, dt);
+  if(cleanCtx && inPresentation) updateDecoration(cleanCanvas, cleanCtx, dt);
+  requestAnimationFrame(loop);
+}
+
+// ----- show functions -----
+function previewCurrent(){
+  const text = updateCurrentFromInput();
+  runTextAnimation(previewText, text, previewStage);
+}
+function showPreviewSlide(index){
+  if(slides.length === 0) buildSlides();
+  currentSlide = Math.max(0, Math.min(index, slides.length-1));
+  currentView.textContent = slides[currentSlide];
+  runTextAnimation(previewText, slides[currentSlide], previewStage);
+}
+function showCleanSlide(index){
+  if(slides.length === 0) buildSlides();
+  currentSlide = Math.max(0, Math.min(index, slides.length-1));
+  runTextAnimation(cleanText, slides[currentSlide], cleanOverlay);
+}
+function nextAction(){
+  if(animating && effectSelect.value === 'typewriter'){
+    clearInterval(typeTimer);
+    if(inPresentation){
+      cleanText.textContent = slides[currentSlide];
+      applyTextStyle(cleanText); fitText(cleanText, cleanOverlay);
+    }else{
+      previewText.textContent = slides[currentSlide];
+      applyTextStyle(previewText); fitText(previewText, previewStage);
+    }
+    animating = false;
+    return;
+  }
+  if(currentSlide < slides.length - 1){
+    if(inPresentation) showCleanSlide(currentSlide + 1);
+    else showPreviewSlide(currentSlide + 1);
+  }
+}
+function prevAction(){
+  if(currentSlide > 0){
+    if(inPresentation) showCleanSlide(currentSlide - 1);
+    else showPreviewSlide(currentSlide - 1);
+  }
+}
+
+// ----- presentation modes -----
+function presentNormal(){
+  buildSlides();
+  inPresentation = true;
+  cleanOverlay.classList.add('active');
+  showCleanSlide(0);
+}
+function presentCleanFullscreen(){
+  buildSlides();
+  inPresentation = true;
+  cleanOverlay.classList.add('active');
+  showCleanSlide(0);
+  if(cleanOverlay.requestFullscreen) cleanOverlay.requestFullscreen().catch(()=>{});
+}
+function exitPresentation(){
+  inPresentation = false;
+  cleanOverlay.classList.remove('active');
+  clearInterval(typeTimer);
+  if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+}
+
+// ----- events -----
+document.getElementById('previewBtn').onclick = previewCurrent;
+document.getElementById('updateSlidesBtn').onclick = () => { buildSlides(); showPreviewSlide(0); };
+document.getElementById('presentBtn').onclick = presentNormal;
+document.getElementById('presentCleanBtn').onclick = presentCleanFullscreen;
+
+[currentInput, slidesInput, fontFamily, fontSize, textColor, strokeColor, textStyle, strokeWidth, effectSelect, decorationSelect, speed].forEach(el => {
+  el.addEventListener('input', () => {
+    updateVals();
+    buildSlides();
+    previewCurrent();
+    initDecorations(previewCanvas);
+    if(inPresentation) initDecorations(cleanCanvas);
+  });
+});
+
+document.addEventListener('keydown', (e) => {
+  if(!inPresentation) return;
+  if(e.key === 'Escape'){ e.preventDefault(); exitPresentation(); }
+  else if(e.key === 'ArrowRight' || e.key === ' '){ e.preventDefault(); nextAction(); }
+  else if(e.key === 'ArrowLeft'){ e.preventDefault(); prevAction(); }
+});
+
+// init
+updateVals();
+buildSlides();
+previewCtx = setupCanvas(previewCanvas);
+cleanCtx = setupCanvas(cleanCanvas);
+initDecorations(previewCanvas);
+initDecorations(cleanCanvas);
+previewCurrent();
+window.addEventListener('resize', () => {
+  previewCtx = setupCanvas(previewCanvas);
+  cleanCtx = setupCanvas(cleanCanvas);
+  initDecorations(previewCanvas);
+  initDecorations(cleanCanvas);
+  previewCurrent();
+  if(inPresentation) showCleanSlide(currentSlide);
+});
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mô phỏng ba giai đoạn thay đổi vận tốc của ô tô đồ chơi</title>
+<style>
+:root{
+  --bg:#f6f8fc; --card:#fff; --text:#1f2937; --muted:#667085;
+  --blue:#2563eb; --green:#16a34a; --orange:#f59e0b; --red:#dc2626;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text)}
+.wrap{max-width:1220px;margin:auto;padding:18px}
+h1{margin:0 0 8px;color:#173a78;font-size:clamp(22px,3vw,34px)}
+.sub{margin:0 0 15px;color:var(--muted);line-height:1.6}
+.grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,.8fr);gap:16px}
+.card{background:var(--card);border:1px solid #e4e7ec;border-radius:18px;padding:14px}
+.panel{border:1px solid #d5dbe5;border-radius:14px;overflow:hidden;background:#17191d;margin-bottom:12px}
+.panelHead{display:flex;justify-content:space-between;gap:12px;align-items:center;background:#fff;padding:9px 12px;border-bottom:1px solid #e4e7ec}
+.panelHead b{color:#173a78}
+.stage{position:relative;height:170px;overflow:hidden;background:linear-gradient(#202329 0 68%,#363a40 68% 100%)}
+.road{position:absolute;left:0;right:0;bottom:25px;height:5px;background:#8b8f96}
+.car{position:absolute;left:35px;bottom:31px;width:95px;height:42px;transform:translateX(0);will-change:transform}
+.car svg{width:100%;height:100%;display:block}
+.ghost{position:absolute;bottom:31px;width:95px;height:42px;opacity:.25}
+.flashline{position:absolute;left:0;right:0;bottom:19px;height:2px;background:#52565d}
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+button{border:0;border-radius:10px;padding:10px 12px;font:inherit;font-weight:800;cursor:pointer}
+.primary{background:var(--blue);color:#fff}.green{background:var(--green);color:#fff}.orange{background:var(--orange);color:#fff}.gray{background:#eef2f6;color:#1f2937}
+.status{background:#edf6ff;border:1px solid #cee4fb;border-radius:12px;padding:12px;line-height:1.55;color:#174a7f;font-weight:700}
+.info{background:#fff9e9;border:1px solid #f0dc9b;border-radius:12px;padding:12px;line-height:1.6;margin-top:10px}
+.step{display:grid;gap:9px;margin-top:10px}
+.item{border:1px solid #e4e7ec;border-radius:12px;padding:10px;background:#fafcff;line-height:1.5}
+.item strong{color:#173a78}
+.legend{font-size:13px;color:#667085;margin-top:7px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mô phỏng ảnh hoạt nghiệm – sự thay đổi vận tốc</h1>
+  <p class="sub">
+    Các ảnh bóng mờ được tạo ở <b>những khoảng thời gian bằng nhau</b>. Vì vậy khoảng cách giữa hai vị trí liên tiếp cho biết xe đang đi nhanh hay chậm.
+  </p>
+
+  <div class="grid">
+    <section class="card">
+      <div class="panel">
+        <div class="panelHead">
+          <b>a) Xe nhanh dần</b>
+          <span>Khoảng cách giữa các ảnh tăng dần</span>
+        </div>
+        <div class="stage" id="stageA">
+          <div class="road"></div><div class="flashline"></div>
+          <div class="car" id="carA"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panelHead">
+          <b>b) Xe chuyển động đều</b>
+          <span>Khoảng cách giữa các ảnh gần như bằng nhau</span>
+        </div>
+        <div class="stage" id="stageB">
+          <div class="road"></div><div class="flashline"></div>
+          <div class="car" id="carB"></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:0">
+        <div class="panelHead">
+          <b>c) Xe chậm dần</b>
+          <span>Khoảng cách giữa các ảnh giảm dần</span>
+        </div>
+        <div class="stage" id="stageC">
+          <div class="road"></div><div class="flashline"></div>
+          <div class="car" id="carC"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="primary" id="runA">▶ Chạy a)</button>
+        <button class="green" id="runB">▶ Chạy b)</button>
+        <button class="orange" id="runC">▶ Chạy c)</button>
+        <button class="primary" id="runAll">▶ Chạy lần lượt cả 3</button>
+        <button class="gray" id="pause">⏸ Tạm dừng</button>
+        <button class="gray" id="reset">↺ Làm lại</button>
+      </div>
+      <div class="legend">Các bóng xe mờ là vị trí xe tại các thời điểm cách đều nhau, tương tự ảnh hoạt nghiệm trong hình SGK.</div>
+    </section>
+
+    <aside class="card">
+      <div class="status" id="status">Sẵn sàng. Chọn một giai đoạn để quan sát.</div>
+      <div class="step">
+        <div class="item"><strong>Giống nhau:</strong> xe đều chuyển động theo cùng một hướng từ trái sang phải.</div>
+        <div class="item"><strong>Giai đoạn a:</strong> sau mỗi khoảng thời gian bằng nhau, xe đi được quãng đường lớn hơn trước → độ lớn vận tốc tăng.</div>
+        <div class="item"><strong>Giai đoạn b:</strong> quãng đường đi được trong các khoảng thời gian bằng nhau gần như bằng nhau → vận tốc gần như không đổi.</div>
+        <div class="item"><strong>Giai đoạn c:</strong> quãng đường đi được trong các khoảng thời gian bằng nhau nhỏ dần → độ lớn vận tốc giảm.</div>
+      </div>
+      <div class="info">
+        Khi chạy mô phỏng, xe chuyển động liên tục; cứ mỗi khoảng thời gian cố định, một “ảnh” của xe được giữ lại. Nhìn chuỗi ảnh đó, học sinh có thể tự nhận ra xe đang <b>nhanh dần – đều – chậm dần</b>.
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const carSvg = `
+    <svg viewBox="0 0 150 65" aria-hidden="true">
+      <path d="M12 42 Q20 27 38 24 L65 12 H105 Q119 15 128 28 L141 34 Q147 37 145 45 H134
+               Q131 56 119 56 Q107 56 104 45 H48 Q45 56 33 56 Q21 56 18 45 H10 Q7 45 12 42Z"
+            fill="#d92f2f" stroke="#8f1e1e" stroke-width="3"/>
+      <path d="M62 15 L48 27 H82 L79 15Z" fill="#d8eef9"/>
+      <path d="M84 15 L87 27 H119 Q112 19 102 15Z" fill="#d8eef9"/>
+      <rect x="74" y="2" width="4" height="16" rx="2" fill="#d8d8d8" transform="rotate(-16 76 10)"/>
+      <circle cx="33" cy="47" r="10" fill="#1f2937"/><circle cx="119" cy="47" r="10" fill="#1f2937"/>
+      <circle cx="33" cy="47" r="4" fill="#9ca3af"/><circle cx="119" cy="47" r="4" fill="#9ca3af"/>
+    </svg>`;
+
+  ['carA','carB','carC'].forEach(id => document.getElementById(id).innerHTML = carSvg);
+
+  const cfg = {
+    A:{stage:'stageA',car:'carA',type:'accel',label:'a) xe nhanh dần'},
+    B:{stage:'stageB',car:'carB',type:'uniform',label:'b) xe chuyển động đều'},
+    C:{stage:'stageC',car:'carC',type:'decel',label:'c) xe chậm dần'}
+  };
+
+  let raf=0, running=false, paused=false, last=null, elapsed=0, current=null;
+  let ghosts=[], nextGhost=0;
+  const duration=5.5, sampleDt=0.75;
+  let resolveRun=null;
+
+  function clearGhosts(){
+    ghosts.forEach(g=>g.remove());
+    ghosts=[];
+  }
+
+  function pathFraction(type,u){
+    u=Math.max(0,Math.min(1,u));
+    if(type==='accel') return u*u;                   // nhanh dần
+    if(type==='uniform') return u;                   // đều
+    return 1-(1-u)*(1-u);                            // chậm dần
+  }
+
+  function render(){
+    if(!current) return;
+    const c=cfg[current];
+    const stage=document.getElementById(c.stage);
+    const car=document.getElementById(c.car);
+    const maxX=Math.max(0, stage.clientWidth - 140);
+    const u=Math.min(1,elapsed/duration);
+    const x=pathFraction(c.type,u)*maxX;
+    car.style.transform=`translateX(${x}px)`;
+  }
+
+  function addGhost(){
+    if(!current) return;
+    const c=cfg[current];
+    const stage=document.getElementById(c.stage);
+    const car=document.getElementById(c.car);
+    const maxX=Math.max(0, stage.clientWidth - 140);
+    const u=Math.min(1,elapsed/duration);
+    const x=pathFraction(c.type,u)*maxX;
+    const g=document.createElement('div');
+    g.className='ghost';
+    g.style.left=(35+x)+'px';
+    g.innerHTML=carSvg;
+    stage.appendChild(g);
+    ghosts.push(g);
+  }
+
+  function stop(){
+    cancelAnimationFrame(raf);
+    running=false; paused=false; last=null;
+  }
+
+  function runOne(key){
+    return new Promise(resolve=>{
+      stop(); clearGhosts();
+      current=key; elapsed=0; nextGhost=0; running=true; paused=false; last=null; resolveRun=resolve;
+      document.getElementById('status').innerHTML='Đang mô phỏng <b>'+cfg[key].label+'</b>. Mỗi ảnh mờ cách nhau cùng một khoảng thời gian.';
+      addGhost(); nextGhost=sampleDt;
+      raf=requestAnimationFrame(step);
+    });
+  }
+
+  function step(ts){
+    if(!running) return;
+    if(paused){last=ts; raf=requestAnimationFrame(step); return;}
+    if(last===null) last=ts;
+    const dt=Math.min((ts-last)/1000,0.05); last=ts;
+    elapsed+=dt;
+
+    while(elapsed>=nextGhost && nextGhost<duration){
+      const save=elapsed; elapsed=nextGhost; addGhost(); elapsed=save; nextGhost+=sampleDt;
+    }
+    render();
+
+    if(elapsed>=duration){
+      elapsed=duration; render(); addGhost();
+      running=false;
+      document.getElementById('status').innerHTML='Đã hoàn thành <b>'+cfg[current].label+'</b>. Hãy so sánh khoảng cách giữa các ảnh liên tiếp.';
+      const r=resolveRun; resolveRun=null; if(r) r();
+      return;
+    }
+    raf=requestAnimationFrame(step);
+  }
+
+  document.getElementById('runA').onclick=()=>runOne('A');
+  document.getElementById('runB').onclick=()=>runOne('B');
+  document.getElementById('runC').onclick=()=>runOne('C');
+  document.getElementById('runAll').onclick=async()=>{
+    await runOne('A'); await new Promise(r=>setTimeout(r,600));
+    await runOne('B'); await new Promise(r=>setTimeout(r,600));
+    await runOne('C');
+  };
+  document.getElementById('pause').onclick=()=>{
+    if(!running)return;
+    paused=!paused;
+    document.getElementById('pause').textContent=paused?'▶ Tiếp tục':'⏸ Tạm dừng';
+  };
+  document.getElementById('reset').onclick=()=>{
+    stop(); clearGhosts(); current=null; elapsed=0;
+    ['carA','carB','carC'].forEach(id=>document.getElementById(id).style.transform='translateX(0)');
+    document.getElementById('pause').textContent='⏸ Tạm dừng';
+    document.getElementById('status').textContent='Đã làm lại. Chọn một giai đoạn để quan sát.';
+  };
+})();
+</script>
+</body>
+</html>

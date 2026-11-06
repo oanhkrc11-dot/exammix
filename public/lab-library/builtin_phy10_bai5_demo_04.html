@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Hai xe chuyển động V4</title>
+<style>
+body{margin:0;background:#071522;color:white;font-family:Arial}
+.app{display:flex;gap:12px;padding:12px;height:95vh}
+.sim{width:80%;background:#122638;border-radius:18px;padding:15px}
+.data{width:20%;background:#122638;border-radius:18px;padding:15px}
+canvas{width:100%;height:70%;background:#bfe3f5;border-radius:15px}
+h2{color:#ffd966}
+.box{background:#08131d;padding:12px;border-radius:10px;margin-top:10px;font-size:18px}
+input{width:65px;font-size:17px}
+button{padding:8px 12px;margin:4px;font-size:16px;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="sim">
+<h2>Phòng thí nghiệm: Hai xe chuyển động thẳng</h2>
+<canvas id="c" width="1100" height="500"></canvas>
+<br>
+<button onclick="play()">▶ Chạy</button>
+<button onclick="pause()">Ⅱ Dừng</button>
+<button onclick="continueRun()">▶ Tiếp tục sau gặp</button>
+<button onclick="reset()">↺ Lại</button>
+<br>
+Tốc độ:
+<input type="range" id="spd" min="1" max="6" value="2">
+</div>
+
+<div class="data">
+<h2>Dữ liệu</h2>
+Xe 1<br>
+x₁₀=<input id="x10" value="0">
+v₁=<input id="v1" value="40"><br><br>
+
+Xe 2<br>
+x₂₀=<input id="x20" value="170">
+v₂=<input id="v2" value="-20">
+
+<div class="box" id="info"></div>
+<div class="box" id="eq"></div>
+</div>
+</div>
+
+<script>
+let t=0, timer=null, freeze=false;
+let ctx=document.getElementById("c").getContext("2d");
+
+function n(id){return Number(document.getElementById(id).value)}
+
+function reset(){pause();t=0;freeze=false;draw()}
+
+function play(){
+ if(timer)return;
+ timer=setInterval(()=>{
+   if(freeze)return;
+   t+=0.005*n("spd");
+   let x1=n("x10")+n("v1")*t;
+   let x2=n("x20")+n("v2")*t;
+   if(Math.abs(x1-x2)<0.5){
+      freeze=true;
+   }
+   draw();
+ },40)
+}
+
+function continueRun(){
+ freeze=false;
+}
+
+function pause(){
+ clearInterval(timer);
+ timer=null;
+}
+
+function draw(){
+ctx.clearRect(0,0,1100,500);
+
+let x1=n("x10")+n("v1")*t;
+let x2=n("x20")+n("v2")*t;
+
+let center=(x1+x2)/2;
+let cam=center*3.5-550;
+
+function X(x){return x*2.0-cam}
+
+ctx.fillStyle="#555";
+ctx.fillRect(0,230,1100,90);
+
+ctx.strokeStyle="#ddd";
+ctx.lineWidth=3;
+ctx.setLineDash([30,25]);
+ctx.beginPath();
+ctx.moveTo(0,275);ctx.lineTo(1100,275);
+ctx.stroke();
+ctx.setLineDash([]);
+
+for(let i=Math.floor(center/50)*50-150;i<center+200;i+=50){
+ctx.fillStyle="#000";
+ctx.font="26px Arial";
+ctx.fillText(i+" km",X(i)-30,400);
+}
+
+car(X(x1),210,"#1769ff","Xe 1");
+car(X(x2),310,"#ef3340","Xe 2");
+
+if(freeze){
+ctx.fillStyle="#006400";
+ctx.font="35px Arial";
+ctx.fillText("🎯 HAI XE GẶP NHAU - TẠM DỪNG",300,80);
+}
+
+ctx.fillStyle="#000";
+ctx.font="25px Arial";
+ctx.fillText("Vị trí camera: "+center.toFixed(1)+" km",20,40);
+
+document.getElementById("info").innerHTML=
+`<b>t=${t.toFixed(2)} h</b><br>
+x₁=${x1.toFixed(2)} km<br>
+x₂=${x2.toFixed(2)} km<br>
+S₁=${Math.abs(n("v1")*t).toFixed(2)} km<br>
+S₂=${Math.abs(n("v2")*t).toFixed(2)} km<br>
+d=${Math.abs(x1-x2).toFixed(2)} km`;
+
+document.getElementById("eq").innerHTML=
+`Phương trình:<br>
+x₁=${n("x10")}+${n("v1")}t<br>
+x₂=${n("x20")}${n("v2")>=0?"+":"-"}${Math.abs(n("v2"))}t`;
+}
+
+function car(x,y,color,name){
+ctx.fillStyle=color;
+ctx.fillRect(x-40,y-25,80,40);
+ctx.fillStyle="#111";
+ctx.beginPath();
+ctx.arc(x-25,y+20,10,0,7);
+ctx.arc(x+25,y+20,10,0,7);
+ctx.fill();
+
+ctx.fillStyle="#000";
+ctx.font="25px Arial";
+ctx.fillText(name,x-35,y-40);
+}
+
+draw();
+</script>
+</body>
+</html>

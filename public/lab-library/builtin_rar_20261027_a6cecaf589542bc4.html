@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-43 Hiệu ứng Doppler - nguồn âm chuyển động 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#020912;color:#eef8fb}
+#app{display:grid;grid-template-columns:252px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800}.desc{font-size:10.4px;color:#a9c2cd;line-height:1.35}h1{font-size:17px;margin:4px 0 6px;line-height:1.1}
+.ctl{display:grid;grid-template-columns:72px 1fr 64px;gap:5px;align-items:center;margin:5px 0}.ctl label{font-size:9.6px}.ctl output{font-size:9.1px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9.2px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 55% 32%,#123d58 0,#0a263b 38%,#061725 70%,#030b13 100%)}#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label{position:absolute;transform:translate(-50%,-50%);background:rgba(244,250,252,.95);color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9.3px;white-space:nowrap}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10.4px;font-weight:700}
+#hud{position:absolute;right:12px;bottom:12px;z-index:7;display:flex;gap:9px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:7px 9px}.hud span{display:block;font-size:8px;color:#98bac8}.hud b{font-size:10.3px}
+#note{position:absolute;left:12px;bottom:12px;z-index:7;width:470px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.2px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700}.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style></head>
+<body>
+<div id="app"><aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D</div><h1>43 · Doppler – nguồn âm chuyển động</h1>
+<p class="desc">Nguồn âm chuyển động trong môi trường đứng yên làm mặt sóng dồn phía trước và thưa phía sau.</p>
+
+<div class="ctl"><label>Tốc độ mô phỏng</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Tần số nguồn f</label><input id="freq" type="range" min="50" max="1000" step="1" value="400"><output id="freqOut"></output></div>
+<div class="ctl"><label>Vận tốc âm v</label><input id="waveV" type="range" min="300" max="360" step="1" value="343"><output id="waveVOut"></output></div>
+<div class="ctl"><label>Vận tốc nguồn vₛ</label><input id="sourceV" type="range" min="-120" max="120" step="1" value="60"><output id="sourceVOut"></output></div>
+<div class="ctl"><label>Khoảng nghe</label><input id="observerX" type="range" min="3" max="10" step=".1" value="8"><output id="observerXOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showFronts" type="checkbox" checked> Mặt sóng</label>
+<label class="check"><input id="showVelocity" type="checkbox" checked> Vectơ vₛ</label>
+<label class="check"><input id="showObserver" type="checkbox" checked> Người nghe</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showTrail" type="checkbox" checked> Quỹ đạo nguồn</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị tần số</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Căn giữa</button>
+<button id="towardBtn" class="btn">→ Tiến lại gần</button><button id="awayBtn" class="btn">← Rời xa</button>
+<button id="stopSrcBtn" class="btn">vₛ=0</button><button id="slowBtn" class="btn">vₛ=30 m/s</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div><div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view"><div id="three"></div><div id="labels"></div>
+<div id="formula">Nguồn chuyển động, người nghe đứng yên: f' = f·v/(v∓vₛ)</div>
+<div id="hud">
+<div class="hud"><span>f nguồn</span><b id="fHud"></b></div>
+<div class="hud"><span>f trước</span><b id="fFrontHud"></b></div>
+<div class="hud"><span>f sau</span><b id="fBackHud"></b></div>
+<div class="hud"><span>λ trước</span><b id="lamFrontHud"></b></div>
+<div class="hud"><span>λ sau</span><b id="lamBackHud"></b></div>
+</div>
+<div id="note">Môi trường đứng yên, người nghe đứng yên. Khi nguồn tiến về phía người nghe: phía trước có bước sóng ngắn hơn và tần số thu lớn hơn; phía sau bước sóng dài hơn và tần số thu nhỏ hơn. Mặt sóng được phát từ vị trí thật của nguồn tại từng thời điểm.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id),view=$('view');
+const state={running:true,t:0,speed:1,f:400,v:343,vs:60,obsX:8,sourceX:-6,lastEmit:-1,waves:[],trail:[]};
+
+function fFront(){return state.vs>=0?state.f*state.v/(state.v-state.vs):state.f*state.v/(state.v+Math.abs(state.vs))}
+function fBack(){return state.vs>=0?state.f*state.v/(state.v+state.vs):state.f*state.v/(state.v-Math.abs(state.vs))}
+function lamFront(){return (state.v-state.vs)/state.f}
+function lamBack(){return (state.v+state.vs)/state.f}
+
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=7;controls.maxDistance=28;
+scene.add(new THREE.HemisphereLight(0xffffff,0x172832,4.2));const dl=new THREE.DirectionalLight(0xffffff,4.2);dl.position.set(6,10,8);scene.add(dl);
+
+const lab=new THREE.Group();scene.add(lab);lab.position.set(-.3,-.7,0);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(26,14),new THREE.MeshStandardMaterial({color:0x0a1c28,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.7;lab.add(floor);
+const grid=new THREE.GridHelper(26,30,0x2e586a,0x123345);grid.position.y=-2.69;lab.add(grid);
+
+// moving source
+const sourceG=new THREE.Group();lab.add(sourceG);
+const srcBody=new THREE.Mesh(new THREE.SphereGeometry(.38,28,18),new THREE.MeshStandardMaterial({color:0xffb45a,emissive:0x7a3d0e,emissiveIntensity:.7}));sourceG.add(srcBody);
+const halo=new THREE.Mesh(new THREE.TorusGeometry(.55,.06,12,32),new THREE.MeshBasicMaterial({color:0xffd166,transparent:true,opacity:.7}));halo.rotation.y=Math.PI/2;sourceG.add(halo);
+const velArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1.6,0xffd166,.25,.14);lab.add(velArrow);
+
+// observer
+const obs=new THREE.Group();lab.add(obs);
+const body=new THREE.Mesh(new THREE.CapsuleGeometry(.28,.9,6,12),new THREE.MeshStandardMaterial({color:0x69e3a6,emissive:0x174b39,emissiveIntensity:.4}));body.position.y=-.1;obs.add(body);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.27,18,14),new THREE.MeshStandardMaterial({color:0xf0c79d,roughness:.5}));head.position.y=.85;obs.add(head);
+
+// wavefronts
+const waveG=new THREE.Group();lab.add(waveG);
+const waveMat=new THREE.MeshBasicMaterial({color:0x63dcff,wireframe:true,transparent:true,opacity:.22});
+
+// trail
+const trailLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xffb45a,transparent:true,opacity:.5}));lab.add(trailLine);
+
+// graph
+const gc=document.createElement('canvas');gc.width=800;gc.height=340;const gctx=gc.getContext('2d'),gtex=new THREE.CanvasTexture(gc);
+const graphFrame=new THREE.Mesh(new THREE.BoxGeometry(5.1,2.35,.12),new THREE.MeshStandardMaterial({color:0xeaf3f6,roughness:.48}));graphFrame.position.set(4.7,2.45,-2.4);lab.add(graphFrame);
+const graphPlane=new THREE.Mesh(new THREE.PlaneGeometry(4.85,2.12),new THREE.MeshBasicMaterial({map:gtex,side:THREE.DoubleSide}));graphPlane.position.set(4.7,2.45,-2.32);lab.add(graphPlane);
+
+function emitWave(){
+ const m=new THREE.Mesh(new THREE.SphereGeometry(1,28,16),waveMat.clone());
+ m.position.set(state.sourceX,0,0);m.scale.setScalar(.03);m.userData={birth:state.t};waveG.add(m);state.waves.push(m)
+}
+function resetWaves(){
+ for(const m of state.waves)waveG.remove(m);
+ state.waves=[];state.lastEmit=-1
+}
+function updatePhysics(dt){
+ if(!state.running)return;
+ state.t+=dt*state.speed;
+ state.sourceX+=state.vs*dt*state.speed/25;
+ if(state.sourceX>7)state.sourceX=-7;
+ if(state.sourceX<-7)state.sourceX=7;
+ const emitPeriod=1/state.f*40; // visually slowed emission cadence
+ if(state.lastEmit<0||state.t-state.lastEmit>=emitPeriod){emitWave();state.lastEmit=state.t}
+ state.trail.push(new THREE.Vector3(state.sourceX,0,0));if(state.trail.length>180)state.trail.shift()
+}
+function updateGraph(){
+ gctx.fillStyle='#f8fafb';gctx.fillRect(0,0,gc.width,gc.height);
+ gctx.fillStyle='#263b45';gctx.font='bold 25px Segoe UI';gctx.fillText('TẦN SỐ THU ĐƯỢC',270,32);
+ gctx.strokeStyle='#cfdce1';gctx.lineWidth=1;
+ for(let i=0;i<=5;i++){const y=55+i*48;gctx.beginPath();gctx.moveTo(55,y);gctx.lineTo(755,y);gctx.stroke()}
+ const f0=state.f,ff=fFront(),fb=fBack(),max=Math.max(ff,fb,f0)*1.18,min=Math.min(ff,fb,f0)*.82;
+ const vals=[['Sau',fb,'#d971ff'],['Nguồn',f0,'#777'],['Trước',ff,'#1677c8']];
+ vals.forEach((it,i)=>{const x=130+i*220,h=(it[1]-min)/(max-min)*210;gctx.fillStyle=it[2];gctx.fillRect(x,285-h,90,h);gctx.fillStyle='#344b55';gctx.font='18px Segoe UI';gctx.fillText(it[0],x+12,316);gctx.fillText(it[1].toFixed(0)+' Hz',x+5,270-h)});
+ gtex.needsUpdate=true
+}
+function updateVisuals(){
+ sourceG.position.set(state.sourceX,0,0);
+ velArrow.position.set(state.sourceX,.8,0);velArrow.setDirection(new THREE.Vector3(Math.sign(state.vs||1),0,0));velArrow.setLength(.6+Math.abs(state.vs)/120*1.5,.22,.12);velArrow.visible=$('showVelocity').checked;
+ obs.position.set(state.obsX,0,0);obs.visible=$('showObserver').checked;
+
+ for(let i=state.waves.length-1;i>=0;i--){
+   const m=state.waves[i],r=(state.t-m.userData.birth)*state.v/25;
+   m.scale.setScalar(Math.max(.03,r));m.material.opacity=$('showFronts').checked?Math.max(.02,.24*(1-r/14)):0;
+   if(r>14){waveG.remove(m);state.waves.splice(i,1)}
+ }
+ trailLine.geometry.dispose();trailLine.geometry=new THREE.BufferGeometry().setFromPoints(state.trail);trailLine.visible=$('showTrail').checked;
+ graphFrame.visible=graphPlane.visible=$('showGraph').checked;grid.visible=$('showGrid').checked;
+ updateGraph()
+}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('freqOut').value=state.f.toFixed(0)+' Hz';$('waveVOut').value=state.v.toFixed(0)+' m/s';$('sourceVOut').value=state.vs.toFixed(0)+' m/s';$('observerXOut').value=state.obsX.toFixed(1)+' m';
+ $('fHud').textContent=state.f.toFixed(0)+' Hz';$('fFrontHud').textContent=fFront().toFixed(1)+' Hz';$('fBackHud').textContent=fBack().toFixed(1)+' Hz';$('lamFrontHud').textContent=lamFront().toFixed(3)+' m';$('lamBackHud').textContent=lamBack().toFixed(3)+' m'
+}
+function sync(reset=false){
+ state.speed=+$('speed').value;state.f=+$('freq').value;state.v=+$('waveV').value;state.vs=+$('sourceV').value;state.obsX=+$('observerX').value;
+ if(Math.abs(state.vs)>=state.v*.95){state.vs=Math.sign(state.vs)*state.v*.95;$('sourceV').value=state.vs}
+ if(reset){state.t=0;state.sourceX=-6;state.trail=[];resetWaves()}updateUI()
+}
+['freq','waveV','sourceV','observerX'].forEach(id=>$(id).addEventListener('input',()=>sync(false)));$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;
+$('towardBtn').onclick=()=>{$('sourceV').value=60;sync(true)};$('awayBtn').onclick=()=>{$('sourceV').value=-60;sync(true)};$('stopSrcBtn').onclick=()=>{$('sourceV').value=0;sync(true)};$('slowBtn').onclick=()=>{$('sourceV').value=30;sync(true)};
+$('resetBtn').onclick=()=>{Object.assign(state,{running:true,t:0,speed:1,f:400,v:343,vs:60,obsX:8,sourceX:-6,lastEmit:-1,waves:[],trail:[]});for(const [id,v] of [['speed',1],['freq',400],['waveV',343],['sourceV',60],['observerX',8]])$(id).value=v;resetWaves();fit();updateUI()};
+$('fitBtn').onclick=fit;$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fit()},80));
+
+const labels=$('labels');function mk(t){const e=document.createElement('div');e.className='label';e.textContent=t;labels.appendChild(e);return e}
+const lSrc=mk('Nguồn âm chuyển động'),lObs=mk('Người nghe đứng yên'),lFront=mk('Phía trước: mặt sóng dày hơn');
+function project(el,p){const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=q.z>1?'none':'block'}
+
+function fit(){controls.target.set(.5,.1,0);camera.position.set(13.5,6.2,18.5);camera.lookAt(controls.target);controls.update()}
+function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}window.addEventListener('resize',()=>{resize();fit()});
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!renderer.domElement.captureStream||!window.MediaRecorder)return;const m=mime();rec=new MediaRecorder(renderer.domElement.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`043_Doppler_nguon_am_chuyen_dong_3D.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+resize();fit();updateUI();
+let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);
+ const dt=Math.min(.033,(now-last)/1000);last=now;updatePhysics(dt);updateVisuals();updateUI();
+ project(lSrc,new THREE.Vector3(state.sourceX,1.2,.2));project(lObs,new THREE.Vector3(state.obsX,1.6,.2));project(lFront,new THREE.Vector3(state.sourceX+2.2,1.4,.2));
+ controls.update();renderer.render(scene,camera)
+}
+requestAnimationFrame(animate);
+</script></body></html>

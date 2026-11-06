@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hình chiếu chuyển động tròn đều là dao động điều hòa</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #eef4ff;
+      color: #0f172a;
+    }
+    .app {
+      width: min(1240px, 96vw);
+      margin: 18px auto;
+      background: white;
+      border: 1px solid #dbe5f2;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
+    }
+    header {
+      background: #0b3b78;
+      color: white;
+      padding: 18px 24px;
+    }
+    header h1 {
+      margin: 0 0 6px;
+      font-size: 31px;
+      letter-spacing: 0.2px;
+    }
+    header p {
+      margin: 0;
+      font-size: 16px;
+      opacity: 0.96;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #fbfdff;
+    }
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 11px 18px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.18s;
+    }
+    button:hover { transform: translateY(-1px); }
+    #startBtn { background: #16a34a; color: white; }
+    #pauseBtn { background: #f59e0b; color: #111827; }
+    #resetBtn { background: #2563eb; color: white; }
+    .box {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 15px;
+    }
+    input[type="range"] { width: 145px; accent-color: #2563eb; }
+    input[type="checkbox"] { transform: scale(1.15); accent-color: #2563eb; }
+    .main {
+      display: grid;
+      grid-template-columns: 1.28fr 0.85fr;
+      gap: 16px;
+      padding: 18px;
+    }
+    .card {
+      border: 1px solid #dbe5f2;
+      border-radius: 16px;
+      background: #fff;
+      overflow: hidden;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #ffffff;
+    }
+    .info {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      padding: 0 18px 18px;
+    }
+    .note {
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 14px;
+      line-height: 1.48;
+      font-size: 15px;
+    }
+    .note b { color: #0b3b78; }
+    .blue { background: #eff6ff; border-color: #bfdbfe; }
+    .green { background: #f0fdf4; border-color: #bbf7d0; }
+    .purple { background: #faf5ff; border-color: #e9d5ff; }
+    @media (max-width: 950px) {
+      .main { grid-template-columns: 1fr; }
+      .info { grid-template-columns: 1fr; }
+      header h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Mô phỏng: Hình chiếu của chuyển động tròn đều là dao động điều hòa</h1>
+      <p>Điểm M chuyển động tròn đều. Hình chiếu P của M lên trục Ox dao động điều hòa theo phương trình x = A cos(ωt + φ).</p>
+    </header>
+
+    <div class="controls">
+      <button id="startBtn">▶ Bắt đầu</button>
+      <button id="pauseBtn">⏸ Tạm dừng</button>
+      <button id="resetBtn">↻ Đặt lại</button>
+
+      <label class="box">
+        Biên độ A:
+        <input id="ampSlider" type="range" min="40" max="140" step="5" value="95">
+        <b><span id="ampValue">95</span> px</b>
+      </label>
+
+      <label class="box">
+        Tần số góc ω:
+        <input id="omegaSlider" type="range" min="0.5" max="4" step="0.1" value="1.5">
+        <b><span id="omegaValue">1.5</span> rad/s</b>
+      </label>
+
+      <label class="box">
+        Pha ban đầu φ:
+        <input id="phaseSlider" type="range" min="0" max="6.28" step="0.01" value="0">
+        <b><span id="phaseValue">0.00</span></b>
+      </label>
+
+      <label class="box">
+        <input id="showTrace" type="checkbox" checked>
+        Hiện vết dao động
+      </label>
+
+      <label class="box">
+        <input id="showProjection" type="checkbox" checked>
+        Hiện đường chiếu
+      </label>
+    </div>
+
+    <div class="main">
+      <div class="card">
+        <canvas id="mainCanvas" width="820" height="540"></canvas>
+      </div>
+      <div class="card">
+        <canvas id="graphCanvas" width="480" height="540"></canvas>
+      </div>
+    </div>
+
+    <div class="info">
+      <div class="note blue">
+        <b>Chuyển động tròn đều:</b> điểm M quay đều trên đường tròn bán kính A với tốc độ góc ω.
+      </div>
+      <div class="note green">
+        <b>Hình chiếu P:</b> P là hình chiếu của M trên trục Ox, chuyển động qua lại quanh O.
+      </div>
+      <div class="note purple">
+        <b>Kết luận:</b> hình chiếu của chuyển động tròn đều lên một đường kính là một dao động điều hòa.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const mainCanvas = document.getElementById('mainCanvas');
+    const ctx = mainCanvas.getContext('2d');
+    const graphCanvas = document.getElementById('graphCanvas');
+    const gctx = graphCanvas.getContext('2d');
+
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const ampSlider = document.getElementById('ampSlider');
+    const omegaSlider = document.getElementById('omegaSlider');
+    const phaseSlider = document.getElementById('phaseSlider');
+    const showTrace = document.getElementById('showTrace');
+    const showProjection = document.getElementById('showProjection');
+
+    const ampValue = document.getElementById('ampValue');
+    const omegaValue = document.getElementById('omegaValue');
+    const phaseValue = document.getElementById('phaseValue');
+
+    let A = 95;
+    let omega = 1.5;
+    let phi = 0;
+    let running = true;
+    let startTime = null;
+    let pausedTime = 0;
+
+    const W = mainCanvas.width;
+    const H = mainCanvas.height;
+    const O = { x: 260, y: 245 };
+    const oscY = 395;
+    const graphW = graphCanvas.width;
+    const graphH = graphCanvas.height;
+
+    let trace = [];
+
+    function updateParams() {
+      A = Number(ampSlider.value);
+      omega = Number(omegaSlider.value);
+      phi = Number(phaseSlider.value);
+      ampValue.textContent = A;
+      omegaValue.textContent = omega.toFixed(1);
+      phaseValue.textContent = phi.toFixed(2);
+    }
+
+    function getTime(timestamp) {
+      if (!running) return pausedTime;
+      if (startTime === null) startTime = timestamp - pausedTime * 1000;
+      return (timestamp - startTime) / 1000;
+    }
+
+    function drawArrow(ctx, x1, y1, x2, y2, color, width = 2.4) {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - 11 * Math.cos(angle - Math.PI / 6), y2 - 11 * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - 11 * Math.cos(angle + Math.PI / 6), y2 - 11 * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function drawMain(t) {
+      updateParams();
+      const theta = omega * t + phi;
+      const M = {
+        x: O.x + A * Math.cos(theta),
+        y: O.y - A * Math.sin(theta)
+      };
+      const P = { x: O.x + A * Math.cos(theta), y: oscY };
+      const xValue = A * Math.cos(theta);
+
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = '#0b3b78';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Hình chiếu của chuyển động tròn đều là dao động điều hòa', W / 2, 42);
+
+      // Đường tròn
+      ctx.strokeStyle = '#1e3a8a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(O.x, O.y, A, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Trục trong đường tròn
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(O.x - A - 30, O.y);
+      ctx.lineTo(O.x + A + 30, O.y);
+      ctx.moveTo(O.x, O.y - A - 30);
+      ctx.lineTo(O.x, O.y + A + 30);
+      ctx.stroke();
+
+      // Mũi tên quay
+      const arrowAngle1 = -Math.PI / 4;
+      const arrowAngle2 = arrowAngle1 + 0.55;
+      const rArrow = A + 24;
+      const ax1 = O.x + rArrow * Math.cos(arrowAngle1);
+      const ay1 = O.y + rArrow * Math.sin(arrowAngle1);
+      const ax2 = O.x + rArrow * Math.cos(arrowAngle2);
+      const ay2 = O.y + rArrow * Math.sin(arrowAngle2);
+      drawArrow(ctx, ax1, ay1, ax2, ay2, '#7c3aed', 2.4);
+      ctx.fillStyle = '#7c3aed';
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText('ω', ax2 + 18, ay2 - 4);
+
+      // Bán kính OM
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(O.x, O.y);
+      ctx.lineTo(M.x, M.y);
+      ctx.stroke();
+
+      // Điểm M
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.arc(M.x, M.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 18px Arial';
+      ctx.fillText('M', M.x + 18, M.y - 10);
+
+      // Tâm O
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      ctx.arc(O.x, O.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.font = 'bold 18px Arial';
+      ctx.fillText('O', O.x - 18, O.y + 24);
+
+      // Trục dao động Ox
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(O.x - A - 60, oscY);
+      ctx.lineTo(O.x + A + 80, oscY);
+      ctx.stroke();
+      drawArrow(ctx, O.x + A + 46, oscY, O.x + A + 80, oscY, '#111827', 2.5);
+      ctx.fillStyle = '#111827';
+      ctx.font = '18px Arial';
+      ctx.fillText('x', O.x + A + 92, oscY + 6);
+
+      // Vạch -A, O, +A
+      drawTick(O.x - A, oscY, '−A');
+      drawTick(O.x, oscY, 'O');
+      drawTick(O.x + A, oscY, '+A');
+
+      // Đường chiếu từ M xuống P
+      if (showProjection.checked) {
+        ctx.setLineDash([7, 6]);
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(M.x, M.y);
+        ctx.lineTo(P.x, P.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Vết chuyển động của P
+      if (showTrace.checked) {
+        trace.push({ x: P.x, y: P.y });
+        if (trace.length > 180) trace.shift();
+        ctx.strokeStyle = 'rgba(37, 99, 235, 0.35)';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        trace.forEach((pt, i) => {
+          if (i === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.stroke();
+      } else {
+        trace = [];
+      }
+
+      // Điểm P
+      ctx.fillStyle = '#2563eb';
+      ctx.beginPath();
+      ctx.arc(P.x, P.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#2563eb';
+      ctx.font = 'bold 18px Arial';
+      ctx.fillText('P', P.x + 16, P.y + 24);
+
+      // Mũi tên dao động qua lại
+      drawArrow(ctx, O.x - A + 12, oscY + 45, O.x + A - 12, oscY + 45, '#2563eb', 3);
+      drawArrow(ctx, O.x + A - 12, oscY + 45, O.x - A + 12, oscY + 45, '#2563eb', 3);
+      ctx.fillStyle = '#2563eb';
+      ctx.font = 'bold 18px Arial';
+      ctx.fillText('P dao động qua lại trên trục Ox', O.x, oscY + 78);
+
+      // Khung công thức
+      drawFormulaBox(525, 94, 255, 150, theta, xValue);
+      drawConclusionBox(505, 275, 290, 135);
+    }
+
+    function drawTick(x, y, label) {
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, y - 9);
+      ctx.lineTo(x, y + 9);
+      ctx.stroke();
+      ctx.fillStyle = '#111827';
+      ctx.font = 'bold 18px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x, y + 34);
+    }
+
+    function drawFormulaBox(x, y, w, h, theta, xValue) {
+      ctx.fillStyle = '#f8fafc';
+      ctx.strokeStyle = '#bfdbfe';
+      ctx.lineWidth = 2;
+      roundRect(ctx, x, y, w, h, 14);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#0b3b78';
+      ctx.font = 'bold 20px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Phương trình dao động', x + w / 2, y + 34);
+      ctx.fillStyle = '#111827';
+      ctx.font = '22px Georgia';
+      ctx.fillText('x = A cos(ωt + φ)', x + w / 2, y + 74);
+      ctx.font = '17px Arial';
+      ctx.fillStyle = '#2563eb';
+      ctx.fillText(`x hiện tại = ${(xValue / A).toFixed(2)}A`, x + w / 2, y + 110);
+      ctx.fillText(`θ = ${(theta % (2*Math.PI)).toFixed(2)} rad`, x + w / 2, y + 135);
+    }
+
+    function drawConclusionBox(x, y, w, h) {
+      ctx.fillStyle = '#f0fdf4';
+      ctx.strokeStyle = '#bbf7d0';
+      ctx.lineWidth = 2;
+      roundRect(ctx, x, y, w, h, 14);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#15803d';
+      ctx.font = 'bold 19px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText('Kết luận:', x + 18, y + 34);
+      ctx.fillStyle = '#111827';
+      ctx.font = '17px Arial';
+      ctx.fillText('Hình chiếu P của điểm M', x + 18, y + 66);
+      ctx.fillText('chuyển động tròn đều', x + 18, y + 90);
+      ctx.fillText('là một dao động điều hòa.', x + 18, y + 114);
+    }
+
+    function drawGraph(t) {
+      const theta = omega * t + phi;
+      const xValue = A * Math.cos(theta);
+
+      gctx.clearRect(0, 0, graphW, graphH);
+      gctx.fillStyle = '#ffffff';
+      gctx.fillRect(0, 0, graphW, graphH);
+
+      gctx.fillStyle = '#0b3b78';
+      gctx.font = 'bold 25px Arial';
+      gctx.textAlign = 'center';
+      gctx.fillText('Đồ thị li độ theo thời gian', graphW / 2, 42);
+
+      const left = 55;
+      const top = 105;
+      const width = 380;
+      const height = 240;
+      const midY = top + height / 2;
+      const yScale = height / 2 / (A + 15);
+
+      // khung và lưới
+      gctx.strokeStyle = '#e5e7eb';
+      gctx.lineWidth = 1;
+      for (let i = 0; i <= 6; i++) {
+        const x = left + i * width / 6;
+        gctx.beginPath();
+        gctx.moveTo(x, top);
+        gctx.lineTo(x, top + height);
+        gctx.stroke();
+      }
+      for (let i = 0; i <= 4; i++) {
+        const y = top + i * height / 4;
+        gctx.beginPath();
+        gctx.moveTo(left, y);
+        gctx.lineTo(left + width, y);
+        gctx.stroke();
+      }
+
+      // trục
+      gctx.strokeStyle = '#111827';
+      gctx.lineWidth = 2;
+      gctx.beginPath();
+      gctx.moveTo(left, top);
+      gctx.lineTo(left, top + height);
+      gctx.moveTo(left, midY);
+      gctx.lineTo(left + width, midY);
+      gctx.stroke();
+      drawGraphArrow(left + width, midY, 0, '#111827');
+      drawGraphArrow(left, top, -Math.PI / 2, '#111827');
+
+      // biên ±A
+      gctx.strokeStyle = '#94a3b8';
+      gctx.setLineDash([6, 6]);
+      [A, -A].forEach(val => {
+        const y = midY - val * yScale;
+        gctx.beginPath();
+        gctx.moveTo(left, y);
+        gctx.lineTo(left + width, y);
+        gctx.stroke();
+      });
+      gctx.setLineDash([]);
+
+      gctx.fillStyle = '#111827';
+      gctx.font = '15px Arial';
+      gctx.textAlign = 'right';
+      gctx.fillText('+A', left - 8, midY - A * yScale + 5);
+      gctx.fillText('0', left - 8, midY + 5);
+      gctx.fillText('−A', left - 8, midY + A * yScale + 5);
+      gctx.textAlign = 'left';
+      gctx.fillText('t', left + width + 16, midY + 5);
+      gctx.fillText('x', left - 18, top - 12);
+
+      // đường x(t)
+      const visibleTime = 8;
+      gctx.strokeStyle = '#2563eb';
+      gctx.lineWidth = 3;
+      gctx.beginPath();
+      for (let i = 0; i <= 500; i++) {
+        const u = i / 500;
+        const tt = t - visibleTime + u * visibleTime;
+        const x = left + u * width;
+        const xx = A * Math.cos(omega * tt + phi);
+        const y = midY - xx * yScale;
+        if (i === 0) gctx.moveTo(x, y);
+        else gctx.lineTo(x, y);
+      }
+      gctx.stroke();
+
+      // điểm hiện tại
+      const px = left + width;
+      const py = midY - xValue * yScale;
+      gctx.fillStyle = '#dc2626';
+      gctx.beginPath();
+      gctx.arc(px, py, 6, 0, Math.PI * 2);
+      gctx.fill();
+
+      // thẻ thông số
+      drawGraphInfoBox(36, 385, 408, 118, xValue);
+    }
+
+    function drawGraphArrow(x, y, angle, color) {
+      gctx.save();
+      gctx.translate(x, y);
+      gctx.rotate(angle);
+      gctx.fillStyle = color;
+      gctx.beginPath();
+      gctx.moveTo(0, 0);
+      gctx.lineTo(-11, -6);
+      gctx.lineTo(-11, 6);
+      gctx.closePath();
+      gctx.fill();
+      gctx.restore();
+    }
+
+    function drawGraphInfoBox(x, y, w, h, xValue) {
+      gctx.fillStyle = '#f8fafc';
+      gctx.strokeStyle = '#dbe5f2';
+      gctx.lineWidth = 2;
+      roundRect(gctx, x, y, w, h, 14);
+      gctx.fill();
+      gctx.stroke();
+
+      gctx.fillStyle = '#0b3b78';
+      gctx.font = 'bold 19px Arial';
+      gctx.textAlign = 'left';
+      gctx.fillText('Thông số hiện hành', x + 18, y + 32);
+      gctx.fillStyle = '#111827';
+      gctx.font = '17px Arial';
+      gctx.fillText(`A = ${A} px`, x + 18, y + 64);
+      gctx.fillText(`ω = ${omega.toFixed(1)} rad/s`, x + 18, y + 92);
+      gctx.fillText(`x = ${(xValue / A).toFixed(2)}A`, x + 215, y + 64);
+      gctx.fillText(`T = ${(2*Math.PI/omega).toFixed(2)} s`, x + 215, y + 92);
+    }
+
+    function animate(timestamp) {
+      const t = getTime(timestamp);
+      drawMain(t);
+      drawGraph(t);
+      requestAnimationFrame(animate);
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (!running) {
+        running = true;
+        startTime = null;
+      }
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (running) {
+        running = false;
+        pausedTime = (performance.now() - startTime) / 1000;
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      running = true;
+      startTime = null;
+      pausedTime = 0;
+      trace = [];
+    });
+
+    ampSlider.addEventListener('input', () => { trace = []; updateParams(); });
+    omegaSlider.addEventListener('input', updateParams);
+    phaseSlider.addEventListener('input', updateParams);
+
+    updateParams();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

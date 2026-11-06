@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bài 6 - Thực hành đo tốc độ của vật chuyển động (V2)</title>
+<style>
+:root{
+  --bg:#eef4fb; --card:#ffffff; --ink:#223247; --muted:#6f7f93; --line:#d9e3ef;
+  --blue:#1559a9; --blue2:#2f7ad8; --cyan:#1aa0c6; --green:#16966b; --orange:#ea9116;
+  --red:#e34e5a; --purple:#6856db; --dark:#111a29; --gold:#f2c240;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#f8fbff,#eaf1fb);color:var(--ink)}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{max-width:1500px;margin:auto;padding:16px}
+.header{
+  background:linear-gradient(135deg,#0e519d,#1b79cf);
+  color:#fff;border-radius:18px;padding:16px 18px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 12px 30px rgba(19,83,155,.18)
+}
+.lessonBadge{
+  width:70px;height:70px;border-radius:50%;background:#d91e2b;border:5px solid #f3f6fb;
+  display:grid;place-items:center;font-size:38px;font-weight:900;box-shadow:0 3px 0 #a8b7c8
+}
+.header h1{font-size:clamp(21px,2.4vw,34px);margin:0;line-height:1.12}
+.header small{display:block;font-weight:600;opacity:.92;margin-top:5px}
+.topTabs{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}
+.tab{
+  border:1px solid #b9cce1;background:#fff;color:#315176;padding:10px 14px;border-radius:11px;font-weight:800
+}
+.tab.active{background:var(--blue);border-color:var(--blue);color:white}
+.layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(390px,.9fr);gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 25px rgba(37,62,94,.07)}
+.simCard{padding:13px}
+.stage{
+  position:relative;height:560px;border-radius:14px;overflow:hidden;border:1px solid #cfdbe8;
+  background:linear-gradient(180deg,#f1f2ef,#ecefee 55%,#e4e8e7 100%);
+}
+.stageTitle{
+  position:absolute;left:12px;top:10px;z-index:60;background:#ffffffeb;border:1px solid #d5e0ec;
+  padding:8px 11px;border-radius:10px;font-weight:800;color:#315176
+}
+.helperBox{
+  position:absolute;left:12px;top:54px;z-index:61;background:#fffef6;border:1px solid #ecdca8;
+  padding:8px 10px;border-radius:10px;font-size:13px;line-height:1.45;color:#675015;
+}
+.floorShadow{
+  position:absolute;left:0;right:0;bottom:0;height:72px;background:linear-gradient(180deg,#dbdfde,#c9cfcd)
+}
+.trackLong{
+  position:absolute;left:180px;top:226px;width:470px;height:16px;border-radius:8px;
+  background:linear-gradient(180deg,#606b78,#88939c 52%,#525c67);box-shadow:0 5px 0 rgba(0,0,0,.22)
+}
+.trackSlope{
+  position:absolute;left:102px;top:178px;width:103px;height:14px;border-radius:8px;
+  background:linear-gradient(180deg,#606b78,#88939c 52%,#525c67);
+  transform:rotate(27deg);transform-origin:left center;box-shadow:0 5px 0 rgba(0,0,0,.18)
+}
+.scaleBar{
+  position:absolute;left:188px;top:236px;width:460px;height:7px;border-radius:4px;background:#959da6;opacity:.55
+}
+.ruler{
+  position:absolute;left:181px;top:240px;width:470px;height:10px;background:#f6efc9;border:1px solid #aea57d;border-radius:2px
+}
+.ruler::before{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,#2f3742 0 1px,transparent 1px 9px)
+}
+.rulerLabels{position:absolute;left:180px;top:250px;width:470px;height:20px;font-size:11px;color:#313c47}
+.rulerLabels span{position:absolute;transform:translateX(-50%)}
+.protractor{
+  position:absolute;left:110px;top:218px;width:84px;height:84px;border-radius:50%;z-index:8;
+  border:4px solid #d9dde2;border-top-color:#abb4bc;border-right-color:#abb4bc;
+  background:radial-gradient(circle at center, transparent 0 38%, #f8f9fa 39% 41%, transparent 42%);
+  transform:rotate(-46deg);
+}
+.protractorCenter{
+  position:absolute;left:149px;top:256px;width:12px;height:12px;border-radius:50%;background:#8f9aa6;z-index:9
+}
+.supportLeft{
+  position:absolute;left:58px;top:288px;width:140px;height:120px;z-index:6
+}
+.supportLeft .leg1,.supportLeft .leg2,.supportLeft .leg3,.supportLeft .rod{
+  position:absolute;background:#4d5661;border-radius:5px
+}
+.supportLeft .rod{left:87px;top:-68px;width:8px;height:110px}
+.supportLeft .leg1{left:20px;top:75px;width:76px;height:12px;transform:rotate(-22deg)}
+.supportLeft .leg2{left:58px;top:84px;width:70px;height:12px;transform:rotate(28deg)}
+.supportLeft .leg3{left:76px;top:57px;width:12px;height:48px}
+.magnetBox{
+  position:absolute;left:120px;top:150px;width:34px;height:26px;border-radius:6px;background:linear-gradient(#404850,#12161b);
+  box-shadow:0 3px 5px rgba(0,0,0,.25);z-index:20
+}
+.magnetTip{
+  position:absolute;left:146px;top:164px;width:16px;height:4px;background:#d7dadf;border-radius:2px;z-index:20
+}
+.gate{
+  position:absolute;width:24px;height:60px;transform:translate(-50%,-50%);z-index:22
+}
+.gateBody{position:absolute;inset:0;background:linear-gradient(#2e343b,#12171d);border-radius:6px;box-shadow:0 3px 5px rgba(0,0,0,.25)}
+.gateHole{
+  position:absolute;left:7px;right:7px;top:16px;height:27px;border:3px solid #9ca3ac;border-bottom-width:4px;border-top-width:4px;border-radius:4px
+}
+.gateSensor{position:absolute;left:4px;right:4px;top:28px;height:3px;background:#e64a4a;box-shadow:0 0 6px #f33}
+.gateLabel{
+  position:absolute;right:-18px;top:18px;font-weight:900;color:#263b57;font-size:20px
+}
+.gate.flash .gateSensor{background:#fff;box-shadow:0 0 12px #fff,0 0 20px #ff6b6b}
+.rightStand{
+  position:absolute;left:660px;top:174px;width:18px;height:135px;background:#1f2227;border-radius:4px;z-index:10
+}
+.rightFoot{
+  position:absolute;left:653px;top:304px;width:34px;height:10px;background:#2c3036;border-radius:4px;z-index:10
+}
+.rightCap{
+  position:absolute;left:656px;top:225px;width:12px;height:12px;border-radius:50%;background:#f0b726;z-index:14
+}
+.ball{
+  position:absolute;width:24px;height:24px;border-radius:50%;
+  background:radial-gradient(circle at 32% 28%,#f2f6f8 0 12%,#9faab3 35%,#3d4650 80%);
+  box-shadow:0 3px 5px #0005;z-index:35;transform:translate(-50%,-50%);
+}
+.timer{
+  position:absolute;left:354px;top:318px;width:173px;height:78px;background:linear-gradient(#f6f1e4,#d8d2c5);
+  border:3px solid #8d887e;border-radius:7px;box-shadow:0 7px 12px rgba(0,0,0,.15);z-index:16
+}
+.display{
+  position:absolute;left:15px;top:16px;width:86px;height:28px;background:#29050c;border:3px inset #632029;border-radius:4px;
+  color:#ff4552;font-family:Consolas,monospace;font-size:20px;font-weight:900;text-align:center;padding-top:1px;text-shadow:0 0 7px #f22
+}
+.timerMode{position:absolute;left:111px;top:18px;width:28px;height:28px;border-radius:50%;background:radial-gradient(#d8d9d8,#6d7377);border:2px solid #555}
+.timerText{position:absolute;left:107px;top:49px;font-size:9px;font-weight:800;color:#444}
+.timerReset{position:absolute;right:12px;top:17px;width:20px;height:20px;border-radius:50%;background:#e64949;border:2px solid #9e3030}
+.timerPorts{position:absolute;left:16px;bottom:9px;display:flex;gap:22px;font-size:10px;font-weight:900;color:#333}
+.port::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:#25282d;border:2px solid #777;margin-right:4px;vertical-align:-2px}
+.powerLight{position:absolute;right:9px;bottom:8px;width:10px;height:10px;border-radius:50%;background:#555}
+.powerLight.on{background:#45e58b;box-shadow:0 0 9px #45e58b}
+.switchBox{
+  position:absolute;left:230px;top:330px;width:86px;height:44px;border-radius:6px;background:linear-gradient(#292f34,#0f1419);
+  box-shadow:0 6px 10px rgba(0,0,0,.18);z-index:14;color:#c5c9d3;font-size:11px;font-weight:800;padding:7px
+}
+.switchLamp{position:absolute;right:10px;top:10px;width:10px;height:10px;border-radius:50%;background:#555}
+.switchLamp.on{background:#ffc83c;box-shadow:0 0 8px #ffc83c}
+.caliper{
+  position:absolute;left:560px;top:327px;width:118px;height:28px;border-radius:6px;background:#f5f7f8;border:2px solid #b1bac3;z-index:12;
+  box-shadow:0 4px 8px rgba(0,0,0,.08)
+}
+.caliper::before{content:"";position:absolute;left:10px;right:10px;top:11px;height:3px;background:#a6afb8}
+.caliper::after{content:"";position:absolute;left:53px;top:6px;width:18px;height:14px;background:#dfe5ea;border:1px solid #9da8b1}
+.cableSvg{position:absolute;inset:0;z-index:11;pointer-events:none}
+.num{
+  position:absolute;width:31px;height:31px;border-radius:50%;background:#fff;border:1px solid #dfe5ea;display:grid;place-items:center;
+  font-weight:900;color:#707a88;z-index:24;box-shadow:0 2px 5px rgba(0,0,0,.08)
+}
+.controlPanel{margin-top:12px;padding:12px;background:#f8fbff;border:1px solid #d9e6f3;border-radius:13px}
+.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.row+.row{margin-top:10px}
+.lbl{font-weight:800;color:#38536f}
+select{border:1px solid #b8c8da;border-radius:9px;padding:8px;background:#fff;font-weight:700}
+input[type=range]{accent-color:var(--blue)}
+.range{flex:1;min-width:180px}
+.valueBadge{background:#eaf3ff;border:1px solid #b9d4f6;color:#1559a9;padding:7px 10px;border-radius:9px;font-weight:900}
+.actions{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:11px}
+.act{border:0;color:#fff;border-radius:10px;padding:11px 8px;font-weight:850}
+.blue{background:var(--blue)}.green{background:var(--green)}.orange{background:var(--orange)}.red{background:var(--red)}.purple{background:var(--purple)}
+.act:disabled{opacity:.42;cursor:not-allowed}
+.side{display:flex;flex-direction:column;gap:14px}
+.panel{padding:13px}
+.panel h3{margin:0 0 10px;color:#244a72}
+.status{background:#edf6ff;border:1px solid #cfe5fb;border-radius:11px;padding:10px 11px;font-weight:800;color:#24517d;line-height:1.45}
+.steps{display:grid;gap:8px}
+.step{display:flex;gap:9px;border:1px solid #dbe5f0;background:#fbfdff;border-radius:11px;padding:9px}
+.stepNum{min-width:28px;height:28px;border-radius:50%;background:#dcecff;color:#14569e;display:grid;place-items:center;font-weight:900}
+.step.active{border-color:#72a9e8;background:#eef6ff}
+.step.done{border-color:#8ed8b8;background:#effbf6}
+.stepText{font-size:13px;line-height:1.4}
+.guideDetails{border:1px solid #d8e3ef;border-radius:12px;overflow:hidden}
+.guideDetails summary{list-style:none;cursor:pointer;font-weight:900;padding:11px 12px;background:#f4f8fc;color:#315176}
+.guideDetails summary::-webkit-details-marker{display:none}
+.guideContent{padding:10px 12px;font-size:13px;line-height:1.55}
+.tableWrap{overflow:auto;border:1px solid #dce5ef;border-radius:11px}
+table{width:100%;border-collapse:collapse;min-width:590px}
+th,td{border-bottom:1px solid #e1e8f0;border-right:1px solid #e1e8f0;padding:8px;text-align:center;font-size:12px}
+th{background:#f3f7fb;color:#315176}
+th:last-child,td:last-child{border-right:0}
+.resultBox{margin-top:10px;border:1px solid #ead79d;background:#fff9e8;border-radius:11px;padding:10px;line-height:1.5}
+.hidden{display:none!important}
+.infoChip{
+  display:inline-block;margin-top:6px;padding:4px 8px;border-radius:999px;background:#f5f9ff;border:1px solid #d5e5fb;color:#2b5fa8;font-size:12px;font-weight:800
+}
+.instantInfo{
+  position:absolute;left:12px;bottom:90px;background:#fff;border:1px solid #d8e3ef;border-radius:11px;padding:9px 11px;z-index:25;font-size:13px;line-height:1.45
+}
+@media(max-width:1160px){.layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr}.dataPanel{grid-column:1/-1}}
+@media(max-width:760px){
+  .app{padding:8px}.header{border-radius:12px}.lessonBadge{width:54px;height:54px;font-size:28px}
+  .stage{height:520px}.actions{grid-template-columns:1fr 1fr}.side{display:flex}
+  .timer{transform:scale(.9);transform-origin:left top}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="lessonBadge">6</div>
+    <div>
+      <h1>THỰC HÀNH: ĐO TỐC ĐỘ CỦA VẬT CHUYỂN ĐỘNG</h1>
+      <small>Bản V2 – bố trí bộ thí nghiệm được vẽ lại sát Hình 6.6 hơn: máng nghiêng, cổng E–F, đồng hồ MC964, nam châm điện, thước cặp…</small>
+    </div>
+  </div>
+
+  <div class="topTabs">
+    <button class="tab active" data-tab="avg">1. Đo tốc độ trung bình</button>
+    <button class="tab" data-tab="inst">2. Đo tốc độ tức thời</button>
+  </div>
+
+  <div class="layout">
+    <section class="card simCard">
+      <div class="stage" id="stage">
+        <div class="stageTitle" id="stageTitle">Thí nghiệm 1: Đo tốc độ trung bình giữa hai cổng E và F</div>
+        <div class="helperBox" id="helperBox">
+          <b>Bố trí đúng theo SGK:</b> viên bi được giữ ở đầu trên của máng, lăn qua cổng E rồi đến cổng F. Đồng hồ chỉ đo <b>thời gian</b>, sau đó tính tốc độ từ số đo.
+          <div class="infoChip">Hình vẽ đã sửa lại: máng nghiêng nối vào đoạn máng đo thẳng như hình gốc.</div>
+        </div>
+
+        <div class="trackSlope"></div>
+        <div class="trackLong"></div>
+        <div class="scaleBar"></div>
+        <div class="ruler"></div>
+        <div class="rulerLabels" id="rulerLabels"></div>
+
+        <div class="protractor"></div>
+        <div class="protractorCenter"></div>
+
+        <div class="supportLeft">
+          <div class="rod"></div>
+          <div class="leg1"></div><div class="leg2"></div><div class="leg3"></div>
+        </div>
+
+        <div class="magnetBox"></div>
+        <div class="magnetTip"></div>
+
+        <div class="gate" id="gateE">
+          <div class="gateBody"></div><div class="gateHole"></div><div class="gateSensor"></div><div class="gateLabel">E</div>
+        </div>
+        <div class="gate" id="gateF">
+          <div class="gateBody"></div><div class="gateHole"></div><div class="gateSensor"></div><div class="gateLabel">F</div>
+        </div>
+
+        <div class="rightStand"></div><div class="rightFoot"></div><div class="rightCap"></div>
+
+        <div class="timer">
+          <div class="display" id="display">0.000</div>
+          <div class="timerMode"></div><div class="timerText">MODE</div><div class="timerReset"></div>
+          <div class="timerPorts"><span class="port">A</span><span class="port">B</span></div>
+          <div class="powerLight" id="powerLight"></div>
+        </div>
+
+        <div class="switchBox">CÔNG TẮC<div class="switchLamp" id="switchLamp"></div></div>
+        <div class="caliper" id="caliper"></div>
+
+        <svg class="cableSvg" viewBox="0 0 900 560" preserveAspectRatio="none">
+          <path d="M245 351 C235 322, 220 305, 200 260" stroke="#2c3138" stroke-width="3" fill="none" opacity=".8"/>
+          <path id="pathCableE" d="M470 392 C430 350, 330 330, 245 245" stroke="#e8ecef" stroke-width="3" fill="none" opacity=".95"/>
+          <path id="pathCableF" d="M528 385 C550 330, 600 305, 614 245" stroke="#e8ecef" stroke-width="3" fill="none" opacity=".95"/>
+          <path d="M300 348 C330 355, 345 362, 355 358" stroke="#2b3138" stroke-width="3" fill="none" opacity=".8"/>
+        </svg>
+
+        <div class="num" style="left:433px;top:390px">1</div>
+        <div class="num" style="left:250px;top:193px">2</div>
+        <div class="num" style="left:122px;top:150px">3</div>
+        <div class="num" style="left:700px;top:192px">4</div>
+        <div class="num" style="left:523px;top:186px">5</div>
+        <div class="num" style="left:42px;top:312px">6</div>
+        <div class="num" style="left:698px;top:354px">7</div>
+
+        <div class="ball" id="ball"></div>
+        <div class="instantInfo hidden" id="instantInfo">
+          <b>Đo tốc độ tức thời</b><br>
+          Chọn MODE A, đồng hồ đo thời gian viên bi chắn tia tại cổng E.<br>
+          Sau đó dùng: <b>v ≈ d/Δt</b>.
+        </div>
+
+        <div class="floorShadow"></div>
+      </div>
+
+      <div class="controlPanel">
+        <div class="row">
+          <span class="lbl">MODE:</span>
+          <select id="modeSelect">
+            <option value="AB">A ↔ B</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="A+B">A + B</option>
+            <option value="T">T</option>
+          </select>
+          <span class="lbl" id="distanceLabel">Khoảng cách EF:</span>
+          <input class="range" id="distanceRange" type="range" min="0.20" max="0.60" value="0.40" step="0.02">
+          <span class="valueBadge" id="distanceValue">0.40 m</span>
+        </div>
+        <div class="row hidden" id="diameterRow">
+          <span class="lbl">Đường kính viên bi d:</span>
+          <input class="range" id="diameterRange" type="range" min="0.012" max="0.020" value="0.016" step="0.001">
+          <span class="valueBadge" id="diameterValue">16.0 mm</span>
+        </div>
+        <div class="actions">
+          <button class="act blue" id="powerBtn">⏻ Bật nguồn</button>
+          <button class="act red" id="resetBtn">RESET 0.000</button>
+          <button class="act orange" id="holdBtn">🧲 Giữ bi</button>
+          <button class="act green" id="releaseBtn">▶ Thả bi</button>
+          <button class="act purple" id="recordBtn">📝 Ghi số liệu</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="card panel">
+        <h3>Tiến trình thí nghiệm</h3>
+        <div class="status" id="status">Bước 1: Bật nguồn đồng hồ và chọn đúng MODE.</div>
+        <div class="steps" id="steps"></div>
+      </div>
+
+      <div class="card panel">
+        <details class="guideDetails">
+          <summary>📘 Hướng dẫn thao tác ▾</summary>
+          <div class="guideContent" id="guideText"></div>
+        </details>
+      </div>
+
+      <div class="card panel dataPanel">
+        <h3 id="tableTitle">Bảng 6.1 – Đo tốc độ trung bình</h3>
+        <div class="tableWrap">
+          <table>
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="resultBox" id="resultBox">Chưa có dữ liệu đo.</div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+
+  const state = {
+    tab:'avg',
+    power:false,
+    held:true,
+    running:false,
+    mode:'AB',
+    ef:0.40,
+    diameter:0.016,
+    lastMeasurement:null,
+    avgData:[],
+    instData:[]
+  };
+
+  // Mô hình vật lí đơn giản:
+  const physics = {
+    Epos:0.10,        // m tính từ đầu đoạn thẳng sau chân dốc
+    baseV:0.82,       // m/s tại E
+    accel:0.18        // m/s² trên đoạn thẳng
+  };
+
+  let raf = 0, runStart = 0, runDuration = 0;
+
+  // Hình học sân khấu
+  const geo = {
+    hold:{x:148, y:162},
+    slopeEnd:{x:210, y:233},
+    railStart:{x:180, y:234},
+    railLength:470
+  };
+
+  function meterText(v){
+    if(v==null || !isFinite(v)) return '0.000';
+    return Math.max(0,v).toFixed(3);
+  }
+  function setDisplay(v){ $('#display').textContent = meterText(v); }
+
+  function vAt(x){ return Math.sqrt(Math.max(0, physics.baseV**2 + 2*physics.accel*(x-physics.Epos))); }
+  function timeBetween(x1,x2){
+    const v1 = vAt(x1), a = physics.accel, s=x2-x1;
+    if(Math.abs(a)<1e-9) return s/v1;
+    return (-v1 + Math.sqrt(v1*v1 + 2*a*s))/a;
+  }
+  function blockingTimeAt(x){ return state.diameter / vAt(x); }
+
+  function noise(value, fraction=0.003){
+    const n = (state.tab==='avg'?state.avgData.length:state.instData.length);
+    const pattern=[-0.002,0.0015,0.0004,-0.001,0.0018];
+    return value*(1 + (pattern[n%pattern.length]/0.002)*fraction);
+  }
+
+  function placeBall(x,y){ $('#ball').style.left=x+'px'; $('#ball').style.top=y+'px'; }
+  function placeBallHeld(){ placeBall(geo.hold.x, geo.hold.y); }
+  function flashGate(id){
+    const g=$(id); g.classList.add('flash'); setTimeout(()=>g.classList.remove('flash'),180);
+  }
+
+  function mapRail(distanceFromRailStartMeters){
+    // đoạn thẳng hiển thị từ 0 -> 0.70 m
+    return geo.railStart.x + geo.railLength*(distanceFromRailStartMeters/0.70);
+  }
+
+  function ruler(){
+    const el=$('#rulerLabels'); el.innerHTML='';
+    for(let i=0;i<=6;i++){
+      const sp=document.createElement('span');
+      sp.style.left=(i/6*100)+'%';
+      sp.textContent=(i*10)+' cm';
+      el.appendChild(sp);
+    }
+  }
+
+  function layoutApparatus(){
+    const Epx = mapRail(physics.Epos);
+    const Fpx = mapRail(physics.Epos + state.ef);
+    $('#gateE').style.left = Epx + 'px';
+    $('#gateE').style.top = '232px';
+    $('#gateF').style.left = Fpx + 'px';
+    $('#gateF').style.top = '232px';
+
+    // cables to gates
+    $('#pathCableE').setAttribute('d', `M470 392 C430 350, 330 330, ${Epx-5} 245`);
+    $('#pathCableF').setAttribute('d', `M528 385 C550 330, 600 305, ${Fpx-5} 245`);
+
+    if(state.tab==='inst'){
+      $('#gateF').classList.add('hidden');
+      $('#pathCableF').style.display='none';
+    } else {
+      $('#gateF').classList.remove('hidden');
+      $('#pathCableF').style.display='block';
+    }
+    if(!state.running) placeBallHeld();
+  }
+
+  function currentSteps(){
+    if(state.tab==='avg') return [
+      'Bật nguồn đồng hồ MC964.',
+      'Chọn MODE A ↔ B.',
+      'Đặt E cố định, điều chỉnh F và xác định khoảng cách EF.',
+      'Giữ viên bi ở nam châm điện, nhấn RESET.',
+      'Thả bi; đồng hồ bắt đầu khi bi qua E và dừng khi bi qua F.',
+      'Ghi số liệu, lặp lại ít nhất 3 lần và tính v = s/t.'
+    ];
+    return [
+      'Bật nguồn đồng hồ MC964.',
+      'Chọn MODE A.',
+      'Đo đường kính viên bi d bằng thước cặp.',
+      'Giữ viên bi ở nam châm điện, nhấn RESET.',
+      'Thả bi; đồng hồ đo thời gian viên bi chắn cổng E.',
+      'Ghi số liệu, lặp lại và tính v ≈ d/Δt.'
+    ];
+  }
+  function stepIndex(){
+    if(!state.power) return 0;
+    if(state.tab==='avg' && state.mode!=='AB') return 1;
+    if(state.tab==='inst' && state.mode!=='A') return 1;
+    if(!state.held) return 3;
+    if(state.lastMeasurement==null) return 3;
+    const count = state.tab==='avg' ? state.avgData.length : state.instData.length;
+    if(count===0) return 5;
+    return count>=3?6:5;
+  }
+  function renderSteps(){
+    const arr=currentSteps(), idx=stepIndex();
+    $('#steps').innerHTML='';
+    arr.forEach((t,i)=>{
+      const d=document.createElement('div');
+      d.className='step '+(i<idx?'done':i===idx?'active':'');
+      d.innerHTML=`<div class="stepNum">${i+1}</div><div class="stepText">${t}</div>`;
+      $('#steps').appendChild(d);
+    });
+  }
+
+  function guide(){
+    if(state.tab==='avg'){
+      $('#guideText').innerHTML = `
+        <b>Mục tiêu:</b> đo thời gian viên bi đi từ cổng E đến F rồi tính tốc độ trung bình.<br><br>
+        <b>1.</b> Bật nguồn đồng hồ.<br>
+        <b>2.</b> Chọn <b>MODE A ↔ B</b>.<br>
+        <b>3.</b> Điều chỉnh khoảng cách EF bằng thanh trượt.<br>
+        <b>4.</b> Đưa viên bi về nam châm điện ở đầu máng, nhấn <b>RESET</b>.<br>
+        <b>5.</b> Nhấn <b>Thả bi</b>: bi lăn xuống phần dốc, qua E rồi qua F.<br>
+        <b>6.</b> Đồng hồ hiển thị thời gian từ E đến F. Nhấn <b>Ghi số liệu</b>.<br><br>
+        <b>Xử lí:</b> v = s/t.`;
+    } else {
+      $('#guideText').innerHTML = `
+        <b>Mục tiêu:</b> đo gần đúng tốc độ tức thời của viên bi tại cổng E.<br><br>
+        <b>1.</b> Bật nguồn đồng hồ.<br>
+        <b>2.</b> Chọn <b>MODE A</b>.<br>
+        <b>3.</b> Điều chỉnh/đọc đường kính viên bi d ở phần thước cặp.<br>
+        <b>4.</b> Nhấn <b>RESET</b> và thả bi.<br>
+        <b>5.</b> Đồng hồ chỉ đo thời gian Δt mà viên bi chắn tia ở cổng E.<br>
+        <b>6.</b> Tính v ≈ d/Δt.`;
+    }
+  }
+
+  function setStatus(){
+    let s='';
+    if(!state.power) s='Bước 1: Bật nguồn đồng hồ MC964.';
+    else if(state.tab==='avg' && state.mode!=='AB') s='Hãy chọn MODE A ↔ B để đo thời gian từ E đến F.';
+    else if(state.tab==='inst' && state.mode!=='A') s='Hãy chọn MODE A để đo thời gian viên bi chắn cổng E.';
+    else if(state.running) s='Viên bi đang chuyển động: xuống phần dốc rồi đi qua cổng quang điện trên máng.';
+    else if(state.lastMeasurement!=null) s='Đã có kết quả đo. Nhấn “Ghi số liệu” hoặc lặp lại lần đo tiếp theo.';
+    else s='Sẵn sàng: đưa bi về nam châm điện, RESET rồi thả bi.';
+    $('#status').textContent = s;
+  }
+
+  function renderTable(){
+    const isAvg = state.tab==='avg';
+    $('#tableTitle').textContent = isAvg ? 'Bảng 6.1 – Đo tốc độ trung bình' : 'Bảng 6.2 – Đo tốc độ tức thời';
+    $('#thead').innerHTML = isAvg
+      ? '<tr><th>Lần đo</th><th>s = EF (m)</th><th>t (s)</th><th>v = s/t (m/s)</th></tr>'
+      : '<tr><th>Lần đo</th><th>d (m)</th><th>Δt (s)</th><th>v ≈ d/Δt (m/s)</th></tr>';
+    const data = isAvg ? state.avgData : state.instData;
+    $('#tbody').innerHTML = '';
+    data.forEach((r,i)=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = isAvg
+        ? `<td>${i+1}</td><td>${r.s.toFixed(3)}</td><td>${r.t.toFixed(3)}</td><td>${r.v.toFixed(3)}</td>`
+        : `<td>${i+1}</td><td>${r.d.toFixed(3)}</td><td>${r.t.toFixed(3)}</td><td>${r.v.toFixed(3)}</td>`;
+      $('#tbody').appendChild(tr);
+    });
+    if(!data.length){ $('#resultBox').textContent='Chưa có dữ liệu đo.'; return; }
+    const tavg=data.reduce((a,b)=>a+b.t,0)/data.length;
+    const vavg=data.reduce((a,b)=>a+b.v,0)/data.length;
+    const dev=data.reduce((a,b)=>a+Math.abs(b.v-vavg),0)/data.length;
+    $('#resultBox').innerHTML = `Số lần đo: <b>${data.length}</b> &nbsp;|&nbsp; Thời gian trung bình: <b>${tavg.toFixed(3)} s</b><br>
+    Giá trị tốc độ trung bình từ các lần đo: <b>${vavg.toFixed(3)} m/s</b> &nbsp;|&nbsp; Độ lệch tuyệt đối trung bình xấp xỉ: <b>${dev.toFixed(3)} m/s</b>.`;
+  }
+
+  function setupTab(tab){
+    cancelAnimationFrame(raf);
+    state.tab = tab; state.lastMeasurement = null; state.running = false; state.held = true;
+    $$('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+    if(tab==='avg'){
+      $('#stageTitle').textContent='Thí nghiệm 1: Đo tốc độ trung bình giữa hai cổng E và F';
+      $('#distanceLabel').textContent='Khoảng cách EF:';
+      $('#distanceRange').classList.remove('hidden'); $('#distanceValue').classList.remove('hidden');
+      $('#diameterRow').classList.add('hidden'); $('#instantInfo').classList.add('hidden');
+      state.mode='AB'; $('#modeSelect').value='AB';
+    } else {
+      $('#stageTitle').textContent='Thí nghiệm 2: Đo tốc độ tức thời tại cổng quang điện E';
+      $('#distanceLabel').textContent='Vị trí cổng E: cố định 10 cm';
+      $('#distanceRange').classList.add('hidden'); $('#distanceValue').classList.add('hidden');
+      $('#diameterRow').classList.remove('hidden'); $('#instantInfo').classList.remove('hidden');
+      state.mode='A'; $('#modeSelect').value='A';
+    }
+    $('#diameterValue').textContent=(state.diameter*1000).toFixed(1)+' mm';
+    $('#caliper').textContent='Thước cặp – d = '+(state.diameter*1000).toFixed(1)+' mm';
+    setDisplay(0); guide(); renderTable(); renderSteps(); setStatus(); layoutApparatus();
+  }
+
+  function animateRun(){
+    if(!state.power){ setStatus(); return; }
+    const expectedMode=state.tab==='avg'?'AB':'A';
+    if(state.mode!==expectedMode){ setStatus(); return; }
+    if(state.running) return;
+    state.running = true; state.held = false; state.lastMeasurement = null;
+    renderSteps(); setStatus();
+
+    const Epx = mapRail(physics.Epos);
+    const Fpx = mapRail(physics.Epos + state.ef);
+    const slopeStart = geo.hold;
+    const slopeEnd = {x:Epx-18, y:232};
+    const finalX = state.tab==='avg' ? Fpx+18 : Epx+68;
+    const finalY = 232;
+
+    const rampMs = 1320;
+    const measurementPhysical = state.tab==='avg' ? noise(timeBetween(physics.Epos,physics.Epos+state.ef))
+                                                  : noise(blockingTimeAt(physics.Epos));
+    // scale thời gian cho dễ quan sát
+    const straightMs = state.tab==='avg' ? Math.max(1150, measurementPhysical*2300) : 900;
+    runDuration = rampMs + straightMs + 500;
+    runStart = performance.now();
+
+    let flashedE=false, flashedF=false;
+    function frame(now){
+      const e = now - runStart;
+      let x,y;
+
+      if(e < rampMs){
+        const q = e/rampMs;
+        x = slopeStart.x + (slopeEnd.x-slopeStart.x)*q;
+        y = slopeStart.y + (slopeEnd.y-slopeStart.y)*q;
+      } else {
+        const q = Math.min(1,(e-rampMs)/straightMs);
+        x = slopeEnd.x + (finalX-slopeEnd.x)*q;
+        y = finalY;
+      }
+      placeBall(x,y);
+
+      if(e>=rampMs && !flashedE){
+        flashedE=true; flashGate('#gateE');
+        setDisplay(0);
+      }
+
+      if(state.tab==='avg' && e>=rampMs){
+        const q=Math.min(1,(e-rampMs)/straightMs);
+        setDisplay(measurementPhysical*q);
+      }
+
+      if(state.tab==='inst' && e>=rampMs){
+        const q=Math.min(1,(e-rampMs)/900);
+        setDisplay(measurementPhysical*q);
+      }
+
+      if(state.tab==='avg' && e>=rampMs+straightMs && !flashedF){
+        flashedF=true; flashGate('#gateF'); setDisplay(measurementPhysical);
+      }
+
+      if(e>=runDuration){
+        state.running=false;
+        state.lastMeasurement=measurementPhysical;
+        setDisplay(measurementPhysical);
+        renderSteps(); setStatus();
+        return;
+      }
+      raf=requestAnimationFrame(frame);
+    }
+    raf=requestAnimationFrame(frame);
+  }
+
+  // events
+  $('#powerBtn').addEventListener('click',()=>{
+    state.power=!state.power;
+    $('#powerLight').classList.toggle('on',state.power);
+    $('#switchLamp').classList.toggle('on',state.power);
+    $('#powerBtn').textContent=state.power?'⏻ Tắt nguồn':'⏻ Bật nguồn';
+    if(!state.power){ setDisplay(0); state.lastMeasurement=null; }
+    renderSteps(); setStatus();
+  });
+
+  $('#resetBtn').addEventListener('click',()=>{
+    if(!state.power) return;
+    state.lastMeasurement=null; setDisplay(0); renderSteps(); setStatus();
+  });
+
+  $('#holdBtn').addEventListener('click',()=>{
+    if(state.running) return;
+    state.held=true; state.lastMeasurement=null; placeBallHeld(); setDisplay(0); renderSteps(); setStatus();
+  });
+
+  $('#releaseBtn').addEventListener('click', animateRun);
+
+  $('#recordBtn').addEventListener('click',()=>{
+    if(state.lastMeasurement==null) return;
+    if(state.tab==='avg'){
+      const t=state.lastMeasurement, s=state.ef;
+      state.avgData.push({s,t,v:s/t});
+    } else {
+      const t=state.lastMeasurement, d=state.diameter;
+      state.instData.push({d,t,v:d/t});
+    }
+    state.lastMeasurement=null; renderTable(); renderSteps(); setStatus();
+  });
+
+  $('#modeSelect').addEventListener('change',e=>{ state.mode=e.target.value; renderSteps(); setStatus(); });
+  $('#distanceRange').addEventListener('input',e=>{
+    state.ef=+e.target.value; $('#distanceValue').textContent=state.ef.toFixed(2)+' m'; layoutApparatus();
+  });
+  $('#diameterRange').addEventListener('input',e=>{
+    state.diameter=+e.target.value;
+    $('#diameterValue').textContent=(state.diameter*1000).toFixed(1)+' mm';
+    $('#caliper').textContent='Thước cặp – d = '+(state.diameter*1000).toFixed(1)+' mm';
+  });
+  $$('.tab').forEach(b=>b.addEventListener('click',()=>setupTab(b.dataset.tab)));
+
+  ruler();
+  setupTab('avg');
+})();
+</script>
+</body>
+</html>

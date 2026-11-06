@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-28 Chồng chất hai xung sóng</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#030b14;color:#eef8fb}
+#app{display:grid;grid-template-columns:245px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800;letter-spacing:1px}
+h1{font-size:17px;margin:4px 0 6px}
+.desc{font-size:10.5px;color:#aac3cd;line-height:1.35;margin:0 0 8px}
+.ctl{display:grid;grid-template-columns:66px 1fr 58px;gap:5px;align-items:center;margin:5px 0}
+.ctl label{font-size:9.8px}.ctl output{font-size:9.3px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}
+.check,.btn{font-size:9.5px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}
+.btn{font-weight:800;cursor:pointer}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 50% 35%,#123d58 0%,#0a263b 42%,#061725 75%,#030b13 100%)}
+#sim{position:absolute;inset:0;width:100%;height:100%}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:11px;font-weight:700}
+#hud{position:absolute;right:12px;bottom:12px;display:flex;gap:10px;background:rgba(7,20,28,.88);border:1px solid #316376;border-radius:10px;padding:7px 9px}
+.hud span{display:block;font-size:8px;color:#98bac8}.hud b{font-size:10.4px}
+#note{position:absolute;left:12px;bottom:12px;width:385px;background:rgba(7,20,28,.88);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.3px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);font-size:10px;font-weight:700}
+.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="ey">PHYSICS 11 LAB · STABLE</div>
+<h1>28 · Chồng chất hai xung sóng</h1>
+<p class="desc">Hai xung truyền ngược chiều. Khi gặp nhau, li độ tổng tại mỗi điểm bằng tổng đại số hai li độ thành phần.</p>
+
+<div class="ctl"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Biên độ A₁</label><input id="A1" type="range" min="-1.2" max="1.2" step=".05" value=".8"><output id="A1Out"></output></div>
+<div class="ctl"><label>Biên độ A₂</label><input id="A2" type="range" min="-1.2" max="1.2" step=".05" value=".8"><output id="A2Out"></output></div>
+<div class="ctl"><label>Vận tốc v</label><input id="waveV" type="range" min=".5" max="3.5" step=".1" value="1.5"><output id="waveVOut"></output></div>
+<div class="ctl"><label>Độ rộng 1</label><input id="w1" type="range" min=".3" max="1.4" step=".05" value=".65"><output id="w1Out"></output></div>
+<div class="ctl"><label>Độ rộng 2</label><input id="w2" type="range" min=".3" max="1.4" step=".05" value=".65"><output id="w2Out"></output></div>
+<div class="ctl"><label>Vị trí M</label><input id="probeX" type="range" min="1" max="11" step=".1" value="6"><output id="probeXOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="show1" type="checkbox" checked> Xung 1</label>
+<label class="check"><input id="show2" type="checkbox" checked> Xung 2</label>
+<label class="check"><input id="showSum" type="checkbox" checked> Tổng hợp</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="againBtn" class="btn">⚡ Chạy lại</button>
+<button id="oppositeBtn" class="btn">± Hai xung trái dấu</button><button id="sameBtn" class="btn">++ Hai xung cùng dấu</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+<div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view">
+<canvas id="sim"></canvas>
+<div id="formula">u(x,t) = u₁(x,t) + u₂(x,t)</div>
+<div id="hud">
+<div class="hud"><span>t</span><b id="tHud"></b></div>
+<div class="hud"><span>u₁(M)</span><b id="u1Hud"></b></div>
+<div class="hud"><span>u₂(M)</span><b id="u2Hud"></b></div>
+<div class="hud"><span>u(M)</span><b id="uHud"></b></div>
+<div class="hud"><span>Trạng thái</span><b id="stateHud"></b></div>
+</div>
+<div id="note">Xung 1 màu xanh đi sang phải, xung 2 màu cam đi sang trái. Khi chồng lên nhau, đường trắng là tổng đại số. Sau khi gặp nhau, hai xung tiếp tục truyền và giữ nguyên dạng ban đầu.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const canvas=$('sim'),ctx=canvas.getContext('2d'),view=$('view');
+const state={running:true,t:0,speed:1,A1:.8,A2:.8,v:1.5,w1:.65,w2:.65,probeX:6,last:performance.now()};
+const L=12,x10=2.1,x20=9.9;
+
+function resize(){
+ const r=view.getBoundingClientRect();
+ canvas.width=Math.floor(r.width*devicePixelRatio);
+ canvas.height=Math.floor(r.height*devicePixelRatio);
+ canvas.style.width=r.width+'px';
+ canvas.style.height=r.height+'px';
+ ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)
+}
+window.addEventListener('resize',resize);resize();
+
+function gauss(z,w){return Math.exp(-(z*z)/(2*w*w))}
+function x1c(){return x10+state.v*state.t}
+function x2c(){return x20-state.v*state.t}
+function u1(x){return state.A1*gauss(x-x1c(),state.w1)}
+function u2(x){return state.A2*gauss(x-x2c(),state.w2)}
+function sum(x){return u1(x)+u2(x)}
+function separation(){return Math.abs(x2c()-x1c())}
+function status(){
+ const d=separation(),th=1.15*(state.w1+state.w2);
+ if(d<th)return 'Đang chồng chất';
+ return x1c()<x2c()?'Đang tiến lại gần':'Đã đi xuyên qua nhau'
+}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';
+ $('A1Out').value=state.A1.toFixed(2)+' m';
+ $('A2Out').value=state.A2.toFixed(2)+' m';
+ $('waveVOut').value=state.v.toFixed(2)+' m/s';
+ $('w1Out').value=state.w1.toFixed(2)+' m';
+ $('w2Out').value=state.w2.toFixed(2)+' m';
+ $('probeXOut').value=state.probeX.toFixed(1)+' m';
+ $('tHud').textContent=state.t.toFixed(2)+' s';
+ $('u1Hud').textContent=u1(state.probeX).toFixed(2)+' m';
+ $('u2Hud').textContent=u2(state.probeX).toFixed(2)+' m';
+ $('uHud').textContent=sum(state.probeX).toFixed(2)+' m';
+ $('stateHud').textContent=status()
+}
+function sync(resetT=true){
+ state.speed=+$('speed').value;state.A1=+$('A1').value;state.A2=+$('A2').value;state.v=+$('waveV').value;state.w1=+$('w1').value;state.w2=+$('w2').value;state.probeX=+$('probeX').value;
+ if(resetT)state.t=0;
+ updateUI()
+}
+['A1','A2','waveV','w1','w2','probeX'].forEach(id=>$(id).addEventListener('input',()=>sync(true)));
+$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>state.running=true;
+$('pauseBtn').onclick=()=>state.running=false;
+$('againBtn').onclick=()=>{state.t=0;state.running=true};
+$('oppositeBtn').onclick=()=>{$('A1').value=.8;$('A2').value=-.8;sync(true)};
+$('sameBtn').onclick=()=>{$('A1').value=.8;$('A2').value=.8;sync(true)};
+$('resetBtn').onclick=()=>{
+ Object.assign(state,{running:true,t:0,speed:1,A1:.8,A2:.8,v:1.5,w1:.65,w2:.65,probeX:6});
+ for(const [id,val] of [['speed',1],['A1',.8],['A2',.8],['waveV',1.5],['w1',.65],['w2',.65],['probeX',6]])$(id).value=val;
+ updateUI()
+};
+$('fullscreenBtn').onclick=async()=>{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()};
+
+function line(x1,y1,x2,y2,c,w=1,d=[]){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=w;ctx.setLineDash(d);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore()}
+function circle(x,y,r,f,s=null){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=f;ctx.fill();if(s){ctx.strokeStyle=s;ctx.lineWidth=2;ctx.stroke()}}
+function text(t,x,y,s=12,c='#fff',a='left',w='normal'){ctx.font=`${w} ${s}px Segoe UI`;ctx.fillStyle=c;ctx.textAlign=a;ctx.fillText(t,x,y)}
+function curve(fn,c,w,mid,amp,map){
+ ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();
+ for(let i=0;i<=400;i++){
+  const x=L*i/400,X=map(x),Y=mid-fn(x)*amp;
+  i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)
+ }
+ ctx.stroke()
+}
+
+function draw(){
+ const W=view.clientWidth,H=view.clientHeight;
+ ctx.clearRect(0,0,W,H);
+ if($('showGrid').checked){
+  for(let x=0;x<W;x+=40)line(x,0,x,H,'rgba(60,120,145,.17)');
+  for(let y=0;y<H;y+=40)line(0,y,W,y,'rgba(60,120,145,.17)')
+ }
+ const left=80,right=W*.84,mid=H*.50,amp=Math.min(105,H*.15),map=x=>left+(right-left)*x/L;
+
+ line(left,mid,right,mid,'rgba(180,225,240,.35)',1.5,[6,6]);
+
+ // direction arrows
+ line(left+80,mid-155,left+205,mid-155,'#63dcff',4);
+ ctx.fillStyle='#63dcff';ctx.beginPath();ctx.moveTo(left+205,mid-155);ctx.lineTo(left+187,mid-165);ctx.lineTo(left+187,mid-145);ctx.closePath();ctx.fill();
+ text('xung 1',left+142,mid-174,11,'#9feaff','center','bold');
+
+ line(right-80,mid-155,right-205,mid-155,'#ffb45a',4);
+ ctx.fillStyle='#ffb45a';ctx.beginPath();ctx.moveTo(right-205,mid-155);ctx.lineTo(right-187,mid-165);ctx.lineTo(right-187,mid-145);ctx.closePath();ctx.fill();
+ text('xung 2',right-142,mid-174,11,'#ffd09a','center','bold');
+
+ if($('show1').checked)curve(u1,'#63dcff',3,mid,amp,map);
+ if($('show2').checked)curve(u2,'#ff9f43',3,mid,amp,map);
+ if($('showSum').checked){ctx.shadowColor='#fff';ctx.shadowBlur=7;curve(sum,'#f1f6f8',4.5,mid,amp,map);ctx.shadowBlur=0}
+
+ // material points following total displacement
+ for(let i=0;i<=48;i++){
+  const x=L*i/48;
+  circle(map(x),mid-sum(x)*amp,2.6,'#d9f6ff')
+ }
+
+ // pulse centers
+ const cx1=map(x1c()),cy1=mid-u1(x1c())*amp;
+ const cx2=map(x2c()),cy2=mid-u2(x2c())*amp;
+ if(x1c()>=0&&x1c()<=L){circle(cx1,cy1,5,'#63dcff','#fff');text('1',cx1,cy1-14,10,'#9feaff','center','bold')}
+ if(x2c()>=0&&x2c()<=L){circle(cx2,cy2,5,'#ff9f43','#fff');text('2',cx2,cy2-14,10,'#ffd09a','center','bold')}
+
+ // probe
+ const Xm=map(state.probeX),Ym=mid-sum(state.probeX)*amp;
+ circle(Xm,Ym,8,'#ff6b6b','#fff');text('M',Xm,Ym-18,12,'#ffaaaa','center','bold');
+
+ // superposition card
+ const bx=W*.075,by=H*.14,bw=270,bh=112;
+ ctx.fillStyle='rgba(7,20,28,.80)';ctx.fillRect(bx,by,bw,bh);
+ ctx.strokeStyle='#315d70';ctx.strokeRect(bx,by,bw,bh);
+ text('NGUYÊN LÝ CHỒNG CHẤT',bx+bw/2,by+22,12,'#dff6ff','center','bold');
+ text('u = u₁ + u₂ tại cùng vị trí, cùng thời điểm',bx+12,by+50,10.5,'#fff','left','bold');
+ text(status(),bx+12,by+76,11,status()==='Đang chồng chất'?'#ffd166':'#69e3a6','left','bold');
+ text('Hai xung vẫn giữ dạng sau khi gặp nhau',bx+12,by+98,10,'#bcd2db','left');
+
+ // overlap indicator
+ if(status()==='Đang chồng chất'){
+  const xL=Math.max(0,Math.min(x1c(),x2c())-1.4*Math.max(state.w1,state.w2));
+  const xR=Math.min(L,Math.max(x1c(),x2c())+1.4*Math.max(state.w1,state.w2));
+  ctx.fillStyle='rgba(217,113,255,.10)';
+  ctx.fillRect(map(xL),mid-amp*1.45,map(xR)-map(xL),amp*2.9);
+  text('VÙNG CHỒNG CHẤT',(map(xL)+map(xR))/2,mid+amp*1.7,10,'#e3a6ff','center','bold')
+ }
+}
+
+function tick(now){
+ requestAnimationFrame(tick);
+ const dt=Math.min(.033,(now-state.last)/1000);state.last=now;
+ if(state.running)state.t+=dt*state.speed;
+ draw();updateUI()
+}
+updateUI();requestAnimationFrame(tick);
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;
+function mime(){
+ for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])
+  if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;
+ return ''
+}
+function clock(){
+ const s=Math.floor((performance.now()-recStart)/1000);
+ $('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')
+}
+$('recordBtn').onclick=()=>{
+ if(!canvas.captureStream||!window.MediaRecorder)return;
+ const m=mime();
+ rec=new MediaRecorder(canvas.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});
+ chunks=[];
+ rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ rec.onstop=()=>{
+  clearInterval(timer);$('recLabel').textContent='Đã dừng';
+  const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm';
+  const blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=`028_Chong_chat_hai_xung_song.${ext}`;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  $('recordBtn').disabled=false;$('stopRecordBtn').disabled=true
+ };
+ rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);
+ $('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false
+};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+</script>
+</body>
+</html>

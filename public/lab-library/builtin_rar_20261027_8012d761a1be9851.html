@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VL11-116 Khử tiếng ồn chủ động 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#020912;color:#eef8fb}
+#app{display:grid;grid-template-columns:270px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800}.desc{font-size:10.1px;color:#a9c2cd;line-height:1.35}h1{font-size:17px;margin:4px 0 6px;line-height:1.08}.model{font-size:9.3px;color:#d9edf5;background:#0b2230;border:1px solid #21495a;border-radius:8px;padding:6px;margin:6px 0}
+.ctl{display:grid;grid-template-columns:80px 1fr 72px;gap:5px;align-items:center;margin:5px 0}.ctl label{font-size:9.3px}.ctl output{font-size:8.9px;color:#72e4ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.check,.btn{font-size:9px;padding:6px;border:1px solid #2b5769;border-radius:8px;background:#0e2a37;color:#eef8fb}.btn{font-weight:800}.primary{background:#0f7da7}.record{background:#b83e3e}
+#view{position:relative;background:radial-gradient(circle at 52% 28%,#173f58 0,#0a263b 40%,#061725 72%,#030b13 100%)}#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label{position:absolute;transform:translate(-50%,-50%);background:rgba(244,250,252,.95);color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9px;white-space:nowrap}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;background:#f4fafc;color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10px;font-weight:700}
+#hud{position:absolute;right:12px;top:12px;z-index:7;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:8px 10px;min-width:220px}.hrow{display:flex;justify-content:space-between;gap:14px;font-size:9px;margin:3px 0}.hrow span{color:#9fc0cd}.hrow b{color:#fff}
+#note{position:absolute;left:12px;bottom:12px;z-index:7;width:600px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700}.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+</style></head>
+<body>
+<div id="app"><aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D CINEMATIC</div><h1>116 · Khử tiếng ồn chủ động</h1>
+<p class="desc">Micro thu tiếng ồn; loa chống ồn phát sóng gần ngược pha để tổng áp suất tại vùng nghe giảm mạnh.</p>
+<div class="model"><b>Mô hình hóa:</b> hai sóng điều hòa đơn tần tại một điểm quan sát. Bỏ qua độ trễ xử lí, đáp ứng tai nghe, âm đa tần và hình học phức tạp.</div>
+
+<div class="ctl"><label>Tốc độ mô phỏng</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Tần số f</label><input id="freq" type="range" min="80" max="800" step="10" value="250"><output id="freqOut"></output></div>
+<div class="ctl"><label>Biên độ ồn Aₙ</label><input id="noiseAmp" type="range" min=".2" max="1.5" step=".05" value="1"><output id="noiseAmpOut"></output></div>
+<div class="ctl"><label>Biên độ chống Aₐ</label><input id="antiAmp" type="range" min="0" max="1.5" step=".05" value="1"><output id="antiAmpOut"></output></div>
+<div class="ctl"><label>Lệch pha Δφ</label><input id="phase" type="range" min="0" max="360" step="5" value="180"><output id="phaseOut"></output></div>
+<div class="ctl"><label>Độ trễ xử lí</label><input id="delay" type="range" min="0" max="4" step=".1" value="0"><output id="delayOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showWaves" type="checkbox" checked> Sóng lan truyền</label>
+<label class="check"><input id="showResult" type="checkbox" checked> Vùng khử ồn</label>
+<label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị tín hiệu</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Bắt đầu</button><button id="pauseBtn" class="btn">⏸ Tạm dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Fit toàn cảnh</button>
+<button id="perfectBtn" class="btn">Khử tối ưu</button><button id="badBtn" class="btn">Lệch pha sai</button>
+<button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button><button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button>
+<button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div><div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view"><div id="three"></div><div id="labels"></div>
+<div id="formula">p<sub>tổng</sub>=p<sub>ồn</sub>+p<sub>chống</sub> &nbsp; · &nbsp; triệt tiêu mạnh khi Aₐ≈Aₙ và Δφ≈180°</div>
+<div id="hud">
+<div class="hrow"><span>Biên độ tổng</span><b id="ampHud"></b></div>
+<div class="hrow"><span>Mức giảm biên độ</span><b id="reduceHud"></b></div>
+<div class="hrow"><span>Độ lệch pha hiệu dụng</span><b id="phaseEffHud"></b></div>
+<div class="hrow"><span>Trạng thái</span><b id="statusHud"></b></div>
+</div>
+<div id="note">Đây là minh họa nguyên lí ANC: ở đúng vùng thiết kế, sóng chống ồn có thể làm giảm áp suất âm nhờ giao thoa phá hủy. Không nên hiểu rằng toàn bộ không gian đều im lặng; hiệu quả thực phụ thuộc vị trí, dải tần, micro, loa và thuật toán điều khiển.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three'; import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const $=id=>document.getElementById(id),view=$('view');
+const state={running:true,t:0,speed:1,f:250,An:1,Aa:1,phaseDeg:180,delayMs:0};
+const omega=()=>2*Math.PI*state.f;
+const phaseEff=()=>THREE.MathUtils.degToRad(state.phaseDeg)-omega()*state.delayMs/1000;
+const totalAmp=()=>Math.sqrt(state.An*state.An+state.Aa*state.Aa+2*state.An*state.Aa*Math.cos(phaseEff()));
+
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=8;controls.maxDistance=28;controls.minPolarAngle=.35;controls.maxPolarAngle=1.8;
+scene.add(new THREE.HemisphereLight(0xffffff,0x172832,4.3));const dl=new THREE.DirectionalLight(0xffffff,4.2);dl.position.set(6,10,8);scene.add(dl);
+const lab=new THREE.Group();scene.add(lab);lab.position.set(0,-.45,0);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(16,12),new THREE.MeshStandardMaterial({color:0x102530,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.8;lab.add(floor);
+const grid=new THREE.GridHelper(16,28,0x2e586a,0x123345);grid.position.y=-2.79;lab.add(grid);
+
+function speaker(color){
+ const g=new THREE.Group();
+ const box=new THREE.Mesh(new THREE.BoxGeometry(1.2,2,1.1),new THREE.MeshStandardMaterial({color:0x273943,metalness:.45,roughness:.3}));g.add(box);
+ const cone=new THREE.Mesh(new THREE.CylinderGeometry(.36,.23,.22,28),new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.22}));cone.rotation.x=Math.PI/2;cone.position.set(0,0,.66);g.add(cone);g.userData.cone=cone;return g
+}
+const noise= speaker(0xff6b55),anti=speaker(0x5ad7ff);noise.position.set(-3.3,-1.3,0);anti.position.set(3.3,-1.3,0);lab.add(noise,anti);
+
+const mic=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.65,18),new THREE.MeshStandardMaterial({color:0xcbdde5,metalness:.55,roughness:.28}));mic.position.set(-1.1,-1.3,2.2);lab.add(mic);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.55,28,20),new THREE.MeshStandardMaterial({color:0xe8c5a3,roughness:.5}));head.position.set(0,-.5,4.5);lab.add(head);
+const band=new THREE.Mesh(new THREE.TorusGeometry(.72,.12,12,36,Math.PI),new THREE.MeshStandardMaterial({color:0x263943,metalness:.5,roughness:.3}));band.rotation.z=Math.PI;band.position.set(0,-.25,4.5);lab.add(band);
+const earL=new THREE.Mesh(new THREE.BoxGeometry(.25,.75,.45),new THREE.MeshStandardMaterial({color:0x394d58}));earL.position.set(-.63,-.55,4.5);lab.add(earL);const earR=earL.clone();earR.position.x=.63;lab.add(earR);
+
+// wave rings
+const waves=new THREE.Group();lab.add(waves);const wr=[];
+for(let s=0;s<2;s++)for(let i=0;i<7;i++){
+ const ring=new THREE.Mesh(new THREE.RingGeometry(.97,1.03,72),new THREE.MeshBasicMaterial({color:s===0?0xff705f:0x5ad7ff,transparent:true,opacity:.35,side:THREE.DoubleSide,depthWrite:false}));
+ ring.rotation.x=-Math.PI/2;waves.add(ring);wr.push({ring,s,i})
+}
+const cancelZone=new THREE.Mesh(new THREE.CylinderGeometry(1.45,1.45,.12,48),new THREE.MeshBasicMaterial({color:0x69e3a6,transparent:true,opacity:.18,side:THREE.DoubleSide}));cancelZone.position.set(0,-2.66,4.5);lab.add(cancelZone);
+
+// graph
+const gc=document.createElement('canvas');gc.width=820;gc.height=350;const gctx=gc.getContext('2d'),gtex=new THREE.CanvasTexture(gc);
+const graphFrame=new THREE.Mesh(new THREE.BoxGeometry(5.25,2.45,.12),new THREE.MeshStandardMaterial({color:0xeaf3f6,roughness:.45}));graphFrame.position.set(4.4,2.35,-2.8);lab.add(graphFrame);
+const graphPlane=new THREE.Mesh(new THREE.PlaneGeometry(5,2.22),new THREE.MeshBasicMaterial({map:gtex,side:THREE.DoubleSide}));graphPlane.position.set(4.4,2.35,-2.72);lab.add(graphPlane);
+
+function drawGraph(){
+ gctx.fillStyle='#f8fafb';gctx.fillRect(0,0,820,350);gctx.fillStyle='#263b45';gctx.font='bold 24px Segoe UI';gctx.fillText('TÍN HIỆU TẠI VÙNG NGHE',245,30);
+ gctx.strokeStyle='#687b84';gctx.lineWidth=2;gctx.beginPath();gctx.moveTo(55,175);gctx.lineTo(755,175);gctx.stroke();
+ const T=1/state.f,pe=phaseEff();
+ const traces=[['#e85b4b',t=>state.An*Math.sin(omega()*t)],['#1677c8',t=>state.Aa*Math.sin(omega()*t+pe)],['#8c42bd',t=>.5*(state.An*Math.sin(omega()*t)+state.Aa*Math.sin(omega()*t+pe))]];
+ traces.forEach(([c,fn])=>{gctx.strokeStyle=c;gctx.lineWidth=3;gctx.beginPath();for(let i=0;i<=500;i++){const t=2*T*i/500,x=55+700*i/500,y=175-95*fn(t);i?gctx.lineTo(x,y):gctx.moveTo(x,y)}gctx.stroke()});
+ gctx.fillStyle='#50656f';gctx.font='17px Segoe UI';gctx.fillText('t',744,330);gctx.fillText('p',18,57);gtex.needsUpdate=true
+}
+function updatePhysics(dt){if(state.running)state.t+=dt*state.speed*.004}
+function updateVisuals(){
+ const pe=phaseEff(),osc1=.07*Math.sin(omega()*state.t),osc2=.07*Math.sin(omega()*state.t+pe);
+ noise.userData.cone.position.z=.66+osc1;anti.userData.cone.position.z=.66+osc2;
+ wr.forEach(o=>{
+   const src=o.s===0?noise.position:anti.position,phaseShift=o.s===0?0:pe/(2*Math.PI);
+   let rr=((state.t*state.f*.22+o.i*.9+phaseShift*.9)%6.5)+.35;
+   o.ring.position.set(src.x,-2.6,src.z);o.ring.scale.setScalar(rr);o.ring.material.opacity=.34*(1-rr/7)
+ });
+ const ta=totalAmp(),quality=Math.max(0,1-Math.min(1,ta/Math.max(.001,state.An)));
+ cancelZone.material.opacity=.08+.30*quality;cancelZone.material.color.set(quality>.65?0x69e3a6:quality>.25?0xffc857:0xff705f);
+ waves.visible=$('showWaves').checked;cancelZone.visible=$('showResult').checked;grid.visible=$('showGrid').checked;graphFrame.visible=graphPlane.visible=$('showGraph').checked;drawGraph()
+}
+function updateUI(){
+ const pe=((phaseEff()*180/Math.PI)%360+360)%360,ta=totalAmp(),red=(1-ta/Math.max(.001,state.An))*100;
+ $('speedOut').value=state.speed.toFixed(2)+'×';$('freqOut').value=state.f.toFixed(0)+' Hz';$('noiseAmpOut').value=state.An.toFixed(2);$('antiAmpOut').value=state.Aa.toFixed(2);$('phaseOut').value=state.phaseDeg.toFixed(0)+'°';$('delayOut').value=state.delayMs.toFixed(1)+' ms';
+ $('ampHud').textContent=ta.toFixed(3)+' A';$('reduceHud').textContent=(Math.max(-100,Math.min(100,red))).toFixed(1)+' %';$('phaseEffHud').textContent=pe.toFixed(1)+'°';
+ $('statusHud').textContent=ta<.15?'Khử rất tốt':ta<.5?'Khử đáng kể':ta<1?'Giảm một phần':'Khử kém / tăng ồn'
+}
+function sync(resetT=false){
+ state.speed=+$('speed').value;state.f=+$('freq').value;state.An=+$('noiseAmp').value;state.Aa=+$('antiAmp').value;state.phaseDeg=+$('phase').value;state.delayMs=+$('delay').value;if(resetT)state.t=0;updateUI()
+}
+['freq','noiseAmp','antiAmp','phase','delay'].forEach(id=>$(id).addEventListener('input',()=>sync(true)));$('speed').addEventListener('input',()=>sync(false));
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;
+$('perfectBtn').onclick=()=>{$('antiAmp').value=$('noiseAmp').value;$('phase').value=180;$('delay').value=0;sync(true)};
+$('badBtn').onclick=()=>{$('phase').value=80;$('delay').value=1.2;sync(true)};
+$('resetBtn').onclick=()=>{Object.assign(state,{running:true,t:0,speed:1,f:250,An:1,Aa:1,phaseDeg:180,delayMs:0});for(const [id,v] of [['speed',1],['freq',250],['noiseAmp',1],['antiAmp',1],['phase',180],['delay',0]])$(id).value=v;sync(true);fit()};
+$('fitBtn').onclick=fit;$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fit()},80));
+
+const labels=$('labels');function mk(t){const e=document.createElement('div');e.className='label';e.textContent=t;labels.appendChild(e);return e}
+const lN=mk('Nguồn tiếng ồn'),lA=mk('Loa chống ồn'),lM=mk('Micro'),lZ=mk('Vùng nghe cần giảm ồn');
+function project(el,p){const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=(q.z>1||!$('showLabels').checked)?'none':'block'}
+function fit(){controls.target.set(.2,-.3,2.2);camera.position.set(12.5,7.0,15.5);camera.lookAt(controls.target);controls.update()}function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}window.addEventListener('resize',()=>{resize();fit()});
+
+// recording
+let rec=null,chunks=[],recStart=0,timer=null;function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{if(!renderer.domElement.captureStream||!window.MediaRecorder)return;const m=mime();rec=new MediaRecorder(renderer.domElement.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{clearInterval(timer);const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`116_Khu_tieng_on_chu_dong_3D.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false};$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+resize();fit();updateUI();let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=Math.min(.033,(now-last)/1000);last=now;updatePhysics(dt);updateVisuals();updateUI();project(lN,noise.position.clone().add(new THREE.Vector3(0,1.4,0)));project(lA,anti.position.clone().add(new THREE.Vector3(0,1.4,0)));project(lM,mic.position.clone().add(new THREE.Vector3(0,.7,0)));project(lZ,new THREE.Vector3(0,.35,4.5));controls.update();renderer.render(scene,camera)}
+requestAnimationFrame(animate);
+</script></body></html>

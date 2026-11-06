@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mô phỏng sóng dừng trên sợi dây</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #eef4ff;
+      color: #0f172a;
+    }
+    .app {
+      width: min(1180px, 96vw);
+      margin: 18px auto;
+      background: #fff;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid #dbe5f2;
+      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.16);
+    }
+    header {
+      background: #0b3b78;
+      color: white;
+      padding: 18px 24px;
+    }
+    header h1 {
+      margin: 0 0 6px;
+      font-size: 32px;
+    }
+    header p {
+      margin: 0;
+      font-size: 16px;
+      opacity: 0.95;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 11px 18px;
+      font-size: 16px;
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+      transition: 0.18s;
+    }
+    button:hover { transform: translateY(-1px); }
+    #startBtn { background: #16a34a; }
+    #pauseBtn { background: #f59e0b; color: #111827; }
+    #resetBtn { background: #2563eb; }
+    .box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 15px;
+    }
+    input[type="range"] { width: 145px; accent-color: #2563eb; }
+    input[type="checkbox"] { transform: scale(1.2); accent-color: #2563eb; }
+    .main {
+      display: grid;
+      grid-template-columns: 1.35fr 0.85fr;
+      gap: 16px;
+      padding: 18px;
+    }
+    .card {
+      border: 1px solid #dbe5f2;
+      border-radius: 16px;
+      background: #fff;
+      overflow: hidden;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #ffffff;
+    }
+    .info {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      padding: 0 18px 18px;
+    }
+    .note {
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      padding: 14px;
+      line-height: 1.5;
+      font-size: 15px;
+    }
+    .note b { color: #0b3b78; }
+    .green { background: #f0fdf4; border-color: #bbf7d0; }
+    .red { background: #fff1f2; border-color: #fecdd3; }
+    @media (max-width: 920px) {
+      .main { grid-template-columns: 1fr; }
+      .info { grid-template-columns: 1fr; }
+      header h1 { font-size: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Mô phỏng HTML/JavaScript: Sóng dừng trên sợi dây</h1>
+      <p>Quan sát dây dao động lên xuống, các nút sóng đứng yên và các bụng sóng dao động với biên độ cực đại.</p>
+    </header>
+
+    <div class="controls">
+      <button id="startBtn">▶ Bắt đầu</button>
+      <button id="pauseBtn">⏸ Tạm dừng</button>
+      <button id="resetBtn">↻ Đặt lại</button>
+
+      <label class="box">
+        Số bó sóng n:
+        <input id="modeSlider" type="range" min="1" max="6" step="1" value="3">
+        <b><span id="modeValue">3</span></b>
+      </label>
+
+      <label class="box">
+        Biên độ:
+        <input id="ampSlider" type="range" min="20" max="95" step="5" value="65">
+        <b><span id="ampValue">65</span> px</b>
+      </label>
+
+      <label class="box">
+        Tần số:
+        <input id="freqSlider" type="range" min="0.4" max="3" step="0.1" value="1.2">
+        <b><span id="freqValue">1.2</span> Hz</b>
+      </label>
+
+      <label class="box">
+        <input id="showEnvelope" type="checkbox" checked>
+        Hiện đường biên
+      </label>
+
+      <label class="box">
+        <input id="showLabels" type="checkbox" checked>
+        Hiện nút/bụng sóng
+      </label>
+    </div>
+
+    <div class="main">
+      <div class="card">
+        <canvas id="waveCanvas" width="820" height="510"></canvas>
+      </div>
+      <div class="card">
+        <canvas id="infoCanvas" width="480" height="510"></canvas>
+      </div>
+    </div>
+
+    <div class="info">
+      <div class="note red">
+        <b>Nút sóng:</b> là điểm luôn đứng yên trên dây, có biên độ dao động bằng 0.
+      </div>
+      <div class="note green">
+        <b>Bụng sóng:</b> là điểm dao động mạnh nhất, có biên độ cực đại.
+      </div>
+      <div class="note">
+        <b>Hai đầu cố định:</b> điều kiện hình thành sóng dừng là <b>L = nλ/2</b>, với n là số bó sóng.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const waveCanvas = document.getElementById('waveCanvas');
+    const ctx = waveCanvas.getContext('2d');
+    const infoCanvas = document.getElementById('infoCanvas');
+    const ictx = infoCanvas.getContext('2d');
+
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const modeSlider = document.getElementById('modeSlider');
+    const ampSlider = document.getElementById('ampSlider');
+    const freqSlider = document.getElementById('freqSlider');
+    const showEnvelope = document.getElementById('showEnvelope');
+    const showLabels = document.getElementById('showLabels');
+
+    const modeValue = document.getElementById('modeValue');
+    const ampValue = document.getElementById('ampValue');
+    const freqValue = document.getElementById('freqValue');
+
+    let running = true;
+    let startTime = null;
+    let pausedTime = 0;
+
+    let n = 3;
+    let A = 65;
+    let f = 1.2;
+
+    const W = waveCanvas.width;
+    const H = waveCanvas.height;
+    const leftX = 80;
+    const rightX = 740;
+    const midY = 230;
+    const L = rightX - leftX;
+
+    function updateParams() {
+      n = Number(modeSlider.value);
+      A = Number(ampSlider.value);
+      f = Number(freqSlider.value);
+      modeValue.textContent = n;
+      ampValue.textContent = A;
+      freqValue.textContent = f.toFixed(1);
+    }
+
+    function getTime(timestamp) {
+      if (!running) return pausedTime;
+      if (startTime === null) startTime = timestamp - pausedTime * 1000;
+      return (timestamp - startTime) / 1000;
+    }
+
+    function drawRoundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function drawSupport(x) {
+      ctx.fillStyle = '#d1d5db';
+      ctx.fillRect(x - 18, midY - 120, 36, 240);
+      ctx.strokeStyle = '#374151';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x - 18, midY - 120, 36, 240);
+      ctx.strokeStyle = '#9ca3af';
+      ctx.lineWidth = 1.2;
+      for (let i = -110; i <= 110; i += 18) {
+        ctx.beginPath();
+        ctx.moveTo(x - 16, midY + i + 12);
+        ctx.lineTo(x + 16, midY + i - 12);
+        ctx.stroke();
+      }
+    }
+
+    function waveY(x, t, amp = A) {
+      const xi = (x - leftX) / L;
+      const omega = 2 * Math.PI * f;
+      return midY - amp * Math.sin(n * Math.PI * xi) * Math.cos(omega * t);
+    }
+
+    function envelopeY(x, sign) {
+      const xi = (x - leftX) / L;
+      return midY - sign * A * Math.abs(Math.sin(n * Math.PI * xi));
+    }
+
+    function drawString(t) {
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = '#0b3b78';
+      ctx.font = 'bold 32px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Sóng dừng trên sợi dây', W / 2, 45);
+
+      drawSupport(leftX);
+      drawSupport(rightX);
+
+      ctx.fillStyle = '#111827';
+      ctx.font = 'bold 18px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Đầu cố định', leftX, midY - 145);
+      ctx.fillText('Đầu cố định', rightX, midY - 145);
+
+      // Đường cân bằng
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(leftX, midY);
+      ctx.lineTo(rightX, midY);
+      ctx.stroke();
+
+      // Đường biên dao động
+      if (showEnvelope.checked) {
+        ctx.strokeStyle = 'rgba(37, 99, 235, 0.35)';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([8, 7]);
+        [-1, 1].forEach(sign => {
+          ctx.beginPath();
+          for (let i = 0; i <= 600; i++) {
+            const x = leftX + (i / 600) * L;
+            const y = envelopeY(x, sign);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        });
+        ctx.setLineDash([]);
+      }
+
+      // Sợi dây đang dao động
+      ctx.strokeStyle = '#1d4ed8';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      for (let i = 0; i <= 700; i++) {
+        const x = leftX + (i / 700) * L;
+        const y = waveY(x, t);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Hiệu ứng bóng nhẹ
+      ctx.strokeStyle = 'rgba(29, 78, 216, 0.18)';
+      ctx.lineWidth = 11;
+      ctx.beginPath();
+      for (let i = 0; i <= 700; i++) {
+        const x = leftX + (i / 700) * L;
+        const y = waveY(x, t);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Nút và bụng sóng
+      if (showLabels.checked) {
+        drawNodesAndAntinodes(t);
+      }
+
+      // Thước chiều dài L
+      const measureY = 415;
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 2;
+      drawDoubleArrow(leftX, measureY, rightX, measureY, '#111827');
+      ctx.fillStyle = '#111827';
+      ctx.font = 'italic bold 28px Georgia';
+      ctx.fillText('L', W / 2, measureY - 12);
+
+      // Công thức nhỏ
+      ctx.fillStyle = '#f8fafc';
+      ctx.strokeStyle = '#bfdbfe';
+      ctx.lineWidth = 2;
+      drawRoundRect(ctx, 245, 450, 330, 42, 10);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#0b3b78';
+      ctx.font = 'bold 19px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Điều kiện hai đầu cố định:  L = nλ/2', 410, 477);
+    }
+
+    function drawNodesAndAntinodes(t) {
+      // Nút sóng: i = 0..n
+      for (let i = 0; i <= n; i++) {
+        const x = leftX + i * L / n;
+        const y = midY;
+        ctx.beginPath();
+        ctx.arc(x, y, 9, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.strokeStyle = '#dc2626';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        if (i === 0 || i === n || i === Math.floor(n / 2)) {
+          ctx.fillStyle = '#dc2626';
+          ctx.font = 'bold 16px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('Nút sóng', x, midY + 68);
+          drawArrow(x, midY + 52, x, midY + 14, '#dc2626');
+        }
+      }
+
+      // Bụng sóng: giữa hai nút
+      for (let i = 0; i < n; i++) {
+        const x = leftX + (i + 0.5) * L / n;
+        const y = midY;
+        ctx.beginPath();
+        ctx.arc(x, y, 9, 0, Math.PI * 2);
+        ctx.fillStyle = '#15803d';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#15803d';
+        ctx.font = 'bold 17px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Bụng sóng', x, midY - A - 34);
+        drawArrow(x, midY - A - 25, x, midY - 12, '#15803d');
+      }
+    }
+
+    function drawArrow(x1, y1, x2, y2, color) {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2.3;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - 10 * Math.cos(angle - Math.PI / 6), y2 - 10 * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - 10 * Math.cos(angle + Math.PI / 6), y2 - 10 * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawDoubleArrow(x1, y1, x2, y2, color) {
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      drawArrowHead(x2, y2, angle, color);
+      drawArrowHead(x1, y1, angle + Math.PI, color);
+    }
+
+    function drawArrowHead(x, y, angle, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 12 * Math.cos(angle - Math.PI / 6), y - 12 * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x - 12 * Math.cos(angle + Math.PI / 6), y - 12 * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawInfoPanel(t) {
+      ictx.clearRect(0, 0, infoCanvas.width, infoCanvas.height);
+      ictx.fillStyle = '#ffffff';
+      ictx.fillRect(0, 0, infoCanvas.width, infoCanvas.height);
+
+      ictx.fillStyle = '#0b3b78';
+      ictx.font = 'bold 28px Arial';
+      ictx.textAlign = 'center';
+      ictx.fillText('Kiến thức cần nhớ', 240, 44);
+
+      drawInfoBox(22, 78, 436, 112, '#f8fafc', '#dbe5f2');
+      ictx.fillStyle = '#111827';
+      ictx.font = 'bold 20px Arial';
+      ictx.textAlign = 'left';
+      ictx.fillText('Phương trình mô phỏng', 42, 112);
+      ictx.font = '18px Arial';
+      ictx.fillText('u(x,t) = A sin(nπx/L) cos(ωt)', 42, 148);
+      ictx.fillText('n = số bó sóng = số bụng sóng', 42, 176);
+
+      drawInfoBox(22, 212, 436, 120, '#fff1f2', '#fecdd3');
+      ictx.fillStyle = '#dc2626';
+      ictx.font = 'bold 21px Arial';
+      ictx.fillText('Nút sóng', 42, 248);
+      ictx.fillStyle = '#111827';
+      ictx.font = '18px Arial';
+      ictx.fillText('• Là điểm đứng yên.', 42, 282);
+      ictx.fillText('• Biên độ dao động bằng 0.', 42, 312);
+
+      drawInfoBox(22, 350, 436, 120, '#f0fdf4', '#bbf7d0');
+      ictx.fillStyle = '#15803d';
+      ictx.font = 'bold 21px Arial';
+      ictx.fillText('Bụng sóng', 42, 386);
+      ictx.fillStyle = '#111827';
+      ictx.font = '18px Arial';
+      ictx.fillText('• Dao động mạnh nhất.', 42, 420);
+      ictx.fillText('• Biên độ đạt cực đại.', 42, 450);
+
+      ictx.fillStyle = '#0f172a';
+      ictx.font = 'bold 18px Arial';
+      ictx.fillText(`Số bó sóng hiện tại: n = ${n}`, 42, 498);
+    }
+
+    function drawInfoBox(x, y, w, h, fill, stroke) {
+      ictx.fillStyle = fill;
+      ictx.strokeStyle = stroke;
+      ictx.lineWidth = 2;
+      ictx.beginPath();
+      ictx.roundRect(x, y, w, h, 14);
+      ictx.fill();
+      ictx.stroke();
+    }
+
+    function animate(timestamp) {
+      updateParams();
+      const t = getTime(timestamp);
+      drawString(t);
+      drawInfoPanel(t);
+      requestAnimationFrame(animate);
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (!running) {
+        running = true;
+        startTime = null;
+      }
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (running) {
+        running = false;
+        pausedTime = (performance.now() - startTime) / 1000;
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      running = true;
+      startTime = null;
+      pausedTime = 0;
+    });
+
+    modeSlider.addEventListener('input', updateParams);
+    ampSlider.addEventListener('input', updateParams);
+    freqSlider.addEventListener('input', updateParams);
+
+    updateParams();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

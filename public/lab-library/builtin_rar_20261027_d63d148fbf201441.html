@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>110 · Cầu treo và cộng hưởng do kích thích tuần hoàn · 3D PRO</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#06111b;color:#eef8fb}
+#app{display:grid;grid-template-columns:285px 1fr;height:100vh}
+#panel{background:linear-gradient(180deg,#081822 0%,#0b2632 100%);border-right:1px solid #1d4252;padding:10px 10px 14px;overflow:auto}
+#view{position:relative;background:radial-gradient(circle at 52% 24%,#173f58 0%,#0a263b 42%,#061725 72%,#030b13 100%)}
+#three,#labels{position:absolute;inset:0}
+#three{z-index:1}
+#labels{z-index:7;pointer-events:none}
+.eyebrow{font-size:10px;font-weight:800;color:#5fd6ff;letter-spacing:.8px}
+h1{font-size:17px;line-height:1.1;margin:4px 0 8px;color:#ffffff}
+.desc{font-size:10.2px;line-height:1.4;color:#b1c8d4;margin:0 0 7px}
+.model{font-size:9.2px;line-height:1.35;color:#d8edf6;background:#0b2230;border:1px solid #21495a;border-radius:9px;padding:7px;margin:0 0 8px}
+.groupTitle{font-size:10.5px;font-weight:800;color:#9fe8ff;margin:10px 0 4px}
+.ctrl{display:grid;grid-template-columns:94px 1fr 72px;gap:6px;align-items:center;margin:5px 0}
+.ctrl label{font-size:9.3px;color:#eef8fb}
+.ctrl output{font-size:9px;color:#7ef1ff;text-align:right;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks,.btns,.tinyBtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
+.tinyBtns{grid-template-columns:repeat(4,1fr)}
+.check,.btn{border:1px solid #2b5769;border-radius:9px;background:#0e2a37;color:#eef8fb;padding:7px 6px;font-size:9px}
+.btn{font-weight:800;cursor:pointer}
+.btn.primary{background:#1188b2}
+.btn.warn{background:#a93b3b}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.readout{font-size:9px;color:#b9d1dc;margin-top:6px}
+#formula{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:8;background:rgba(244,250,252,.96);color:#17313c;border:1px solid #9ec2d2;border-radius:10px;padding:6px 12px;font-size:10px;font-weight:700}
+#hud{position:absolute;right:12px;top:12px;z-index:8;min-width:260px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:12px;padding:9px 11px}
+.hrow{display:flex;justify-content:space-between;gap:14px;font-size:9px;margin:4px 0}
+.hrow span{color:#a7c0ca}
+.hrow b{color:#fff}
+#bottomHud{position:absolute;left:12px;bottom:12px;z-index:8;background:rgba(7,20,28,.92);border:1px solid #316376;border-radius:10px;padding:8px 10px;display:flex;gap:18px;align-items:center;font-size:9px;color:#d8edf6}
+#damageWrap{width:160px;height:10px;background:#102935;border:1px solid #356579;border-radius:999px;overflow:hidden}
+#damageBar{height:100%;width:0%;background:linear-gradient(90deg,#53d4ff,#ffd166,#ff6b55)}
+#note{position:absolute;left:12px;bottom:52px;z-index:8;width:640px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:8px 10px;font-size:9px;line-height:1.35;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:8;font-size:10px;font-weight:700;color:#ffe082}
+.label{position:absolute;transform:translate(-50%,-50%);background:rgba(244,250,252,.96);border:1px solid #9ec2d2;border-radius:7px;padding:4px 6px;color:#17333e;font-size:9px;white-space:nowrap}
+#banner{position:absolute;left:50%;top:54px;transform:translateX(-50%);z-index:9;background:rgba(180,35,35,.92);border:1px solid #ffaaa0;border-radius:12px;padding:10px 16px;font-size:14px;font-weight:800;color:#fff;display:none;text-align:center;box-shadow:0 8px 26px rgba(0,0,0,.35)}
+.small{font-size:8.8px;color:#a8c1cb}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="eyebrow">PHYSICS 11 LAB · 3D CINEMATIC</div>
+    <h1>110 · Cầu treo và cộng hưởng do kích thích tuần hoàn</h1>
+    <p class="desc">Mô phỏng nhịp cầu chịu ngoại lực tuần hoàn. Khi tần số cưỡng bức càng gần tần số riêng thì biên độ dao động càng lớn; nếu cộng hưởng mạnh kéo dài, cầu có thể hư hỏng/đứt gãy.</p>
+    <div class="model"><b>Mô hình hóa:</b> xét mode uốn cơ bản của nhịp cầu bằng tọa độ tổng quát q(t), với phương trình dao động cưỡng bức có giảm chấn. Hình dạng uốn được phóng đại trực quan để dễ quan sát; hư hỏng là tiêu chí minh họa giáo dục, không phải tiêu chuẩn thiết kế kết cấu thực.</div>
+
+    <div class="groupTitle">Điều khiển vật lí</div>
+    <div class="ctrl"><label>Tốc độ</label><input id="speed" type="range" min="0.25" max="2" step="0.05" value="1"><output id="speedOut"></output></div>
+    <div class="ctrl"><label>Khối lượng m</label><input id="mass" type="range" min="500" max="4500" step="100" value="1800"><output id="massOut"></output></div>
+    <div class="ctrl"><label>Độ cứng k</label><input id="k" type="range" min="8000" max="65000" step="500" value="26000"><output id="kOut"></output></div>
+    <div class="ctrl"><label>Giảm chấn c</label><input id="c" type="range" min="200" max="6000" step="100" value="1600"><output id="cOut"></output></div>
+    <div class="ctrl"><label>Lực F<sub>0</sub></label><input id="F0" type="range" min="500" max="12000" step="100" value="4500"><output id="F0Out"></output></div>
+    <div class="ctrl"><label>Tần số cưỡng bức</label><input id="f" type="range" min="0.10" max="1.50" step="0.005" value="0.450"><output id="fOut"></output></div>
+    <div class="tinyBtns">
+      <button id="fMinus10" class="btn">−0.05</button>
+      <button id="fMinus1" class="btn">−0.005</button>
+      <button id="fPlus1" class="btn">+0.005</button>
+      <button id="fPlus10" class="btn">+0.05</button>
+    </div>
+    <div class="readout">Mẹo: dùng các nút ± để tăng rất nhỏ tần số cưỡng bức và quan sát khi <b>f tiến gần f<sub>0</sub></b>.</div>
+
+    <div class="checks">
+      <label class="check"><input id="showForce" type="checkbox" checked> Véc tơ lực</label>
+      <label class="check"><input id="showShape" type="checkbox" checked> Hình dạng cầu</label>
+      <label class="check"><input id="showGraph" type="checkbox" checked> Đồ thị q(t)</label>
+      <label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+      <label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+      <label class="check"><input id="showCars" type="checkbox" checked> Xe trên cầu</label>
+    </div>
+
+    <div class="btns">
+      <button id="startBtn" class="btn primary">▶ Bắt đầu</button>
+      <button id="pauseBtn" class="btn">⏸ Tạm dừng</button>
+      <button id="resetBtn" class="btn">↻ Đặt lại</button>
+      <button id="fitBtn" class="btn">⛶ Fit toàn cảnh</button>
+      <button id="resBtn" class="btn">Đưa f ≈ f₀</button>
+      <button id="dampBtn" class="btn">Tăng giảm chấn</button>
+      <button id="demoBtn" class="btn">Tình huống thực tế</button>
+      <button id="clearGraphBtn" class="btn">Xóa đồ thị</button>
+      <button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button>
+      <button id="recordBtn" class="btn warn">🎥 Bắt đầu quay</button>
+      <button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+    </div>
+    <div class="readout"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+  </aside>
+
+  <main id="view">
+    <div id="three"></div>
+    <div id="labels"></div>
+    <div id="formula">m q¨ + c q˙ + kq = F<sub>0</sub> cos(2πft)</div>
+    <div id="banner">CẦU ĐỨT GÃY DO CỘNG HƯỞNG MẠNH KÉO DÀI</div>
+
+    <div id="hud">
+      <div class="hrow"><span>Tần số riêng f<sub>0</sub></span><b id="f0Hud"></b></div>
+      <div class="hrow"><span>Tần số cưỡng bức f</span><b id="fHud"></b></div>
+      <div class="hrow"><span>Tỉ số f / f<sub>0</sub></span><b id="ratioHud"></b></div>
+      <div class="hrow"><span>Li độ giữa nhịp q</span><b id="qHud"></b></div>
+      <div class="hrow"><span>Vận tốc q̇</span><b id="vHud"></b></div>
+      <div class="hrow"><span>Biên độ hiện tại</span><b id="ampHud"></b></div>
+      <div class="hrow"><span>Trạng thái</span><b id="statusHud"></b></div>
+    </div>
+
+    <div id="note">
+      Hai đầu nhịp gần như cố định, giữa nhịp dao động mạnh nhất. Khi <b>f càng gần f<sub>0</sub></b>, biên độ cưỡng bức càng tăng.
+      Nếu cộng hưởng mạnh kéo dài khoảng <b>10 s</b>, mô hình minh họa cầu bị hư hỏng/đứt gãy.
+    </div>
+
+    <div id="bottomHud">
+      <div><b>Thời gian nguy hiểm:</b> <span id="dangerTime">0.0</span> s / 10 s</div>
+      <div id="damageWrap"><div id="damageBar"></div></div>
+      <div><b>Mức rủi ro:</b> <span id="riskText">Ổn định</span></div>
+    </div>
+
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* =========================
+   DOM + STATE
+========================= */
+const $ = id => document.getElementById(id);
+const view = $('view');
+
+const state = {
+  running: true,
+  broken: false,
+  t: 0,
+  speed: 1,
+  m: 1800,
+  k: 26000,
+  c: 1600,
+  F0: 4500,
+  f: 0.450,
+  q: 0,
+  v: 0,
+  history: [],
+  peakAmp: 0,
+  dangerAccum: 0,
+  record: { mediaRecorder:null, chunks:[], timer:null, startTime:0 }
+};
+
+const config = {
+  maxHistory: 13,
+  breakDangerSeconds: 10,
+  breakAmpMeters: 0.070,     // if oscillation envelope > 7 cm + near resonance
+  resonanceBand: 0.08,       // |f - f0|/f0 less than this => near resonance
+  dtClamp: 0.033
+};
+
+function naturalFreq(){ return Math.sqrt(state.k / state.m) / (2*Math.PI); }
+function omega(){ return 2*Math.PI*state.f; }
+function forceAt(t){ return state.F0 * Math.cos(omega()*t); }
+
+/* =========================
+   SCENE
+========================= */
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, preserveDrawingBuffer:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setClearColor(0x06111d, 0);
+$('three').appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.enablePan = false;
+controls.minDistance = 9;
+controls.maxDistance = 34;
+controls.minPolarAngle = 0.35;
+controls.maxPolarAngle = 1.82;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x172832, 4.4));
+const dirLight = new THREE.DirectionalLight(0xffffff, 4.2);
+dirLight.position.set(8, 11, 8);
+scene.add(dirLight);
+
+const lab = new THREE.Group();
+lab.position.y = -0.45;
+scene.add(lab);
+
+/* floor + grid */
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(21, 15),
+  new THREE.MeshStandardMaterial({ color:0x102530, roughness:0.96 })
+);
+floor.rotation.x = -Math.PI/2;
+floor.position.y = -3.15;
+lab.add(floor);
+
+const grid = new THREE.GridHelper(21, 34, 0x2f667a, 0x123345);
+grid.position.y = -3.14;
+lab.add(grid);
+
+/* =========================
+   OBJECTS - BRIDGE
+========================= */
+const towerMat = new THREE.MeshStandardMaterial({ color:0x7a9099, metalness:0.40, roughness:0.35 });
+const deckMat  = new THREE.MeshStandardMaterial({ color:0xb7c6cc, metalness:0.28, roughness:0.34, emissive:0x13242e, emissiveIntensity:0.18 });
+const deckBrokenMat = new THREE.MeshStandardMaterial({ color:0xf0a39a, metalness:0.25, roughness:0.38, emissive:0x4e0d0d, emissiveIntensity:0.35 });
+const cableMat = new THREE.LineBasicMaterial({ color:0x8fdfff });
+
+for(const x of [-5.8, 5.8]){
+  for(const z of [-1.45, 1.45]){
+    const tower = new THREE.Mesh(new THREE.BoxGeometry(0.55, 6.7, 0.55), towerMat);
+    tower.position.set(x, 0.1, z);
+    lab.add(tower);
+  }
+  const topBeam = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.42, 3.8), towerMat);
+  topBeam.position.set(x, 3.22, 0);
+  lab.add(topBeam);
+}
+
+/* main cables */
+function makeCableLine(z){
+  const pts = [];
+  for(let i=0;i<=80;i++){
+    const x = -5.95 + 11.9*(i/80);
+    const y = 3.25 - 2.7*(1 - Math.pow(x/5.95,2));
+    pts.push(new THREE.Vector3(x, y, z));
+  }
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), cableMat);
+  lab.add(line);
+  return line;
+}
+makeCableLine(1.45);
+makeCableLine(-1.45);
+
+/* deck made of segments, later animated into mode shape */
+const deckGroup = new THREE.Group();
+lab.add(deckGroup);
+const deckSegments = [];
+const hangersFront = [];
+const hangersBack = [];
+const segCount = 49;
+
+for(let i=0;i<segCount;i++){
+  const u = i/(segCount-1);
+  const x = -5.25 + 10.5*u;
+  const seg = new THREE.Mesh(new THREE.BoxGeometry(10.5/segCount + 0.03, 0.22, 3.05), deckMat);
+  seg.position.set(x, -0.55, 0);
+  seg.userData = { u, x0:x };
+  deckGroup.add(seg);
+  deckSegments.push(seg);
+
+  const yCable = 3.25 - 2.7*(1 - Math.pow(x/5.95,2));
+  const front = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, yCable, 1.45), new THREE.Vector3(x, -0.42, 1.45)]),
+    new THREE.LineBasicMaterial({ color:0x9ce8ff })
+  );
+  const back = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, yCable, -1.45), new THREE.Vector3(x, -0.42, -1.45)]),
+    new THREE.LineBasicMaterial({ color:0x9ce8ff })
+  );
+  front.userData = { x0:x, yTop:yCable, z:1.45 };
+  back.userData = { x0:x, yTop:yCable, z:-1.45 };
+  lab.add(front, back);
+  hangersFront.push(front);
+  hangersBack.push(back);
+}
+
+/* broken halves */
+const brokenLeft = new THREE.Group();
+const brokenRight = new THREE.Group();
+lab.add(brokenLeft, brokenRight);
+brokenLeft.visible = false;
+brokenRight.visible = false;
+
+/* cars for realism */
+const carsGroup = new THREE.Group();
+lab.add(carsGroup);
+function makeCar(color){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.45,0.18,0.26), new THREE.MeshStandardMaterial({color, metalness:0.22, roughness:0.5}));
+  body.position.y = 0.12;
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.10,0.22), new THREE.MeshStandardMaterial({color:0xeaf3f6, metalness:0.1, roughness:0.6}));
+  roof.position.set(0,0.23,0);
+  g.add(body,roof);
+  return g;
+}
+const cars = [makeCar(0xff8a65), makeCar(0x4dd0e1), makeCar(0xffd166)];
+cars.forEach((car, i)=>{
+  car.userData = { lane: i%2===0 ? 0.7 : -0.7, phase: i*0.33 };
+  carsGroup.add(car);
+});
+
+/* force arrow at midspan */
+const forceArrow = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(0,-0.1,0), 1.4, 0xff6b55, 0.32, 0.18);
+lab.add(forceArrow);
+
+/* =========================
+   GRAPH
+========================= */
+const graphCanvas = document.createElement('canvas');
+graphCanvas.width = 840;
+graphCanvas.height = 360;
+const gctx = graphCanvas.getContext('2d');
+const graphTex = new THREE.CanvasTexture(graphCanvas);
+
+const graphFrame = new THREE.Mesh(
+  new THREE.BoxGeometry(5.35, 2.55, 0.12),
+  new THREE.MeshStandardMaterial({ color:0xeaf3f6 })
+);
+graphFrame.position.set(4.9, 3.15, -3.45);
+lab.add(graphFrame);
+
+const graphPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(5.10, 2.32),
+  new THREE.MeshBasicMaterial({ map:graphTex, side:THREE.DoubleSide })
+);
+graphPlane.position.set(4.9, 3.15, -3.37);
+lab.add(graphPlane);
+
+function drawGraph(){
+  gctx.fillStyle = '#f8fafb';
+  gctx.fillRect(0,0,graphCanvas.width,graphCanvas.height);
+
+  gctx.fillStyle = '#263b45';
+  gctx.font = 'bold 24px Segoe UI';
+  gctx.fillText('DAO ĐỘNG GIỮA NHỊP q(t)', 265, 30);
+
+  const left = 58, top = 56, width = 720, height = 252;
+  gctx.strokeStyle = '#cfdbe0';
+  gctx.lineWidth = 1;
+  for(let i=0;i<=10;i++){
+    const x = left + width*i/10;
+    gctx.beginPath(); gctx.moveTo(x, top); gctx.lineTo(x, top+height); gctx.stroke();
+  }
+  for(let i=0;i<=8;i++){
+    const y = top + height*i/8;
+    gctx.beginPath(); gctx.moveTo(left, y); gctx.lineTo(left+width, y); gctx.stroke();
+  }
+
+  gctx.strokeStyle = '#445964';
+  gctx.lineWidth = 2.2;
+  gctx.beginPath();
+  gctx.moveTo(left, top + height/2);
+  gctx.lineTo(left + width, top + height/2);
+  gctx.stroke();
+
+  const tMax = config.maxHistory;
+  const tMin = Math.max(0, state.t - tMax);
+  let ampMax = 0.005;
+  for(const p of state.history){
+    if(p.t >= tMin) ampMax = Math.max(ampMax, Math.abs(p.q));
+  }
+  if(state.history.length > 1){
+    gctx.strokeStyle = state.broken ? '#cc2b2b' : '#7b3fd1';
+    gctx.lineWidth = 4;
+    gctx.beginPath();
+    let first = true;
+    for(const p of state.history){
+      if(p.t < tMin) continue;
+      const x = left + width*(p.t - tMin)/tMax;
+      const y = top + height/2 - (p.q/ampMax)*(height*0.42);
+      if(first){ gctx.moveTo(x,y); first=false; } else gctx.lineTo(x,y);
+    }
+    gctx.stroke();
+  }
+
+  gctx.fillStyle = '#50656f';
+  gctx.font = '17px Segoe UI';
+  gctx.fillText('q', 18, top+6);
+  gctx.fillText('t (s)', left+width-8, top+height+28);
+
+  graphTex.needsUpdate = true;
+}
+
+/* =========================
+   LABELS
+========================= */
+const labelLayer = $('labels');
+function createLabel(text){
+  const div = document.createElement('div');
+  div.className = 'label';
+  div.textContent = text;
+  labelLayer.appendChild(div);
+  return div;
+}
+const deckLabel  = createLabel('Nhịp cầu');
+const forceLabel = createLabel('Ngoại lực tuần hoàn');
+const towerLabel = createLabel('Trụ cầu');
+const riskLabel  = createLabel('Giữa nhịp');
+
+function projectToScreen(el, worldPos){
+  const p = worldPos.clone().project(camera);
+  const visible = p.z <= 1 && $('showLabels').checked;
+  el.style.display = visible ? 'block' : 'none';
+  if(!visible) return;
+  el.style.left = ((p.x*0.5 + 0.5) * view.clientWidth) + 'px';
+  el.style.top  = ((-p.y*0.5 + 0.5) * view.clientHeight) + 'px';
+}
+
+/* =========================
+   PHYSICS
+========================= */
+function acceleration(t, q, v){
+  return (forceAt(t) - state.c*v - state.k*q)/state.m;
+}
+
+// RK4 for smooth motion
+function rk4Step(h){
+  const t = state.t, q = state.q, v = state.v;
+
+  const k1q = v;
+  const k1v = acceleration(t, q, v);
+
+  const k2q = v + 0.5*h*k1v;
+  const k2v = acceleration(t+0.5*h, q+0.5*h*k1q, v+0.5*h*k1v);
+
+  const k3q = v + 0.5*h*k2v;
+  const k3v = acceleration(t+0.5*h, q+0.5*h*k2q, v+0.5*h*k2v);
+
+  const k4q = v + h*k3v;
+  const k4v = acceleration(t+h, q+h*k3q, v+h*k3v);
+
+  state.q += (h/6)*(k1q + 2*k2q + 2*k3q + k4q);
+  state.v += (h/6)*(k1v + 2*k2v + 2*k3v + k4v);
+  state.t += h;
+}
+
+function clearHistory(){
+  state.history = [];
+  state.peakAmp = 0;
+}
+
+function updatePhysics(dt){
+  if(!state.running || state.broken) return;
+
+  const total = dt * state.speed;
+  const h = 0.004;
+  const steps = Math.max(1, Math.ceil(total/h));
+  const hh = total / steps;
+
+  for(let i=0;i<steps;i++) rk4Step(hh);
+
+  state.history.push({ t: state.t, q: state.q });
+  while(state.history.length && state.history[0].t < state.t - (config.maxHistory + 0.5)) state.history.shift();
+
+  state.peakAmp = Math.max(state.peakAmp*0.995, Math.abs(state.q));
+
+  const f0 = naturalFreq();
+  const nearRes = Math.abs(state.f - f0) / f0 < config.resonanceBand;
+  const highAmp = Math.abs(state.q) > config.breakAmpMeters;
+
+  if(nearRes && highAmp){
+    state.dangerAccum += total;
+  }else{
+    state.dangerAccum = Math.max(0, state.dangerAccum - total*0.65);
+  }
+
+  if(state.dangerAccum >= config.breakDangerSeconds){
+    triggerBreak();
+  }
+}
+
+function triggerBreak(){
+  state.broken = true;
+  state.running = false;
+  $('banner').style.display = 'block';
+
+  deckGroup.visible = false;
+  brokenLeft.visible = true;
+  brokenRight.visible = true;
+
+  // color alert
+  brokenLeft.traverse(o=>{ if(o.isMesh) o.material = deckBrokenMat; });
+  brokenRight.traverse(o=>{ if(o.isMesh) o.material = deckBrokenMat; });
+}
+
+function buildBrokenHalves(){
+  brokenLeft.clear();
+  brokenRight.clear();
+  const left = new THREE.Group();
+  const right = new THREE.Group();
+
+  for(const seg of deckSegments){
+    const part = new THREE.Mesh(seg.geometry.clone(), deckBrokenMat);
+    part.position.copy(seg.position);
+    part.rotation.copy(seg.rotation);
+    if(seg.userData.u <= 0.5) left.add(part);
+    else right.add(part);
+  }
+  brokenLeft.add(left);
+  brokenRight.add(right);
+}
+buildBrokenHalves();
+
+/* =========================
+   VISUALS
+========================= */
+function updateBridgeVisuals(){
+  const visualAmp = THREE.MathUtils.clamp(state.q * 12.0, -1.25, 1.25); // amplified only for visibility
+
+  if(!state.broken){
+    for(const seg of deckSegments){
+      const u = seg.userData.u;
+      const shape = Math.sin(Math.PI * u);                 // mode 1
+      const y = -0.55 + visualAmp * shape;
+      const slope = visualAmp * Math.PI * Math.cos(Math.PI*u) / 10.5;
+
+      seg.position.set(seg.userData.x0, y, 0);
+      seg.rotation.z = slope * 0.65;
+    }
+
+    for(const hanger of [...hangersFront, ...hangersBack]){
+      const u = (hanger.userData.x0 + 5.25)/10.5;
+      const yDeck = -0.42 + visualAmp * Math.sin(Math.PI*u);
+      const pts = [
+        new THREE.Vector3(hanger.userData.x0, hanger.userData.yTop, hanger.userData.z),
+        new THREE.Vector3(hanger.userData.x0, yDeck, hanger.userData.z)
+      ];
+      hanger.geometry.dispose();
+      hanger.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+    }
+  }else{
+    const sag = Math.min(1.5, 0.35 + (state.dangerAccum - config.breakDangerSeconds)*0.06);
+    brokenLeft.position.set(-0.38, -0.30 - sag, 0);
+    brokenLeft.rotation.z = -0.32;
+    brokenRight.position.set(0.38, -0.30 - sag, 0);
+    brokenRight.rotation.z = 0.32;
+  }
+
+  // cars move smoothly with bridge
+  carsGroup.visible = $('showCars').checked && !state.broken;
+  for(const car of cars){
+    const u = (0.18 * state.t + car.userData.phase) % 1;
+    const x = -4.95 + 9.9*u;
+    const uu = (x + 5.25)/10.5;
+    const y = -0.37 + visualAmp * Math.sin(Math.PI*uu);
+    car.position.set(x, y + 0.22, car.userData.lane);
+    car.rotation.z = visualAmp * 0.08 * Math.cos(Math.PI*uu);
+  }
+
+  // force vector at midspan
+  const Fy = forceAt(state.t);
+  forceArrow.position.set(0, -0.18 + visualAmp, 0);
+  forceArrow.setDirection(new THREE.Vector3(0, Fy>=0 ? 1 : -1, 0));
+  forceArrow.setLength(0.65 + 1.55*Math.min(1, Math.abs(Fy)/12000), 0.28, 0.16);
+  forceArrow.visible = $('showForce').checked;
+
+  deckGroup.visible = $('showShape').checked && !state.broken;
+  brokenLeft.visible = state.broken && $('showShape').checked;
+  brokenRight.visible = state.broken && $('showShape').checked;
+  graphFrame.visible = graphPlane.visible = $('showGraph').checked;
+  grid.visible = $('showGrid').checked;
+
+  drawGraph();
+}
+
+/* =========================
+   UI
+========================= */
+function riskLevelText(){
+  if(state.broken) return 'Đứt gãy';
+  const ratio = state.f / naturalFreq();
+  const closeness = Math.abs(ratio - 1);
+  if(closeness < 0.03) return 'Cộng hưởng rất mạnh';
+  if(closeness < 0.08) return 'Gần cộng hưởng';
+  if(closeness < 0.18) return 'Có thể tăng biên độ';
+  return 'Ổn định';
+}
+
+function updateUI(){
+  $('speedOut').value = state.speed.toFixed(2) + '×';
+  $('massOut').value = state.m.toFixed(0) + ' kg';
+  $('kOut').value = state.k.toFixed(0) + ' N/m';
+  $('cOut').value = state.c.toFixed(0) + ' N·s/m';
+  $('F0Out').value = state.F0.toFixed(0) + ' N';
+  $('fOut').value = state.f.toFixed(3) + ' Hz';
+
+  const f0 = naturalFreq();
+  $('f0Hud').textContent = f0.toFixed(3) + ' Hz';
+  $('fHud').textContent  = state.f.toFixed(3) + ' Hz';
+  $('ratioHud').textContent = (state.f / f0).toFixed(3);
+  $('qHud').textContent = (state.q*1000).toFixed(2) + ' mm';
+  $('vHud').textContent = state.v.toFixed(3) + ' m/s';
+  $('ampHud').textContent = (state.peakAmp*1000).toFixed(1) + ' mm';
+  $('statusHud').textContent = state.broken ? 'Cầu đứt gãy' : (state.running ? riskLevelText() : 'Tạm dừng');
+
+  const dangerPct = Math.min(100, 100 * state.dangerAccum / config.breakDangerSeconds);
+  $('dangerTime').textContent = state.dangerAccum.toFixed(1);
+  $('damageBar').style.width = dangerPct.toFixed(1) + '%';
+  $('riskText').textContent = riskLevelText();
+}
+
+function syncFromControls(resetDynamics=false){
+  state.speed = +$('speed').value;
+  state.m = +$('mass').value;
+  state.k = +$('k').value;
+  state.c = +$('c').value;
+  state.F0 = +$('F0').value;
+  state.f = +$('f').value;
+
+  if(resetDynamics){
+    state.t = 0;
+    state.q = 0;
+    state.v = 0;
+    state.dangerAccum = 0;
+    state.broken = false;
+    $('banner').style.display = 'none';
+    brokenLeft.position.set(0,0,0); brokenRight.position.set(0,0,0);
+    brokenLeft.rotation.z = 0; brokenRight.rotation.z = 0;
+    deckGroup.visible = $('showShape').checked;
+    buildBrokenHalves();
+    clearHistory();
+  }
+  updateUI();
+}
+
+['mass','k','c','F0','f'].forEach(id => {
+  $(id).addEventListener('input', ()=>syncFromControls(true));
+});
+$('speed').addEventListener('input', ()=>syncFromControls(false));
+
+function nudgeFreq(delta){
+  const min = +$('f').min, max = +$('f').max;
+  $('f').value = Math.min(max, Math.max(min, (+$('f').value + delta))).toFixed(3);
+  syncFromControls(true);
+}
+$('fMinus10').onclick = ()=>nudgeFreq(-0.05);
+$('fMinus1').onclick  = ()=>nudgeFreq(-0.005);
+$('fPlus1').onclick   = ()=>nudgeFreq(0.005);
+$('fPlus10').onclick  = ()=>nudgeFreq(0.05);
+
+$('startBtn').onclick = ()=>{ if(!state.broken) state.running = true; };
+$('pauseBtn').onclick = ()=> state.running = false;
+$('clearGraphBtn').onclick = ()=> clearHistory();
+
+$('resBtn').onclick = ()=>{
+  $('f').value = naturalFreq().toFixed(3);
+  syncFromControls(true);
+};
+
+$('dampBtn').onclick = ()=>{
+  $('c').value = Math.min(6000, +$('c').value + 1400);
+  syncFromControls(true);
+};
+
+$('demoBtn').onclick = ()=>{
+  $('mass').value = 1800;
+  $('k').value = 26000;
+  $('c').value = 650;
+  $('F0').value = 6000;
+  $('f').value = naturalFreq().toFixed(3);
+  syncFromControls(true);
+  state.running = true;
+};
+
+$('resetBtn').onclick = ()=>{
+  Object.assign(state, {
+    running:true, broken:false, t:0, speed:1,
+    m:1800, k:26000, c:1600, F0:4500, f:0.450,
+    q:0, v:0, history:[], peakAmp:0, dangerAccum:0
+  });
+  $('speed').value = 1;
+  $('mass').value = 1800;
+  $('k').value = 26000;
+  $('c').value = 1600;
+  $('F0').value = 4500;
+  $('f').value = 0.450.toFixed(3);
+  $('banner').style.display = 'none';
+  brokenLeft.position.set(0,0,0); brokenRight.position.set(0,0,0);
+  brokenLeft.rotation.z = 0; brokenRight.rotation.z = 0;
+  deckGroup.visible = $('showShape').checked;
+  buildBrokenHalves();
+  clearHistory();
+  fitScene();
+  updateUI();
+};
+
+$('fitBtn').onclick = fitScene;
+$('fullscreenBtn').onclick = async ()=>{
+  try{
+    if(!document.fullscreenElement) await view.requestFullscreen();
+    else await document.exitFullscreen();
+  }catch(err){}
+};
+document.addEventListener('fullscreenchange', ()=>setTimeout(()=>{resize(); fitScene();}, 80));
+
+/* =========================
+   RECORDING
+========================= */
+function preferredMimeType(){
+  const types = ['video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'];
+  for(const t of types){
+    if(window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t;
+  }
+  return '';
+}
+function updateRecordClock(){
+  const s = Math.floor((performance.now() - state.record.startTime)/1000);
+  $('recTime').textContent = String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}
+$('recordBtn').onclick = ()=>{
+  if(!renderer.domElement.captureStream || !window.MediaRecorder) return;
+  const mime = preferredMimeType();
+  const stream = renderer.domElement.captureStream(30);
+  state.record.chunks = [];
+  state.record.mediaRecorder = new MediaRecorder(stream, mime ? { mimeType:mime, videoBitsPerSecond:9_000_000 } : { videoBitsPerSecond:9_000_000 });
+  state.record.mediaRecorder.ondataavailable = e => { if(e.data.size) state.record.chunks.push(e.data); };
+  state.record.mediaRecorder.onstop = ()=>{
+    clearInterval(state.record.timer);
+    const realMime = state.record.mediaRecorder.mimeType || mime || 'video/webm';
+    const ext = realMime.includes('mp4') ? 'mp4' : 'webm';
+    const blob = new Blob(state.record.chunks, { type: realMime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '110_Cau_treo_cong_huong.' + ext;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 3000);
+    $('recordBtn').disabled = false;
+    $('stopRecordBtn').disabled = true;
+    $('recLabel').textContent = 'Đã xuất video';
+  };
+  state.record.mediaRecorder.start();
+  state.record.startTime = performance.now();
+  state.record.timer = setInterval(updateRecordClock, 250);
+  $('recTime').textContent = '00:00';
+  $('recLabel').textContent = 'Đang quay';
+  $('recordBtn').disabled = true;
+  $('stopRecordBtn').disabled = false;
+};
+$('stopRecordBtn').onclick = ()=>{
+  if(state.record.mediaRecorder && state.record.mediaRecorder.state !== 'inactive'){
+    state.record.mediaRecorder.stop();
+  }
+};
+
+/* =========================
+   CAMERA / RESIZE
+========================= */
+function fitScene(){
+  controls.target.set(0.3, -0.15, 0);
+  camera.position.set(14.5, 8.0, 18.2);
+  camera.lookAt(controls.target);
+  controls.update();
+}
+function resize(){
+  camera.aspect = view.clientWidth / view.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(view.clientWidth, view.clientHeight, false);
+}
+window.addEventListener('resize', ()=>{ resize(); });
+
+/* =========================
+   ANIMATION
+========================= */
+resize();
+fitScene();
+updateUI();
+drawGraph();
+
+let last = performance.now();
+
+function animate(now){
+  requestAnimationFrame(animate);
+  const dt = Math.min(config.dtClamp, (now - last)/1000);
+  last = now;
+
+  updatePhysics(dt);
+  updateBridgeVisuals();
+  updateUI();
+
+  projectToScreen(deckLabel, new THREE.Vector3(0, 1.15, 0));
+  projectToScreen(forceLabel, new THREE.Vector3(0, 1.95, 0));
+  projectToScreen(towerLabel, new THREE.Vector3(-5.8, 3.85, 1.45));
+  projectToScreen(riskLabel, new THREE.Vector3(0, -0.10, 0));
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

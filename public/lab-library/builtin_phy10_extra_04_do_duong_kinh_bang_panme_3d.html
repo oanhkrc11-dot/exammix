@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Đo đường kính bằng panme</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#020812;--panel:#071725;--cyan:#64ddff;--yellow:#ffda69;
+  --green:#7fffc2;--red:#ff8585;--text:#eefaff;--muted:#9bb9ca;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#020812;color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:370px;min-width:345px;max-width:385px;height:100%;overflow:auto;padding:14px;
+  background:linear-gradient(180deg,#081a2a,#04101b);
+  border-right:1px solid rgba(100,221,255,.22);z-index:20
+}
+#view{position:relative;flex:1;height:100%;overflow:hidden;min-width:0}
+.title{font-weight:800;font-size:15px;letter-spacing:.04em}
+.kicker{font-size:11px;color:var(--muted);margin-top:4px}
+.simTitle{font-size:18px;color:var(--cyan);font-weight:800;margin:12px 0 7px;text-transform:uppercase}
+.desc{font-size:12px;line-height:1.45;color:#cfe5f2}
+.section{margin-top:11px;padding:11px;border:1px solid rgba(100,221,255,.18);border-radius:12px;background:linear-gradient(180deg,rgba(13,36,55,.95),rgba(6,21,34,.94))}
+.section h3{margin:0 0 10px;font-size:12px;color:#b7edff;text-transform:uppercase;letter-spacing:.06em}
+.control{margin:10px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.row label{font-size:12px;font-weight:700}
+.value{font-size:12px;color:var(--yellow);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:#55cffa}
+.check{display:flex;align-items:center;gap:8px;font-size:12px;margin:8px 0}
+.check input{accent-color:#55cffa}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+button{min-height:40px;border:1px solid rgba(120,220,255,.22);border-radius:10px;padding:8px 6px;background:#10314b;color:#fff;font-weight:700;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+#closeBtn{background:#4a5520}
+#measureBtn{background:#17683f}
+#resetBtn{background:#593549}
+.note{font-size:11px;line-height:1.48;color:#b7cede}
+#resultBox{padding:9px;border-radius:9px;background:#06131f;border:1px solid rgba(100,221,255,.15);font-size:12px;line-height:1.5}
+.good{color:var(--green);font-weight:700}
+.warn{color:var(--yellow);font-weight:700}
+.bad{color:var(--red);font-weight:700}
+#info{
+  position:absolute;top:14px;right:14px;width:315px;padding:11px 13px;border-radius:13px;
+  background:rgba(4,15,25,.93);border:1px solid rgba(100,221,255,.28);z-index:10;
+  backdrop-filter:blur(5px);font-size:12px;pointer-events:none
+}
+#info .head{font-size:11px;text-transform:uppercase;color:#b8efff;font-weight:800;margin-bottom:6px}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-variant-numeric:tabular-nums}
+#credit{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);color:#ffdc70;font-size:18px;font-weight:800;text-shadow:0 0 12px rgba(255,220,112,.28);z-index:7;pointer-events:none}
+#tooltip{position:absolute;display:none;z-index:30;pointer-events:none;padding:8px 10px;border-radius:9px;background:rgba(4,14,23,.96);border:1px solid rgba(100,219,255,.3);font-size:11px;line-height:1.4;color:#eefaff}
+.label3d{padding:4px 7px;border-radius:8px;background:rgba(4,14,23,.8);border:1px solid rgba(100,219,255,.25);font-size:11px;font-weight:700;color:#e8f8ff;white-space:nowrap}
+.readingCard{display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-size:12px;padding:8px;border-radius:8px;background:#06131f}
+.tableWrap{max-height:170px;overflow:auto;border:1px solid rgba(100,221,255,.13);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th,td{padding:6px;border-bottom:1px solid rgba(100,221,255,.10);text-align:center}
+th{position:sticky;top:0;background:#0c263a;color:#bdeeff}
+@media(max-width:1100px){#panel{width:345px;min-width:345px}#info{width:270px}#credit{font-size:15px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+    <div class="kicker">ĐO LƯỜNG · PANME</div>
+    <div class="simTitle">04. Đo đường kính bằng panme</div>
+    <div class="desc">
+      Mô phỏng panme 3D để đo đường kính ngoài của vật hình trụ.
+      Khi núm quay, trục đo tiến/lùi theo <b>bước ren</b>. Học sinh đọc
+      <b>thang chính trên ống chuẩn</b> và <b>thang tròn trên ống động</b>.
+    </div>
+
+    <div class="section">
+      <h3>Vật cần đo</h3>
+      <div class="control">
+        <div class="row"><label>Đường kính thật</label><span class="value" id="diamText">8.37 mm</span></div>
+        <input id="diamSlider" type="range" min="2.00" max="20.00" step="0.01" value="8.37">
+      </div>
+      <div class="check">
+        <input type="checkbox" id="showTrue" checked>
+        <label for="showTrue">Hiện giá trị thật</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Panme</h3>
+      <div class="control">
+        <div class="row"><label>Độ mở hiện tại</label><span class="value" id="openingText">10.00 mm</span></div>
+        <input id="openingSlider" type="range" min="2.00" max="22.00" step="0.01" value="10.00">
+      </div>
+      <div class="control">
+        <div class="row"><label>Bước ren</label><span class="value" id="pitchText">0.50 mm/vòng</span></div>
+        <input id="pitchSlider" type="range" min="0" max="1" step="1" value="0">
+      </div>
+      <div class="check">
+        <input type="checkbox" id="ratchet" checked>
+        <label for="ratchet">Bật cóc giới hạn lực siết</label>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="autoStop" checked>
+        <label for="autoStop">Tự dừng khi trục vừa chạm vật</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Thao tác</h3>
+      <div class="buttons">
+        <button id="closeBtn">↻ Vặn khép panme</button>
+        <button id="openBtn">↺ Vặn mở panme</button>
+        <button id="measureBtn">📏 Đọc panme</button>
+        <button id="recordBtn">＋ Ghi kết quả</button>
+        <button id="fitBtn">⛶ Fit toàn cảnh</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Cách đọc hiện tại</h3>
+      <div class="readingCard">
+        <span>Thang chính:</span><b id="mainRead">—</b>
+        <span>Thang tròn:</span><b id="drumIndex">—</b>
+        <span>Phần thang tròn:</span><b id="drumRead">—</b>
+        <span>Số đo:</span><b id="totalRead">—</b>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Kết quả đo</h3>
+      <div id="resultBox">Hãy vặn panme đến khi trục đo vừa chạm vật rồi bấm “Đọc panme”.</div>
+    </div>
+
+    <div class="section">
+      <h3>Bảng số liệu</h3>
+      <div class="tableWrap">
+        <table>
+          <thead><tr><th>Lần</th><th>D đo (mm)</th><th>Δ (mm)</th></tr></thead>
+          <tbody id="dataBody"></tbody>
+        </table>
+      </div>
+      <button id="clearData" style="width:100%;margin-top:8px">Xóa bảng số liệu</button>
+      <div class="note" id="statText" style="margin-top:8px">Chưa có dữ liệu.</div>
+    </div>
+
+    <div class="section">
+      <h3>Mô hình hóa</h3>
+      <div class="note">
+        Panme dùng vít me biến chuyển động quay thành chuyển động tịnh tiến.
+        Với bước ren <b>p</b>, mỗi vòng quay làm trục tiến một đoạn <b>p</b>.
+        Mô phỏng mặc định dùng panme 50 vạch trên thang tròn:
+        độ chia nhỏ nhất = p/50. Khi bật cóc, panme không tiếp tục ép sâu vào vật sau khi đã tiếp xúc.
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="info">
+      <div class="head">Thông số tức thời</div>
+      <div class="infoGrid">
+        <span>Đường kính thật</span><b id="trueInfo">8.37 mm</b>
+        <span>Độ mở panme</span><b id="openingInfo">10.00 mm</b>
+        <span>Bước ren</span><b id="pitchInfo">0.50 mm/vòng</b>
+        <span>ĐCNN</span><b id="leastInfo">0.01 mm</b>
+        <span>Số vòng tương đương</span><b id="turnInfo">20.00</b>
+        <span>Tiếp xúc</span><b id="contactInfo">Chưa chạm</b>
+      </div>
+    </div>
+    <div id="tooltip"></div>
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* =========================================================
+   1. DOM + STATE
+========================================================= */
+const $=id=>document.getElementById(id);
+const view=$('view');
+const diamSlider=$('diamSlider'), openingSlider=$('openingSlider'), pitchSlider=$('pitchSlider');
+const ratchet=$('ratchet'), autoStop=$('autoStop'), showTrue=$('showTrue');
+
+const PITCHES=[0.50,1.00];
+const DRUM_DIVS=50;
+
+const state={
+  diameter:8.37,
+  opening:10.00,
+  pitch:0.50,
+  least:0.01,
+  touching:false,
+  direction:0, // -1 close, +1 open
+  lastMeasure:null,
+  records:[],
+  lastStamp:performance.now()
+};
+
+/* =========================================================
+   2. SCENE
+========================================================= */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x020812);
+scene.fog=new THREE.Fog(0x020812,18,45);
+
+const camera=new THREE.PerspectiveCamera(44,view.clientWidth/view.clientHeight,.1,100);
+camera.position.set(10,7,13);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.07;
+controls.minDistance=7;
+controls.maxDistance=28;
+controls.minPolarAngle=.10;
+controls.maxPolarAngle=Math.PI*.50;
+controls.target.set(0,.2,0);
+
+/* =========================================================
+   3. LIGHTS / FLOOR
+========================================================= */
+scene.add(new THREE.HemisphereLight(0xa8e7ff,0x142331,1.25));
+const key=new THREE.DirectionalLight(0xffffff,1.3);
+key.position.set(8,14,9);
+key.castShadow=true;
+scene.add(key);
+const fill=new THREE.PointLight(0x45cfff,16,30,2);
+fill.position.set(-8,5,8);
+scene.add(fill);
+
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(40,24),
+  new THREE.MeshPhongMaterial({color:0x07131f,shininess:20})
+);
+floor.rotation.x=-Math.PI/2;
+floor.position.y=-2.15;
+floor.receiveShadow=true;
+scene.add(floor);
+
+const grid=new THREE.GridHelper(40,40,0x1e628b,0x123149);
+grid.position.y=-2.13;
+grid.material.transparent=true;
+grid.material.opacity=.25;
+scene.add(grid);
+
+/* =========================================================
+   4. MICROMETER BODY
+   Scale: 1 mm = 0.22 world unit
+========================================================= */
+const SCALE=.22;
+const micrometer=new THREE.Group();
+scene.add(micrometer);
+
+const metal=new THREE.MeshPhongMaterial({color:0xd4dde3,shininess:100});
+const metalDark=new THREE.MeshPhongMaterial({color:0x6b7880,shininess:90});
+const black=new THREE.MeshPhongMaterial({color:0x27313a,shininess:70});
+const yellow=new THREE.MeshPhongMaterial({color:0xe0b848,shininess:80});
+
+// U-frame
+const frameOuter=new THREE.Mesh(
+  new THREE.TorusGeometry(3.35,.45,18,70,Math.PI*1.15),
+  metal
+);
+frameOuter.rotation.z=Math.PI*.93;
+frameOuter.scale.y=.82;
+frameOuter.position.set(-1.0,.25,0);
+frameOuter.castShadow=true;
+micrometer.add(frameOuter);
+
+// anvil fixed at left-ish
+const anvil=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,1.05,30),metal);
+anvil.rotation.z=Math.PI/2;
+anvil.position.set(-2.05,.2,0);
+anvil.castShadow=true;
+micrometer.add(anvil);
+
+// sleeve
+const sleeve=new THREE.Mesh(new THREE.CylinderGeometry(.72,.72,3.6,40),metalDark);
+sleeve.rotation.z=Math.PI/2;
+sleeve.position.set(2.3,.2,0);
+sleeve.castShadow=true;
+micrometer.add(sleeve);
+
+// spindle
+const spindle=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,4.1,30),metal);
+spindle.rotation.z=Math.PI/2;
+spindle.castShadow=true;
+micrometer.add(spindle);
+
+// thimble group
+const thimbleGroup=new THREE.Group();
+micrometer.add(thimbleGroup);
+const thimble=new THREE.Mesh(new THREE.CylinderGeometry(.95,.95,2.0,48),black);
+thimble.rotation.z=Math.PI/2;
+thimble.castShadow=true;
+thimbleGroup.add(thimble);
+
+// ratchet
+const ratchetMesh=new THREE.Mesh(new THREE.CylinderGeometry(.65,.65,.75,32),yellow);
+ratchetMesh.rotation.z=Math.PI/2;
+ratchetMesh.position.x=1.35;
+thimbleGroup.add(ratchetMesh);
+
+// labels
+function makeLabel(text){
+  const d=document.createElement('div');
+  d.className='label3d'; d.textContent=text;
+  return new CSS2DObject(d);
+}
+const anvilLabel=makeLabel('Đe cố định');
+anvilLabel.position.set(-2.05,1.15,0);
+micrometer.add(anvilLabel);
+
+const spindleLabel=makeLabel('Trục đo');
+spindleLabel.position.set(.3,1.25,0);
+micrometer.add(spindleLabel);
+
+/* =========================================================
+   5. SCALES
+========================================================= */
+const sleeveTicks=new THREE.Group();
+micrometer.add(sleeveTicks);
+
+function buildSleeveScale(){
+  while(sleeveTicks.children.length){
+    const o=sleeveTicks.children.pop();
+    o.geometry?.dispose(); o.material?.dispose();
+  }
+  // 0 to 20 mm, half-mm ticks
+  for(let i=0;i<=40;i++){
+    const mm=i*.5;
+    const major=i%2===0;
+    const x=1.0 + mm*SCALE*.10; // compressed display length
+    const h=major?.42:.26;
+    const tick=new THREE.Mesh(
+      new THREE.BoxGeometry(.018,h,.03),
+      new THREE.MeshBasicMaterial({color:0x111820})
+    );
+    tick.position.set(x,.75+h/2,.72);
+    sleeveTicks.add(tick);
+  }
+}
+buildSleeveScale();
+
+const drumTicks=new THREE.Group();
+thimbleGroup.add(drumTicks);
+
+function buildDrumScale(){
+  while(drumTicks.children.length){
+    const o=drumTicks.children.pop();
+    o.geometry?.dispose(); o.material?.dispose();
+  }
+  for(let i=0;i<DRUM_DIVS;i++){
+    const a=2*Math.PI*i/DRUM_DIVS;
+    const major=i%5===0;
+    const len=major?.22:.13;
+    const r=.98;
+    const geom=new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(.92,Math.cos(a)*r,Math.sin(a)*r),
+      new THREE.Vector3(.92,Math.cos(a)*(r+len),Math.sin(a)*(r+len))
+    ]);
+    const line=new THREE.Line(geom,new THREE.LineBasicMaterial({color:major?0xffdd67:0xdde9ee}));
+    drumTicks.add(line);
+  }
+}
+buildDrumScale();
+
+/* =========================================================
+   6. OBJECT
+========================================================= */
+const objectGroup=new THREE.Group();
+scene.add(objectGroup);
+let objectMesh=null;
+
+function rebuildObject(){
+  if(objectMesh){
+    objectGroup.remove(objectMesh);
+    objectMesh.geometry.dispose();
+  }
+  const r=state.diameter*SCALE/2;
+  objectMesh=new THREE.Mesh(
+    new THREE.CylinderGeometry(r,r,1.30,48),
+    new THREE.MeshPhongMaterial({color:0x3fb9ff,emissive:0x07374e,shininess:90})
+  );
+  objectMesh.rotation.z=Math.PI/2;
+  objectMesh.position.set(-2.05+state.diameter*SCALE/2,.2,0);
+  objectMesh.castShadow=true;
+  objectGroup.add(objectMesh);
+}
+
+/* =========================================================
+   7. KINEMATICS OF MICROMETER
+========================================================= */
+function spindleContactX(){
+  return -2.05 + state.opening*SCALE;
+}
+
+function updateMechanism(){
+  // spindle tip is opening distance from anvil face
+  spindle.position.set(spindleContactX()+1.6,.2,0);
+
+  // thimble moves together with spindle and rotates according to turns
+  const turns=state.opening/state.pitch;
+  thimbleGroup.position.set(spindleContactX()+3.0,.2,0);
+  thimbleGroup.rotation.x=2*Math.PI*turns;
+
+  state.touching=Math.abs(state.opening-state.diameter)<=state.least/2+0.0001;
+  $('contactInfo').textContent=state.touching?'Vừa chạm vật':(state.opening>state.diameter?'Chưa chạm':'Đang ép vật');
+  $('contactInfo').style.color=state.touching?'#7fffc2':(state.opening>state.diameter?'#ffda69':'#ff8585');
+}
+
+/* =========================================================
+   8. READING
+========================================================= */
+function quantizedOpening(){
+  return Math.round(state.opening/state.least)*state.least;
+}
+function readingParts(){
+  const total=quantizedOpening();
+  // sleeve reading in 0.5 mm increments
+  let main=Math.floor(total*2)/2;
+  let remainder=total-main;
+  let drum=Math.round(remainder/state.least);
+  if(drum>=DRUM_DIVS){
+    main+=state.pitch;
+    drum=0;
+    remainder=0;
+  }
+  return {main,drum,drumValue:drum*state.least,total};
+}
+
+function updateReading(){
+  if(!state.touching){
+    $('mainRead').textContent='—';
+    $('drumIndex').textContent='—';
+    $('drumRead').textContent='—';
+    $('totalRead').textContent='—';
+    return;
+  }
+  const r=readingParts();
+  $('mainRead').textContent=`${r.main.toFixed(2)} mm`;
+  $('drumIndex').textContent=`vạch ${r.drum}`;
+  $('drumRead').textContent=`${r.drumValue.toFixed(2)} mm`;
+  $('totalRead').textContent=`${r.total.toFixed(2)} mm`;
+}
+
+function performMeasure(){
+  if(!state.touching){
+    $('resultBox').innerHTML=
+      `<span class="warn">Trục đo chưa vừa chạm vật.</span><br>`+
+      `Độ mở hiện tại: <b>${state.opening.toFixed(2)} mm</b><br>`+
+      `Hãy vặn panme đến khi tiếp xúc rồi đọc lại.`;
+    state.lastMeasure=null;
+    return;
+  }
+  const r=readingParts();
+  const err=r.total-state.diameter;
+  state.lastMeasure={D:r.total,err};
+  $('resultBox').innerHTML=
+    `<b>Thang chính:</b> ${r.main.toFixed(2)} mm<br>`+
+    `<b>Thang tròn:</b> vạch ${r.drum} × ${state.least.toFixed(2)} mm = ${r.drumValue.toFixed(2)} mm<br>`+
+    `<b>Đường kính đo được:</b> <span class="${Math.abs(err)<=state.least/2?'good':'warn'}">${r.total.toFixed(2)} mm</span><br>`+
+    `<b>Sai lệch:</b> ${err>=0?'+':''}${err.toFixed(3)} mm`;
+}
+
+/* =========================================================
+   9. MOTOR-LIKE TURNING
+========================================================= */
+function startTurn(dir){
+  state.direction=dir;
+}
+function updateTurning(dt){
+  if(state.direction===0) return;
+
+  const speedMM=3.0; // mm/s
+  state.opening += state.direction*speedMM*dt;
+
+  if(state.direction<0){
+    if(autoStop.checked && state.opening<=state.diameter){
+      state.opening=state.diameter;
+      state.direction=0;
+    }
+    if(ratchet.checked && state.opening<=state.diameter){
+      state.opening=state.diameter;
+      state.direction=0;
+    }
+  }
+
+  state.opening=Math.max(2,Math.min(22,state.opening));
+  openingSlider.value=state.opening.toFixed(2);
+
+  if(state.opening===2 || state.opening===22) state.direction=0;
+
+  updateMechanism();
+  updateReading();
+  updateUI();
+}
+
+/* =========================================================
+   10. TABLE
+========================================================= */
+function renderTable(){
+  const body=$('dataBody');
+  body.innerHTML='';
+  state.records.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td><td>${r.D.toFixed(2)}</td><td>${r.err>=0?'+':''}${r.err.toFixed(3)}</td>`;
+    body.appendChild(tr);
+  });
+  if(!state.records.length){
+    $('statText').textContent='Chưa có dữ liệu.';
+    return;
+  }
+  const avg=state.records.reduce((s,r)=>s+r.D,0)/state.records.length;
+  const dev=state.records.reduce((s,r)=>s+Math.abs(r.D-avg),0)/state.records.length;
+  $('statText').innerHTML=
+    `Giá trị trung bình: <b>${avg.toFixed(3)} mm</b><br>`+
+    `Độ lệch tuyệt đối trung bình: <b>${dev.toFixed(3)} mm</b><br>`+
+    `Sai lệch trung bình so với giá trị thật hiện tại: <b>${(avg-state.diameter>=0?'+':'')+(avg-state.diameter).toFixed(3)} mm</b>`;
+}
+
+/* =========================================================
+   11. UI
+========================================================= */
+function updateUI(){
+  state.least=state.pitch/DRUM_DIVS;
+  $('diamText').textContent=`${state.diameter.toFixed(2)} mm`;
+  $('openingText').textContent=`${state.opening.toFixed(2)} mm`;
+  $('pitchText').textContent=`${state.pitch.toFixed(2)} mm/vòng`;
+
+  $('trueInfo').textContent=showTrue.checked?`${state.diameter.toFixed(2)} mm`:'Ẩn';
+  $('openingInfo').textContent=`${state.opening.toFixed(2)} mm`;
+  $('pitchInfo').textContent=`${state.pitch.toFixed(2)} mm/vòng`;
+  $('leastInfo').textContent=`${state.least.toFixed(2)} mm`;
+  $('turnInfo').textContent=(state.opening/state.pitch).toFixed(2);
+}
+
+/* =========================================================
+   12. EVENTS
+========================================================= */
+diamSlider.addEventListener('input',()=>{
+  state.diameter=parseFloat(diamSlider.value);
+  rebuildObject();
+
+  if((ratchet.checked || autoStop.checked) && state.opening<state.diameter){
+    state.opening=state.diameter;
+    openingSlider.value=state.opening.toFixed(2);
+  }
+  updateMechanism();
+  updateReading();
+  updateUI();
+  if(state.lastMeasure) performMeasure();
+});
+
+openingSlider.addEventListener('input',()=>{
+  state.direction=0;
+  state.opening=parseFloat(openingSlider.value);
+
+  if((ratchet.checked || autoStop.checked) && state.opening<state.diameter){
+    state.opening=state.diameter;
+    openingSlider.value=state.opening.toFixed(2);
+  }
+  updateMechanism();
+  updateReading();
+  updateUI();
+});
+
+pitchSlider.addEventListener('input',()=>{
+  state.pitch=PITCHES[parseInt(pitchSlider.value,10)];
+  state.least=state.pitch/DRUM_DIVS;
+  updateMechanism();
+  updateReading();
+  updateUI();
+});
+
+showTrue.addEventListener('change',updateUI);
+$('closeBtn').addEventListener('click',()=>startTurn(-1));
+$('openBtn').addEventListener('click',()=>startTurn(1));
+$('measureBtn').addEventListener('click',performMeasure);
+
+$('recordBtn').addEventListener('click',()=>{
+  if(!state.lastMeasure) performMeasure();
+  if(!state.lastMeasure) return;
+  state.records.push({...state.lastMeasure});
+  renderTable();
+});
+$('clearData').addEventListener('click',()=>{
+  state.records=[];
+  renderTable();
+});
+$('fitBtn').addEventListener('click',fitScene);
+$('resetBtn').addEventListener('click',resetAll);
+
+/* =========================================================
+   13. TOOLTIP
+========================================================= */
+const raycaster=new THREE.Raycaster();
+const mouse=new THREE.Vector2();
+
+renderer.domElement.addEventListener('mousemove',e=>{
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const hits=raycaster.intersectObjects([anvil,spindle,thimble,objectMesh].filter(Boolean),false);
+
+  if(hits.length){
+    const o=hits[0].object;
+    tooltip.style.display='block';
+    tooltip.style.left=`${e.offsetX+14}px`;
+    tooltip.style.top=`${e.offsetY+12}px`;
+
+    if(o===objectMesh) tooltip.innerHTML=`<b>Vật cần đo</b><br>D thật = ${state.diameter.toFixed(2)} mm`;
+    else if(o===anvil) tooltip.innerHTML='<b>Đe cố định</b><br>Mặt chuẩn bên trái.';
+    else if(o===spindle) tooltip.innerHTML=`<b>Trục đo</b><br>Độ mở = ${state.opening.toFixed(2)} mm`;
+    else tooltip.innerHTML=`<b>Ống động / thang tròn</b><br>Bước ren = ${state.pitch.toFixed(2)} mm/vòng`;
+  }else tooltip.style.display='none';
+});
+renderer.domElement.addEventListener('mouseleave',()=>tooltip.style.display='none');
+
+/* =========================================================
+   14. CAMERA / RESET / RESIZE
+========================================================= */
+function fitScene(){
+  camera.position.set(10,7,13);
+  controls.target.set(0,.2,0);
+  controls.update();
+}
+
+function resetAll(){
+  diamSlider.value='8.37';
+  openingSlider.value='10.00';
+  pitchSlider.value='0';
+  ratchet.checked=true;
+  autoStop.checked=true;
+  showTrue.checked=true;
+
+  state.diameter=8.37;
+  state.opening=10.00;
+  state.pitch=0.50;
+  state.least=0.01;
+  state.direction=0;
+  state.touching=false;
+  state.lastMeasure=null;
+  state.records=[];
+
+  $('resultBox').textContent='Hãy vặn panme đến khi trục đo vừa chạm vật rồi bấm “Đọc panme”.';
+
+  rebuildObject();
+  updateMechanism();
+  updateReading();
+  updateUI();
+  renderTable();
+  fitScene();
+}
+
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
+  labelRenderer.setSize(w,h);
+}
+window.addEventListener('resize',resize);
+
+/* =========================================================
+   15. ANIMATION
+========================================================= */
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt=(now-state.lastStamp)/1000;
+  state.lastStamp=now;
+  dt=Math.min(Math.max(dt,0),0.03);
+
+  updateTurning(dt);
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+/* =========================================================
+   16. INIT
+========================================================= */
+resetAll();
+resize();
+animate(performance.now());
+</script>
+</body>
+</html>

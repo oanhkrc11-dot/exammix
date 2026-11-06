@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mô phỏng sóng cơ trên mặt nước - bản hoàn thiện</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #eef5ff;
+      color: #0f172a;
+    }
+
+    .app {
+      width: min(1420px, 97vw);
+      margin: 18px auto;
+      background: #ffffff;
+      border: 1px solid #d9e6f5;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 14px 38px rgba(15, 23, 42, 0.14);
+    }
+
+    header {
+      background: #0b3b78;
+      color: white;
+      padding: 18px 24px;
+    }
+
+    header h1 {
+      margin: 0 0 6px;
+      font-size: 31px;
+    }
+
+    header p {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.55;
+      opacity: 0.96;
+    }
+
+    .teacherName {
+      margin: 0 0 10px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: #dbeafe;
+      text-transform: none;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #fff;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 11px 18px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.18s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    #startBtn { background: #16a34a; }
+    #pauseBtn { background: #f59e0b; color: #111827; }
+    #resetBtn { background: #2563eb; }
+
+    .box {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 15px;
+    }
+
+    input[type="range"] {
+      width: 140px;
+      accent-color: #2563eb;
+    }
+
+    input[type="checkbox"] {
+      transform: scale(1.15);
+      accent-color: #2563eb;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1.28fr 0.92fr;
+      gap: 16px;
+      padding: 18px 18px 0;
+    }
+
+    .bottomRow {
+      padding: 16px 18px 0;
+    }
+
+    .card {
+      border: 1px solid #dbe5f2;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .cardTitle {
+      padding: 12px 16px;
+      font-weight: 700;
+      color: #0b3b78;
+      border-bottom: 1px solid #e8eef8;
+      background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: white;
+    }
+
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      padding: 16px 18px 18px;
+    }
+
+    .note {
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid #dbe5f2;
+      line-height: 1.55;
+      font-size: 15px;
+      background: #f8fbff;
+    }
+
+    .note b { color: #0b3b78; }
+    .blue { background: #eff6ff; border-color: #bfdbfe; }
+    .green { background: #f0fdf4; border-color: #bbf7d0; }
+    .amber { background: #fffbeb; border-color: #fde68a; }
+
+    @media (max-width: 1020px) {
+      .main { grid-template-columns: 1fr; }
+      .notes { grid-template-columns: 1fr; }
+      header h1 { font-size: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="teacherName">GV Nguyễn Huy Hùng</div>
+      <h1>Mô phỏng HTML/JavaScript: Sóng cơ trên mặt nước</h1>
+      <p>
+        Mặt cắt bên trái mô tả nguồn rung gắn với máy phát tần số, mặt nước lan truyền tự nhiên,
+        các phân tử chất lỏng dao động cục bộ và một phao nhẹ chuyển động lên xuống theo mặt nước.
+        Bên phải gồm góc nhìn từ trên xuống và đồ thị li độ theo thời gian.
+      </p>
+    </header>
+
+    <div class="controls">
+      <button id="startBtn">▶ Bắt đầu</button>
+      <button id="pauseBtn">⏸ Tạm dừng</button>
+      <button id="resetBtn">↻ Đặt lại</button>
+
+      <label class="box">
+        Biên độ A:
+        <input id="ampSlider" type="range" min="10" max="40" step="2" value="22">
+        <b><span id="ampValue">22</span> px</b>
+      </label>
+
+      <label class="box">
+        Tần số f:
+        <input id="freqSlider" type="range" min="0.4" max="2.0" step="0.1" value="1.0">
+        <b><span id="freqValue">1.0</span> Hz</b>
+      </label>
+
+      <label class="box">
+        Bước sóng λ:
+        <input id="lambdaSlider" type="range" min="100" max="240" step="10" value="150">
+        <b><span id="lambdaValue">150</span> px</b>
+      </label>
+
+      <label class="box">
+        <input id="showTrails" type="checkbox" checked>
+        Hiện quỹ đạo mẫu
+      </label>
+
+      <label class="box">
+        <input id="showLabels" type="checkbox" checked>
+        Hiện chú thích còn lại
+      </label>
+    </div>
+
+    <div class="main">
+      <div class="card">
+        <div class="cardTitle">Quan sát mặt cắt của mặt nước</div>
+        <canvas id="sectionCanvas" width="880" height="560"></canvas>
+      </div>
+
+      <div class="card">
+        <div class="cardTitle">Quan sát từ trên xuống và đồ thị u - t</div>
+        <canvas id="rightCanvas" width="580" height="560"></canvas>
+      </div>
+    </div>
+
+    <div class="bottomRow">
+      <div class="card">
+        <div class="cardTitle">Mô phỏng dao động các phân tử nước theo dạng hình sin</div>
+        <canvas id="particleCanvas" width="1260" height="320"></canvas>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note blue">
+        <b>Nguồn rung:</b> được nối với máy phát tần số và dao động tuần hoàn để tạo sóng trên mặt nước.
+      </div>
+      <div class="note green">
+        <b>Phần tử nước:</b> dao động gần mặt nước quanh vị trí cân bằng, không chuyển dời theo sóng.
+      </div>
+      <div class="note amber">
+        <b>Đồ thị và mô phỏng hình sin:</b> cho thấy li độ <b>u</b> biến thiên điều hòa theo thời gian và theo vị trí của các phân tử.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sectionCanvas = document.getElementById('sectionCanvas');
+    const sctx = sectionCanvas.getContext('2d');
+
+    const rightCanvas = document.getElementById('rightCanvas');
+    const rctx = rightCanvas.getContext('2d');
+
+    const particleCanvas = document.getElementById('particleCanvas');
+    const pctx = particleCanvas.getContext('2d');
+
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const ampSlider = document.getElementById('ampSlider');
+    const freqSlider = document.getElementById('freqSlider');
+    const lambdaSlider = document.getElementById('lambdaSlider');
+    const showTrails = document.getElementById('showTrails');
+    const showLabels = document.getElementById('showLabels');
+
+    const ampValue = document.getElementById('ampValue');
+    const freqValue = document.getElementById('freqValue');
+    const lambdaValue = document.getElementById('lambdaValue');
+
+    let A = 22;
+    let f = 1.0;
+    let lambda = 150;
+
+    let running = true;
+    let startTime = null;
+    let pausedTime = 0;
+
+    const SW = sectionCanvas.width;
+    const SH = sectionCanvas.height;
+    const RW = rightCanvas.width;
+    const RH = rightCanvas.height;
+    const PW = particleCanvas.width;
+    const PH = particleCanvas.height;
+
+    const leftX = 50;
+    const rightX = 840;
+    const waterLevel = 210;
+    const bottomY = 520;
+    const sourceX = 160;
+
+    const floatX = 620;
+
+    const fishList = [
+      { x0: 300, y0: waterLevel + 108, size: 0.92, speed: 18, dir: 1, color: '#f59e0b' },
+      { x0: 520, y0: waterLevel + 138, size: 1.05, speed: 14, dir: -1, color: '#ef4444' },
+      { x0: 720, y0: waterLevel + 165, size: 0.82, speed: 20, dir: 1, color: '#14b8a6' }
+    ];
+
+    const shrimpList = [
+      { x0: 250, y0: waterLevel + 108, scale: 0.78, dir: 1, color: '#fb7185' },
+      { x0: 645, y0: waterLevel + 132, scale: 0.86, dir: -1, color: '#f97316' }
+    ];
+
+    const turtleList = [
+      { x0: 430, y0: waterLevel + 126, scale: 1.0, dir: 1 },
+      { x0: 760, y0: waterLevel + 144, scale: 0.84, dir: -1 }
+    ];
+
+    const starfishList = [
+      { x: 350, y: waterLevel + 146, scale: 0.95, color: '#f59e0b' },
+      { x: 565, y: waterLevel + 138, scale: 0.8, color: '#ec4899' }
+    ];
+
+    const particles = [];
+    const xSpacing = 28;
+    const ySpacing = 28;
+
+    for (let y = waterLevel + 20; y < waterLevel + 150; y += ySpacing) {
+      for (let x = sourceX + 16; x < rightX - 20; x += xSpacing) {
+        particles.push({ x0: x, y0: y });
+      }
+    }
+
+    function updateParams() {
+      A = Number(ampSlider.value);
+      f = Number(freqSlider.value);
+      lambda = Number(lambdaSlider.value);
+
+      ampValue.textContent = A;
+      freqValue.textContent = f.toFixed(1);
+      lambdaValue.textContent = lambda;
+    }
+
+    function waveNumber() {
+      return 2 * Math.PI / lambda;
+    }
+
+    function omega() {
+      return 2 * Math.PI * f;
+    }
+
+    function getTime(timestamp) {
+      if (!running) return pausedTime;
+      if (startTime === null) startTime = timestamp - pausedTime * 1000;
+      return (timestamp - startTime) / 1000;
+    }
+
+    function sourceY(t) {
+      return waterLevel - 10 - A * Math.sin(omega() * t);
+    }
+
+    // Mặt nước liền mạch và tự nhiên: vùng gần nguồn được làm trơn bằng một sóng địa phương,
+    // rồi nối dần sang sóng truyền đi ở bên phải.
+    function sectionSurfaceY(x, t) {
+      const dx = x - sourceX;
+      const local = -0.65 * A * Math.sin(-omega() * t) * Math.exp(-Math.pow(dx / 42, 2));
+
+      let travel = 0;
+      if (dx > 0) {
+        const grow = 1 - Math.exp(-dx / 65);
+        travel = -A * grow * Math.sin(waveNumber() * dx - omega() * t);
+      }
+
+      return waterLevel + local + travel;
+    }
+
+    function particleMotion(p, t) {
+      const depth = p.y0 - waterLevel;
+      const phase = waveNumber() * (p.x0 - sourceX) - omega() * t;
+      const decay = Math.exp(-depth / 90);
+
+      const radiusX = Math.max(0.35, A * 0.36 * decay);
+      const radiusY = Math.max(0.30, A * 0.28 * decay);
+
+      return {
+        x: p.x0 + radiusX * Math.cos(phase),
+        y: p.y0 - radiusY * Math.sin(phase),
+        radiusX,
+        radiusY,
+        phase,
+        depth
+      };
+    }
+
+    function roundBox(ctx, x, y, w, h, r, fill, stroke) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, r);
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
+    function drawArrow(ctx, x1, y1, x2, y2, color, width = 3) {
+      const ang = Math.atan2(y2 - y1, x2 - x1);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - 10 * Math.cos(ang - Math.PI / 6), y2 - 10 * Math.sin(ang - Math.PI / 6));
+      ctx.lineTo(x2 - 10 * Math.cos(ang + Math.PI / 6), y2 - 10 * Math.sin(ang + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawGenerator(x, y, w, h, t) {
+      roundBox(sctx, x, y, w, h, 14, '#f8fafc', '#94a3b8');
+
+      roundBox(sctx, x + 14, y + 14, w - 28, 32, 8, '#0b3b78', '#0b3b78');
+      sctx.fillStyle = '#dbeafe';
+      sctx.font = 'bold 16px Arial';
+      sctx.textAlign = 'center';
+      sctx.fillText('Máy phát tần số', x + w / 2, y + 35);
+
+      roundBox(sctx, x + 18, y + 58, 72, 26, 8, '#ffffff', '#cbd5e1');
+      sctx.fillStyle = '#0f172a';
+      sctx.font = 'bold 14px Arial';
+      sctx.fillText(f.toFixed(1) + ' Hz', x + 54, y + 76);
+
+      const knobX = x + 126;
+      const knobY = y + 72;
+      sctx.beginPath();
+      sctx.arc(knobX, knobY, 12, 0, Math.PI * 2);
+      sctx.fillStyle = '#e2e8f0';
+      sctx.fill();
+      sctx.strokeStyle = '#64748b';
+      sctx.lineWidth = 2;
+      sctx.stroke();
+
+      const angle = -Math.PI / 2 + (f - 0.4) / (2.0 - 0.4) * Math.PI * 1.4;
+      sctx.beginPath();
+      sctx.moveTo(knobX, knobY);
+      sctx.lineTo(knobX + 9 * Math.cos(angle), knobY + 9 * Math.sin(angle));
+      sctx.strokeStyle = '#2563eb';
+      sctx.lineWidth = 3;
+      sctx.stroke();
+
+      sctx.strokeStyle = '#22c55e';
+      sctx.lineWidth = 2;
+      sctx.beginPath();
+      for (let i = 0; i <= 54; i++) {
+        const px = x + 103 + i;
+        const py = y + 26 + 7 * Math.sin(i / 8 - omega() * t);
+        if (i === 0) sctx.moveTo(px, py);
+        else sctx.lineTo(px, py);
+      }
+      sctx.stroke();
+    }
+
+
+    function drawFish(ctx, x, y, scale, dir, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(dir * scale, scale);
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 18, 9, 0, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(-15, 0);
+      ctx.lineTo(-28, -10);
+      ctx.lineTo(-28, 10);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(-2, -6);
+      ctx.lineTo(8, -16);
+      ctx.lineTo(12, -4);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(10, -2, 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+
+    function drawShrimp(ctx, x, y, scale, dir, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(dir * scale, scale);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, 12, Math.PI * 0.2, Math.PI * 1.55);
+      ctx.stroke();
+
+      for (let i = -8; i <= 6; i += 7) {
+        ctx.beginPath();
+        ctx.moveTo(i, 5);
+        ctx.lineTo(i + 7, 12);
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(10, -2);
+      ctx.lineTo(22, -8);
+      ctx.moveTo(10, 2);
+      ctx.lineTo(22, 8);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-10, -4);
+      ctx.lineTo(-18, -12);
+      ctx.moveTo(-10, 4);
+      ctx.lineTo(-17, 12);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawTurtle(ctx, x, y, scale, dir) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(dir * scale, scale);
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 18, 13, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#84cc16';
+      ctx.fill();
+      ctx.strokeStyle = '#4d7c0f';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(20, -1, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#65a30d';
+      ctx.fill();
+
+      const fins = [[-9,-10], [8,-10], [-9,10], [8,10]];
+      for (const [fx, fy] of fins) {
+        ctx.beginPath();
+        ctx.ellipse(fx, fy, 6, 3.5, fy < 0 ? -0.6 : 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = '#65a30d';
+        ctx.fill();
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(-18, 0);
+      ctx.lineTo(-26, -4);
+      ctx.lineTo(-26, 4);
+      ctx.closePath();
+      ctx.fillStyle = '#65a30d';
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawStarfish(ctx, x, y, scale, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const a1 = -Math.PI / 2 + i * 2 * Math.PI / 5;
+        const a2 = a1 + Math.PI / 5;
+        const x1 = Math.cos(a1) * 10;
+        const y1 = Math.sin(a1) * 10;
+        const x2 = Math.cos(a2) * 4;
+        const y2 = Math.sin(a2) * 4;
+        if (i === 0) ctx.moveTo(x1, y1); else ctx.lineTo(x1, y1);
+        ctx.lineTo(x2, y2);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawSeaSnake(ctx, x, y, length, phase) {
+      ctx.save();
+      ctx.strokeStyle = '#15803d';
+      ctx.lineWidth = 7;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let i = 0; i <= 12; i++) {
+        const px = x + i * (length / 12);
+        const py = y + 10 * Math.sin(i * 0.65 + phase);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(x + length + 4, y + 10 * Math.sin(12 * 0.65 + phase), 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#22c55e';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x + length + 7, y + 10 * Math.sin(12 * 0.65 + phase) - 2, 1.3, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawSection(t) {
+      sctx.clearRect(0, 0, SW, SH);
+      sctx.fillStyle = '#ffffff';
+      sctx.fillRect(0, 0, SW, SH);
+
+      sctx.fillStyle = '#0b3b78';
+      sctx.font = 'bold 28px Arial';
+      sctx.textAlign = 'center';
+      sctx.fillText('Sóng truyền trên mặt nước', SW / 2, 42);
+
+      drawArrow(sctx, 355, 85, 650, 85, '#2563eb', 5);
+      sctx.fillStyle = '#1d4ed8';
+      sctx.font = 'bold 18px Arial';
+      sctx.fillText('Hướng truyền sóng', 505, 69);
+
+      drawGenerator(36, 72, 172, 104, t);
+
+      const sy = sourceY(t);
+
+      sctx.strokeStyle = '#475569';
+      sctx.lineWidth = 3;
+      sctx.beginPath();
+      sctx.moveTo(208, 124);
+      sctx.lineTo(sourceX, 124);
+      sctx.lineTo(sourceX, sy - 24);
+      sctx.stroke();
+
+      sctx.beginPath();
+      sctx.arc(208, 124, 7, 0, Math.PI * 2);
+      sctx.fillStyle = '#64748b';
+      sctx.fill();
+
+      // Water body
+      sctx.beginPath();
+      sctx.moveTo(leftX, bottomY);
+      sctx.lineTo(leftX, sectionSurfaceY(leftX, t));
+      for (let x = leftX; x <= rightX; x += 2) {
+        sctx.lineTo(x, sectionSurfaceY(x, t));
+      }
+      sctx.lineTo(rightX, bottomY);
+      sctx.closePath();
+
+      const grad = sctx.createLinearGradient(0, waterLevel - 40, 0, bottomY);
+      grad.addColorStop(0, '#dff5ff');
+      grad.addColorStop(1, '#8fd1f2');
+      sctx.fillStyle = grad;
+      sctx.fill();
+
+      // Bright band near surface
+      sctx.beginPath();
+      for (let x = leftX; x <= rightX; x += 2) {
+        const y = sectionSurfaceY(x, t) + 8;
+        if (x === leftX) sctx.moveTo(x, y);
+        else sctx.lineTo(x, y);
+      }
+      sctx.lineTo(rightX, bottomY);
+      sctx.lineTo(leftX, bottomY);
+      sctx.closePath();
+      const band = sctx.createLinearGradient(0, waterLevel - 8, 0, waterLevel + 24);
+      band.addColorStop(0, 'rgba(255,255,255,0.30)');
+      band.addColorStop(1, 'rgba(255,255,255,0)');
+      sctx.fillStyle = band;
+      sctx.fill();
+
+      // Surface curve
+      sctx.strokeStyle = '#0f5fc4';
+      sctx.lineWidth = 4;
+      sctx.beginPath();
+      for (let x = leftX; x <= rightX; x += 2) {
+        const y = sectionSurfaceY(x, t);
+        if (x === leftX) sctx.moveTo(x, y);
+        else sctx.lineTo(x, y);
+      }
+      sctx.stroke();
+
+      // Clip water
+      sctx.save();
+      sctx.beginPath();
+      sctx.moveTo(leftX, bottomY);
+      sctx.lineTo(leftX, sectionSurfaceY(leftX, t));
+      for (let x = leftX; x <= rightX; x += 2) {
+        sctx.lineTo(x, sectionSurfaceY(x, t));
+      }
+      sctx.lineTo(rightX, bottomY);
+      sctx.closePath();
+      sctx.clip();
+
+      // Liquid particles
+      for (const p of particles) {
+        const q = particleMotion(p, t);
+        const size = q.depth < 60 ? 2.9 : q.depth < 150 ? 2.2 : 1.8;
+        const alpha = q.depth < 60 ? 0.95 : q.depth < 150 ? 0.78 : 0.56;
+
+        sctx.beginPath();
+        sctx.arc(q.x, q.y, size, 0, Math.PI * 2);
+        sctx.fillStyle = `rgba(12, 95, 190, ${alpha})`;
+        sctx.fill();
+      }
+
+      if (showTrails.checked) {
+        const sampleTargets = [
+          { xTarget: 300, yTarget: waterLevel + 42, color: '#2563eb' },
+          { xTarget: 520, yTarget: waterLevel + 82, color: '#1d4ed8' },
+          { xTarget: 730, yTarget: waterLevel + 120, color: '#0f766e' }
+        ];
+
+        for (const sample of sampleTargets) {
+          const p = particles.reduce((best, cur) => {
+            const db = best ? Math.hypot(best.x0 - sample.xTarget, best.y0 - sample.yTarget) : Infinity;
+            const dc = Math.hypot(cur.x0 - sample.xTarget, cur.y0 - sample.yTarget);
+            return dc < db ? cur : best;
+          }, null);
+
+          if (!p) continue;
+          const q = particleMotion(p, t);
+
+          sctx.save();
+          sctx.setLineDash([6, 5]);
+          sctx.strokeStyle = sample.color;
+          sctx.lineWidth = 1.5;
+          sctx.beginPath();
+          sctx.ellipse(p.x0, p.y0, q.radiusX, q.radiusY, 0, 0, Math.PI * 2);
+          sctx.stroke();
+          sctx.restore();
+
+          sctx.beginPath();
+          sctx.arc(q.x, q.y, 4, 0, Math.PI * 2);
+          sctx.fillStyle = sample.color;
+          sctx.fill();
+        }
+      }
+
+      for (const fish of fishList) {
+        const swimWidth = rightX - leftX - 120;
+        const fx = leftX + 60 + ((fish.x0 - leftX + fish.dir * t * fish.speed) % swimWidth + swimWidth) % swimWidth;
+        const fy = fish.y0 + 4 * Math.sin(t * 1.2 + fish.x0 / 70);
+        drawFish(sctx, fx, fy, fish.size, fish.dir, fish.color);
+      }
+
+      for (const shrimp of shrimpList) {
+        const sx = shrimp.x0 + 8 * Math.sin(t * 1.6 + shrimp.x0 / 90);
+        const sy2 = shrimp.y0 + 3 * Math.cos(t * 1.3 + shrimp.y0 / 30);
+        drawShrimp(sctx, sx, sy2, shrimp.scale, shrimp.dir, shrimp.color);
+      }
+
+      for (const turtle of turtleList) {
+        const tx = turtle.x0 + turtle.dir * 6 * Math.sin(t * 0.8 + turtle.x0 / 100);
+        const ty = turtle.y0 + 3 * Math.sin(t * 1.1 + turtle.x0 / 80);
+        drawTurtle(sctx, tx, ty, turtle.scale, turtle.dir);
+      }
+
+      for (const star of starfishList) {
+        drawStarfish(sctx, star.x, star.y + 1.5 * Math.sin(t + star.x / 80), star.scale, star.color);
+      }
+
+      drawSeaSnake(sctx, 120, waterLevel + 138, 130, t * 1.35);
+
+      sctx.restore();
+
+      // Vibrating head: rectangular tip placed slightly above the water surface
+      sctx.strokeStyle = '#475569';
+      sctx.lineWidth = 4;
+      sctx.beginPath();
+      sctx.moveTo(sourceX, sy - 40);
+      sctx.lineTo(sourceX, sy - 10);
+      sctx.stroke();
+
+      roundBox(sctx, sourceX - 10, sy - 10, 20, 30, 6, '#ef4444', '#991b1b');
+      sctx.fillStyle = '#fee2e2';
+      sctx.fillRect(sourceX - 4, sy - 4, 8, 18);
+
+      // Floating marker
+      const floatY = sectionSurfaceY(floatX, t);
+      roundBox(sctx, floatX - 18, floatY - 12, 36, 16, 4, '#fde68a', '#b45309');
+
+      if (showLabels.checked) {
+        sctx.fillStyle = '#0b3b78';
+        sctx.font = 'bold 16px Arial';
+        sctx.textAlign = 'left';
+        sctx.fillText('Nguồn rung', 170, 180);
+        sctx.fillText('Phao nhẹ', floatX + 30, floatY - 2);
+
+        sctx.font = 'bold 15px Arial';
+        sctx.fillStyle = '#1d4ed8';
+        sctx.fillText('GV Nguyễn Huy Hùng', 58, 34);
+
+        // wavelength marker
+        const waveStart = 340;
+        const waveEnd = waveStart + lambda;
+        const measureY = 144;
+        drawArrow(sctx, waveStart, measureY, waveEnd, measureY, '#111827', 2);
+        drawArrow(sctx, waveEnd, measureY, waveStart, measureY, '#111827', 2);
+
+        sctx.fillStyle = '#111827';
+        sctx.font = 'italic bold 22px Georgia';
+        sctx.textAlign = 'center';
+        sctx.fillText('λ', (waveStart + waveEnd) / 2, measureY - 10);
+      }
+
+      sctx.strokeStyle = '#2a7fbd';
+      sctx.lineWidth = 5;
+      sctx.beginPath();
+      sctx.moveTo(leftX, bottomY);
+      sctx.lineTo(rightX, bottomY);
+      sctx.stroke();
+    }
+
+    function drawRightPanel(t) {
+      rctx.clearRect(0, 0, RW, RH);
+      rctx.fillStyle = '#ffffff';
+      rctx.fillRect(0, 0, RW, RH);
+
+      rctx.fillStyle = '#0b3b78';
+      rctx.font = 'bold 24px Arial';
+      rctx.textAlign = 'center';
+      rctx.fillText('Nguồn điểm và các mặt sóng tròn', RW / 2, 36);
+
+      const tankX = 28;
+      const tankY = 58;
+      const tankW = RW - 56;
+      const tankH = 220;
+      const cx = 132;
+      const cy = tankY + tankH / 2;
+
+      roundBox(rctx, tankX, tankY, tankW, tankH, 18, '#dbf1ff', '#b7d4ef');
+
+      const g = rctx.createLinearGradient(0, tankY, 0, tankY + tankH);
+      g.addColorStop(0, 'rgba(255,255,255,0.18)');
+      g.addColorStop(1, 'rgba(30, 140, 220, 0.10)');
+      roundBox(rctx, tankX + 1, tankY + 1, tankW - 2, tankH - 2, 18, g, null);
+
+      rctx.save();
+      rctx.beginPath();
+      rctx.roundRect(tankX, tankY, tankW, tankH, 18);
+      rctx.clip();
+
+      const spacing = lambda * 0.58;
+      const speed = lambda * f * 0.8;
+      const maxR = Math.hypot(tankW, tankH) + 80;
+
+      for (let i = 0; i < 12; i++) {
+        const r = ((t * speed - i * spacing) % (spacing * 12) + spacing * 12) % (spacing * 12);
+        if (r < 18 || r > maxR) continue;
+        const alpha = Math.max(0.10, 0.65 - r / maxR * 0.5);
+
+        rctx.beginPath();
+        rctx.arc(cx, cy, r, 0, Math.PI * 2);
+        rctx.strokeStyle = `rgba(20, 93, 201, ${alpha})`;
+        rctx.lineWidth = 3;
+        rctx.stroke();
+
+        rctx.beginPath();
+        rctx.arc(cx, cy, r + 10, 0, Math.PI * 2);
+        rctx.strokeStyle = `rgba(255,255,255, ${alpha * 0.35})`;
+        rctx.lineWidth = 2;
+        rctx.stroke();
+      }
+
+      for (let i = 0; i < 55; i++) {
+        const px = tankX + 15 + (i * 71) % (tankW - 30);
+        const py = tankY + 15 + (i * 47) % (tankH - 30);
+        const d = Math.hypot(px - cx, py - cy);
+        const glow = 0.5 + 0.5 * Math.sin(d / 22 - omega() * t);
+        rctx.beginPath();
+        rctx.arc(px, py, 1.2 + 0.7 * glow, 0, Math.PI * 2);
+        rctx.fillStyle = `rgba(255,255,255,${0.12 + glow * 0.16})`;
+        rctx.fill();
+      }
+
+      rctx.restore();
+
+      rctx.beginPath();
+      rctx.arc(cx, cy, 10, 0, Math.PI * 2);
+      rctx.fillStyle = '#ef4444';
+      rctx.fill();
+      rctx.strokeStyle = '#991b1b';
+      rctx.lineWidth = 2.5;
+      rctx.stroke();
+
+      const pointMX = cx + 150;
+      const pointMY = cy;
+      rctx.beginPath();
+      rctx.arc(pointMX, pointMY, 6, 0, Math.PI * 2);
+      rctx.fillStyle = '#14532d';
+      rctx.fill();
+      rctx.strokeStyle = '#ffffff';
+      rctx.lineWidth = 2;
+      rctx.stroke();
+
+      if (showLabels.checked) {
+        rctx.fillStyle = '#991b1b';
+        rctx.font = 'bold 15px Arial';
+        rctx.textAlign = 'left';
+        rctx.fillText('Nguồn rung', 42, 82);
+
+        rctx.fillStyle = '#14532d';
+        rctx.fillText('Điểm M', pointMX + 12, pointMY + 5);
+
+        rctx.fillStyle = '#0b3b78';
+        rctx.fillText('Các mặt sóng tròn đồng tâm', 230, 94);
+      }
+
+      rctx.fillStyle = '#0b3b78';
+      rctx.font = 'bold 23px Arial';
+      rctx.textAlign = 'center';
+      rctx.fillText('Đồ thị li độ theo thời gian tại điểm M', RW / 2, 326);
+
+      const gx = 58;
+      const gy = 360;
+      const gw = 465;
+      const gh = 150;
+      const axisY = gy + gh / 2;
+      const axisX = gx + 36;
+
+      roundBox(rctx, 28, 344, RW - 56, 190, 16, '#fbfdff', '#dbe5f2');
+
+      rctx.save();
+      rctx.beginPath();
+      rctx.rect(gx, gy, gw, gh);
+      rctx.clip();
+
+      rctx.strokeStyle = '#e2e8f0';
+      rctx.lineWidth = 1;
+      for (let x = gx; x <= gx + gw; x += 45) {
+        rctx.beginPath();
+        rctx.moveTo(x, gy);
+        rctx.lineTo(x, gy + gh);
+        rctx.stroke();
+      }
+      for (let y = gy; y <= gy + gh; y += 25) {
+        rctx.beginPath();
+        rctx.moveTo(gx, y);
+        rctx.lineTo(gx + gw, y);
+        rctx.stroke();
+      }
+      rctx.restore();
+
+      drawArrow(rctx, axisX, gy + gh - 15, axisX, gy + 15, '#111827', 2.2);
+      drawArrow(rctx, gx + 12, axisY, gx + gw - 10, axisY, '#111827', 2.2);
+
+      rctx.fillStyle = '#111827';
+      rctx.font = 'bold 16px Arial';
+      rctx.textAlign = 'center';
+      rctx.fillText('u', axisX - 18, gy + 16);
+      rctx.fillText('t', gx + gw - 8, axisY - 12);
+
+      rctx.font = '14px Arial';
+      rctx.textAlign = 'right';
+      rctx.fillText('0', axisX - 6, axisY + 5);
+
+      const rM = Math.hypot(pointMX - cx, pointMY - cy);
+      const phaseM = waveNumber() * rM - omega() * t;
+      const ampGraph = A * 0.85;
+
+      rctx.save();
+      rctx.beginPath();
+      rctx.rect(gx, gy, gw, gh);
+      rctx.clip();
+
+      rctx.strokeStyle = '#2563eb';
+      rctx.lineWidth = 3;
+      rctx.beginPath();
+      for (let i = 0; i <= gw - 50; i++) {
+        const x = axisX + i;
+        const tau = i / (gw - 50) * (3.4 / f);
+        const y = axisY - ampGraph * Math.sin(2 * Math.PI * f * tau + phaseM);
+        if (i === 0) rctx.moveTo(x, y);
+        else rctx.lineTo(x, y);
+      }
+      rctx.stroke();
+
+      rctx.restore();
+
+      rctx.fillStyle = '#0f172a';
+      rctx.font = '15px Arial';
+      rctx.textAlign = 'left';
+      rctx.fillText('u(t) biến thiên điều hòa theo thời gian.', 48, 552);
+    }
+
+    function drawParticleSinePanel(t) {
+      pctx.clearRect(0, 0, PW, PH);
+
+      // Background similar to uploaded reference
+      pctx.fillStyle = '#61d6d9';
+      pctx.fillRect(0, 0, PW, PH);
+
+      pctx.fillStyle = '#0b3b78';
+      pctx.font = 'bold 30px Arial';
+      pctx.textAlign = 'center';
+      pctx.fillText('Mô phỏng dao động các phân tử nước', PW / 2, 34);
+
+      const x0 = 70;
+      const y0 = 64;
+      const w = PW - 130;
+      const h = 170;
+      const midY = y0 + h / 2;
+      const amp = 52;
+
+      // Frame and grid
+      pctx.strokeStyle = 'rgba(68, 134, 50, 0.75)';
+      pctx.lineWidth = 2;
+      pctx.strokeRect(x0, y0, w, h);
+
+      pctx.strokeStyle = 'rgba(70, 140, 80, 0.65)';
+      pctx.lineWidth = 1;
+      const cols = 34;
+      const spacing = w / cols;
+      for (let i = 0; i <= cols; i++) {
+        const x = x0 + i * spacing;
+        pctx.beginPath();
+        pctx.moveTo(x, y0);
+        pctx.lineTo(x, y0 + h);
+        pctx.stroke();
+      }
+
+      pctx.strokeStyle = '#1d4ed8';
+      pctx.lineWidth = 2;
+      pctx.beginPath();
+      pctx.moveTo(x0 - 8, midY);
+      pctx.lineTo(x0 + w + 16, midY);
+      pctx.stroke();
+
+      // Horizontal arrow
+      pctx.beginPath();
+      pctx.moveTo(x0 + w + 16, midY);
+      pctx.lineTo(x0 + w + 2, midY - 7);
+      pctx.lineTo(x0 + w + 2, midY + 7);
+      pctx.closePath();
+      pctx.fillStyle = '#1d4ed8';
+      pctx.fill();
+
+      // Wavelength arrow
+      const lamVis = spacing * 12;
+      const lamX1 = x0;
+      const lamX2 = x0 + lamVis;
+      const lamY = y0 + h + 18;
+      drawArrow(pctx, lamX1, lamY, lamX2, lamY, '#7c2d12', 2);
+      drawArrow(pctx, lamX2, lamY, lamX1, lamY, '#7c2d12', 2);
+      pctx.fillStyle = '#7c2d12';
+      pctx.font = 'bold 18px Arial';
+      pctx.textAlign = 'left';
+      pctx.fillText('Bước sóng  λ = v.T = v/f', lamX1 + 26, lamY + 24);
+
+      // Sine path
+      pctx.strokeStyle = 'rgba(30, 90, 200, 0.35)';
+      pctx.lineWidth = 3;
+      pctx.beginPath();
+      for (let i = 0; i <= cols; i++) {
+        const x = x0 + i * spacing;
+        const phase = 2 * Math.PI * (i / 12) - omega() * t;
+        const y = midY - amp * Math.sin(phase);
+        if (i === 0) pctx.moveTo(x, y);
+        else pctx.lineTo(x, y);
+      }
+      pctx.stroke();
+
+      // Colored particles like the user's reference
+      const colors = ['#ff0000', '#8b5cf6', '#2563eb', '#ec4899', '#f59e0b', '#facc15', '#a3e635', '#06b6d4'];
+
+      for (let i = 0; i <= cols; i++) {
+        const x = x0 + i * spacing;
+        const phase = 2 * Math.PI * (i / 12) - omega() * t;
+        const y = midY - amp * Math.sin(phase);
+        const c = colors[i % colors.length];
+
+        pctx.beginPath();
+        pctx.arc(x, y, 7, 0, Math.PI * 2);
+        pctx.fillStyle = c;
+        pctx.fill();
+        pctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        pctx.lineWidth = 1.5;
+        pctx.stroke();
+
+        // Show equilibrium reference for particles
+        pctx.beginPath();
+        pctx.arc(x, midY, 5, 0, Math.PI * 2);
+        pctx.strokeStyle = 'rgba(37,99,235,0.55)';
+        pctx.lineWidth = 1.4;
+        pctx.stroke();
+
+        // light vertical guide to indicate vertical oscillation
+        pctx.beginPath();
+        pctx.moveTo(x, midY);
+        pctx.lineTo(x, y);
+        pctx.strokeStyle = 'rgba(37, 99, 235, 0.28)';
+        pctx.lineWidth = 1.4;
+        pctx.stroke();
+      }
+
+      // Small control button look just for visual similarity to reference
+      const labels = ['PLAY', 'REWIND', 'STOP', '◀', '▶', 'EXIT'];
+      let bx = 10;
+      for (const lab of labels) {
+        roundBox(pctx, bx, 276, lab.length > 1 ? 80 : 34, 24, 12, '#88aef5', '#5b79cf');
+        pctx.fillStyle = '#fef08a';
+        pctx.font = 'bold 13px Arial';
+        pctx.textAlign = 'center';
+        pctx.fillText(lab, bx + (lab.length > 1 ? 40 : 17), 292);
+        bx += lab.length > 1 ? 94 : 44;
+      }
+    }
+
+    function animate(timestamp) {
+      updateParams();
+      const t = getTime(timestamp);
+      drawSection(t);
+      drawRightPanel(t);
+      drawParticleSinePanel(t);
+      requestAnimationFrame(animate);
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (!running) {
+        running = true;
+        startTime = null;
+      }
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (running) {
+        running = false;
+        if (startTime !== null) {
+          pausedTime = (performance.now() - startTime) / 1000;
+        }
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      ampSlider.value = 22;
+      freqSlider.value = 1.0;
+      lambdaSlider.value = 150;
+      showTrails.checked = true;
+      showLabels.checked = true;
+      running = true;
+      startTime = null;
+      pausedTime = 0;
+      updateParams();
+    });
+
+    ampSlider.addEventListener('input', updateParams);
+    freqSlider.addEventListener('input', updateParams);
+    lambdaSlider.addEventListener('input', updateParams);
+
+    updateParams();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

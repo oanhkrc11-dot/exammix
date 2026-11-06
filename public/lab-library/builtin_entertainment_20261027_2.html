@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Dino Egg Blast 3.0 - Hang Trứng Bí Ẩn</title>
+<style>
+  :root{
+    --line:#76e9ff3f;
+    --glass:#081a24cc;
+    --glass2:#0e2634db;
+    --text:#f2fcff;
+    --muted:#bddfe9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--text);
+    background:radial-gradient(circle at 50% 0,#163c54 0,#0b2231 42%,#05111a 100%)}
+  .stage{position:relative;width:100vw;height:100vh;display:grid;place-items:center;padding:14px}
+  .frame{
+    position:relative;width:min(1000px,100%);height:min(92vh,720px);border-radius:28px;overflow:hidden;
+    border:1px solid var(--line);background:linear-gradient(180deg,#153a50cc,#081520ee);
+    box-shadow:0 24px 80px #0009, inset 0 0 40px #6de7ff10;
+  }
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  .hudTop{
+    position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;pointer-events:none;
+  }
+  .brand,.stats{
+    background:var(--glass);border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(8px);box-shadow:0 10px 30px #0004;
+  }
+  .brand{padding:10px 14px;min-width:220px}
+  .brand h1{margin:0;font-size:22px;line-height:1}
+  .brand .sub{font-size:12px;color:var(--muted);margin-top:5px}
+  .stats{display:flex;gap:8px;padding:8px 10px}
+  .stat{min-width:96px;padding:7px 10px;border-radius:14px;background:#092433d9;border:1px solid #7ae9ff18}
+  .stat .lb{font-size:11px;color:var(--muted)}
+  .stat .val{font-weight:900;font-size:18px;margin-top:2px}
+  .controls{position:absolute;top:14px;right:14px;display:flex;gap:8px}
+  .iconBtn{
+    width:42px;height:42px;border-radius:14px;border:1px solid var(--line);background:var(--glass2);color:white;font-size:18px;cursor:pointer;box-shadow:0 10px 25px #0004;
+  }
+  .iconBtn:hover{filter:brightness(1.08)}
+  .bottomInfo{
+    position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+    background:var(--glass);border:1px solid var(--line);border-radius:18px;padding:10px 14px;display:flex;gap:14px;align-items:center;
+    box-shadow:0 10px 30px #0004;max-width:min(96%,780px);flex-wrap:wrap;
+  }
+  .legend{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+  .dot{width:16px;height:16px;border-radius:50%}
+  .hint{
+    position:absolute;right:14px;bottom:14px;background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:10px 12px;font-size:12px;color:var(--muted);
+    box-shadow:0 10px 30px #0004;max-width:245px;
+  }
+  .toast{
+    position:absolute;left:50%;top:92px;transform:translateX(-50%) translateY(-10px);background:#071923ed;border:1px solid var(--line);border-radius:999px;
+    padding:9px 14px;font-weight:800;opacity:0;transition:.22s;pointer-events:none;z-index:5;box-shadow:0 10px 25px #0005;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .modalWrap{
+    position:absolute;inset:0;display:none;place-items:center;background:#020c14cf;backdrop-filter:blur(6px);z-index:10;
+  }
+  .modalWrap.show{display:grid}
+  .modal{
+    width:min(92%,540px);background:#0b1f2dda;border:1px solid var(--line);border-radius:24px;padding:26px;box-shadow:0 30px 80px #0008;text-align:center;
+  }
+  .modal h2{margin:0 0 10px;font-size:38px}
+  .modal p{color:#c9e6ef;line-height:1.55}
+  .bigBtn{
+    margin-top:14px;padding:12px 18px;border:none;border-radius:14px;background:linear-gradient(180deg,#f3c75d,#d89b21);color:#2a1800;font-weight:900;cursor:pointer
+  }
+  @media(max-width:760px){
+    .brand{min-width:0;padding:9px 12px}
+    .brand h1{font-size:18px}
+    .stats{display:grid;grid-template-columns:repeat(2,1fr)}
+    .stat{min-width:0}
+    .hint{display:none}
+    .bottomInfo{justify-content:center}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="frame" id="frame">
+    <canvas id="game"></canvas>
+
+    <div class="hudTop">
+      <div class="brand">
+        <h1>🦖 Dino Egg Blast</h1>
+        <div class="sub">Hang Trứng Bí Ẩn • Bản 3.0</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="lb">Điểm</div><div class="val" id="scoreVal">0</div></div>
+        <div class="stat"><div class="lb">Màn</div><div class="val" id="levelVal">1</div></div>
+        <div class="stat"><div class="lb">Combo</div><div class="val" id="comboVal">x1</div></div>
+        <div class="stat"><div class="lb">Hạ xuống sau</div><div class="val" id="dropVal">5</div></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="iconBtn" id="helpBtn" title="Hướng dẫn">?</button>
+      <button class="iconBtn" id="soundBtn" title="Âm thanh">🔊</button>
+      <button class="iconBtn" id="pauseBtn" title="Tạm dừng">⏸</button>
+      <button class="iconBtn" id="resetBtn" title="Chơi lại">↻</button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="bottomInfo">
+      <div class="legend"><span class="dot" style="background:linear-gradient(135deg,#f45b69,#ffd166,#5ad1ff,#7be495)"></span> Trứng bí ẩn: ghép vào cụm để kích hoạt thưởng</div>
+      <div class="legend"><span class="dot" style="background:#7b8188"></span> Trứng hóa thạch: phải làm nứt 2 lần</div>
+      <div class="legend">Phím: <b>Space</b> bắn • <b>X</b> đổi trứng</div>
+    </div>
+
+    <div class="hint">
+      Mục tiêu: ghép ≥ 3 trứng cùng màu. Một vài quả trứng phát sáng bí ẩn có thể nổ lan, cộng điểm lớn hoặc làm rơi các cụm phía dưới.
+    </div>
+
+    <div class="modalWrap" id="helpModal">
+      <div class="modal">
+        <h2>Hang Trứng Bí Ẩn</h2>
+        <p>
+          Bắn trứng từ dưới lên, ghép từ 3 quả cùng màu trở lên để phá cụm.
+          <b>Trứng bí ẩn</b> có ký hiệu “?” sẽ tạo hiệu ứng bất ngờ khi được kích hoạt.
+          <b>Trứng hóa thạch</b> không ghép màu, phải bị tác động 2 lần mới vỡ.
+          Sau mỗi 5 phát bắn, toàn bộ cụm trứng sẽ hạ xuống gần hơn.
+        </p>
+        <button class="bigBtn" id="closeHelpBtn">BẮT ĐẦU</button>
+      </div>
+    </div>
+
+    <div class="modalWrap" id="endModal">
+      <div class="modal">
+        <h2 id="endTitle">GAME OVER</h2>
+        <p id="endText"></p>
+        <button class="bigBtn" id="againBtn">CHƠI LẠI</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const frame = document.getElementById('frame');
+  const helpModal = document.getElementById('helpModal');
+  const endModal = document.getElementById('endModal');
+  const endTitle = document.getElementById('endTitle');
+  const endText = document.getElementById('endText');
+  const toast = document.getElementById('toast');
+
+  const scoreVal = document.getElementById('scoreVal');
+  const levelVal = document.getElementById('levelVal');
+  const comboVal = document.getElementById('comboVal');
+  const dropVal = document.getElementById('dropVal');
+
+  const COLORS = ['#f45b69','#ffd166','#5ad1ff','#7be495','#b58cff'];
+  const SHOTS_PER_DROP = 5;
+
+  let W=0,H=0,DPR=1;
+  let R=22;
+  let COLS=10;
+  let ROWS=15;
+  let topOffset=80;
+  let dropOffset=0;
+  let grid = [];
+  let particles = [];
+  let falling = [];
+  let trail = [];
+  let paused = false;
+  let over = false;
+  let soundOn = true;
+  let audioCtx = null;
+  let score = 0;
+  let level = 1;
+  let combo = 1;
+  let shots = 0;
+  let startEggs = 1;
+  let shake = 0;
+  let aimAngle = -Math.PI / 2;
+  let ghostTime = 0;
+  let fogShift = 0;
+
+  const shooter = {
+    baseX:0, baseY:0, x:0, y:0, vx:0, vy:0,
+    color:null, active:false
+  };
+  let nextColor = null;
+
+  function playTone(freq=440,dur=0.06,type='sine',vol=0.035){
+    if(!soundOn) return;
+    audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type; o.frequency.value = freq; g.gain.value = vol;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start();
+    g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime + dur);
+    o.stop(audioCtx.currentTime + dur);
+  }
+
+  function showToast(text){
+    toast.textContent = text;
+    toast.classList.add('show');
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => toast.classList.remove('show'), 1100);
+  }
+
+  function resize(){
+    const rect = frame.getBoundingClientRect();
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = rect.width; H = rect.height;
+    canvas.width = W * DPR; canvas.height = H * DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    R = Math.max(18, Math.min(23, W / 28));
+    COLS = Math.max(8, Math.min(11, Math.floor((W - 34) / (R*2))));
+    shooter.baseX = W / 2;
+    shooter.baseY = H - 82;
+  }
+
+  function randColor(){
+    const n = Math.min(5, 3 + Math.floor((level-1)/3));
+    return COLORS[(Math.random()*n)|0];
+  }
+
+  function cellXY(r,c){
+    const x = 18 + R + c*R*2 + (r%2 ? R : 0);
+    const y = topOffset + dropOffset + R + r*R*1.72;
+    return {x,y};
+  }
+
+  function valid(r,c){ return r>=0 && r<ROWS && c>=0 && c<COLS; }
+
+  function neighbors(r,c){
+    const even = r % 2 === 0;
+    const dirs = even ? [[0,-1],[0,1],[-1,-1],[-1,0],[1,-1],[1,0]] : [[0,-1],[0,1],[-1,0],[-1,1],[1,0],[1,1]];
+    return dirs.map(([dr,dc]) => [r+dr,c+dc]).filter(([rr,cc]) => valid(rr,cc));
+  }
+
+  function makeCell(){
+    const rv = Math.random();
+    if(level >= 2 && rv < 0.10){
+      return {type:'mystery', color: randColor()};
+    }
+    if(level >= 3 && rv >= 0.10 && rv < 0.18){
+      return {type:'fossil', hp:2};
+    }
+    return {type:'normal', color: randColor()};
+  }
+
+  function initGrid(){
+    grid = Array.from({length:ROWS},()=>Array(COLS).fill(null));
+    dropOffset = 0;
+    const startRows = Math.min(5 + Math.floor((level-1)/2), 8);
+    for(let r=0;r<startRows;r++){
+      for(let c=0;c<COLS;c++){
+        const p = cellXY(r,c);
+        if(p.x < W-R-6){
+          grid[r][c] = makeCell();
+        }
+      }
+    }
+    startEggs = grid.flat().filter(Boolean).length || 1;
+  }
+
+  function updateUI(){
+    scoreVal.textContent = score.toLocaleString('vi-VN');
+    levelVal.textContent = level;
+    comboVal.textContent = 'x' + combo;
+    let left = SHOTS_PER_DROP - (shots % SHOTS_PER_DROP);
+    if(left === 0) left = SHOTS_PER_DROP;
+    dropVal.textContent = left;
+  }
+
+  function newShooterEgg(){
+    shooter.color = nextColor || randColor();
+    nextColor = randColor();
+    shooter.active = false;
+    shooter.x = shooter.baseX;
+    shooter.y = shooter.baseY - 12;
+    trail = [];
+    updateUI();
+  }
+
+  function startGame(full=true){
+    if(full){ score = 0; level = 1; }
+    combo = 1;
+    shots = 0;
+    paused = false;
+    over = false;
+    particles = [];
+    falling = [];
+    ghostTime = 0;
+    fogShift = 0;
+    nextColor = randColor();
+    initGrid();
+    newShooterEgg();
+    endModal.classList.remove('show');
+    updateUI();
+  }
+
+  function shade(hex,p){
+    const n = parseInt(hex.slice(1),16);
+    const a = Math.round(2.55*p);
+    const r = (n>>16)+a, g=((n>>8)&255)+a, b=(n&255)+a;
+    return '#'+(0x1000000 + (Math.max(0,Math.min(255,r))<<16) + (Math.max(0,Math.min(255,g))<<8) + Math.max(0,Math.min(255,b))).toString(16).slice(1);
+  }
+
+  function drawEgg(x,y,cell,scale=1,alpha=1,angle=0){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(angle);
+    ctx.globalAlpha = alpha;
+
+    const rx = R*0.88*scale;
+    const ry = R*1.06*scale;
+    let fill;
+
+    if(cell.type === 'fossil'){
+      const g = ctx.createRadialGradient(-rx*.28,-ry*.38,3,0,0,ry*1.2);
+      g.addColorStop(0,'#c7cbd0');
+      g.addColorStop(.22,'#808890');
+      g.addColorStop(1,'#50565d');
+      fill = g;
+    }else{
+      const col = cell.color;
+      const g = ctx.createRadialGradient(-rx*.30,-ry*.42,3,0,0,ry*1.2);
+      g.addColorStop(0,'#ffffffdd');
+      g.addColorStop(.14,col);
+      g.addColorStop(1,shade(col,-42));
+      fill = g;
+    }
+
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.globalAlpha *= 0.35;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.ellipse(-rx*.30,-ry*.42,rx*.15,ry*.22,-.4,0,Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = alpha;
+
+    if(cell.type === 'mystery'){
+      ctx.fillStyle = '#fff8';
+      ctx.beginPath();
+      ctx.arc(0,0,ry*.36,0,Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#24323a';
+      ctx.font = `900 ${Math.max(12,R*0.95)}px Segoe UI`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('?',0,1);
+    }
+    if(cell.type === 'fossil'){
+      ctx.strokeStyle = '#e5e7ea';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(-rx*.25,-ry*.1);
+      ctx.lineTo(-rx*.06,-ry*.28);
+      ctx.lineTo(rx*.16,-ry*.06);
+      ctx.moveTo(-rx*.10,ry*.18);
+      ctx.lineTo(rx*.05,0);
+      ctx.lineTo(rx*.18,ry*.15);
+      ctx.stroke();
+      if(cell.hp === 1){
+        ctx.strokeStyle = '#ffd48c';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(-rx*.55,-ry*.25);
+        ctx.lineTo(-rx*.10,-ry*.02);
+        ctx.lineTo(rx*.35,ry*.35);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawBackground(){
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#1a485f');
+    g.addColorStop(.42,'#0b2535');
+    g.addColorStop(1,'#06131c');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,H);
+
+    ctx.fillStyle = '#041018';
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(0,145);
+    ctx.quadraticCurveTo(W*0.18,48,W*0.35,92);
+    ctx.quadraticCurveTo(W*0.55,138,W*0.78,78);
+    ctx.quadraticCurveTo(W*0.90,52,W,H*0.18);
+    ctx.lineTo(W,0);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#0a1b26';
+    ctx.beginPath();
+    ctx.moveTo(0,H*0.60);
+    ctx.quadraticCurveTo(W*0.15,H*0.50,W*0.28,H*0.62);
+    ctx.quadraticCurveTo(W*0.55,H*0.76,W,H*0.58);
+    ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+
+    function crystal(x,y,s){
+      ctx.save(); ctx.translate(x,y);
+      ctx.fillStyle = 'rgba(109,240,255,.18)';
+      ctx.strokeStyle = 'rgba(126,248,255,.55)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(0,-s); ctx.lineTo(s*.7,-s*.15); ctx.lineTo(s*.2,s); ctx.lineTo(-s*.55,s*.22);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+    crystal(80,H-90,26); crystal(132,H-76,17); crystal(W-92,H-100,23); crystal(W-146,H-72,15);
+
+    ctx.strokeStyle = '#315548';
+    ctx.lineWidth = 2;
+    for(let i=0;i<5;i++){
+      const x = 80 + i * (W-160) / 4;
+      ctx.beginPath();
+      ctx.moveTo(x,0);
+      ctx.quadraticCurveTo(x+12,44,x-8,92 + (i%2)*20);
+      ctx.stroke();
+    }
+
+    const blink = 0.65 + 0.35*Math.sin(ghostTime*1.5);
+    ctx.fillStyle = `rgba(255,230,130,${0.22*blink})`;
+    ctx.beginPath(); ctx.ellipse(W*0.16,H*0.27,16,8,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(W*0.22,H*0.27,16,8,0,0,Math.PI*2); ctx.fill();
+
+    const gx = (ghostTime*42)%(W+220) - 110;
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = '#02070a';
+    ctx.translate(gx,H*0.49);
+    ctx.beginPath();
+    ctx.moveTo(-48,30);
+    ctx.quadraticCurveTo(-30,-25,18,-18);
+    ctx.quadraticCurveTo(70,-10,82,18);
+    ctx.quadraticCurveTo(92,24,98,14);
+    ctx.quadraticCurveTo(92,26,92,38);
+    ctx.quadraticCurveTo(76,34,63,46);
+    ctx.quadraticCurveTo(52,63,36,62);
+    ctx.lineTo(26,40); ctx.lineTo(6,60); ctx.lineTo(-8,60); ctx.lineTo(-4,34);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    fogShift += 0.12;
+    ctx.globalAlpha = 0.08;
+    for(let i=0;i<5;i++){
+      const x = ((i*180 + fogShift*25)%(W+220)) - 110;
+      ctx.fillStyle = '#baf4ff';
+      ctx.beginPath();
+      ctx.ellipse(x,H*0.72 + (i%2)*18,90,26,0,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = '#081822';
+    ctx.beginPath();
+    ctx.moveTo(0,H-80);
+    ctx.quadraticCurveTo(W*0.25,H-118,W*0.5,H-88);
+    ctx.quadraticCurveTo(W*0.7,H-72,W,H-105);
+    ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawDangerLine(){
+    const y = H - 138;
+    ctx.strokeStyle = '#ff768666';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(20,y); ctx.lineTo(W-20,y); ctx.stroke();
+  }
+
+  function drawGrid(){
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        const cell = grid[r][c];
+        if(!cell) continue;
+        const p = cellXY(r,c);
+        if(p.x > R && p.x < W-R) drawEgg(p.x,p.y,cell);
+      }
+    }
+  }
+
+  function drawAim(){
+    if(paused || over || shooter.active || helpModal.classList.contains('show')) return;
+    let dx = Math.cos(aimAngle), dy = Math.sin(aimAngle);
+    let x = shooter.baseX, y = shooter.baseY;
+    let vx = dx, vy = dy;
+    ctx.save();
+    ctx.setLineDash([6,9]);
+    ctx.strokeStyle = '#eafcff9a';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x,y);
+    for(let i=0;i<110;i++){
+      x += vx*8; y += vy*8;
+      if(x < R){ x = R; vx = Math.abs(vx); }
+      else if(x > W-R){ x = W-R; vx = -Math.abs(vx); }
+      ctx.lineTo(x,y);
+      if(y < topOffset + dropOffset + R) break;
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawCannon(){
+    ctx.fillStyle = '#2a3e4b';
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(shooter.baseX-62, shooter.baseY+6, 124, 54, 18);
+    else { ctx.rect(shooter.baseX-62, shooter.baseY+6, 124, 54); }
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(shooter.baseX, shooter.baseY+10);
+    ctx.rotate(aimAngle);
+    ctx.fillStyle = '#6c8796';
+    ctx.fillRect(-7,-8,46,16);
+    ctx.beginPath(); ctx.arc(0,0,14,0,Math.PI*2);
+    ctx.fillStyle = '#405766'; ctx.fill();
+    ctx.restore();
+
+    const cur = {type:'normal', color: shooter.color};
+    const nxt = {type:'normal', color: nextColor};
+    drawEgg(shooter.baseX-58, shooter.baseY+28, cur, 0.78, 0.85);
+    drawEgg(shooter.baseX+58, shooter.baseY+28, nxt, 0.64, 0.72);
+
+    ctx.fillStyle = '#d1e8ef';
+    ctx.font = '11px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.fillText('Đổi: X', shooter.baseX+58, shooter.baseY+59);
+
+    if(!shooter.active){
+      drawEgg(shooter.baseX, shooter.baseY-10, cur, 1.08);
+    }
+  }
+
+  function drawTrail(){
+    for(const t of trail){
+      ctx.globalAlpha = Math.max(0,t.life/.25)*0.38;
+      ctx.fillStyle = t.color;
+      ctx.beginPath(); ctx.arc(t.x,t.y,R*.46,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawParticles(){
+    for(const p of particles){
+      ctx.globalAlpha = Math.max(0,p.life);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,3.1,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function nearestCell(x,y){
+    let best = null, bestD = Infinity;
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      const p = cellXY(r,c);
+      const d = (p.x-x)**2 + (p.y-y)**2;
+      if(d < bestD && p.x > R && p.x < W-R){ bestD = d; best = {r,c}; }
+    }
+    return best;
+  }
+
+  function hitAny(x,y){
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      const cell = grid[r][c];
+      if(!cell) continue;
+      const p = cellXY(r,c);
+      if(Math.hypot(p.x-x,p.y-y) < R*1.78) return {r,c};
+    }
+    return null;
+  }
+
+  function matches(targetColor, cell){
+    if(!cell) return false;
+    if(cell.type === 'fossil') return false;
+    if(cell.type === 'mystery') return true;
+    return cell.color === targetColor;
+  }
+
+  function getCluster(r,c,targetColor){
+    const q = [[r,c]], seen = new Set([r+','+c]), out = [];
+    while(q.length){
+      const [rr,cc] = q.shift();
+      out.push([rr,cc]);
+      for(const [nr,nc] of neighbors(rr,cc)){
+        const key = nr+','+nc;
+        if(!seen.has(key) && matches(targetColor, grid[nr][nc])){
+          seen.add(key);
+          q.push([nr,nc]);
+        }
+      }
+    }
+    return out;
+  }
+
+  function spawnBurst(x,y,color,n=10){
+    for(let i=0;i<n;i++){
+      particles.push({x,y,vx:(Math.random()-0.5)*220,vy:(Math.random()-0.8)*240,life:0.55 + Math.random()*0.4,color});
+    }
+  }
+
+  function burstCell(r,c){
+    const cell = grid[r][c];
+    if(!cell) return;
+    const p = cellXY(r,c);
+    const col = cell.type === 'fossil' ? '#aab2b9' : cell.color;
+    spawnBurst(p.x,p.y,col,12);
+    grid[r][c] = null;
+  }
+
+  function damageFossilsAround(cells){
+    for(const [r,c] of cells){
+      for(const [nr,nc] of neighbors(r,c)){
+        const cell = grid[nr][nc];
+        if(cell && cell.type === 'fossil'){
+          cell.hp -= 1;
+          if(cell.hp <= 0){
+            const p = cellXY(nr,nc);
+            spawnBurst(p.x,p.y,'#d5dade',10);
+            grid[nr][nc] = null;
+            score += 35;
+            showToast('🪨 Trứng hóa thạch vỡ!');
+          }
+        }
+      }
+    }
+  }
+
+  function triggerMystery(x,y){
+    const rewards = ['bonus','blast','drop'];
+    const pick = rewards[(Math.random()*rewards.length)|0];
+    if(pick === 'bonus'){
+      score += 120;
+      showToast('✨ Bí ẩn: +120 điểm!');
+      spawnBurst(x,y,'#ffd166',18);
+      playTone(760,0.08,'sine',0.05);
+    }else if(pick === 'blast'){
+      showToast('💥 Bí ẩn: nổ lan!');
+      for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+        const cell = grid[r][c];
+        if(!cell) continue;
+        const p = cellXY(r,c);
+        if(Math.hypot(p.x-x,p.y-y) < R*3.4){
+          if(cell.type === 'fossil'){
+            cell.hp -= 1;
+            if(cell.hp <= 0) burstCell(r,c);
+          }else{
+            burstCell(r,c);
+          }
+        }
+      }
+      shake = 0.18;
+      playTone(115,0.15,'sawtooth',0.04);
+    }else{
+      showToast('⬇ Bí ẩn: cụm rơi xuống!');
+      let arr = [];
+      for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(grid[r][c]) arr.push({r,c,y:cellXY(r,c).y});
+      arr.sort((a,b)=>b.y-a.y);
+      arr.slice(0, Math.min(4,arr.length)).forEach(it=>burstCell(it.r,it.c));
+      playTone(520,0.06,'triangle',0.03);
+    }
+  }
+
+  function dropDisconnected(){
+    const seen = new Set(), q = [];
+    for(let c=0;c<COLS;c++) if(grid[0][c]){ q.push([0,c]); seen.add('0,'+c); }
+    while(q.length){
+      const [r,c] = q.shift();
+      for(const [nr,nc] of neighbors(r,c)){
+        const key = nr+','+nc;
+        if(grid[nr][nc] && !seen.has(key)){ seen.add(key); q.push([nr,nc]); }
+      }
+    }
+    let count = 0;
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      const cell = grid[r][c];
+      if(cell && !seen.has(r+','+c)){
+        const p = cellXY(r,c);
+        const col = cell.type === 'fossil' ? '#aab2b9' : cell.color;
+        falling.push({x:p.x,y:p.y,vy:28,rot:0,vr:(Math.random()-0.5)*5,cell:{...cell,color:col}});
+        grid[r][c] = null;
+        count++;
+        score += 25 * combo;
+      }
+    }
+    if(count){ showToast(`🌪 Rơi ${count} trứng!`); shake = 0.12; }
+  }
+
+  function placeShot(){
+    let pos = nearestCell(shooter.x,shooter.y);
+    if(!pos){ newShooterEgg(); return; }
+    if(grid[pos.r][pos.c]){
+      const cands = neighbors(pos.r,pos.c).filter(([r,c]) => !grid[r][c]);
+      if(cands.length){
+        cands.sort((a,b) => {
+          const pa = cellXY(a[0],a[1]), pb = cellXY(b[0],b[1]);
+          const da = (pa.x-shooter.x)**2 + (pa.y-shooter.y)**2;
+          const db = (pb.x-shooter.x)**2 + (pb.y-shooter.y)**2;
+          return da - db;
+        });
+        pos = {r:cands[0][0], c:cands[0][1]};
+      }else{ newShooterEgg(); return; }
+    }
+
+    grid[pos.r][pos.c] = {type:'normal', color: shooter.color};
+    shots++;
+
+    const cluster = getCluster(pos.r,pos.c,shooter.color);
+    if(cluster.length >= 3){
+      combo = Math.min(9, combo+1);
+      const mysteryCoords = [];
+      for(const [r,c] of cluster){
+        const cell = grid[r][c];
+        if(cell && cell.type === 'mystery'){
+          const p = cellXY(r,c);
+          mysteryCoords.push([p.x,p.y]);
+        }
+        burstCell(r,c);
+      }
+      score += cluster.length * 10 * combo;
+      damageFossilsAround(cluster);
+      for(const [mx,my] of mysteryCoords) triggerMystery(mx,my);
+      dropDisconnected();
+      playTone(630,0.08,'sine',0.05);
+      setTimeout(()=>playTone(820,0.07,'sine',0.04),50);
+    }else{
+      combo = 1;
+      playTone(190,0.05,'triangle',0.025);
+    }
+
+    if(shots % SHOTS_PER_DROP === 0){
+      dropOffset += R*1.72;
+      showToast('⬇ Cụm trứng hạ xuống!');
+      playTone(120,0.16,'sawtooth',0.03);
+      shake = 0.10;
+    }
+
+    checkState();
+    newShooterEgg();
+    updateUI();
+  }
+
+  function shoot(){
+    if(paused || over || helpModal.classList.contains('show') || shooter.active) return;
+    const speed = 470;
+    shooter.vx = Math.cos(aimAngle) * speed;
+    shooter.vy = Math.sin(aimAngle) * speed;
+    shooter.active = true;
+    shooter.x = shooter.baseX;
+    shooter.y = shooter.baseY - 10;
+    playTone(280,0.05,'square',0.025);
+  }
+
+  function swapEgg(){
+    if(paused || over || shooter.active) return;
+    const t = shooter.color;
+    shooter.color = nextColor;
+    nextColor = t;
+    showToast('⇄ Đổi trứng');
+    playTone(420,0.04,'sine',0.02);
+  }
+
+  function checkState(){
+    const remain = grid.flat().filter(Boolean).length;
+    if(remain === 0){
+      score += 450 * level;
+      level++;
+      combo = 1;
+      shots = 0;
+      showToast(`⭐ Qua màn ${level-1}!`);
+      setTimeout(()=>{ initGrid(); newShooterEgg(); updateUI(); }, 500);
+      return;
+    }
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(grid[r][c] && cellXY(r,c).y + R > H - 138){ gameOver(); return; }
+    }
+  }
+
+  function gameOver(){
+    over = true;
+    endTitle.textContent = 'GAME OVER';
+    endText.textContent = `Bạn đạt ${score.toLocaleString('vi-VN')} điểm và tới màn ${level}.`;
+    endModal.classList.add('show');
+    playTone(90,0.35,'sawtooth',0.06);
+  }
+
+  function update(dt){
+    if(paused || over || helpModal.classList.contains('show')) return;
+
+    ghostTime += dt;
+    if(shake > 0) shake = Math.max(0, shake - dt);
+    trail.forEach(t => t.life -= dt);
+    trail = trail.filter(t => t.life > 0);
+
+    if(shooter.active){
+      trail.push({x:shooter.x,y:shooter.y,life:0.25,color:shooter.color});
+      if(trail.length > 14) trail.shift();
+
+      shooter.x += shooter.vx * dt;
+      shooter.y += shooter.vy * dt;
+
+      if(shooter.x < R){ shooter.x = R; shooter.vx = Math.abs(shooter.vx); }
+      if(shooter.x > W-R){ shooter.x = W-R; shooter.vx = -Math.abs(shooter.vx); }
+
+      if(shooter.y < topOffset + dropOffset + R || hitAny(shooter.x, shooter.y)) placeShot();
+    }
+
+    particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 470 * dt; p.life -= dt; });
+    particles = particles.filter(p => p.life > 0);
+
+    falling.forEach(f => { f.y += f.vy * dt; f.vy += 650 * dt; f.rot += f.vr * dt; });
+    falling = falling.filter(f => f.y < H + R*3);
+  }
+
+  function draw(){
+    ctx.save();
+    if(shake > 0) ctx.translate((Math.random()-0.5)*7, (Math.random()-0.5)*7);
+
+    drawBackground();
+    drawDangerLine();
+    drawAim();
+    drawGrid();
+    drawTrail();
+
+    for(const f of falling) drawEgg(f.x, f.y, f.cell, 1, 1, f.rot);
+    drawParticles();
+
+    if(shooter.active){
+      ctx.shadowBlur = 16;
+      ctx.shadowColor = shooter.color;
+      drawEgg(shooter.x, shooter.y, {type:'normal', color:shooter.color}, 1.08);
+      ctx.shadowBlur = 0;
+    }
+
+    drawCannon();
+    ctx.restore();
+
+    if(paused){
+      ctx.fillStyle = '#020b11b8';
+      ctx.fillRect(0,0,W,H);
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.font = '800 46px Segoe UI';
+      ctx.fillText('TẠM DỪNG', W/2, H/2);
+    }
+  }
+
+  let last = performance.now();
+  function loop(t){
+    const dt = Math.min(0.033, (t-last)/1000);
+    last = t;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function setAimByPointer(clientX, clientY){
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left, y = clientY - rect.top;
+    let ang = Math.atan2(y - shooter.baseY, x - shooter.baseX);
+    ang = Math.max(-Math.PI + 0.22, Math.min(-0.22, ang));
+    aimAngle = ang;
+  }
+
+  canvas.addEventListener('mousemove', e => setAimByPointer(e.clientX, e.clientY));
+  canvas.addEventListener('click', e => { setAimByPointer(e.clientX, e.clientY); shoot(); });
+  canvas.addEventListener('touchstart', e => {
+    const p = e.touches[0];
+    setAimByPointer(p.clientX, p.clientY);
+    shoot();
+    e.preventDefault();
+  }, {passive:false});
+
+  document.getElementById('soundBtn').onclick = () => {
+    soundOn = !soundOn;
+    document.getElementById('soundBtn').textContent = soundOn ? '🔊' : '🔇';
+  };
+  document.getElementById('pauseBtn').onclick = () => {
+    paused = !paused;
+    document.getElementById('pauseBtn').textContent = paused ? '▶' : '⏸';
+  };
+  document.getElementById('resetBtn').onclick = () => startGame(true);
+  document.getElementById('helpBtn').onclick = () => helpModal.classList.add('show');
+  document.getElementById('closeHelpBtn').onclick = () => helpModal.classList.remove('show');
+  document.getElementById('againBtn').onclick = () => startGame(true);
+
+  window.addEventListener('keydown', e => {
+    if(e.code === 'Space'){ e.preventDefault(); shoot(); }
+    if(e.key.toLowerCase() === 'x') swapEgg();
+    if(e.key === 'ArrowLeft') aimAngle = Math.max(-Math.PI + 0.22, aimAngle - 0.12);
+    if(e.key === 'ArrowRight') aimAngle = Math.min(-0.22, aimAngle + 0.12);
+    if(e.key.toLowerCase() === 'p') document.getElementById('pauseBtn').click();
+  });
+
+  window.addEventListener('resize', resize);
+
+  resize();
+  startGame(true);
+  helpModal.classList.add('show');
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

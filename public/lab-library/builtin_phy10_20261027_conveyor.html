@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · 62–63 Băng chuyền & Vật trên xe tăng tốc</title>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --panel:#173445;--panel2:#112736;--line:#436679;--text:#f4fbff;--muted:#b7cdd8;
+  --cyan:#71defd;--yellow:#ffe27b;--green:#8ef2c4;--red:#ff9f9f;--orange:#ffb071
+}
+body.soft{
+  --panel:#d8e3e8;--panel2:#c7d5dc;--line:#97b2c0;--text:#15384a;--muted:#5a7583;
+  --cyan:#0c7c9d;--yellow:#866600;--green:#0d7b57;--red:#a94a4a;--orange:#af6332
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#132937;color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{width:278px;min-width:262px;max-width:286px;height:100%;overflow:auto;padding:9px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-right:1px solid var(--line)}
+#view{position:relative;flex:1;min-width:0;height:100%;overflow:hidden}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.title{font-weight:900;font-size:12.5px}
+.kicker{font-size:9px;color:var(--muted);margin-top:2px}
+.simTitle{font-size:14px;color:var(--cyan);font-weight:900;margin:7px 0 4px;text-transform:uppercase}
+.section{margin-top:6px;padding:7px;border:1px solid var(--line);border-radius:9px;background:rgba(10,31,43,.35)}
+body.soft .section{background:rgba(245,249,251,.7)}
+.section h3{margin:0 0 5px;font-size:9.5px;color:var(--cyan);text-transform:uppercase}
+.control{margin:6px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:3px}
+.row label{font-size:10px;font-weight:700}
+.value{font-size:10px;color:var(--yellow);font-weight:800;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:15px;accent-color:#18a0c8}
+select{width:100%;height:30px;border:1px solid var(--line);border-radius:7px;background:#274f64;color:var(--text);padding:4px 6px;font-size:10px}
+body.soft select{background:#eef5f8}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}
+button{min-height:32px;border:1px solid var(--line);border-radius:7px;padding:5px;background:#244b60;color:#fff;font-weight:800;font-size:10px;cursor:pointer}
+body.soft button{background:#dce8ee;color:#17384a}
+#runBtn{background:#219265}
+#resetBtn{background:#6a4252}
+body.soft #resetBtn{background:#dec7ce;color:#4d2534}
+#recordBtn{background:#ab2d3f}
+#recordBtn.recording{animation:pulse 1s infinite}
+@keyframes pulse{50%{filter:brightness(1.2)}}
+#themeBtn{width:34px;height:30px}
+
+#badge,#info,#graphWrap,#recHud{
+  position:absolute;z-index:10;background:rgba(10,29,41,.86);border:1px solid #446879;
+  border-radius:10px;backdrop-filter:blur(5px);color:#f4fbff
+}
+body.soft #badge,body.soft #info,body.soft #graphWrap,body.soft #recHud{
+  background:rgba(240,246,249,.92);border-color:#99b4c2;color:#15384a
+}
+#badge{left:14px;top:12px;padding:7px 10px;font-size:11px;font-weight:900}
+#recHud{left:14px;top:48px;padding:5px 8px;border-radius:8px;font-size:10px;font-weight:900;display:none}
+#info{right:12px;top:12px;width:300px;padding:8px 10px;font-size:10.4px}
+#info .head{font-size:9.5px;color:var(--cyan);font-weight:900;margin-bottom:4px;text-transform:uppercase}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 9px;font-variant-numeric:tabular-nums}
+#graphWrap{left:14px;bottom:40px;width:min(43%,570px);height:190px;padding:7px}
+#graph{width:100%;height:100%;display:block}
+#credit{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:15px;font-weight:900;color:#ffe27b;pointer-events:none}
+body.soft #credit{color:#765900}
+.lab{padding:3px 5px;border-radius:7px;background:rgba(11,32,45,.88);border:1px solid #496b7c;color:#fff;font-size:10px;font-weight:800;white-space:nowrap}
+body.soft .lab{background:rgba(240,246,249,.95);border-color:#9db7c4;color:#15384a}
+</style>
+</head>
+
+<body>
+<div id="app">
+<aside id="panel">
+  <div class="top">
+    <div>
+      <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+      <div class="kicker">MA SÁT · CHUYỂN ĐỘNG TƯƠNG ĐỐI</div>
+    </div>
+    <button id="themeBtn" title="Đổi nền">◐</button>
+  </div>
+
+  <div class="simTitle">62–63. Băng chuyền & xe tăng tốc</div>
+
+  <div class="section">
+    <h3>Chế độ</h3>
+    <select id="mode">
+      <option value="belt">62. Vật trên băng chuyền</option>
+      <option value="truck">63. Vật trên xe tăng tốc</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <h3>Thông số</h3>
+
+    <div class="control">
+      <div class="row"><label>Khối lượng m</label><span class="value" id="mText">2.0 kg</span></div>
+      <input id="mass" type="range" min="0.5" max="10" step="0.5" value="2">
+    </div>
+
+    <div class="control" id="beltSpeedControl">
+      <div class="row"><label>Vận tốc băng</label><span class="value" id="beltSpeedText">2.0 m/s</span></div>
+      <input id="beltSpeed" type="range" min="-4" max="4" step="0.5" value="2">
+    </div>
+
+    <div class="control" id="truckAccelControl" style="display:none">
+      <div class="row"><label>Gia tốc xe</label><span class="value" id="truckAccelText">2.0 m/s²</span></div>
+      <input id="truckAccel" type="range" min="-6" max="6" step="0.5" value="2">
+    </div>
+
+    <div class="control">
+      <div class="row"><label>μs</label><span class="value" id="muSText">0.40</span></div>
+      <input id="muS" type="range" min="0.05" max="1" step="0.05" value="0.40">
+    </div>
+
+    <div class="control">
+      <div class="row"><label>μk</label><span class="value" id="muKText">0.30</span></div>
+      <input id="muK" type="range" min="0.05" max="0.9" step="0.05" value="0.30">
+    </div>
+
+    <div class="control">
+      <div class="row"><label>g</label><span class="value" id="gText">9.8 m/s²</span></div>
+      <input id="g" type="range" min="5" max="15" step="0.1" value="9.8">
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Quan sát</h3>
+    <select id="cameraMode">
+      <option value="all">Toàn cảnh</option>
+      <option value="followObj">Theo vật</option>
+      <option value="followBase">Theo băng / xe</option>
+    </select>
+    <div class="control">
+      <div class="row"><label>Tốc độ mô phỏng</label><span class="value" id="speedText">1.0×</span></div>
+      <input id="simSpeed" type="range" min="0.5" max="2" step="0.5" value="1">
+    </div>
+    <div class="buttons">
+      <button id="runBtn">▶ Bắt đầu</button>
+      <button id="pauseBtn">⏸ Dừng</button>
+      <button id="resetBtn">↻ Đặt lại</button>
+      <button id="fitBtn">⛶ Fit</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Quay thí nghiệm</h3>
+    <div class="buttons">
+      <button id="recordBtn">🎥 Bắt đầu quay</button>
+      <button id="stopRecordBtn">⏹ Dừng quay</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <label>Thời gian quay</label><span class="value" id="recTimeText">00:00</span>
+    </div>
+  </div>
+</aside>
+
+<main id="view">
+  <div id="badge">Băng chuyền: ma sát làm vật đạt vận tốc của băng</div>
+  <div id="recHud">● REC 00:00</div>
+
+  <div id="info">
+    <div class="head">Số liệu tức thời</div>
+    <div class="infoGrid">
+      <span>t</span><b id="tInfo">0.00 s</b>
+      <span>v nền</span><b id="baseVInfo">2.00 m/s</b>
+      <span>v vật</span><b id="objVInfo">0.00 m/s</b>
+      <span>v tương đối</span><b id="relVInfo">−2.00 m/s</b>
+      <span>f</span><b id="frictionInfo">5.88 N</b>
+      <span>a vật</span><b id="objAInfo">2.94 m/s²</b>
+      <span>Trạng thái</span><b id="stateInfo">Đang trượt trên băng</b>
+    </div>
+  </div>
+
+  <div id="graphWrap"><canvas id="graph"></canvas></div>
+  <div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $=id=>document.getElementById(id);
+const view=$('view');
+const fmt=(n,d=2)=>n.toFixed(d).replace('-','−');
+
+const state={
+  mode:'belt',m:2,beltSpeed:2,truckAccel:2,muS:.4,muK:.3,g:9.8,
+  t:0,simSpeed:1,
+  objX:0,objV:0,truckX:-5,truckV:0,
+  running:false,paused:true,soft:false,cameraMode:'all',
+  lastStamp:performance.now(),
+  recording:false,recordStart:0,
+  stripePhase:0
+};
+
+function clampMu(){
+  if(state.muK>state.muS){
+    state.muK=state.muS;
+    $('muK').value=state.muK;
+  }
+}
+
+/* ---------- PHYSICS ---------- */
+function beltPhysics(){
+  const dv=state.beltSpeed-state.objV;
+  const eps=.03;
+  if(Math.abs(dv)<=eps){
+    return {a:0,f:0,slip:false,status:'Đã cùng vận tốc với băng · ma sát bằng 0'};
+  }
+  const sign=Math.sign(dv);
+  const a=sign*state.muK*state.g;
+  const f=state.m*a;
+  return {a,f,slip:true,status:'Đang trượt trên băng · ma sát trượt'};
+}
+
+function truckPhysics(){
+  const aTruck=state.truckAccel;
+  const aStaticMax=state.muS*state.g;
+
+  if(Math.abs(aTruck)<=aStaticMax){
+    return {
+      objA:aTruck,
+      f:state.m*aTruck,
+      slip:false,
+      status:'Không trượt · ma sát nghỉ kéo vật đi cùng xe'
+    };
+  }
+
+  const objA=Math.sign(aTruck)*state.muK*state.g;
+  return {
+    objA,
+    f:state.m*objA,
+    slip:true,
+    status:'Ma sát nghỉ không đủ · vật trượt tương đối trên sàn xe'
+  };
+}
+
+function currentPhysics(){
+  return state.mode==='belt'?beltPhysics():truckPhysics();
+}
+
+/* ---------- SCENE ---------- */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x132937);
+scene.fog=new THREE.Fog(0x132937,36,100);
+
+const camera=new THREE.PerspectiveCamera(44,view.clientWidth/view.clientHeight,.1,180);
+camera.position.set(15,8,18);
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.06;
+controls.minDistance=6;controls.maxDistance=50;
+controls.minPolarAngle=.08;controls.maxPolarAngle=Math.PI*.49;
+controls.target.set(0,1.5,0);
+
+const hemi=new THREE.HemisphereLight(0xe8f7ff,0x4e6874,2.1);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xf6fbff,2.0);sun.position.set(8,16,12);sun.castShadow=true;scene.add(sun);
+
+const floorMat=new THREE.MeshPhongMaterial({color:0x304a58,shininess:16});
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(56,30),floorMat);
+floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+
+const wallMat=new THREE.MeshPhongMaterial({color:0x28424f});
+const backWall=new THREE.Mesh(new THREE.PlaneGeometry(56,16),wallMat);
+backWall.position.set(0,8,-10);scene.add(backWall);
+
+const leftWall=new THREE.Mesh(new THREE.PlaneGeometry(30,16),new THREE.MeshPhongMaterial({color:0x263c49}));
+leftWall.rotation.y=Math.PI/2;leftWall.position.set(-18,8,0);scene.add(leftWall);
+
+const windowMat=new THREE.MeshPhongMaterial({color:0x6e95a8,transparent:true,opacity:.22});
+for(let i=0;i<4;i++){
+  const w=new THREE.Mesh(new THREE.PlaneGeometry(5.2,7),windowMat);
+  w.position.set(-14+i*5.8,10,-9.92);scene.add(w);
+}
+
+/* ---------- conveyor ---------- */
+const beltGroup=new THREE.Group();scene.add(beltGroup);
+
+const frame=new THREE.Mesh(new THREE.BoxGeometry(18,.45,4),new THREE.MeshPhongMaterial({color:0x687e89,shininess:20}));
+frame.position.y=.55;beltGroup.add(frame);
+
+const beltSurface=new THREE.Mesh(new THREE.BoxGeometry(16,.18,3.1),new THREE.MeshPhongMaterial({color:0x3f555f,shininess:28}));
+beltSurface.position.y=.89;beltGroup.add(beltSurface);
+
+const rollers=[];
+for(const x of [-7.2,-4.8,-2.4,0,2.4,4.8,7.2]){
+  const r=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,3.3,28),new THREE.MeshPhongMaterial({color:0x8da0aa}));
+  r.rotation.x=Math.PI/2;r.position.set(x,.56,0);beltGroup.add(r);rollers.push(r);
+}
+
+const stripes=[];
+for(let i=0;i<9;i++){
+  const s=new THREE.Mesh(new THREE.BoxGeometry(.08,.025,2.85),new THREE.MeshBasicMaterial({color:0xa5bcc7}));
+  s.position.set(-7.2+i*1.8,1.0,0);beltGroup.add(s);stripes.push(s);
+}
+
+/* ---------- truck ---------- */
+const truck=new THREE.Group();scene.add(truck);
+
+const chassis=new THREE.Mesh(new THREE.BoxGeometry(7,.45,3),new THREE.MeshPhongMaterial({color:0x3b7f9d,shininess:70}));
+chassis.position.y=.65;truck.add(chassis);
+
+const cab=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.6,2.8),new THREE.MeshPhongMaterial({color:0x3fa6cf,shininess:80}));
+cab.position.set(2.1,1.65,0);truck.add(cab);
+
+const bed=new THREE.Mesh(new THREE.BoxGeometry(4.5,.25,2.8),new THREE.MeshPhongMaterial({color:0x5f737d}));
+bed.position.set(-1.2,1.12,0);truck.add(bed);
+
+const wheelMeshes=[];
+for(const x of [-2.2,2.1])for(const z of [-1.35,1.35]){
+  const w=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.22,28),new THREE.MeshPhongMaterial({color:0x1e2b31}));
+  w.rotation.x=Math.PI/2;w.position.set(x,.35,z);truck.add(w);wheelMeshes.push(w);
+}
+
+const truckDiv=document.createElement('div');truckDiv.className='lab';truckDiv.textContent='Xe';
+const truckLab=new CSS2DObject(truckDiv);truckLab.position.set(0,2.7,0);truck.add(truckLab);
+
+/* ---------- object ---------- */
+const obj=new THREE.Group();scene.add(obj);
+const objBody=new THREE.Mesh(new THREE.BoxGeometry(1.25,1.0,1.1),new THREE.MeshPhongMaterial({color:0xe69255,shininess:70}));
+objBody.position.y=.5;objBody.castShadow=true;obj.add(objBody);
+const objDiv=document.createElement('div');objDiv.className='lab';objDiv.textContent='Vật';
+const objLab=new CSS2DObject(objDiv);objLab.position.set(0,1.5,0);obj.add(objLab);
+
+/* ---------- arrows ---------- */
+const frictionArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1,0xff8f8f,.22,.12);
+const accelArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1,0x8ef2c4,.22,.12);
+const baseArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1,0x73ddff,.22,.12);
+scene.add(frictionArrow,accelArrow,baseArrow);
+
+function updateBeltVisual(dt){
+  beltGroup.visible=true;
+  truck.visible=false;
+
+  const p=beltPhysics();
+
+  obj.position.set(state.objX,1.0,0);
+  objDiv.textContent=`Vật · v=${fmt(state.objV,1)} m/s`;
+
+  state.stripePhase += state.beltSpeed*dt;
+  stripes.forEach((s,i)=>{
+    let x=-7.2+i*1.8 + state.stripePhase;
+    while(x>7.2)x-=16.2;
+    while(x<-7.2)x+=16.2;
+    s.position.x=x;
+  });
+
+  rollers.forEach(r=>r.rotation.z-=state.beltSpeed*dt*2.7);
+
+  const fdir=Math.sign(p.f)||1;
+  frictionArrow.position.set(state.objX,2.05,.25);
+  frictionArrow.setDirection(new THREE.Vector3(fdir,0,0));
+  frictionArrow.setLength(Math.max(.001,Math.abs(p.f)*.08),.22,.12);
+  frictionArrow.visible=Math.abs(p.f)>1e-5;
+
+  accelArrow.position.set(state.objX,2.45,-.15);
+  accelArrow.setDirection(new THREE.Vector3(Math.sign(p.a)||1,0,0));
+  accelArrow.setLength(Math.max(.001,Math.abs(p.a)*.5),.22,.12);
+  accelArrow.visible=Math.abs(p.a)>1e-5;
+
+  baseArrow.position.set(0,1.65,-1.2);
+  baseArrow.setDirection(new THREE.Vector3(Math.sign(state.beltSpeed)||1,0,0));
+  baseArrow.setLength(Math.max(.001,Math.abs(state.beltSpeed)*.7),.22,.12);
+  baseArrow.visible=Math.abs(state.beltSpeed)>1e-5;
+}
+
+function updateTruckVisual(dt){
+  beltGroup.visible=false;
+  truck.visible=true;
+
+  const p=truckPhysics();
+
+  truck.position.x=state.truckX;
+  truckDiv.textContent=`Xe · v=${fmt(state.truckV,1)} m/s`;
+
+  // Object world position already stored in state.objX.
+  obj.position.set(state.objX,1.35,0);
+  objDiv.textContent=`Vật · v=${fmt(state.objV,1)} m/s`;
+
+  wheelMeshes.forEach(w=>w.rotation.z-=state.truckV*dt*2.2);
+
+  const fdir=Math.sign(p.f)||1;
+  frictionArrow.position.set(state.objX,2.4,.25);
+  frictionArrow.setDirection(new THREE.Vector3(fdir,0,0));
+  frictionArrow.setLength(Math.max(.001,Math.abs(p.f)*.08),.22,.12);
+  frictionArrow.visible=Math.abs(p.f)>1e-5;
+
+  accelArrow.position.set(state.objX,2.8,-.15);
+  accelArrow.setDirection(new THREE.Vector3(Math.sign(p.objA)||1,0,0));
+  accelArrow.setLength(Math.max(.001,Math.abs(p.objA)*.5),.22,.12);
+  accelArrow.visible=Math.abs(p.objA)>1e-5;
+
+  baseArrow.position.set(state.truckX,3.0,-1.2);
+  baseArrow.setDirection(new THREE.Vector3(Math.sign(state.truckAccel)||1,0,0));
+  baseArrow.setLength(Math.max(.001,Math.abs(state.truckAccel)*.5),.22,.12);
+  baseArrow.visible=Math.abs(state.truckAccel)>1e-5;
+}
+
+/* ---------- DYNAMICS ---------- */
+function resetState(){
+  clampMu();
+  state.t=0;state.objV=0;state.stripePhase=0;
+  state.running=false;state.paused=true;
+
+  if(state.mode==='belt'){
+    state.objX=0;
+    state.truckX=-5;state.truckV=0;
+  }else{
+    state.truckX=-5;state.truckV=0;
+    state.objX=state.truckX-1.2; // centered on truck bed
+    state.objV=0;
+  }
+
+  $('runBtn').textContent='▶ Bắt đầu';
+  $('pauseBtn').textContent='⏸ Dừng';
+  updateScene(0);
+  updateUI();
+  fitScene();
+}
+
+function stepBelt(dt){
+  const p=beltPhysics();
+
+  if(p.slip){
+    const oldDiff=state.beltSpeed-state.objV;
+    state.objV += p.a*dt;
+    const newDiff=state.beltSpeed-state.objV;
+
+    // stop exactly when the object reaches belt velocity
+    if(oldDiff===0 || Math.sign(oldDiff)!==Math.sign(newDiff) || Math.abs(newDiff)<.03){
+      state.objV=state.beltSpeed;
+    }
+  }else{
+    state.objV=state.beltSpeed;
+  }
+
+  state.objX += state.objV*dt;
+
+  if(Math.abs(state.objX)>7.0){
+    state.running=false;state.paused=true;
+    $('runBtn').textContent='▶ Chạy lại';
+  }
+}
+
+function stepTruck(dt){
+  const p=truckPhysics();
+
+  state.truckV += state.truckAccel*dt;
+  state.truckX += state.truckV*dt;
+
+  if(!p.slip){
+    // static friction keeps fixed position relative to truck
+    state.objV=state.truckV;
+    state.objX=state.truckX-1.2;
+  }else{
+    // kinetic friction controls object acceleration
+    state.objV += p.objA*dt;
+    state.objX += state.objV*dt;
+  }
+
+  const rel=state.objX-(state.truckX-1.2);
+  if(Math.abs(rel)>1.55){
+    state.running=false;state.paused=true;
+    $('runBtn').textContent='▶ Chạy lại';
+  }
+
+  if(Math.abs(state.truckX)>8){
+    state.running=false;state.paused=true;
+    $('runBtn').textContent='▶ Chạy lại';
+  }
+}
+
+function updateScene(dt){
+  if(state.mode==='belt')updateBeltVisual(dt);
+  else updateTruckVisual(dt);
+}
+
+/* ---------- GRAPH ---------- */
+const graph=$('graph'),ctx=graph.getContext('2d');
+
+function resizeGraph(){
+  const dpr=Math.min(devicePixelRatio,2),r=graph.getBoundingClientRect();
+  graph.width=Math.max(10,Math.floor(r.width*dpr));
+  graph.height=Math.max(10,Math.floor(r.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  drawGraph();
+}
+
+function drawGraph(){
+  const W=graph.clientWidth,H=graph.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=state.soft?'#f3f8fa':'#173444';
+  ctx.fillRect(0,0,W,H);
+
+  const L=42,R=12,T=12,B=28,w=W-L-R,h=H-T-B,tmax=6;
+  const tx=t=>L+t/tmax*w;
+
+  let maxV=5;
+  if(state.mode==='belt'){
+    maxV=Math.max(2,Math.abs(state.beltSpeed)*1.5);
+  }else{
+    maxV=Math.max(2,Math.abs(state.truckAccel)*tmax*1.2);
+  }
+  const yy=v=>T+h-(v+maxV)/(2*maxV)*h;
+
+  ctx.strokeStyle=state.soft?'rgba(60,95,110,.15)':'rgba(200,230,240,.14)';
+  for(let i=0;i<=5;i++){
+    let gx=L+w*i/5;ctx.beginPath();ctx.moveTo(gx,T);ctx.lineTo(gx,T+h);ctx.stroke();
+    let gy=T+h*i/5;ctx.beginPath();ctx.moveTo(L,gy);ctx.lineTo(L+w,gy);ctx.stroke();
+  }
+
+  // base / belt line
+  ctx.globalAlpha=.28;ctx.strokeStyle='#73ddff';ctx.lineWidth=1.5;ctx.beginPath();
+  if(state.mode==='belt'){
+    ctx.moveTo(tx(0),yy(state.beltSpeed));ctx.lineTo(tx(tmax),yy(state.beltSpeed));
+  }else{
+    ctx.moveTo(tx(0),yy(0));ctx.lineTo(tx(tmax),yy(state.truckAccel*tmax));
+  }
+  ctx.stroke();ctx.globalAlpha=1;
+
+  // theoretical object curve
+  ctx.globalAlpha=.25;ctx.strokeStyle='#ffad76';ctx.lineWidth=1.5;ctx.beginPath();
+  if(state.mode==='belt'){
+    const a=Math.sign(state.beltSpeed||1)*state.muK*state.g;
+    const tCatch=Math.abs(state.beltSpeed)/(state.muK*state.g);
+    const N=100;
+    for(let i=0;i<=N;i++){
+      const t=tmax*i/N;
+      const v=t<=tCatch?a*t:state.beltSpeed;
+      if(i===0)ctx.moveTo(tx(t),yy(v));else ctx.lineTo(tx(t),yy(v));
+    }
+  }else{
+    const p=truckPhysics();
+    const N=100;
+    for(let i=0;i<=N;i++){
+      const t=tmax*i/N;
+      const v=p.slip?p.objA*t:state.truckAccel*t;
+      if(i===0)ctx.moveTo(tx(t),yy(v));else ctx.lineTo(tx(t),yy(v));
+    }
+  }
+  ctx.stroke();ctx.globalAlpha=1;
+
+  // current points/segments
+  const tc=Math.min(state.t,tmax);
+
+  ctx.strokeStyle='#73ddff';ctx.lineWidth=2.4;ctx.beginPath();
+  if(state.mode==='belt'){
+    ctx.moveTo(tx(0),yy(state.beltSpeed));ctx.lineTo(tx(tc),yy(state.beltSpeed));
+  }else{
+    ctx.moveTo(tx(0),yy(0));ctx.lineTo(tx(tc),yy(state.truckAccel*tc));
+  }
+  ctx.stroke();
+
+  ctx.fillStyle='#ffad76';
+  ctx.beginPath();ctx.arc(tx(tc),yy(state.objV),4,0,Math.PI*2);ctx.fill();
+
+  ctx.fillStyle=state.soft?'#456778':'#d9edf5';ctx.font='10px Arial';ctx.textAlign='center';
+  for(let i=0;i<=4;i++){const t=tmax*i/4;ctx.fillText(t.toFixed(1),tx(t),H-9);}
+  ctx.fillText('t (s)',L+w/2,H-1);
+  ctx.save();ctx.translate(10,T+h/2);ctx.rotate(-Math.PI/2);ctx.fillText('v (m/s)',0,0);ctx.restore();
+  ctx.textAlign='left';
+}
+
+/* ---------- UI ---------- */
+function updateUI(){
+  clampMu();
+  const p=currentPhysics();
+
+  $('mText').textContent=`${state.m.toFixed(1)} kg`;
+  $('beltSpeedText').textContent=`${fmt(state.beltSpeed,1)} m/s`;
+  $('truckAccelText').textContent=`${fmt(state.truckAccel,1)} m/s²`;
+  $('muSText').textContent=state.muS.toFixed(2);
+  $('muKText').textContent=state.muK.toFixed(2);
+  $('gText').textContent=`${state.g.toFixed(1)} m/s²`;
+  $('speedText').textContent=`${state.simSpeed.toFixed(1)}×`;
+
+  $('beltSpeedControl').style.display=state.mode==='belt'?'block':'none';
+  $('truckAccelControl').style.display=state.mode==='truck'?'block':'none';
+
+  $('tInfo').textContent=`${state.t.toFixed(2)} s`;
+
+  if(state.mode==='belt'){
+    $('baseVInfo').textContent=`${fmt(state.beltSpeed,2)} m/s`;
+    $('objVInfo').textContent=`${fmt(state.objV,2)} m/s`;
+    $('relVInfo').textContent=`${fmt(state.objV-state.beltSpeed,2)} m/s`;
+    $('frictionInfo').textContent=`${Math.abs(p.f).toFixed(2)} N`;
+    $('objAInfo').textContent=`${fmt(p.a,2)} m/s²`;
+    $('stateInfo').textContent=p.status;
+    $('badge').textContent='Băng chuyền: ma sát trượt làm vật đạt vận tốc của băng';
+  }else{
+    $('baseVInfo').textContent=`${fmt(state.truckV,2)} m/s`;
+    $('objVInfo').textContent=`${fmt(state.objV,2)} m/s`;
+    $('relVInfo').textContent=`${fmt(state.objV-state.truckV,2)} m/s`;
+    $('frictionInfo').textContent=`${Math.abs(p.f).toFixed(2)} N`;
+    $('objAInfo').textContent=`${fmt(p.objA,2)} m/s²`;
+    $('stateInfo').textContent=p.status;
+    $('badge').textContent='Xe tăng tốc: ma sát nghỉ giữ vật đi cùng xe nếu đủ lớn';
+  }
+}
+
+/* ---------- CAMERA ---------- */
+function fitScene(){
+  camera.position.set(15,8,18);
+  controls.target.set(0,1.5,0);
+  controls.update();
+}
+
+function updateCamera(){
+  if(state.cameraMode==='followObj'){
+    controls.target.x+=(obj.position.x-controls.target.x)*.08;
+    controls.target.y+=(obj.position.y-controls.target.y)*.08;
+    camera.position.x+=((obj.position.x+6)-camera.position.x)*.05;
+  }else if(state.cameraMode==='followBase'){
+    const tx=state.mode==='belt'?0:truck.position.x;
+    controls.target.x+=(tx-controls.target.x)*.08;
+    camera.position.x+=((tx+6)-camera.position.x)*.05;
+  }
+}
+
+/* ---------- THEME ---------- */
+function applyTheme(){
+  document.body.classList.toggle('soft',state.soft);
+  if(state.soft){
+    scene.background.set(0xb9c9d1);scene.fog.color.set(0xb9c9d1);
+    floorMat.color.set(0x9eb0b8);wallMat.color.set(0xb9c7ce);leftWall.material.color.set(0xb0bec6);
+    windowMat.color.set(0x9dbac8);windowMat.opacity=.30;hemi.intensity=2.25;sun.intensity=2.1;
+  }else{
+    scene.background.set(0x132937);scene.fog.color.set(0x132937);
+    floorMat.color.set(0x304a58);wallMat.color.set(0x28424f);leftWall.material.color.set(0x263c49);
+    windowMat.color.set(0x6e95a8);windowMat.opacity=.22;hemi.intensity=2.1;sun.intensity=2.0;
+  }
+  drawGraph();
+}
+$('themeBtn').addEventListener('click',()=>{state.soft=!state.soft;applyTheme();});
+
+/* ---------- RECORDING ---------- */
+const recCanvas=document.createElement('canvas');recCanvas.width=1280;recCanvas.height=720;
+const rctx=recCanvas.getContext('2d');
+let mediaRecorder=null,chunks=[],mime='';
+
+function chooseMime(){
+  for(const m of ['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']){
+    if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;
+  }
+  return '';
+}
+
+function drawRec(){
+  const W=1280,H=720,p=currentPhysics();
+  rctx.fillStyle='#132937';rctx.fillRect(0,0,W,H);
+  rctx.drawImage(renderer.domElement,0,0,W,H);
+
+  rctx.fillStyle='rgba(8,23,32,.66)';rctx.fillRect(0,0,W,52);
+  rctx.fillStyle='#fff';rctx.font='bold 22px Arial';
+  rctx.fillText('PHYSICS 10 LAB · BĂNG CHUYỀN & XE TĂNG TỐC',22,33);
+
+  rctx.fillStyle='rgba(8,23,32,.72)';rctx.fillRect(W-325,72,300,180);
+  rctx.fillStyle='#fff';rctx.font='bold 17px Arial';
+  rctx.fillText(`t = ${state.t.toFixed(2)} s`,W-305,103);
+  rctx.fillText(`v nền = ${(state.mode==='belt'?state.beltSpeed:state.truckV).toFixed(2)} m/s`,W-305,132);
+  rctx.fillText(`v vật = ${state.objV.toFixed(2)} m/s`,W-305,161);
+  rctx.fillText(`f = ${Math.abs(p.f).toFixed(2)} N`,W-305,190);
+
+  rctx.fillStyle='rgba(8,23,32,.76)';rctx.fillRect(18,H-215,490,195);
+  rctx.drawImage(graph,24,H-209,478,183);
+
+  rctx.fillStyle='#ffe27b';rctx.font='bold 18px Arial';
+  rctx.fillText('Thầy Hùng vật lí',W-175,H-22);
+}
+
+async function startRecording(){
+  if(state.recording)return;
+  if(!window.MediaRecorder||!recCanvas.captureStream){alert('Trình duyệt này chưa hỗ trợ quay trực tiếp.');return;}
+
+  mime=chooseMime();
+  const stream=recCanvas.captureStream(30);
+
+  try{
+    mediaRecorder=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:6000000}:{videoBitsPerSecond:6000000});
+  }catch(e){
+    mediaRecorder=new MediaRecorder(stream);
+    mime=mediaRecorder.mimeType||'video/webm';
+  }
+
+  chunks=[];
+  mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size>0)chunks.push(e.data);};
+  mediaRecorder.onstop=()=>{
+    const mt=mediaRecorder.mimeType||mime||'video/webm';
+    const ext=mt.includes('mp4')?'mp4':'webm';
+    const blob=new Blob(chunks,{type:mt});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`Physics10_62_63_Bang_chuyen_Xe_tang_toc.${ext}`;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  };
+
+  mediaRecorder.start(250);
+  state.recording=true;
+  state.recordStart=performance.now();
+  $('recordBtn').classList.add('recording');
+  $('recordBtn').textContent='● Đang quay';
+  $('recHud').style.display='block';
+}
+
+function stopRecording(){
+  if(!state.recording)return;
+  state.recording=false;
+  $('recordBtn').classList.remove('recording');
+  $('recordBtn').textContent='🎥 Bắt đầu quay';
+  $('recHud').style.display='none';
+  if(mediaRecorder&&mediaRecorder.state!=='inactive')mediaRecorder.stop();
+}
+
+function updateRecClock(now){
+  if(!state.recording){
+    $('recTimeText').textContent='00:00';
+    return;
+  }
+  const sec=Math.floor((now-state.recordStart)/1000);
+  const mm=String(Math.floor(sec/60)).padStart(2,'0');
+  const ss=String(sec%60).padStart(2,'0');
+  $('recTimeText').textContent=`${mm}:${ss}`;
+  $('recHud').textContent=`● REC ${mm}:${ss}`;
+}
+
+/* ---------- EVENTS ---------- */
+$('mode').addEventListener('change',e=>{state.mode=e.target.value;resetState();});
+$('mass').addEventListener('input',e=>{state.m=parseFloat(e.target.value);resetState();});
+$('beltSpeed').addEventListener('input',e=>{state.beltSpeed=parseFloat(e.target.value);resetState();});
+$('truckAccel').addEventListener('input',e=>{state.truckAccel=parseFloat(e.target.value);resetState();});
+$('muS').addEventListener('input',e=>{state.muS=parseFloat(e.target.value);clampMu();resetState();});
+$('muK').addEventListener('input',e=>{state.muK=parseFloat(e.target.value);clampMu();resetState();});
+$('g').addEventListener('input',e=>{state.g=parseFloat(e.target.value);resetState();});
+$('simSpeed').addEventListener('input',e=>{state.simSpeed=parseFloat(e.target.value);updateUI();});
+$('cameraMode').addEventListener('change',e=>{state.cameraMode=e.target.value;if(state.cameraMode==='all')fitScene();});
+
+$('runBtn').addEventListener('click',()=>{
+  if(!state.running && (Math.abs(state.objX)>7 || Math.abs(state.truckX)>8))resetState();
+  state.running=true;state.paused=false;$('runBtn').textContent='▶ Đang chạy';
+});
+$('pauseBtn').addEventListener('click',()=>{
+  if(!state.running)return;
+  state.paused=!state.paused;
+  $('pauseBtn').textContent=state.paused?'▶ Tiếp tục':'⏸ Dừng';
+});
+$('resetBtn').addEventListener('click',resetState);
+$('fitBtn').addEventListener('click',fitScene);
+$('recordBtn').addEventListener('click',startRecording);
+$('stopRecordBtn').addEventListener('click',stopRecording);
+
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);labelRenderer.setSize(w,h);
+  resizeGraph();
+}
+window.addEventListener('resize',resize);
+
+function animate(now){
+  requestAnimationFrame(animate);
+
+  let dt=(now-state.lastStamp)/1000;
+  state.lastStamp=now;
+  dt=Math.min(Math.max(dt,0),.028);
+
+  if(state.running&&!state.paused){
+    const step=dt*state.simSpeed;
+    state.t+=step;
+    if(state.mode==='belt')stepBelt(step);
+    else stepTruck(step);
+  }
+
+  updateScene(dt*state.simSpeed);
+  updateCamera();
+  updateUI();
+  drawGraph();
+  updateRecClock(now);
+
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+
+  if(state.recording)drawRec();
+}
+
+resetState();
+applyTheme();
+resize();
+animate(performance.now());
+</script>
+</body>
+</html>

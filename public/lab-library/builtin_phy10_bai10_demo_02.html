@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mô phỏng rơi tự do trong không khí và chân không</title>
+<style>
+:root{
+  --bg:#eef6fb; --card:#ffffff; --ink:#17324d; --muted:#667085;
+  --glass:#dff7ff; --glassline:#47b9c7; --vac:#dff7ff;
+  --blue:#2563eb; --green:#14b8a6; --orange:#f59e0b; --gray:#64748b;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  color:var(--ink);background:linear-gradient(180deg,#f8fbff,#eaf4fb);
+}
+.wrap{max-width:1180px;margin:auto;padding:18px}
+h1{margin:0 0 8px;font-size:clamp(22px,3vw,34px);color:#0f3b68}
+.sub{margin:0 0 16px;color:var(--muted);line-height:1.6}
+.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,.9fr);gap:16px;align-items:start}
+.card{background:#fff;border:1px solid #dce7ef;border-radius:20px;padding:14px;box-shadow:0 12px 30px rgba(30,78,120,.08)}
+.sim{
+  min-height:690px;border-radius:18px;position:relative;overflow:hidden;
+  background:
+    radial-gradient(circle at 20% 12%,rgba(70,90,110,.18),transparent 30%),
+    linear-gradient(180deg,#05070a 0 65%,#0a0d11 65% 100%);
+  border:1px solid #d3e4ec;
+}
+.top-note{
+  position:absolute;left:50%;transform:translateX(-50%);top:14px;z-index:5;
+  background:rgba(255,255,255,.9);backdrop-filter:blur(6px);
+  border:1px solid #dbe7ef;border-radius:999px;padding:8px 14px;
+  font-size:14px;font-weight:800;color:#36546d;white-space:nowrap
+}
+.tubes{position:absolute;inset:62px 22px 30px;display:grid;grid-template-columns:1fr 1fr;gap:42px;align-items:end}
+.tube-area{position:relative;height:585px}
+.tube{
+  position:absolute;left:50%;transform:translateX(-50%);
+  bottom:35px;width:210px;height:520px;
+  border-left:6px solid rgba(34,178,191,.82);
+  border-right:6px solid rgba(34,178,191,.82);
+  border-bottom:8px solid rgba(34,178,191,.9);
+  border-radius:0 0 18px 18px;
+  background:
+    linear-gradient(90deg,
+      rgba(255,255,255,.40) 0 12%,
+      rgba(209,245,251,.26) 12% 45%,
+      rgba(255,255,255,.50) 45% 54%,
+      rgba(195,239,247,.22) 54% 88%,
+      rgba(255,255,255,.34) 88% 100%);
+  box-shadow:
+    inset 0 0 25px rgba(255,255,255,.8),
+    0 18px 30px rgba(70,145,160,.13);
+}
+.tube::before{
+  content:"";position:absolute;left:-21px;right:-21px;top:-14px;height:18px;
+  border-radius:14px;background:linear-gradient(#42c4c9,#24aeb6);
+  box-shadow:0 4px 8px rgba(0,0,0,.10)
+}
+.tube::after{
+  content:"";position:absolute;left:24px;top:-44px;width:150px;height:38px;
+  border:5px solid #2eb5bd;border-bottom:0;border-radius:12px 12px 0 0
+}
+.cap{
+  position:absolute;left:50%;transform:translateX(-50%);top:-57px;width:38px;height:54px;
+  border-radius:12px 12px 5px 5px;background:linear-gradient(#36c7cb,#1ba9b1);
+  box-shadow:0 3px 7px rgba(0,0,0,.12)
+}
+.ground-shadow{
+  position:absolute;left:50%;transform:translateX(-50%);
+  bottom:4px;width:245px;height:28px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(255,255,255,.14),rgba(255,255,255,0) 72%);
+}
+.label{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:-2px;
+  width:270px;text-align:center;font-weight:900;color:#f8fafc;font-size:18px
+}
+.sublabel{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:-28px;
+  width:280px;text-align:center;color:#cbd5e1;font-size:13px
+}
+.air-particles{
+  position:absolute;inset:28px 18px 20px;overflow:hidden;opacity:.55
+}
+.air-particles i{
+  position:absolute;width:4px;height:4px;border-radius:50%;background:#67e8f9
+}
+.obj{position:absolute;left:50%;transform:translate(-50%,-50%);will-change:top,transform}
+.ball{width:28px;height:28px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#fff2a8,#facc15 52%,#ca8a04 78%,#854d0e);
+  box-shadow:0 4px 8px rgba(0,0,0,.22)
+}
+.feather{width:46px;height:82px}
+.feather svg{width:100%;height:100%;display:block;filter:drop-shadow(0 2px 2px rgba(0,0,0,.14))}
+.marker{
+  position:absolute;right:8px;width:36px;border-top:1px dashed rgba(65,89,105,.38);
+  font-size:10px;color:#dbeafe;text-align:right;padding-top:2px
+}
+.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+button{border:0;border-radius:11px;padding:10px 12px;font:inherit;font-weight:800;cursor:pointer}
+.primary{background:var(--blue);color:white}.green{background:var(--green);color:white}
+.orange{background:var(--orange);color:white}.gray{background:#eef2f6;color:#1f2937}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.info{background:#f8fbfd;border:1px solid #dce7ef;border-radius:13px;padding:10px}
+.info .k{font-size:12px;color:#728095;margin-bottom:4px}.info .v{font-size:20px;font-weight:900}
+.status{margin-top:10px;background:#edf6ff;border:1px solid #cfe4f5;border-radius:13px;padding:12px;line-height:1.6;color:#174a7f;font-weight:700}
+.note{margin-top:10px;background:#fff9e9;border:1px solid #f0dc9b;border-radius:13px;padding:12px;line-height:1.62;color:#5c4b1e}
+.legend{display:grid;gap:8px;margin-top:10px;font-size:14px;color:#465c70}
+.legend-row{display:flex;align-items:center;gap:8px}.sw{width:28px;height:8px;border-radius:8px}
+.slider{margin-top:12px}.slider input{width:100%}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.sim{min-height:650px}}
+@media(max-width:640px){
+  .wrap{padding:9px}.tubes{gap:12px;left:4px;right:4px}
+  .tube{width:150px}.tube::after{width:100px;left:19px}
+  .label{width:170px;font-size:15px}.sublabel{width:175px}
+  .controls{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mô phỏng sự rơi trong không khí và trong ống chân không</h1>
+  <p class="sub">
+    Hai ống cao, trong suốt để quan sát rõ. Trong mỗi ống thả đồng thời một <b>viên bi</b> và một <b>lông vũ</b> từ cùng độ cao:
+    bên trái có không khí, bên phải gần như chân không.
+  </p>
+
+  <div class="layout">
+    <section class="card">
+      <div class="sim" id="sim">
+        <div class="top-note">Cùng độ cao • Cùng thời điểm thả</div>
+        <div class="tubes">
+
+          <div class="tube-area">
+            <div class="ground-shadow"></div>
+            <div class="tube" id="tubeAir">
+              <div class="cap"></div>
+              <div class="air-particles" id="airParticles"></div>
+
+              <div class="marker" style="top:20%">80%</div>
+              <div class="marker" style="top:40%">60%</div>
+              <div class="marker" style="top:60%">40%</div>
+              <div class="marker" style="top:80%">20%</div>
+
+              <div class="obj ball" id="ballAir"></div>
+              <div class="obj feather" id="featherAir">
+                <svg viewBox="0 0 60 110" aria-label="Lông vũ">
+                  <path d="M32 99 C38 78,48 52,47 29 C46 14,54 5,57 3
+                           C43 5,33 12,27 25 C20 39,19 56,20 72
+                           C20 85,22 95,26 105 Z"
+                        fill="#ffffff" stroke="#dbeafe" stroke-width="2"/>
+                  <path d="M28 104 C31 77,34 50,40 19" stroke="#cbd5e1" stroke-width="2" fill="none"/>
+                  <path d="M31 82 L43 71 M32 68 L45 56 M34 53 L47 42 M36 39 L49 28"
+                        stroke="#e2e8f0" stroke-width="1.6"/>
+                  <path d="M29 83 L19 73 M30 69 L18 59 M32 54 L20 45 M34 40 L24 31"
+                        stroke="#e2e8f0" stroke-width="1.6"/>
+                </svg>
+              </div>
+            </div>
+            <div class="label">a) Trong ống có không khí</div>
+            <div class="sublabel">Lông vũ chịu lực cản không khí lớn</div>
+          </div>
+
+          <div class="tube-area">
+            <div class="ground-shadow"></div>
+            <div class="tube" id="tubeVac">
+              <div class="cap"></div>
+
+              <div class="marker" style="top:20%">80%</div>
+              <div class="marker" style="top:40%">60%</div>
+              <div class="marker" style="top:60%">40%</div>
+              <div class="marker" style="top:80%">20%</div>
+
+              <div class="obj ball" id="ballVac"></div>
+              <div class="obj feather" id="featherVac">
+                <svg viewBox="0 0 60 110" aria-label="Lông vũ">
+                  <path d="M32 99 C38 78,48 52,47 29 C46 14,54 5,57 3
+                           C43 5,33 12,27 25 C20 39,19 56,20 72
+                           C20 85,22 95,26 105 Z"
+                        fill="#ffffff" stroke="#dbeafe" stroke-width="2"/>
+                  <path d="M28 104 C31 77,34 50,40 19" stroke="#cbd5e1" stroke-width="2" fill="none"/>
+                  <path d="M31 82 L43 71 M32 68 L45 56 M34 53 L47 42 M36 39 L49 28"
+                        stroke="#e2e8f0" stroke-width="1.6"/>
+                  <path d="M29 83 L19 73 M30 69 L18 59 M32 54 L20 45 M34 40 L24 31"
+                        stroke="#e2e8f0" stroke-width="1.6"/>
+                </svg>
+              </div>
+            </div>
+            <div class="label">b) Trong ống không có không khí</div>
+            <div class="sublabel">Bi và lông vũ rơi cùng gia tốc</div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="primary" id="play">▶ Thả đồng thời</button>
+        <button class="green" id="slow">🐢 Chạy chậm</button>
+        <button class="orange" id="repeat">🔁 Tự lặp</button>
+        <button class="gray" id="pause">⏸ Tạm dừng</button>
+        <button class="gray" id="step">+0,2 s</button>
+        <button class="gray" id="reset">↺ Làm lại</button>
+      </div>
+
+      <div class="slider">
+        <label for="timeSlider" style="font-weight:800;font-size:14px">Thời điểm: <span id="timeText">0,00 s</span></label>
+        <input id="timeSlider" type="range" min="0" max="4.0" step="0.01" value="0">
+      </div>
+    </section>
+
+    <aside class="card">
+      <div class="info-grid">
+        <div class="info">
+          <div class="k">Trong không khí</div>
+          <div class="v" id="airResult">Chưa thả</div>
+        </div>
+        <div class="info">
+          <div class="k">Trong chân không</div>
+          <div class="v" id="vacResult">Chưa thả</div>
+        </div>
+        <div class="info">
+          <div class="k">Gia tốc trọng trường</div>
+          <div class="v">9,8 m/s²</div>
+        </div>
+        <div class="info">
+          <div class="k">Độ cao mô phỏng</div>
+          <div class="v">≈ 12 m</div>
+        </div>
+      </div>
+
+      <div class="status" id="status">
+        Sẵn sàng. Nhấn <b>“Thả đồng thời”</b> để quan sát hai thí nghiệm.
+      </div>
+
+      <div class="note">
+        <b>Quan sát cần rút ra:</b><br>
+        • Trong ống <b>có không khí</b>, viên bi rơi nhanh hơn; lông vũ rơi chậm do lực cản không khí.<br>
+        • Trong ống <b>chân không</b>, viên bi và lông vũ rơi cùng gia tốc và cùng xuống sát đáy ống gần như cùng lúc.
+      </div>
+
+      <div class="legend">
+        <div class="legend-row"><span class="sw" style="background:#facc15;border:1px solid #ca8a04"></span> Viên bi màu vàng</div>
+        <div class="legend-row"><span class="sw" style="background:#ffffff;border:1px solid #cbd5e1"></span> Lông vũ màu trắng</div>
+        <div class="legend-row"><span class="sw" style="background:#9ed7df"></span> Các chấm nhỏ mô tả không khí</div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const H = 12;      // m
+  const g = 9.8;     // m/s2
+  const tGround = Math.sqrt(2*H/g); // ~1.565 s
+
+  // Mô hình đơn giản có cản không khí:
+  // viên bi chịu cản nhỏ -> gần như rơi tự do
+  // lông vũ đạt vận tốc giới hạn thấp.
+  const vtFeather = 4.6; // m/s mô phỏng trực quan
+  const kFeather = g / vtFeather;
+
+  const ballAir = document.getElementById('ballAir');
+  const featherAir = document.getElementById('featherAir');
+  const ballVac = document.getElementById('ballVac');
+  const featherVac = document.getElementById('featherVac');
+
+  const status = document.getElementById('status');
+  const airResult = document.getElementById('airResult');
+  const vacResult = document.getElementById('vacResult');
+  const slider = document.getElementById('timeSlider');
+  const timeText = document.getElementById('timeText');
+
+  const playBtn = document.getElementById('play');
+  const slowBtn = document.getElementById('slow');
+  const repeatBtn = document.getElementById('repeat');
+  const pauseBtn = document.getElementById('pause');
+
+  let t = 0, running=false, paused=false, slow=false, repeat=false, raf=0, last=null, repeatTimer=null;
+
+  function clamp(x,a,b){return Math.min(b,Math.max(a,x))}
+  function fmt(n){return n.toFixed(2).replace('.',',')}
+
+  function airFeatherDistance(tt){
+    // Mô hình trực quan có lực cản: lông vũ rơi chậm hơn rõ rệt nhưng vẫn tiếp tục
+    // rơi cho đến khi chạm đáy, không dừng theo thời điểm viên bi chạm đất.
+    // Dùng chuyển động tiến dần tới vận tốc giới hạn, với hệ số đã hiệu chỉnh
+    // để lông vũ chạm đáy sau viên bi nhưng vẫn trong khoảng quan sát.
+    const vt = 4.6; // m/s, vận tốc giới hạn mô phỏng
+    const k = g / vt;
+    return vt*tt - (vt*vt/g)*(1-Math.exp(-k*tt));
+  }
+
+  function ballDistance(tt){
+    return Math.min(0.5*g*tt*tt,H);
+  }
+
+  function setObj(el, frac, sway=0, rot=0){
+    // Đặt vị trí theo pixel để khi frac = 1, mép dưới của vật chạm đúng đáy ống.
+    // Cách cũ dùng % nên tâm vật dừng ở khoảng 90% chiều cao, tạo cảm giác còn lơ lửng.
+    const tube = el.parentElement;
+    const tubeH = tube.clientHeight || 520;
+    const objH = el.offsetHeight || (el.classList.contains('ball') ? 28 : 82);
+
+    const startCenterY = 70;                  // cùng vị trí thả ở gần đầu ống
+    const floorGap = 7;                       // sát mặt đáy nhưng không chui vào viền kính
+    const endCenterY = tubeH - floorGap - objH/2;
+
+    const f = clamp(frac,0,1);
+    const centerY = startCenterY + f*(endCenterY - startCenterY);
+
+    el.style.top = centerY + 'px';
+    el.style.left = `calc(50% + ${sway}px)`;
+    el.style.transform = `translate(-50%,-50%) rotate(${rot}deg)`;
+  }
+
+  function render(){
+    const sb = ballDistance(t);
+    const sf = Math.min(airFeatherDistance(t),H);
+    const vac = ballDistance(t);
+
+    // AIR
+    setObj(ballAir, sb/H, 0, Math.min(t*65,120));
+    const airFeatherDoneNow = sf >= H-1e-6;
+    const swayAir = airFeatherDoneNow ? 10 : Math.sin(t*5.6)*18;
+    const rotAir = airFeatherDoneNow ? 72 : Math.sin(t*4.8)*26;
+    setObj(featherAir, sf/H, swayAir, rotAir);
+
+    // VACUUM: cả hai rơi cùng gia tốc và cùng chạm đáy.
+    const vacDoneNow = vac >= H-1e-6;
+    setObj(ballVac, vac/H, -16, vacDoneNow ? 92 : Math.min(t*65,92));
+    setObj(featherVac, vac/H, 22, vacDoneNow ? 68 : Math.sin(t*4)*5);
+
+    timeText.textContent = fmt(t) + ' s';
+    slider.value = t;
+
+    const ballAirDone = sb >= H-1e-6;
+    const featherAirDone = sf >= H-1e-6;
+    const vacDone = vac >= H-1e-6;
+
+    airResult.textContent =
+      featherAirDone ? 'Cả hai đã chạm đáy' :
+      ballAirDone ? 'Bi đã chạm đáy; lông vũ còn rơi' :
+      t>0 ? 'Bi rơi nhanh hơn' : 'Chưa thả';
+
+    vacResult.textContent =
+      vacDone ? 'Cùng chạm đáy' :
+      t>0 ? 'Rơi cùng nhau' : 'Chưa thả';
+
+    if(t===0){
+      status.innerHTML = 'Sẵn sàng. Nhấn <b>“Thả đồng thời”</b> để quan sát hai thí nghiệm.';
+    }else if(t < tGround){
+      status.innerHTML = 'Trong ống chân không, bi và lông vũ đang <b>rơi cùng nhau</b>. Trong ống có không khí, lông vũ đã bắt đầu tụt lại do lực cản.';
+    }else if(!featherAirDone){
+      status.innerHTML = 'Ở ống chân không, hai vật đã <b>chạm đáy gần như cùng lúc</b>. Ở ống có không khí, viên bi đã chạm đáy nhưng <b>lông vũ vẫn tiếp tục rơi</b> cho đến khi chạm đáy sau đó.';
+    }else{
+      status.innerHTML = 'Thí nghiệm hoàn tất. Sự khác nhau chủ yếu do <b>lực cản không khí</b>, không phải do vật nặng luôn có gia tốc rơi lớn hơn.';
+    }
+  }
+
+  function stop(){
+    cancelAnimationFrame(raf); running=false; paused=false; last=null;
+    pauseBtn.textContent='⏸ Tạm dừng';
+  }
+
+  function resetAll(){
+    stop();
+    clearTimeout(repeatTimer);
+    t=0; render();
+  }
+
+  function start(){
+    clearTimeout(repeatTimer);
+    if(t>=4.0) t=0;
+    running=true; paused=false; last=null;
+    raf=requestAnimationFrame(step);
+  }
+
+  function step(ts){
+    if(!running)return;
+    if(paused){last=ts; raf=requestAnimationFrame(step); return;}
+    if(last===null) last=ts;
+    const dt=Math.min((ts-last)/1000,0.05);
+    last=ts;
+    t += dt*(slow?0.35:1);
+
+    if(t>=4.0){
+      t=4.0; render(); stop();
+      if(repeat){
+        repeatTimer=setTimeout(()=>{t=0;render();start()},900);
+      }
+      return;
+    }
+    render();
+    raf=requestAnimationFrame(step);
+  }
+
+  playBtn.addEventListener('click',start);
+  slowBtn.addEventListener('click',()=>{
+    slow=!slow;
+    slowBtn.textContent=slow?'🐇 Chạy thường':'🐢 Chạy chậm';
+  });
+  repeatBtn.addEventListener('click',()=>{
+    repeat=!repeat;
+    repeatBtn.textContent=repeat?'🔁 Đang tự lặp':'🔁 Tự lặp';
+  });
+  pauseBtn.addEventListener('click',()=>{
+    if(!running)return;
+    paused=!paused;
+    pauseBtn.textContent=paused?'▶ Tiếp tục':'⏸ Tạm dừng';
+  });
+  document.getElementById('step').addEventListener('click',()=>{
+    stop(); t=clamp(t+0.2,0,4.0); render();
+  });
+  document.getElementById('reset').addEventListener('click',resetAll);
+  slider.addEventListener('input',()=>{
+    stop(); t=Number(slider.value)||0; render();
+  });
+
+  // decorative air particles
+  const airP = document.getElementById('airParticles');
+  for(let i=0;i<46;i++){
+    const p=document.createElement('i');
+    p.style.left=(5 + (i*37)%90)+'%';
+    p.style.top=(4 + (i*53)%92)+'%';
+    p.style.opacity=(0.25 + (i%5)*0.12);
+    airP.appendChild(p);
+  }
+
+  render();
+})();
+<\/script>
+</body>
+</html>

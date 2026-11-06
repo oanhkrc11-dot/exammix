@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tổng hợp vận tốc - hành khách trên tàu (camera bám theo)</title>
+<style>
+:root{
+  --bg:#eef5ff; --card:#ffffff; --line:#d9e3f2; --ink:#1f2d3d;
+  --blue:#2563eb; --green:#10b981; --orange:#f59e0b; --red:#ef4444; --purple:#7c3aed;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);
+  background:linear-gradient(180deg,#f7fbff,#eaf2ff);min-height:100vh;
+}
+.wrap{max-width:1320px;margin:auto;padding:18px}
+h1{margin:0 0 8px;color:#173a78;font-size:28px}
+.intro{margin:0 0 16px;color:#516071;line-height:1.55}
+.grid{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(330px,.9fr);gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 32px rgba(34,67,117,.10)}
+.sceneCard{padding:14px}
+.scene{
+  position:relative;height:620px;overflow:hidden;border-radius:14px;
+  border:1px solid #d7e3f1;
+  background:linear-gradient(180deg,#cfeaff 0 41%,#eef7ff 41% 57%,#d3d9e1 57% 100%);
+}
+.noteBox{
+  position:absolute;z-index:40;left:15px;right:15px;top:12px;
+  background:rgba(255,255,255,.94);border:1px solid #dfe7f5;border-radius:12px;
+  padding:10px 12px;line-height:1.42;font-weight:700;color:#3b4960;
+}
+.cameraBadge{
+  position:absolute;right:16px;top:78px;z-index:41;
+  padding:7px 10px;border-radius:999px;background:rgba(23,58,120,.92);color:#fff;
+  font-size:13px;font-weight:800;box-shadow:0 4px 12px rgba(0,0,0,.13)
+}
+.skyArrow{position:absolute;top:92px;left:22px;right:22px;height:82px;z-index:30}
+.vector{position:absolute;height:7px;border-radius:999px}
+.vector::after{
+  content:"";position:absolute;top:50%;transform:translateY(-50%);
+  border-top:8px solid transparent;border-bottom:8px solid transparent;
+}
+.vector.right::after{right:-1px}.vector.left::after{left:-1px}
+.vector.blue{background:var(--blue)} .vector.blue.right::after{border-left:16px solid var(--blue)}
+.vector.green{background:var(--green)} .vector.green.right::after{border-left:16px solid var(--green)}
+.vector.green.left::after{border-right:16px solid var(--green)}
+.vector.orange{background:var(--orange)} .vector.orange.right::after{border-left:16px solid var(--orange)}
+.vectorLabel{
+  position:absolute;font-size:13px;font-weight:800;white-space:nowrap;color:#23354d;
+  background:#ffffffeb;padding:4px 8px;border-radius:999px;border:1px solid #dbe6f5;
+}
+.horizon{
+  position:absolute;left:0;right:0;top:255px;height:95px;overflow:hidden;z-index:2;
+}
+.scenery{position:absolute;left:0;top:0;width:100%;height:100%}
+.tree,.pole{position:absolute;bottom:0;transform:translateX(-50%)}
+.tree::before{
+  content:"";display:block;width:42px;height:42px;background:#7bc96f;border-radius:50% 55% 45% 55%;
+  border:2px solid #5ea555;box-shadow:18px 7px 0 -7px #69b75f,-15px 7px 0 -8px #83cf78;
+}
+.tree::after{
+  content:"";display:block;width:7px;height:34px;background:#8b5a3c;margin:-4px auto 0;border-radius:3px;
+}
+.pole{width:4px;height:76px;background:#737b87}
+.pole::before{
+  content:"";position:absolute;left:-18px;top:7px;width:40px;height:3px;background:#737b87
+}
+.ground{
+  position:absolute;left:0;right:0;bottom:0;height:255px;
+  background:linear-gradient(180deg,#d8dde4,#c3c9d2);z-index:1;
+}
+.track{
+  position:absolute;left:0;right:0;bottom:112px;height:18px;background:#765740;z-index:7;
+}
+.track::before,.track::after{
+  content:"";position:absolute;left:0;right:0;height:5px;background:#564136;
+}
+.track::before{top:-16px}.track::after{bottom:-16px}
+.sleepers{
+  position:absolute;left:0;right:0;top:-15px;bottom:-15px;
+  background:repeating-linear-gradient(90deg,transparent 0 28px,#624936 28px 42px,transparent 42px 82px);
+  opacity:.85;
+}
+.groundRef{
+  position:absolute;left:0;right:0;bottom:150px;height:95px;z-index:6;pointer-events:none;
+}
+.mark{position:absolute;bottom:0;width:2px;height:24px;background:#4b5563}
+.markLabel{
+  position:absolute;bottom:28px;transform:translateX(-50%);font-size:12px;color:#374151;
+  font-weight:800;background:#ffffffc9;padding:2px 5px;border-radius:6px;white-space:nowrap
+}
+.train{
+  position:absolute;bottom:127px;width:760px;height:156px;z-index:15;
+  will-change:left;filter:drop-shadow(0 8px 6px rgba(0,0,0,.16))
+}
+.trainSvg{display:block;width:100%;height:100%}
+.passenger{
+  position:absolute;bottom:147px;width:48px;height:96px;z-index:24;will-change:left,transform;
+  transform:translateX(-50%);
+}
+.startMarker{
+  position:absolute;bottom:141px;z-index:23;width:2px;height:78px;background:#ef4444aa;
+  pointer-events:none;
+}
+.startMarker::before{
+  content:"";position:absolute;left:-5px;top:-4px;width:12px;height:12px;border-radius:50%;
+  background:#ef4444;border:2px solid white;
+}
+.startMarker span{
+  position:absolute;left:7px;top:-12px;white-space:nowrap;font-size:11px;font-weight:800;
+  color:#b42318;background:#fff7f6;border:1px solid #fecaca;border-radius:7px;padding:2px 5px;
+}
+.walkTrail{
+  position:absolute;bottom:145px;height:5px;border-radius:999px;background:#ef444455;z-index:22;
+  pointer-events:none;
+}
+.personFlip{width:100%;height:100%;transform-origin:center bottom}
+.personSvg{display:block;width:100%;height:100%;overflow:visible}
+.limb{transform-box:fill-box;transform-origin:50% 8%}
+.torsoBob{transform-box:fill-box;transform-origin:center}
+.controls{
+  display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-top:12px
+}
+button,select{
+  border:0;border-radius:12px;padding:11px 9px;font-weight:800;font-size:14px
+}
+button{color:white;cursor:pointer;box-shadow:0 6px 12px rgba(0,0,0,.08)}
+.blueBtn{background:var(--blue)}.greenBtn{background:var(--green)}.orangeBtn{background:var(--orange)}
+.purpleBtn{background:var(--purple)}.grayBtn{background:#6b7280}.tealBtn{background:#0f766e}
+.controlSelect{
+  background:#fff;color:#23354d;border:1px solid #cfd8e6;box-shadow:none;cursor:pointer
+}
+.side{padding:15px}
+.side h2{margin:0 0 12px;color:#173a78;font-size:21px}
+.stats{display:grid;gap:10px}
+.stat{background:#f8fbff;border:1px solid #dce7f6;border-radius:13px;padding:11px 12px}
+.k{font-size:12px;color:#728095;margin-bottom:4px}
+.v{font-size:22px;font-weight:900;color:#172033}
+.status,.explain,.formula{
+  margin-top:12px;border-radius:13px;padding:11px 12px;line-height:1.55
+}
+.status{background:#edf6ff;border:1px solid #cee4fb;color:#174a7f;font-weight:800}
+.explain{background:#fff9e9;border:1px solid #f0dc9b;color:#5c4b1e}
+.formula{background:#f6f8fc;border:1px solid #dde5f0}
+.formula b{color:#173a78}
+.legend{display:grid;gap:8px;margin-top:8px;font-size:14px}
+.legendRow{display:flex;align-items:center;gap:8px}
+.swatch{width:28px;height:8px;border-radius:8px}
+.small{font-size:13px;color:#667085}
+.progressWrap{margin-top:12px}
+.progressLine{height:9px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+.progressBar{height:100%;width:0;background:linear-gradient(90deg,#2563eb,#10b981)}
+.progressText{font-size:12px;color:#667085;margin-top:5px}
+@media(max-width:1020px){
+  .grid{grid-template-columns:1fr}
+  .controls{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:660px){
+  .wrap{padding:9px}.scene{height:560px}h1{font-size:22px}
+  .controls{grid-template-columns:repeat(2,1fr)}
+  .train{width:690px;height:142px}
+}
+@media(prefers-reduced-motion:reduce){
+  .personSvg *{transition:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mô phỏng tổng hợp vận tốc: hành khách trên đoàn tàu</h1>
+  <p class="intro">
+    Tàu chuyển động sang phải với vận tốc <b>36 km/h = 10 m/s</b> so với mặt đất.
+    Hành khách đi trên tàu với vận tốc <b>1 m/s</b> so với tàu.
+    Bản này dùng <b>camera bám theo đoàn tàu</b>, vì vậy có thể quan sát chuyển động trong thời gian dài mà tàu không chạy mất khỏi khung hình.
+  </p>
+
+  <div class="grid">
+    <section class="card sceneCard">
+      <div class="scene" id="scene">
+        <div class="noteBox" id="scenarioText">Trường hợp đang chọn: <b>Cùng chiều tàu chạy</b>.</div>
+        <div class="cameraBadge" id="cameraBadge">🎥 Camera theo tàu: BẬT</div>
+
+        <div class="skyArrow">
+          <div class="vector blue right" style="left:28px;top:5px;width:205px"></div>
+          <div class="vectorLabel" style="left:142px;top:-7px">v tàu/đất = 10 m/s</div>
+
+          <div class="vector green right" id="vRelArrow" style="left:28px;top:30px;width:58px"></div>
+          <div class="vectorLabel" id="vRelLabel" style="left:92px;top:18px">v người/tàu = +1 m/s</div>
+
+          <div class="vector orange right" id="vGroundArrow" style="left:28px;top:55px;width:228px"></div>
+          <div class="vectorLabel" id="vGroundLabel" style="left:166px;top:43px">v người/đất = 11 m/s</div>
+        </div>
+
+        <div class="horizon"><div class="scenery" id="scenery"></div></div>
+        <div class="ground"></div>
+        <div class="groundRef" id="groundRef"></div>
+        <div class="track"><div class="sleepers" id="sleepers"></div></div>
+
+        <div class="train" id="train">
+          <svg class="trainSvg" viewBox="0 0 760 156" aria-label="Đoàn tàu dài">
+            <!-- thân đoàn tàu -->
+            <rect x="12" y="36" width="720" height="78" rx="23" fill="#f4a535" stroke="#c97818" stroke-width="4"/>
+            <path d="M732 50 Q751 63 748 88 Q746 105 727 111 L718 111 L718 45 Z" fill="#e9912f" stroke="#c97818" stroke-width="4"/>
+            <rect x="52" y="20" width="610" height="21" rx="10" fill="#e06d2f"/>
+            <!-- chia toa -->
+            <path d="M188 39 V111 M362 39 V111 M536 39 V111" stroke="#b9691e" stroke-width="4" opacity=".75"/>
+            <!-- cửa -->
+            <g fill="#fff1cf" stroke="#d39a46" stroke-width="3">
+              <rect x="130" y="49" width="48" height="57" rx="7"/>
+              <rect x="304" y="49" width="48" height="57" rx="7"/>
+              <rect x="478" y="49" width="48" height="57" rx="7"/>
+            </g>
+            <!-- cửa sổ -->
+            <g fill="#dff4ff" stroke="#80bdd9" stroke-width="3">
+              <rect x="34" y="52" width="78" height="38" rx="8"/>
+              <rect x="202" y="52" width="82" height="38" rx="8"/>
+              <rect x="376" y="52" width="82" height="38" rx="8"/>
+              <rect x="550" y="52" width="82" height="38" rx="8"/>
+              <path d="M656 52 H709 Q726 64 724 88 H656 Z"/>
+            </g>
+            <!-- sàn đi bộ nhìn thấy -->
+            <rect x="92" y="104" width="540" height="7" rx="3.5" fill="#8f5b2d"/>
+            <!-- các mốc cố định trên tàu: giúp quan sát chuyển động của người so với tàu -->
+            <g stroke="#7c4a22" stroke-width="2" fill="#6b3d1d" font-size="9" font-weight="700">
+              <line x1="150" y1="98" x2="150" y2="112"/><text x="150" y="95" text-anchor="middle">M1</text>
+              <line x1="265" y1="98" x2="265" y2="112"/><text x="265" y="95" text-anchor="middle">M2</text>
+              <line x1="380" y1="98" x2="380" y2="112"/><text x="380" y="95" text-anchor="middle">M3</text>
+              <line x1="495" y1="98" x2="495" y2="112"/><text x="495" y="95" text-anchor="middle">M4</text>
+              <line x1="610" y1="98" x2="610" y2="112"/><text x="610" y="95" text-anchor="middle">M5</text>
+            </g>
+            <!-- bánh -->
+            <g fill="#374151" stroke="#111827" stroke-width="3">
+              <circle cx="90" cy="132" r="15"/><circle cx="142" cy="132" r="15"/>
+              <circle cx="272" cy="132" r="15"/><circle cx="324" cy="132" r="15"/>
+              <circle cx="454" cy="132" r="15"/><circle cx="506" cy="132" r="15"/>
+              <circle cx="638" cy="132" r="15"/><circle cx="690" cy="132" r="15"/>
+            </g>
+            <g fill="#9ca3af">
+              <circle cx="90" cy="132" r="6"/><circle cx="142" cy="132" r="6"/>
+              <circle cx="272" cy="132" r="6"/><circle cx="324" cy="132" r="6"/>
+              <circle cx="454" cy="132" r="6"/><circle cx="506" cy="132" r="6"/>
+              <circle cx="638" cy="132" r="6"/><circle cx="690" cy="132" r="6"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="walkTrail" id="walkTrail"></div>
+        <div class="startMarker" id="startMarker"><span>Vị trí xuất phát</span></div>
+        <div class="passenger" id="passenger">
+          <div class="personFlip" id="personFlip">
+            <svg class="personSvg" viewBox="0 0 48 96" aria-label="Hành khách đang đi bộ">
+              <g id="personBob">
+                <circle cx="24" cy="12" r="9" fill="#f0b68f"/>
+                <path d="M17 22 Q24 18 31 22 L34 51 Q24 56 14 51 Z" fill="#2e86de"/>
+                <path d="M18 24 Q24 20 30 24" stroke="#1f5f9e" stroke-width="2" fill="none"/>
+                <g id="armBack" class="limb">
+                  <path d="M18 26 L9 49" stroke="#f0b68f" stroke-width="6" stroke-linecap="round"/>
+                </g>
+                <g id="armFront" class="limb">
+                  <path d="M30 26 L39 49" stroke="#f0b68f" stroke-width="6" stroke-linecap="round"/>
+                </g>
+                <g id="legBack" class="limb">
+                  <path d="M20 49 L16 72 L10 91" stroke="#26384e" stroke-width="7" stroke-linecap="round" fill="none"/>
+                </g>
+                <g id="legFront" class="limb">
+                  <path d="M28 49 L31 72 L39 91" stroke="#26384e" stroke-width="7" stroke-linecap="round" fill="none"/>
+                </g>
+                <path d="M7 91 H16" stroke="#111827" stroke-width="5" stroke-linecap="round"/>
+                <path d="M35 91 H45" stroke="#111827" stroke-width="5" stroke-linecap="round"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="blueBtn" id="sameBtn">▶ Cùng chiều tàu</button>
+        <button class="greenBtn" id="oppBtn">▶ Ngược chiều tàu</button>
+        <button class="orangeBtn" id="bothBtn">▶ Chạy lần lượt</button>
+        <button class="grayBtn" id="pauseBtn">⏸ Tạm dừng</button>
+        <button class="tealBtn" id="cameraBtn">🎥 Camera: BẬT</button>
+        <button class="purpleBtn" id="resetBtn">↻ Đặt lại</button>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <label for="playback" style="font-weight:800;color:#475467">Tốc độ phát:</label>
+        <select id="playback" class="controlSelect" style="width:auto">
+          <option value="0.4">0,4× – rất chậm</option>
+          <option value="0.6" selected>0,6× – mặc định</option>
+          <option value="0.8">0,8×</option>
+          <option value="1">1×</option>
+        </select>
+        <span class="small">Tốc độ vật lí vẫn là 10 m/s và ±1 m/s; chỉ thay đổi tốc độ phát hình.</span>
+      </div>
+    </section>
+
+    <aside class="card side">
+      <h2>Thông tin đang quan sát</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">Vận tốc tàu so với mặt đất</div><div class="v">10 m/s</div></div>
+        <div class="stat"><div class="k">Vận tốc hành khách so với tàu</div><div class="v" id="vRelValue">+1 m/s</div></div>
+        <div class="stat"><div class="k">Vận tốc hành khách so với mặt đất</div><div class="v" id="vGroundValue">11 m/s</div></div>
+        <div class="stat"><div class="k">Thời gian mô phỏng</div><div class="v" id="timeValue">0,0 s</div></div>
+        <div class="stat"><div class="k">Tàu đã đi so với mặt đất</div><div class="v" id="trainDistance">0 m</div></div>
+        <div class="stat"><div class="k">Người dịch chuyển trên tàu</div><div class="v" id="personRelDistance">0 m</div></div>
+      </div>
+
+      <div class="progressWrap">
+        <div class="progressLine"><div class="progressBar" id="progressBar"></div></div>
+        <div class="progressText">Mỗi lượt mô phỏng kéo dài 24 s để quan sát rõ chuyển động.</div>
+      </div>
+
+      <div class="status" id="status">Sẵn sàng. Camera đang bám theo đoàn tàu.</div>
+
+      <div class="formula" id="formulaBox">
+        <b>Công thức vectơ:</b><br>
+        v⃗<sub>người/đất</sub> = v⃗<sub>người/tàu</sub> + v⃗<sub>tàu/đất</sub><br><br>
+        Trường hợp <b>cùng chiều</b>:<br>
+        v<sub>người/đất</sub> = 1 + 10 = <b>11 m/s</b>.
+      </div>
+
+      <div class="legend">
+        <div class="legendRow"><span class="swatch" style="background:var(--blue)"></span> Vận tốc tàu so với đất</div>
+        <div class="legendRow"><span class="swatch" style="background:var(--green)"></span> Vận tốc người so với tàu</div>
+        <div class="legendRow"><span class="swatch" style="background:var(--orange)"></span> Vận tốc người so với đất</div>
+      </div>
+
+      <div class="explain" id="explain">
+        Camera bám theo tàu nên <b>đoàn tàu giữ cố định trong khung hình</b>. Hành khách phải thực sự đi qua các mốc <b>M1 → M2 → M3 → M4 → M5</b> trên sàn tàu; còn cây, cột mốc và đường ray trôi ngược sang trái.
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const scene = document.getElementById('scene');
+  const train = document.getElementById('train');
+  const passenger = document.getElementById('passenger');
+  const personFlip = document.getElementById('personFlip');
+  const startMarker = document.getElementById('startMarker');
+  const walkTrail = document.getElementById('walkTrail');
+  const sleepers = document.getElementById('sleepers');
+  const groundRef = document.getElementById('groundRef');
+  const scenery = document.getElementById('scenery');
+
+  const armFront = document.getElementById('armFront');
+  const armBack  = document.getElementById('armBack');
+  const legFront = document.getElementById('legFront');
+  const legBack  = document.getElementById('legBack');
+  const personBob = document.getElementById('personBob');
+
+  const statusEl = document.getElementById('status');
+  const scenarioText = document.getElementById('scenarioText');
+  const vRelValue = document.getElementById('vRelValue');
+  const vGroundValue = document.getElementById('vGroundValue');
+  const formulaEl = document.getElementById('formulaBox');
+  const explainEl = document.getElementById('explain');
+  const vRelArrow = document.getElementById('vRelArrow');
+  const vGroundArrow = document.getElementById('vGroundArrow');
+  const vRelLabel = document.getElementById('vRelLabel');
+  const vGroundLabel = document.getElementById('vGroundLabel');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const cameraBtn = document.getElementById('cameraBtn');
+  const cameraBadge = document.getElementById('cameraBadge');
+  const playback = document.getElementById('playback');
+
+  const timeValue = document.getElementById('timeValue');
+  const trainDistance = document.getElementById('trainDistance');
+  const personRelDistance = document.getElementById('personRelDistance');
+  const progressBar = document.getElementById('progressBar');
+
+  // Đoàn tàu vẽ dài khoảng 50 m: 1 m tương ứng xấp xỉ 15 px.
+  // Nhờ đó vận tốc đi bộ 1 m/s tạo ra dịch chuyển rõ ràng so với chính đoàn tàu.
+  const PX_PER_METER = 15;
+  const TRAIN_SPEED = 10;       // m/s so với đất
+  const PERSON_REL_SPEED = 1;   // m/s so với tàu
+  const RUN_DURATION = 24;      // s vật lí
+  const TRAIN_WIDTH = 760;
+
+  let scenario = 'same';
+  let running = false;
+  let paused = false;
+  let cameraFollow = true;
+  let raf = 0;
+  let last = null;
+  let simTime = 0;
+  let trainWorldX = 0;
+  let personInTrain = 150;
+  let startPersonInTrain = 150;
+  let cameraX = 0;
+  let sequence = [];
+  let sequenceIndex = 0;
+
+  function clamp(n,a,b){ return Math.min(b,Math.max(a,n)); }
+
+  function setScenario(s){
+    scenario = s;
+    const same = s === 'same';
+    scenarioText.innerHTML = 'Trường hợp đang chọn: <b>' + (same ? 'Cùng chiều tàu chạy' : 'Ngược chiều tàu chạy') + '</b>.';
+    vRelValue.textContent = same ? '+1 m/s' : '−1 m/s';
+    vGroundValue.textContent = same ? '11 m/s' : '9 m/s';
+
+    vRelArrow.className = 'vector green ' + (same ? 'right' : 'left');
+    vRelArrow.style.left = same ? '28px' : '82px';
+    vRelArrow.style.width = '58px';
+    vRelLabel.textContent = 'v người/tàu = ' + (same ? '+1 m/s' : '−1 m/s');
+
+    vGroundArrow.className = 'vector orange right';
+    vGroundArrow.style.left = '28px';
+    vGroundArrow.style.width = same ? '228px' : '188px';
+    vGroundLabel.textContent = 'v người/đất = ' + (same ? '11 m/s' : '9 m/s');
+
+    formulaEl.innerHTML =
+      '<b>Công thức vectơ:</b><br>' +
+      'v⃗<sub>người/đất</sub> = v⃗<sub>người/tàu</sub> + v⃗<sub>tàu/đất</sub><br><br>' +
+      'Trường hợp <b>' + (same ? 'cùng chiều' : 'ngược chiều') + '</b>:<br>' +
+      (same
+        ? 'v<sub>người/đất</sub> = 1 + 10 = <b>11 m/s</b>.'
+        : 'v<sub>người/đất</sub> = (−1) + 10 = <b>9 m/s</b>.');
+
+    personFlip.style.transform = 'scaleX(' + (same ? 1 : -1) + ')';
+  }
+
+  function buildScenery(){
+    scenery.innerHTML = '';
+    // Các phần tử chỉ là mốc cảnh quan; vị trí sẽ được camera cập nhật.
+    for(let i=0;i<12;i++){
+      const e = document.createElement('div');
+      e.className = i % 3 === 1 ? 'pole' : 'tree';
+      e.dataset.world = String(i * 210 - 300);
+      scenery.appendChild(e);
+    }
+  }
+
+  function renderGround(){
+    const w = scene.clientWidth;
+    groundRef.innerHTML = '';
+
+    const metersPerMark = 20;
+    const pxStep = metersPerMark * PX_PER_METER;
+    const leftWorld = cameraX - 100;
+    const rightWorld = cameraX + w + 100;
+    const firstIndex = Math.floor(leftWorld / pxStep) - 1;
+    const lastIndex = Math.ceil(rightWorld / pxStep) + 1;
+
+    for(let i=firstIndex;i<=lastIndex;i++){
+      const worldX = i * pxStep;
+      const screenX = worldX - cameraX;
+      const mark = document.createElement('div');
+      mark.className = 'mark';
+      mark.style.left = screenX + 'px';
+
+      const label = document.createElement('div');
+      label.className = 'markLabel';
+      label.style.left = screenX + 'px';
+      label.textContent = (i * metersPerMark) + ' m';
+
+      groundRef.appendChild(mark);
+      groundRef.appendChild(label);
+    }
+
+    sleepers.style.backgroundPositionX = (-cameraX) + 'px';
+
+    scenery.querySelectorAll('[data-world]').forEach(el => {
+      // lặp cảnh quan theo chu kỳ 2500 px
+      const base = Number(el.dataset.world);
+      let world = base;
+      const cycle = 2500;
+      while(world - cameraX < -150) world += cycle;
+      while(world - cameraX > w + 150) world -= cycle;
+      el.style.left = (world - cameraX) + 'px';
+    });
+  }
+
+  function animatePerson(){
+    // Nhịp bước khoảng 2 bước/giây vật lí.
+    const phase = simTime * Math.PI * 4;
+    const swing = Math.sin(phase) * 24;
+    armFront.style.transform = `rotate(${swing}deg)`;
+    armBack.style.transform  = `rotate(${-swing}deg)`;
+    legFront.style.transform = `rotate(${-swing * 0.72}deg)`;
+    legBack.style.transform  = `rotate(${swing * 0.72}deg)`;
+    personBob.style.transform = `translateY(${Math.abs(Math.sin(phase)) * -1.8}px)`;
+  }
+
+  function render(){
+    const sceneW = scene.clientWidth;
+    const desiredTrainLeft = Math.max(18, sceneW * 0.5 - TRAIN_WIDTH * 0.5);
+
+    if(cameraFollow){
+      // Khóa camera theo tàu: tàu đứng yên trong khung, người vẫn dịch chuyển trên sàn tàu.
+      cameraX = trainWorldX - desiredTrainLeft;
+    }else{
+      cameraX = 0;
+    }
+
+    const trainScreenX = trainWorldX - cameraX;
+    train.style.left = trainScreenX + 'px';
+
+    const passengerWorldX = trainWorldX + personInTrain;
+    const passengerScreenX = passengerWorldX - cameraX;
+    passenger.style.left = passengerScreenX + 'px';
+
+    const startScreenX = trainWorldX + startPersonInTrain - cameraX;
+    startMarker.style.left = startScreenX + 'px';
+    const trailLeft = Math.min(startScreenX, passengerScreenX);
+    walkTrail.style.left = trailLeft + 'px';
+    walkTrail.style.width = Math.abs(passengerScreenX - startScreenX) + 'px';
+
+    renderGround();
+    animatePerson();
+
+    timeValue.textContent = simTime.toFixed(1).replace('.', ',') + ' s';
+    trainDistance.textContent = (TRAIN_SPEED * simTime).toFixed(1).replace('.', ',') + ' m';
+    const relDist = (scenario === 'same' ? 1 : -1) * PERSON_REL_SPEED * simTime;
+    personRelDistance.textContent = (relDist >= 0 ? '+' : '−') + Math.abs(relDist).toFixed(1).replace('.', ',') + ' m';
+    progressBar.style.width = clamp(simTime / RUN_DURATION * 100,0,100) + '%';
+  }
+
+  function resetPositions(){
+    simTime = 0;
+    trainWorldX = 0;
+    startPersonInTrain = scenario === 'same' ? 150 : 610;
+    personInTrain = startPersonInTrain;
+    const sceneW = scene.clientWidth;
+    const desiredTrainLeft = Math.max(18, sceneW * 0.5 - TRAIN_WIDTH * 0.5);
+    cameraX = cameraFollow ? -desiredTrainLeft : 0;
+    render();
+  }
+
+  function stopAnimation(){
+    cancelAnimationFrame(raf);
+    running = false;
+    paused = false;
+    last = null;
+    pauseBtn.textContent = '⏸ Tạm dừng';
+  }
+
+  function startSingle(s){
+    stopAnimation();
+    setScenario(s);
+    resetPositions();
+    running = true;
+    last = null;
+    statusEl.textContent = s === 'same'
+      ? 'Đang chạy: người đang đi từ trái sang phải trên sàn tàu và lần lượt vượt qua các mốc M1, M2, M3...'
+      : 'Đang chạy: người đang đi từ phải sang trái trên sàn tàu và lần lượt vượt qua các mốc M5, M4, M3...';
+    raf = requestAnimationFrame(stepSingle);
+  }
+
+  function advance(dt){
+    const playbackRate = Number(playback.value) || 0.8;
+    const simDt = dt * playbackRate;
+    simTime += simDt;
+
+    trainWorldX += TRAIN_SPEED * PX_PER_METER * simDt;
+    personInTrain += (scenario === 'same' ? 1 : -1) * PERSON_REL_SPEED * PX_PER_METER * simDt;
+
+    // Giữ người trong vùng hành lang dài của đoàn tàu.
+    personInTrain = clamp(personInTrain, 145, 615);
+  }
+
+  function stepSingle(ts){
+    if(!running) return;
+    if(paused){
+      last = ts;
+      raf = requestAnimationFrame(stepSingle);
+      return;
+    }
+    if(last === null) last = ts;
+    const dt = Math.min((ts - last)/1000, 0.05);
+    last = ts;
+
+    advance(dt);
+    if(simTime >= RUN_DURATION){
+      simTime = RUN_DURATION;
+      render();
+      stopAnimation();
+      statusEl.textContent = 'Đã kết thúc lượt mô phỏng 24 s. Có thể chạy lại hoặc đổi trường hợp.';
+      return;
+    }
+    render();
+    raf = requestAnimationFrame(stepSingle);
+  }
+
+  function runSequence(){
+    if(sequenceIndex >= sequence.length){
+      statusEl.textContent = 'Đã chạy xong cả hai trường hợp.';
+      return;
+    }
+    const s = sequence[sequenceIndex];
+    setScenario(s);
+    resetPositions();
+    running = true;
+    last = null;
+    statusEl.textContent = (sequenceIndex === 0 ? 'Trường hợp 1/2: ' : 'Trường hợp 2/2: ') +
+      (s === 'same' ? 'hành khách đi cùng chiều tàu.' : 'hành khách đi ngược chiều tàu.');
+    raf = requestAnimationFrame(stepSequence);
+  }
+
+  function stepSequence(ts){
+    if(!running) return;
+    if(paused){
+      last = ts;
+      raf = requestAnimationFrame(stepSequence);
+      return;
+    }
+    if(last === null) last = ts;
+    const dt = Math.min((ts-last)/1000,0.05);
+    last = ts;
+    advance(dt);
+
+    if(simTime >= RUN_DURATION){
+      simTime = RUN_DURATION;
+      render();
+      cancelAnimationFrame(raf);
+      running = false;
+      last = null;
+      sequenceIndex++;
+      statusEl.textContent = sequenceIndex < sequence.length ? 'Chuẩn bị chuyển sang trường hợp tiếp theo...' : 'Đã chạy xong cả hai trường hợp.';
+      if(sequenceIndex < sequence.length) setTimeout(runSequence, 900);
+      return;
+    }
+
+    render();
+    raf = requestAnimationFrame(stepSequence);
+  }
+
+  document.getElementById('sameBtn').addEventListener('click', () => startSingle('same'));
+  document.getElementById('oppBtn').addEventListener('click', () => startSingle('opp'));
+  document.getElementById('bothBtn').addEventListener('click', () => {
+    stopAnimation();
+    sequence = ['same','opp'];
+    sequenceIndex = 0;
+    runSequence();
+  });
+
+  pauseBtn.addEventListener('click', () => {
+    if(!running) return;
+    paused = !paused;
+    pauseBtn.textContent = paused ? '▶ Tiếp tục' : '⏸ Tạm dừng';
+    statusEl.textContent = paused ? 'Đã tạm dừng mô phỏng.' : 'Tiếp tục mô phỏng.';
+  });
+
+  cameraBtn.addEventListener('click', () => {
+    cameraFollow = !cameraFollow;
+    cameraBtn.textContent = cameraFollow ? '🎥 Camera: BẬT' : '🎥 Camera: TẮT';
+    cameraBadge.textContent = cameraFollow ? '🎥 Camera theo tàu: BẬT' : '🎥 Camera theo tàu: TẮT';
+    explainEl.innerHTML = cameraFollow
+      ? 'Camera bám theo tàu nên <b>đoàn tàu giữ cố định trong khung hình</b>. Hành khách phải thực sự đi qua các mốc <b>M1 → M2 → M3 → M4 → M5</b> trên sàn tàu; còn cây, cột mốc và đường ray trôi ngược sang trái.'
+      : 'Camera đang cố định theo mặt đất. Khi đó đoàn tàu sẽ dần chạy sang phải và có thể rời khỏi khung hình.';
+    render();
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    stopAnimation();
+    setScenario('same');
+    resetPositions();
+    statusEl.textContent = 'Đã đặt lại. Camera mặc định bám theo đoàn tàu.';
+  });
+
+  playback.addEventListener('change', () => {
+    statusEl.textContent = 'Đã đổi tốc độ phát mô phỏng.';
+  });
+
+  window.addEventListener('resize', render);
+
+  buildScenery();
+  setScenario('same');
+  resetPositions();
+  statusEl.textContent = 'Sẵn sàng. Camera đang bám theo đoàn tàu.';
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Hệ quy chiếu & Cộng vận tốc</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#17384f;--panel:#14344d;--cyan:#74e6ff;--yellow:#ffe47c;
+  --green:#93ffd2;--orange:#ffad76;--text:#f7fcff;--muted:#bfd4df;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:282px;min-width:265px;max-width:292px;height:100%;overflow:auto;padding:9px;
+  background:linear-gradient(180deg,#173b57,#0f293d);
+  border-right:1px solid rgba(130,230,255,.28);z-index:20
+}
+#view{position:relative;flex:1;height:100%;overflow:hidden;min-width:0}
+.title{font-weight:800;font-size:12.5px}
+.kicker{font-size:9px;color:var(--muted);margin-top:2px}
+.simTitle{font-size:14.5px;color:var(--cyan);font-weight:800;margin:7px 0 4px;text-transform:uppercase}
+.section{margin-top:6px;padding:7px;border:1px solid rgba(120,225,255,.18);border-radius:8px;background:rgba(18,48,71,.88)}
+.section h3{margin:0 0 5px;font-size:9.5px;color:#d0f6ff;text-transform:uppercase}
+.control{margin:6px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:3px}
+.row label{font-size:10.2px;font-weight:700}
+.value{font-size:10.2px;color:var(--yellow);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:15px;accent-color:#65d9f6}
+select{width:100%;height:30px;border:1px solid rgba(120,225,255,.25);border-radius:7px;background:#17435f;color:white;padding:4px 6px;font-size:10px}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}
+button{min-height:32px;border:1px solid rgba(130,225,255,.22);border-radius:7px;padding:5px;background:#17435f;color:#fff;font-weight:700;font-size:10px;cursor:pointer}
+button:hover{filter:brightness(1.08)}
+#runBtn{background:#1b7750}
+#resetBtn{background:#6a4053}
+#info{
+  position:absolute;top:12px;right:12px;width:275px;padding:8px 10px;border-radius:10px;
+  background:rgba(16,38,56,.86);border:1px solid rgba(120,225,255,.30);z-index:10;
+  backdrop-filter:blur(4px);font-size:10.5px;pointer-events:none
+}
+#info .head{font-size:9.5px;color:#d0f6ff;font-weight:800;margin-bottom:4px;text-transform:uppercase}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 9px;font-variant-numeric:tabular-nums}
+#badge{
+  position:absolute;left:14px;top:12px;padding:7px 10px;border-radius:9px;background:rgba(18,42,60,.84);
+  border:1px solid rgba(120,225,255,.25);font-size:11px;font-weight:800;color:#effcff;z-index:8
+}
+#credit{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);color:#ffe17a;font-size:15px;font-weight:800;z-index:7;pointer-events:none}
+.label3d{padding:3px 5px;border-radius:7px;background:rgba(18,40,58,.78);border:1px solid rgba(130,225,255,.24);font-size:10px;font-weight:700;color:#f5fbff;white-space:nowrap}
+@media(max-width:1000px){#panel{width:258px;min-width:258px}#info{width:235px}}
+</style>
+</head>
+
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+    <div class="kicker">HỆ QUY CHIẾU · CỘNG VẬN TỐC</div>
+    <div class="simTitle">18–20. Vận tốc tương đối</div>
+
+    <div class="section">
+      <h3>Chế độ</h3>
+      <select id="mode">
+        <option value="frame">Đổi hệ quy chiếu</option>
+        <option value="collinear">Cộng vận tốc cùng phương</option>
+        <option value="plane">Cộng vận tốc trong mặt phẳng</option>
+      </select>
+    </div>
+
+    <div class="section" id="sectionA">
+      <h3 id="titleA">Phương tiện</h3>
+      <div class="control">
+        <div class="row"><label id="labelA">v phương tiện</label><span class="value" id="aText">2.0 m/s</span></div>
+        <input id="a" type="range" min="-4" max="4" step="0.1" value="2">
+      </div>
+    </div>
+
+    <div class="section" id="sectionB">
+      <h3 id="titleB">Vật / người</h3>
+      <div class="control">
+        <div class="row"><label id="labelB">v tương đối</label><span class="value" id="bText">1.0 m/s</span></div>
+        <input id="b" type="range" min="-4" max="4" step="0.1" value="1">
+      </div>
+    </div>
+
+    <div class="section" id="angleSection" style="display:none">
+      <h3>Góc</h3>
+      <div class="control">
+        <div class="row"><label>Góc hướng vật</label><span class="value" id="angleText">90°</span></div>
+        <input id="angle" type="range" min="0" max="180" step="1" value="90">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Quan sát</h3>
+      <select id="cameraMode">
+        <option value="ground">Mặt đất</option>
+        <option value="vehicle">Theo phương tiện</option>
+        <option value="object">Theo vật</option>
+      </select>
+
+      <div class="control">
+        <div class="row"><label>Tốc độ mô phỏng</label><span class="value" id="speedText">1.0×</span></div>
+        <input id="simSpeed" type="range" min="0.5" max="2" step="0.5" value="1">
+      </div>
+
+      <div class="buttons">
+        <button id="runBtn">▶ Bắt đầu</button>
+        <button id="pauseBtn">⏸ Dừng</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+        <button id="fitBtn">⛶ Fit</button>
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="badge">v vật/đất = v vật/xe + v xe/đất</div>
+
+    <div id="info">
+      <div class="head">Số liệu</div>
+      <div class="infoGrid">
+        <span id="i1n">v xe/đất</span><b id="i1">2.00 m/s</b>
+        <span id="i2n">v vật/xe</span><b id="i2">1.00 m/s</b>
+        <span id="i3n">v vật/đất</span><b id="i3">3.00 m/s</b>
+        <span>t</span><b id="timeInfo">0.00 s</b>
+        <span id="posLabel">x vật</span><b id="posInfo">0.00 m</b>
+      </div>
+    </div>
+
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $=id=>document.getElementById(id);
+const view=$('view');
+const modeEl=$('mode'),aEl=$('a'),bEl=$('b'),angleEl=$('angle'),camEl=$('cameraMode'),speedEl=$('simSpeed');
+
+const state={
+  mode:'frame',
+  a:2,b:1,angle:90,
+  t:0,simSpeed:1,
+  running:false,paused:true,
+  cameraMode:'ground',
+  lastStamp:performance.now()
+};
+
+/* ================= SCENE ================= */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x17384f);
+scene.fog=new THREE.Fog(0x17384f,28,70);
+
+const camera=new THREE.PerspectiveCamera(45,view.clientWidth/view.clientHeight,.1,120);
+camera.position.set(12,8,15);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.07;
+controls.minDistance=7;controls.maxDistance=34;
+controls.minPolarAngle=.1;controls.maxPolarAngle=Math.PI*.48;
+controls.target.set(0,0,0);
+
+scene.add(new THREE.HemisphereLight(0xe3faff,0x50687a,2.0));
+const sun=new THREE.DirectionalLight(0xffffff,2.0);
+sun.position.set(9,16,10);sun.castShadow=true;scene.add(sun);
+
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(50,30),
+  new THREE.MeshPhongMaterial({color:0x2a5069,shininess:22})
+);
+floor.rotation.x=-Math.PI/2;floor.position.y=-1.55;floor.receiveShadow=true;scene.add(floor);
+
+const grid=new THREE.GridHelper(50,50,0x8bd4ef,0x496f84);
+grid.position.y=-1.53;grid.material.transparent=true;grid.material.opacity=.28;scene.add(grid);
+
+/* road / river base */
+const groundGroup=new THREE.Group();scene.add(groundGroup);
+
+const road=new THREE.Mesh(
+  new THREE.BoxGeometry(40,.16,3.2),
+  new THREE.MeshPhongMaterial({color:0x455c6b,shininess:18})
+);
+road.position.y=-.65;groundGroup.add(road);
+
+for(let x=-18;x<=18;x+=2.4){
+  const dash=new THREE.Mesh(new THREE.BoxGeometry(1.1,.025,.08),new THREE.MeshBasicMaterial({color:0xe8e3ba}));
+  dash.position.set(x,-.55,0);groundGroup.add(dash);
+}
+
+/* train/platform */
+const vehicle=new THREE.Group();scene.add(vehicle);
+const vehicleBody=new THREE.Mesh(
+  new THREE.BoxGeometry(4.2,.45,1.7),
+  new THREE.MeshPhongMaterial({color:0x4da8c7,shininess:60})
+);
+vehicleBody.position.y=.1;vehicleBody.castShadow=true;vehicle.add(vehicleBody);
+
+for(const sx of [-1.35,1.35]){
+  for(const sz of [-.65,.65]){
+    const w=new THREE.Mesh(new THREE.CylinderGeometry(.23,.23,.15,24),new THREE.MeshPhongMaterial({color:0x202c34}));
+    w.rotation.x=Math.PI/2;w.position.set(sx,-.22,sz);vehicle.add(w);
+  }
+}
+const vd=document.createElement('div');vd.className='label3d';vd.textContent='Phương tiện';
+const vlab=new CSS2DObject(vd);vlab.position.set(0,.95,0);vehicle.add(vlab);
+
+/* object */
+const obj=new THREE.Group();scene.add(obj);
+const person=new THREE.Mesh(
+  new THREE.CapsuleGeometry(.18,.55,6,14),
+  new THREE.MeshPhongMaterial({color:0xffb06f,shininess:45})
+);
+person.position.y=.45;obj.add(person);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.16,18,12),new THREE.MeshPhongMaterial({color:0xf3d3b8}));
+head.position.y=.93;obj.add(head);
+const od=document.createElement('div');od.className='label3d';od.textContent='Vật';
+const olab=new CSS2DObject(od);olab.position.set(0,1.35,0);obj.add(olab);
+
+/* vectors */
+const arrowA=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(0,1.4,0),1.5,0x74e6ff,.25,.14);
+const arrowB=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(0,1.8,0),1.2,0xffad76,.25,.14);
+const arrowR=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(0,2.2,0),2.0,0x93ffd2,.28,.15);
+scene.add(arrowA,arrowB,arrowR);
+
+let triangleGroup=new THREE.Group();scene.add(triangleGroup);
+
+function clearGroup(g){
+  while(g.children.length){
+    const o=g.children.pop();
+    o.geometry?.dispose();o.material?.dispose?.();
+  }
+}
+
+/* physics */
+function velocityVectors(){
+  if(state.mode==='plane'){
+    const theta=state.angle*Math.PI/180;
+    const va={x:state.a,y:0};
+    const vb={x:state.b*Math.cos(theta),y:state.b*Math.sin(theta)};
+    return {va,vb,vr:{x:va.x+vb.x,y:va.y+vb.y}};
+  }else{
+    return {
+      va:{x:state.a,y:0},
+      vb:{x:state.b,y:0},
+      vr:{x:state.a+state.b,y:0}
+    };
+  }
+}
+
+function vecMag(v){return Math.hypot(v.x,v.y);}
+function unit3(v){
+  const m=Math.hypot(v.x,v.y)||1;
+  return new THREE.Vector3(v.x/m,0,-v.y/m);
+}
+
+function rebuildTriangle(){
+  clearGroup(triangleGroup);
+  const {va,vb,vr}=velocityVectors();
+  if(state.mode!=='plane')return;
+
+  const s=.8;
+  const O=new THREE.Vector3(-5,.2,-5);
+  const A=new THREE.Vector3(O.x+va.x*s,.2,O.z-va.y*s);
+  const B=new THREE.Vector3(A.x+vb.x*s,.2,A.z-vb.y*s);
+  const R=new THREE.Vector3(O.x+vr.x*s,.2,O.z-vr.y*s);
+
+  const mat1=new THREE.LineBasicMaterial({color:0x74e6ff});
+  const mat2=new THREE.LineBasicMaterial({color:0xffad76});
+  const mat3=new THREE.LineBasicMaterial({color:0x93ffd2});
+  triangleGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([O,A]),mat1));
+  triangleGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([A,B]),mat2));
+  triangleGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([O,R]),mat3));
+}
+
+/* mode visuals */
+function applyMode(){
+  state.t=0;state.running=false;state.paused=true;
+  $('runBtn').textContent='▶ Bắt đầu';$('pauseBtn').textContent='⏸ Dừng';
+
+  if(state.mode==='frame'){
+    $('titleA').textContent='Phương tiện';
+    $('labelA').textContent='v xe/đất';
+    $('titleB').textContent='Vật trên xe';
+    $('labelB').textContent='v vật/xe';
+    $('angleSection').style.display='none';
+    aEl.min=-4;aEl.max=4;aEl.step=.1;aEl.value=2;
+    bEl.min=-4;bEl.max=4;bEl.step=.1;bEl.value=1;
+    state.a=2;state.b=1;
+    $('badge').textContent='v vật/đất = v vật/xe + v xe/đất';
+  }else if(state.mode==='collinear'){
+    $('titleA').textContent='Băng chuyền / tàu';
+    $('labelA').textContent='v nền';
+    $('titleB').textContent='Người / vật';
+    $('labelB').textContent='v tương đối';
+    $('angleSection').style.display='none';
+    aEl.min=-4;aEl.max=4;aEl.step=.1;aEl.value=2.5;
+    bEl.min=-4;bEl.max=4;bEl.step=.1;bEl.value=-1;
+    state.a=2.5;state.b=-1;
+    $('badge').textContent='v tuyệt đối = v tương đối + v kéo theo';
+  }else{
+    $('titleA').textContent='Dòng nước / gió';
+    $('labelA').textContent='v môi trường';
+    $('titleB').textContent='Thuyền / máy bay';
+    $('labelB').textContent='v đối với môi trường';
+    $('angleSection').style.display='block';
+    aEl.min=0;aEl.max=4;aEl.step=.1;aEl.value=1.5;
+    bEl.min=0.5;bEl.max=5;bEl.step=.1;bEl.value=3;
+    angleEl.value=90;
+    state.a=1.5;state.b=3;state.angle=90;
+    $('badge').textContent='v vật/đất = v vật/môi trường + v môi trường/đất';
+  }
+
+  rebuildTriangle();
+  updateUI();
+  fitScene();
+}
+
+function updateScene(dt){
+  const {va,vb,vr}=velocityVectors();
+
+  if(state.mode==='plane'){
+    vehicle.visible=false;
+    road.visible=false;
+    grid.visible=true;
+
+    obj.position.set(vr.x*state.t,0,-vr.y*state.t);
+    od.textContent='Thuyền / máy bay';
+
+    arrowA.position.set(-3,1.1,3);
+    arrowA.setDirection(unit3(va));
+    arrowA.setLength(Math.max(.01,vecMag(va)),.25,.14);
+
+    arrowB.position.set(-3,1.6,3);
+    arrowB.setDirection(unit3(vb));
+    arrowB.setLength(Math.max(.01,vecMag(vb)),.25,.14);
+
+    arrowR.position.set(-3,2.1,3);
+    arrowR.setDirection(unit3(vr));
+    arrowR.setLength(Math.max(.01,vecMag(vr)),.28,.15);
+
+  }else{
+    vehicle.visible=true;
+    road.visible=true;
+    grid.visible=false;
+
+    vehicle.position.x=state.a*state.t;
+    obj.position.set((state.a+state.b)*state.t,.55,0);
+    od.textContent='Vật';
+
+    arrowA.position.set(vehicle.position.x,1.1,0);
+    arrowA.setDirection(new THREE.Vector3(Math.sign(state.a)||1,0,0));
+    arrowA.setLength(Math.max(.01,Math.abs(state.a)),.25,.14);
+
+    arrowB.position.set(obj.position.x,1.6,0);
+    arrowB.setDirection(new THREE.Vector3(Math.sign(state.b)||1,0,0));
+    arrowB.setLength(Math.max(.01,Math.abs(state.b)),.25,.14);
+
+    arrowR.position.set(obj.position.x,2.1,0);
+    arrowR.setDirection(new THREE.Vector3(Math.sign(state.a+state.b)||1,0,0));
+    arrowR.setLength(Math.max(.01,Math.abs(state.a+state.b)),.28,.15);
+  }
+}
+
+function updateCamera(){
+  let targetX=0,targetZ=0;
+  if(state.cameraMode==='vehicle'){
+    targetX=vehicle.visible?vehicle.position.x:0;
+  }else if(state.cameraMode==='object'){
+    targetX=obj.position.x;targetZ=obj.position.z;
+  }else{
+    targetX=(vehicle.visible?(vehicle.position.x+obj.position.x)/2:obj.position.x*.45);
+    targetZ=vehicle.visible?0:obj.position.z*.45;
+  }
+  controls.target.x+=(targetX-controls.target.x)*.06;
+  controls.target.z+=(targetZ-controls.target.z)*.06;
+}
+
+function fitScene(){
+  camera.position.set(12,8,15);
+  controls.target.set(0,0,0);
+  controls.update();
+}
+
+/* UI */
+function updateUI(){
+  const {va,vb,vr}=velocityVectors();
+
+  $('aText').textContent=`${state.a.toFixed(1)} m/s`;
+  $('bText').textContent=`${state.b.toFixed(1)} m/s`;
+  $('angleText').textContent=`${state.angle.toFixed(0)}°`;
+  $('speedText').textContent=`${state.simSpeed.toFixed(1)}×`;
+
+  if(state.mode==='plane'){
+    $('i1n').textContent='|v môi trường|';
+    $('i2n').textContent='|v vật/môi trường|';
+    $('i3n').textContent='|v vật/đất|';
+    $('i1').textContent=`${vecMag(va).toFixed(2)} m/s`;
+    $('i2').textContent=`${vecMag(vb).toFixed(2)} m/s`;
+    $('i3').textContent=`${vecMag(vr).toFixed(2)} m/s`;
+    $('posLabel').textContent='Vị trí';
+    $('posInfo').textContent=`(${obj.position.x.toFixed(1)}; ${(-obj.position.z).toFixed(1)}) m`;
+  }else{
+    $('i1n').textContent='v nền/đất';
+    $('i2n').textContent='v vật/nền';
+    $('i3n').textContent='v vật/đất';
+    $('i1').textContent=`${va.x.toFixed(2)} m/s`;
+    $('i2').textContent=`${vb.x.toFixed(2)} m/s`;
+    $('i3').textContent=`${vr.x.toFixed(2)} m/s`;
+    $('posLabel').textContent='x vật';
+    $('posInfo').textContent=`${obj.position.x.toFixed(2)} m`;
+  }
+  $('timeInfo').textContent=`${state.t.toFixed(2)} s`;
+}
+
+/* events */
+modeEl.addEventListener('change',()=>{state.mode=modeEl.value;applyMode();});
+aEl.addEventListener('input',()=>{state.a=parseFloat(aEl.value);state.t=0;rebuildTriangle();updateUI();});
+bEl.addEventListener('input',()=>{state.b=parseFloat(bEl.value);state.t=0;rebuildTriangle();updateUI();});
+angleEl.addEventListener('input',()=>{state.angle=parseFloat(angleEl.value);state.t=0;rebuildTriangle();updateUI();});
+speedEl.addEventListener('input',()=>{state.simSpeed=parseFloat(speedEl.value);updateUI();});
+camEl.addEventListener('change',()=>{state.cameraMode=camEl.value;});
+
+$('runBtn').addEventListener('click',()=>{
+  state.running=true;state.paused=false;$('runBtn').textContent='▶ Đang chạy';
+});
+$('pauseBtn').addEventListener('click',()=>{
+  if(!state.running)return;
+  state.paused=!state.paused;
+  $('pauseBtn').textContent=state.paused?'▶ Tiếp tục':'⏸ Dừng';
+});
+$('resetBtn').addEventListener('click',()=>applyMode());
+$('fitBtn').addEventListener('click',fitScene);
+
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);labelRenderer.setSize(w,h);
+}
+window.addEventListener('resize',resize);
+
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt=(now-state.lastStamp)/1000;state.lastStamp=now;
+  dt=Math.min(Math.max(dt,0),0.03);
+
+  if(state.running&&!state.paused){
+    state.t+=dt*state.simSpeed;
+  }
+
+  updateScene(dt);
+  updateCamera();
+  updateUI();
+
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+applyMode();
+resize();
+animate(performance.now());
+</script>
+</body>
+</html>

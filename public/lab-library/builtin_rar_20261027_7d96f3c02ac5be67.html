@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dao động điều hòa và chuyển động tròn đều - GV Nguyễn Huy Hùng</title>
+<style>
+:root{--bg:#06111e;--panel:#0b1b2d;--line:#2b4b69;--text:#f4f9ff;--muted:#9fb3c7;--cyan:#5ad8ff;--blue:#4b91ff;--gold:#ffd166;--orange:#ff9f43;--green:#6ee7a8;--red:#ff7383;--violet:#b89cff}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Segoe UI,Arial,sans-serif;background:radial-gradient(circle at 50% -10%,#1d4770 0,#0a1727 40%,#04080e 100%);color:var(--text)}
+body{padding:14px}.app{max-width:1500px;margin:auto}.hero{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px}
+h1{margin:0;color:var(--gold);font-size:clamp(28px,4vw,46px);line-height:1.12}.sub{color:var(--muted);margin-top:6px;line-height:1.55;max-width:960px}.teacher{color:var(--cyan);font-weight:900;margin-top:5px}
+.badges{display:flex;gap:8px;flex-wrap:wrap}.badge{background:#0b1929;border:1px solid var(--line);border-radius:12px;padding:8px 11px;text-align:center;min-width:104px}.badge small{display:block;color:var(--muted);font-size:11px}.badge b{font-size:17px}
+.panel{background:linear-gradient(180deg,rgba(13,28,46,.98),rgba(7,15,25,.98));border:1px solid var(--line);border-radius:20px;box-shadow:0 18px 42px rgba(0,0,0,.28)}
+.controls{padding:12px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end}.ctrl label{display:block;color:var(--muted);font-size:12px;font-weight:800;margin-bottom:5px}.ctrl input[type=range]{width:100%;accent-color:var(--cyan)}
+.value{color:var(--gold);font-weight:900}.buttons{display:flex;gap:7px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer;border:1px solid #3e6388;background:#16314d;color:#fff;border-radius:11px;padding:9px 12px;font-weight:850}button:hover{border-color:var(--cyan)}button.primary{background:#eef8ff;color:#07111f;border-color:#eef8ff}
+.main{display:grid;grid-template-columns:minmax(450px,.9fr) minmax(620px,1.35fr);gap:12px}.simPanel,.graphPanel{padding:12px}.panelTitle{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}.panelTitle h2{margin:0;font-size:17px}.legend{color:var(--muted);font-size:11px}
+.canvasBox{position:relative;background:linear-gradient(180deg,#0a1727,#07111c);border:1px solid var(--line);border-radius:16px;overflow:hidden}#circleCanvas,#graphCanvas{width:100%;height:560px;display:block}
+.readouts{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:10px}.readout{background:#0b1929;border:1px solid var(--line);border-radius:12px;padding:9px;text-align:center}.readout small{display:block;color:var(--muted);font-size:10px}.readout b{display:block;margin-top:2px;font-size:15px}
+.scrub{margin-top:10px}.scrub input{width:100%;accent-color:var(--orange)}
+.bottom{display:grid;grid-template-columns:1.25fr .75fr;gap:12px;margin-top:12px}.bottom .panel{padding:14px}.formula{font-size:clamp(21px,2.4vw,31px);font-weight:950;color:var(--gold);text-align:center;padding:11px;border:1px dashed #496d94;border-radius:13px;background:#0a1725}.formula small{display:block;color:#bdd3e9;font-size:13px;margin-top:7px;font-weight:700}
+.stateRow{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:10px}.state{border:1px solid var(--line);background:#0b1929;border-radius:12px;padding:8px;text-align:center;font-size:12px;cursor:pointer}.state:hover{border-color:var(--cyan)}.state.active{border-color:var(--gold);background:#2e2714;box-shadow:0 0 0 2px rgba(255,209,102,.12)}.state b{display:block;color:var(--gold);font-size:14px}
+.note{color:var(--muted);font-size:13px;line-height:1.65}.note b{color:#fff}.tip{margin-top:9px;padding:9px 10px;border-left:4px solid var(--cyan);background:#0a1b2b;border-radius:8px;color:#d7edff;font-size:12px}
+.switches{display:flex;gap:7px;flex-wrap:wrap}.switch{display:flex;gap:6px;align-items:center;background:#0b1929;border:1px solid var(--line);border-radius:10px;padding:7px 9px;font-size:12px}.switch input{accent-color:var(--cyan)}
+@media(max-width:1120px){.main{grid-template-columns:1fr}.controls{grid-template-columns:1fr 1fr}.buttons{grid-column:1/-1}.bottom{grid-template-columns:1fr}}
+@media(max-width:650px){body{padding:8px}.controls{grid-template-columns:1fr}.readouts{grid-template-columns:1fr 1fr}.stateRow{grid-template-columns:1fr 1fr}.stateRow .state:last-child{grid-column:1/-1}#circleCanvas,#graphCanvas{height:430px}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="hero">
+  <div>
+    <h1>🔄 DAO ĐỘNG ĐIỀU HÒA & CHUYỂN ĐỘNG TRÒN ĐỀU</h1>
+    <div class="sub">Điểm <b>M</b> chuyển động tròn đều trên đường tròn bán kính <b>A</b>. Hình chiếu <b>Q</b> của M lên trục Ox dao động điều hòa: <b>x = A cos(ωt + φ)</b>. M, Q và điểm cam trên đồ thị được cập nhật đồng bộ.</div>
+    <div class="teacher">GV Nguyễn Huy Hùng</div>
+  </div>
+  <div class="badges">
+    <div class="badge"><small>Biên độ</small><b id="badgeA">A = 6 cm</b></div>
+    <div class="badge"><small>Tần số góc</small><b id="badgeW">ω = 3.14 rad/s</b></div>
+    <div class="badge"><small>Chu kì</small><b id="badgeT">T = 2.00 s</b></div>
+  </div>
+</div>
+
+<section class="panel controls">
+  <div class="ctrl"><label>Biên độ A: <span id="aText" class="value">6.0 cm</span></label><input id="amp" type="range" min="2" max="10" step="0.5" value="6"></div>
+  <div class="ctrl"><label>Tần số góc ω: <span id="wText" class="value">3.14 rad/s</span></label><input id="omega" type="range" min="1" max="8" step="0.1" value="3.14"></div>
+  <div class="ctrl"><label>Pha ban đầu φ: <span id="phiText" class="value">30°</span></label><input id="phi" type="range" min="-180" max="180" step="5" value="30"></div>
+  <div class="ctrl"><label>Tốc độ mô phỏng: <span id="speedText" class="value">1×</span></label><input id="speed" type="range" min="0.25" max="2" step="0.25" value="1"></div>
+  <div class="buttons"><button id="playBtn" class="primary">▶ Chạy</button><button id="backBtn">◀ T/8</button><button id="nextBtn">T/8 ▶</button><button id="resetBtn">↺ t = 0</button></div>
+</section>
+
+<div class="main">
+<section class="panel simPanel">
+  <div class="panelTitle"><h2>1. Chuyển động tròn đều và hình chiếu</h2><span class="legend">Q luôn cùng hoành độ với M</span></div>
+  <div class="canvasBox"><canvas id="circleCanvas"></canvas></div>
+  <div class="readouts">
+    <div class="readout"><small>Thời gian</small><b id="rt">0.00 s</b></div>
+    <div class="readout"><small>Góc θ</small><b id="rtheta">30.0°</b></div>
+    <div class="readout"><small>Li độ x</small><b id="rx">+5.20 cm</b></div>
+    <div class="readout"><small>Vận tốc v</small><b id="rv">−9.42 cm/s</b></div>
+    <div class="readout"><small>Gia tốc a</small><b id="ra">−51.3 cm/s²</b></div>
+  </div>
+</section>
+
+<section class="panel graphPanel">
+  <div class="panelTitle"><h2>2. Đồ thị x(t) của hình chiếu Q</h2><span class="legend">Điểm cam là trạng thái hiện tại</span></div>
+  <div class="canvasBox"><canvas id="graphCanvas"></canvas></div>
+  <div class="scrub"><label style="font-size:12px;color:var(--muted);font-weight:800">Kéo để khảo sát từng thời điểm</label><input id="scrubber" type="range" min="0" max="4" step="0.001" value="0"></div>
+</section>
+</div>
+
+<div class="bottom">
+<section class="panel">
+  <div class="formula">x = A cos(ωt + φ)<small id="formulaSub">x = 6.00 cos(3.14t + 30°) cm</small></div>
+  <div class="stateRow">
+    <div class="state" data-phase="0"><b>θ = 0</b>x = +A</div>
+    <div class="state" data-phase="90"><b>θ = π/2</b>x = 0</div>
+    <div class="state" data-phase="180"><b>θ = π</b>x = −A</div>
+    <div class="state" data-phase="270"><b>θ = 3π/2</b>x = 0</div>
+    <div class="state" data-phase="360"><b>θ = 2π</b>x = +A</div>
+  </div>
+</section>
+<section class="panel">
+  <div class="note"><b>Cách dạy:</b> cho học sinh nhìn M quay trước. Sau đó bật đường chiếu MQ và hỏi: “Hoành độ của M biến đổi thế nào?”. Cuối cùng liên hệ chuyển động của Q với điểm cam trên đồ thị sin.</div>
+  <div class="switches" style="margin-top:10px">
+    <label class="switch"><input id="showProj" type="checkbox" checked> Đường chiếu MQ</label>
+    <label class="switch"><input id="showVector" type="checkbox" checked> Vectơ OM</label>
+    <label class="switch"><input id="showAngle" type="checkbox" checked> Góc θ</label>
+    <label class="switch"><input id="showTrace" type="checkbox" checked> Vẽ phần đồ thị đã đi</label>
+  </div>
+  <div class="tip" id="tip">Hoành độ của M chính là li độ x của Q: x = A cos θ.</div>
+</section>
+</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const cc=$("circleCanvas"),cctx=cc.getContext("2d"),gc=$("graphCanvas"),gctx=gc.getContext("2d");
+let A=6,w=3.14,phi=30*Math.PI/180,speed=1,t=0,playing=false,last=performance.now(),raf=null;
+const MAX_A=10;
+function T(){return 2*Math.PI/w} function theta(){return w*t+phi} function xAt(tt){return A*Math.cos(w*tt+phi)}
+function vAt(tt){return -A*w*Math.sin(w*tt+phi)} function aAt(tt){return -A*w*w*Math.cos(w*tt+phi)}
+function fmt(v,n=2){return (v>=0?"+":"−")+Math.abs(v).toFixed(n)} function deg(r){let d=(r*180/Math.PI)%360;return d<0?d+360:d}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function resizeCanvas(canvas,ctx){const r=canvas.getBoundingClientRect(),d=Math.max(1,window.devicePixelRatio||1),W=Math.round(r.width*d),H=Math.round(r.height*d);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H}ctx.setTransform(d,0,0,d,0,0);return{w:r.width,h:r.height}}
+function line(c,x1,y1,x2,y2,color="#fff",lw=2,dash=[]){c.save();c.strokeStyle=color;c.lineWidth=lw;c.setLineDash(dash);c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();c.restore()}
+function circle(c,x,y,r,fill,stroke=null,lw=2){c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fillStyle=fill;c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=lw;c.stroke()}}
+function arrow(c,x1,y1,x2,y2,color,lw=3){line(c,x1,y1,x2,y2,color,lw);const ang=Math.atan2(y2-y1,x2-x1),s=10;c.fillStyle=color;c.beginPath();c.moveTo(x2,y2);c.lineTo(x2-s*Math.cos(ang-.55),y2-s*Math.sin(ang-.55));c.lineTo(x2-s*Math.cos(ang+.55),y2-s*Math.sin(ang+.55));c.closePath();c.fill()}
+
+function drawCircle(){
+  const {w:W,h:H}=resizeCanvas(cc,cctx),c=cctx;c.clearRect(0,0,W,H);
+  const bg=c.createLinearGradient(0,0,0,H);bg.addColorStop(0,"#0d2137");bg.addColorStop(1,"#07111d");c.fillStyle=bg;c.fillRect(0,0,W,H);
+  const cx=W*.50,cy=H*.50,R=Math.min(W*.34,H*.35),th=theta(),mx=cx+R*Math.cos(th),my=cy-R*Math.sin(th),qx=mx,qy=cy;
+  line(c,45,cy,W-35,cy,"#c8e4ff",2);line(c,cx,H-35,cx,35,"#c8e4ff",2);arrow(c,W-62,cy,W-35,cy,"#c8e4ff",2);arrow(c,cx,62,cx,35,"#c8e4ff",2);
+  c.fillStyle="#dceeff";c.font="14px Segoe UI";c.fillText("x",W-27,cy+5);c.fillText("y",cx+8,35);c.fillText("O",cx-18,cy+22);
+  c.strokeStyle="#61c7ff";c.lineWidth=3;c.beginPath();c.arc(cx,cy,R,0,Math.PI*2);c.stroke();
+  if($("showVector").checked)arrow(c,cx,cy,mx,my,"#ffd166",3);
+  if($("showProj").checked){line(c,mx,my,qx,qy,"#86dfff",2,[7,5]);circle(c,qx,qy,7,"#ff9f43","#ffe0a6",2)}
+  if($("showAngle").checked){let thn=((th%(2*Math.PI))+2*Math.PI)%(2*Math.PI);c.strokeStyle="#b89cff";c.lineWidth=3;c.beginPath();c.arc(cx,cy,R*.28,0,-thn,true);c.stroke();c.fillStyle="#d7c8ff";c.font="bold 14px Segoe UI";let at=thn/2;c.fillText("θ",cx+R*.34*Math.cos(at),cy-R*.34*Math.sin(at))}
+  const rg=c.createRadialGradient(mx-8,my-8,3,mx,my,16);rg.addColorStop(0,"#fff6b0");rg.addColorStop(.35,"#ffc64e");rg.addColorStop(1,"#f07a22");circle(c,mx,my,14,rg,"#ffd166",2);
+  c.fillStyle="#fff";c.font="bold 15px Segoe UI";c.fillText("M",mx+16,my-10);c.fillStyle="#ffbe63";c.fillText("Q",qx+9,qy+21);
+  // Giá trị x của Q theo trục Ox
+  const x=xAt(t),scale=R/A,zeroX=cx;
+  line(c,zeroX,cy+28,qx,cy+28,"rgba(90,216,255,.55)",3);
+  c.fillStyle="#5ad8ff";c.font="bold 18px Segoe UI";c.textAlign="center";c.fillText(`xQ = ${fmt(x)} cm`,cx,H-42);c.textAlign="left";
+}
+function geom(W,H){const L=72,R=28,U=42,D=62,gw=W-L-R,gh=H-U-D,cy=U+gh/2,scale=Math.min(18,(gh*.42)/MAX_A);return{L,R,U,D,gw,gh,cy,scale}}
+function gp(tt,xx,W,H){const g=geom(W,H);return{...g,x:g.L+g.gw*tt/(2*T()),y:g.cy-xx*g.scale}}
+function drawGraph(){
+  const {w:W,h:H}=resizeCanvas(gc,gctx),c=gctx;c.clearRect(0,0,W,H);const bg=c.createLinearGradient(0,0,0,H);bg.addColorStop(0,"#0b1c2f");bg.addColorStop(1,"#07111d");c.fillStyle=bg;c.fillRect(0,0,W,H);
+  const G=geom(W,H),L=G.L,U=G.U,gw=G.gw,gh=G.gh,cy=G.cy;
+  for(let cm=-MAX_A;cm<=MAX_A;cm+=2){const yy=cy-cm*G.scale;if(yy<U||yy>U+gh)continue;line(c,L,yy,L+gw,yy,cm===0?"rgba(255,255,255,.5)":"rgba(90,216,255,.11)",cm===0?1.5:1);c.fillStyle=cm===0?"#fff":"#7898b3";c.font="10px Segoe UI";c.textAlign="right";c.fillText(String(cm),L-10,yy+4)}
+  line(c,L,U,L,U+gh,"#c8e4ff",2);line(c,L,cy,L+gw+8,cy,"#c8e4ff",2);c.fillStyle="#dceeff";c.textAlign="left";c.font="14px Segoe UI";c.fillText("x",25,U+3);c.fillText("t",L+gw+14,cy+5);
+  [["＋A",A],["−A",-A]].forEach(([lab,val])=>{const yy=cy-val*G.scale;line(c,L,yy,L+gw,yy,"rgba(255,209,102,.35)",1.3,[6,5]);c.fillStyle="#ffd166";c.textAlign="right";c.fillText(lab,L-10,yy+4)});
+  c.strokeStyle="rgba(75,145,255,.34)";c.lineWidth=3;c.beginPath();for(let i=0;i<=700;i++){const tt=2*T()*i/700,p=gp(tt,xAt(tt),W,H);if(i===0)c.moveTo(p.x,p.y);else c.lineTo(p.x,p.y)}c.stroke();
+  if($("showTrace").checked){const end=clamp(t,0,2*T()),steps=Math.max(2,Math.floor(500*end/(2*T())));c.strokeStyle="#4b91ff";c.lineWidth=4;c.beginPath();for(let i=0;i<=steps;i++){const tt=end*i/steps,p=gp(tt,xAt(tt),W,H);if(i===0)c.moveTo(p.x,p.y);else c.lineTo(p.x,p.y)}c.stroke()}
+  const labs=["0","T/4","T/2","3T/4","T","5T/4","3T/2","7T/4","2T"];
+  for(let k=0;k<=8;k++){const tt=k*T()/4,p=gp(tt,xAt(tt),W,H);line(c,p.x,cy,p.x,U+gh,"rgba(90,216,255,.14)",1,[5,5]);circle(c,p.x,p.y,5,"#ff9f43","#ffd89c",1.5);c.fillStyle="#9fb3c7";c.font="11px Segoe UI";c.textAlign="center";c.fillText(labs[k],p.x,U+gh+24)}
+  const p=gp(t,xAt(t),W,H);line(c,p.x,U,p.x,U+gh,"rgba(255,159,67,.72)",1.4,[6,5]);line(c,L,p.y,p.x,p.y,"rgba(255,159,67,.48)",1.2,[6,5]);circle(c,p.x,p.y,9,"#ff8b23","#fff0b3",2);
+  c.fillStyle="#fff";c.font="bold 13px Segoe UI";c.textAlign="left";c.fillText(`t=${t.toFixed(2)} s`,clamp(p.x+11,L,L+gw-86),clamp(p.y-12,U+16,U+gh-10));
+}
+function update(){
+  const th=theta(),x=xAt(t),v=vAt(t),a=aAt(t),per=T();
+  $("rt").textContent=t.toFixed(2)+" s";$("rtheta").textContent=deg(th).toFixed(1)+"°";$("rx").textContent=fmt(x)+" cm";$("rv").textContent=fmt(v)+" cm/s";$("ra").textContent=fmt(a,1)+" cm/s²";
+  $("aText").textContent=A.toFixed(1)+" cm";$("wText").textContent=w.toFixed(2)+" rad/s";$("phiText").textContent=Math.round(phi*180/Math.PI)+"°";$("speedText").textContent=speed.toFixed(2).replace(/\.00$/,"").replace(/0$/,"")+"×";
+  $("badgeA").textContent=`A = ${A.toFixed(1)} cm`;$("badgeW").textContent=`ω = ${w.toFixed(2)} rad/s`;$("badgeT").textContent=`T = ${per.toFixed(2)} s`;
+  $("formulaSub").textContent=`x = ${A.toFixed(2)} cos(${w.toFixed(2)}t ${phi>=0?"+":"−"} ${Math.abs(phi*180/Math.PI).toFixed(0)}°) cm`;
+  $("scrubber").max=(2*per).toString();$("scrubber").value=clamp(t,0,2*per).toString();
+  let xd=Math.abs(x/A);$("tip").textContent=xd>.93?(x>0?"Q gần biên dương +A: v gần 0, chuẩn bị đổi chiều.":"Q gần biên âm −A: v gần 0, chuẩn bị đổi chiều."):(xd<.10?"Q gần O: |v| gần cực đại.":"Hoành độ của M chính là li độ x của Q: x = A cos θ.");
+}
+function drawAll(){drawCircle();drawGraph();update()}
+function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(playing){t+=dt*speed;if(t>2*T())t=0}drawAll();raf=requestAnimationFrame(loop)}
+$("playBtn").onclick=()=>{playing=!playing;$("playBtn").textContent=playing?"⏸ Tạm dừng":"▶ Chạy";last=performance.now()};
+$("resetBtn").onclick=()=>{playing=false;t=0;$("playBtn").textContent="▶ Chạy";drawAll()};
+$("backBtn").onclick=()=>{playing=false;t=clamp(t-T()/8,0,2*T());$("playBtn").textContent="▶ Chạy";drawAll()};
+$("nextBtn").onclick=()=>{playing=false;t=clamp(t+T()/8,0,2*T());$("playBtn").textContent="▶ Chạy";drawAll()};
+$("amp").oninput=e=>{A=Number(e.target.value);drawAll()};
+$("omega").oninput=e=>{const ratio=t/T();w=Number(e.target.value);t=clamp(ratio*T(),0,2*T());drawAll()};
+$("phi").oninput=e=>{phi=Number(e.target.value)*Math.PI/180;drawAll()};
+$("speed").oninput=e=>{speed=Number(e.target.value);drawAll()};
+$("scrubber").oninput=e=>{playing=false;t=Number(e.target.value);$("playBtn").textContent="▶ Chạy";drawAll()};
+["showProj","showVector","showAngle","showTrace"].forEach(id=>$(id).onchange=drawAll);
+document.querySelectorAll(".state").forEach(el=>el.onclick=()=>{playing=false;$("playBtn").textContent="▶ Chạy";const target=Number(el.dataset.phase)*Math.PI/180;let tt=(target-phi)/w;while(tt<0)tt+=T();while(tt>2*T())tt-=T();t=tt;drawAll()});
+window.addEventListener("resize",drawAll);drawAll();raf=requestAnimationFrame(loop);
+</script>
+</body>
+</html>

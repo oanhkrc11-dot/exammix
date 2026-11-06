@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>VL11-35 Sóng dừng trên dây một đầu cố định một đầu tự do 3D</title>
+<style>
+:root{
+ --panel:#071720;--panel2:#0b2632;--txt:#eef8fb;--muted:#a9c2cd;--line:#2b5769;
+ --cyan:#63dcff;--yellow:#ffd166;--red:#ff6b6b;--green:#69e3a6;--orange:#ffb45a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#020912;color:var(--txt)}
+#app{display:grid;grid-template-columns:250px 1fr;height:100vh}
+#panel{background:linear-gradient(#071720,#0b2632);padding:10px;border-right:1px solid #183847;overflow:auto}
+.ey{font-size:10px;color:#4cc9f0;font-weight:800;letter-spacing:1px}
+h1{font-size:17px;margin:4px 0 6px;line-height:1.1}.desc{font-size:10.5px;color:var(--muted);line-height:1.35;margin:0 0 8px}
+.ctl{display:grid;grid-template-columns:70px 1fr 60px;gap:5px;align-items:center;margin:5px 0}
+.ctl label{font-size:9.7px}.ctl output{font-size:9.2px;text-align:right;color:#72e4ff;font-weight:700}
+input[type=range]{width:100%;accent-color:#4cc9f0}
+.checks,.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}
+.check,.btn{font-size:9.3px;padding:6px;border:1px solid var(--line);border-radius:8px;background:#0e2a37;color:#eef8fb}
+.btn{font-weight:800;cursor:pointer}.primary{background:#0f7da7}.record{background:#b83e3e}
+.rec{font-size:9px;color:#bcd2db;margin-top:7px}
+#view{position:relative;min-width:0;background:radial-gradient(circle at 55% 32%,#123d58 0%,#0a263b 38%,#061725 70%,#030b13 100%)}
+#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:5;pointer-events:none}
+.label3d{position:absolute;transform:translate(-50%,-50%);background:rgba(240,248,251,.94);color:#17333e;border:1px solid #9ec2d2;border-radius:6px;padding:4px 6px;font-size:9.5px;white-space:nowrap}
+#formula{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;background:rgba(245,250,252,.95);color:#17313c;border:1px solid #9ec2d2;border-radius:9px;padding:6px 12px;font-size:10.5px;font-weight:700}
+#hud{position:absolute;right:12px;bottom:12px;z-index:7;display:flex;gap:10px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:10px;padding:7px 9px}
+.hud span{display:block;font-size:8px;color:#98bac8}.hud b{font-size:10.3px}
+#note{position:absolute;left:12px;bottom:12px;z-index:7;width:425px;background:rgba(7,20,28,.9);border:1px solid #316376;border-radius:9px;padding:7px;font-size:9.2px;color:#d8edf6}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;font-weight:700}
+#hint{position:absolute;right:12px;top:12px;z-index:7;font-size:9.4px;background:rgba(7,20,28,.82);border:1px solid #315d70;border-radius:8px;padding:6px 8px;color:#eaf7fb}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="ey">PHYSICS 11 LAB · 3D</div>
+<h1>35 · Sóng dừng trên dây một đầu cố định, một đầu tự do</h1>
+<p class="desc">Đầu trái là nút cố định; đầu phải tự do là bụng. Chọn mode để quan sát các họa âm lẻ của hệ.</p>
+
+<div class="ctl"><label>Tốc độ mô phỏng</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut"></output></div>
+<div class="ctl"><label>Biên độ A</label><input id="amp" type="range" min=".01" max=".08" step=".005" value=".04"><output id="ampOut"></output></div>
+<div class="ctl"><label>Chiều dài L</label><input id="length" type="range" min=".5" max="2" step=".05" value="1.2"><output id="lengthOut"></output></div>
+<div class="ctl"><label>Tần số f</label><input id="freq" type="range" min="5" max="200" step="1" value="50"><output id="freqOut"></output></div>
+<div class="ctl"><label>Mode m</label><input id="mode" type="range" min="1" max="5" step="1" value="2"><output id="modeOut"></output></div>
+
+<div class="checks">
+<label class="check"><input id="showNodes" type="checkbox" checked> Nút</label>
+<label class="check"><input id="showAntis" type="checkbox" checked> Bụng</label>
+<label class="check"><input id="showEnvelope" type="checkbox" checked> Biên dạng</label>
+<label class="check"><input id="showPersist" type="checkbox" checked> Lưu ảnh</label>
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showParticles" type="checkbox" checked> Hạt trên dây</label>
+</div>
+
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Căn giữa</button>
+<button id="m1" class="btn">m=1</button><button id="m2" class="btn">m=2</button>
+<button id="m3" class="btn">m=3</button><button id="fullscreenBtn" class="btn">⛶ Toàn màn hình</button>
+<button id="recordBtn" class="btn record">🎥 Bắt đầu quay</button><button id="stopRecordBtn" class="btn" disabled>⏹ Dừng quay</button>
+</div>
+<div class="rec"><span id="recLabel">Chưa quay</span> · <span id="recTime">00:00</span></div>
+</aside>
+
+<main id="view">
+<div id="three"></div><div id="labels"></div>
+<div id="formula">L = (2m−1)λ/4 &nbsp; · &nbsp; λ = 4L/(2m−1) &nbsp; · &nbsp; v=fλ</div>
+<div id="hint">Kéo: xoay · Lăn: zoom · không pan</div>
+<div id="hud">
+<div class="hud"><span>m</span><b id="mHud"></b></div>
+<div class="hud"><span>λ</span><b id="lambdaHud"></b></div>
+<div class="hud"><span>f</span><b id="fHud"></b></div>
+<div class="hud"><span>v</span><b id="vHud"></b></div>
+<div class="hud"><span>Nút</span><b id="nodesHud"></b></div>
+<div class="hud"><span>Bụng</span><b id="antisHud"></b></div>
+</div>
+<div id="note">Đầu trái cố định là nút. Đầu phải tự do là bụng. Với mode m, hệ thỏa L=(2m−1)λ/4. Bật “Lưu ảnh” để ở tần số cao dây hiện thành các bó sóng liên tục giống thí nghiệm thực tế.</div>
+<div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const view=$('view');
+const state={running:true,t:0,speed:1,A:.04,L:1.2,f:50,m:2,last:performance.now()};
+
+function lambda(){return 4*state.L/(2*state.m-1)}
+function waveV(){return state.f*lambda()}
+function omega(){return 2*Math.PI*state.f}
+function shape(x){return Math.sin((2*state.m-1)*Math.PI*x/(2*state.L))}
+function yAt(x,t=state.t){return state.A*shape(x)*Math.cos(omega()*t)}
+function env(x){return Math.abs(state.A*shape(x))}
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x06111d,0);renderer.shadowMap.enabled=true;
+$('three').appendChild(renderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.enablePan=false;controls.minDistance=6.5;controls.maxDistance=22;controls.minPolarAngle=.45;controls.maxPolarAngle=2.2;
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x1a2a34,4.2));
+const key=new THREE.DirectionalLight(0xffffff,4.5);key.position.set(5,9,8);scene.add(key);
+
+const lab=new THREE.Group();scene.add(lab);lab.position.set(-.3,-.8,0);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(18,12),new THREE.MeshStandardMaterial({color:0x0a1c28,roughness:.96}));
+floor.rotation.x=-Math.PI/2;floor.position.y=-2.6;lab.add(floor);
+const grid=new THREE.GridHelper(18,24,0x2e586a,0x123345);grid.position.y=-2.59;lab.add(grid);
+
+const supportMat=new THREE.MeshStandardMaterial({color:0x6f8792,metalness:.65,roughness:.28,emissive:0x173440,emissiveIntensity:.3});
+const fixedPost=new THREE.Mesh(new THREE.BoxGeometry(.32,3.1,.7),supportMat);fixedPost.position.set(-5.0,-.35,0);lab.add(fixedPost);
+const base1=new THREE.Mesh(new THREE.BoxGeometry(1.3,.22,1.1),supportMat);base1.position.set(-5.0,-1.95,0);lab.add(base1);
+
+// free end guide
+const guide=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,3.0,18),supportMat);guide.position.set(5.3,-.35,0);lab.add(guide);
+const base2=new THREE.Mesh(new THREE.BoxGeometry(1.3,.22,1.1),supportMat);base2.position.set(5.3,-1.95,0);lab.add(base2);
+const freeRing=new THREE.Mesh(new THREE.TorusGeometry(.22,.06,12,28),new THREE.MeshStandardMaterial({color:0xf1f7f9,emissive:0x5b7783,emissiveIntensity:.25,metalness:.5,roughness:.25}));freeRing.rotation.y=Math.PI/2;lab.add(freeRing);
+
+const lineMat=new THREE.LineBasicMaterial({color:0x63dcff});
+const stringLine=new THREE.Line(new THREE.BufferGeometry(),lineMat);lab.add(stringLine);
+
+const particleGeom=new THREE.SphereGeometry(.05,12,10);
+const particleMat=new THREE.MeshStandardMaterial({color:0xb7f3ff,emissive:0x2e9fc4,emissiveIntensity:.65});
+const particles=new THREE.InstancedMesh(particleGeom,particleMat,61);lab.add(particles);
+
+const nodeGroup=new THREE.Group(),antiGroup=new THREE.Group();lab.add(nodeGroup,antiGroup);
+const nodeMat=new THREE.MeshStandardMaterial({color:0xff6b6b,emissive:0xa42626,emissiveIntensity:.55});
+const antiMat=new THREE.MeshStandardMaterial({color:0xffd166,emissive:0xb67e13,emissiveIntensity:.5});
+
+const persistGroup=new THREE.Group();lab.add(persistGroup);
+const envGroup=new THREE.Group();lab.add(envGroup);
+
+function xScene(x){return -4.7+9.7*x/state.L}
+function yScene(y){return y/state.A*1.25}
+
+function rebuildMarkers(){
+ nodeGroup.clear();antiGroup.clear();
+ // nodes: x_j = 2jL/(2m-1), j=0..m-1 (last node before free end)
+ for(let j=0;j<state.m;j++){
+   const x=2*j*state.L/(2*state.m-1);
+   const s=new THREE.Mesh(new THREE.SphereGeometry(.11,18,14),nodeMat);
+   s.position.set(xScene(x),0,0);nodeGroup.add(s)
+ }
+ // antinodes: x_j=(2j+1)L/(2m-1), j=0..m-1, last at free end
+ for(let j=0;j<state.m;j++){
+   const x=(2*j+1)*state.L/(2*state.m-1);
+   const s=new THREE.Mesh(new THREE.SphereGeometry(.11,18,14),antiMat);
+   s.position.set(xScene(x),0,.05);antiGroup.add(s)
+ }
+}
+function rebuildPersistence(){
+ persistGroup.clear();envGroup.clear();
+ if($('showPersist').checked){
+   for(let p=0;p<16;p++){
+     const ph=2*Math.PI*p/15,pts=[];
+     for(let i=0;i<=220;i++){
+       const x=state.L*i/220;
+       const y=state.A*shape(x)*Math.cos(ph);
+       pts.push(new THREE.Vector3(xScene(x),yScene(y),0))
+     }
+     const g=new THREE.BufferGeometry().setFromPoints(pts);
+     const m=new THREE.LineBasicMaterial({color:0x63dcff,transparent:true,opacity:.055});
+     persistGroup.add(new THREE.Line(g,m))
+   }
+ }
+ if($('showEnvelope').checked){
+   for(const sgn of [-1,1]){
+     const pts=[];
+     for(let i=0;i<=220;i++){
+       const x=state.L*i/220,y=sgn*env(x);
+       pts.push(new THREE.Vector3(xScene(x),yScene(y),-.06))
+     }
+     const g=new THREE.BufferGeometry().setFromPoints(pts);
+     const m=new THREE.LineDashedMaterial({color:0xffd166,dashSize:.18,gapSize:.12,transparent:true,opacity:.75});
+     const ln=new THREE.Line(g,m);ln.computeLineDistances();envGroup.add(ln)
+   }
+ }
+}
+function updateVisuals(){
+ const pts=[];
+ for(let i=0;i<=260;i++){
+   const x=state.L*i/260,y=yAt(x);
+   pts.push(new THREE.Vector3(xScene(x),yScene(y),0))
+ }
+ stringLine.geometry.dispose();stringLine.geometry=new THREE.BufferGeometry().setFromPoints(pts);
+
+ const dummy=new THREE.Object3D();
+ for(let i=0;i<61;i++){
+   const x=state.L*i/60,y=yAt(x);
+   dummy.position.set(xScene(x),yScene(y),0);dummy.updateMatrix();
+   particles.setMatrixAt(i,dummy.matrix)
+ }
+ particles.instanceMatrix.needsUpdate=true;
+ particles.visible=$('showParticles').checked;
+
+ // free end follows antinode displacement
+ freeRing.position.set(xScene(state.L),yScene(yAt(state.L)),0);
+ nodeGroup.visible=$('showNodes').checked;
+ antiGroup.visible=$('showAntis').checked;
+ persistGroup.visible=$('showPersist').checked;
+ envGroup.visible=$('showEnvelope').checked;
+ grid.visible=$('showGrid').checked;
+}
+function updateUI(){
+ $('speedOut').value=state.speed.toFixed(2)+'×';
+ $('ampOut').value=(state.A*100).toFixed(1)+' cm';
+ $('lengthOut').value=state.L.toFixed(2)+' m';
+ $('freqOut').value=state.f.toFixed(0)+' Hz';
+ $('modeOut').value=state.m;
+ $('mHud').textContent=state.m;
+ $('lambdaHud').textContent=lambda().toFixed(2)+' m';
+ $('fHud').textContent=state.f.toFixed(0)+' Hz';
+ $('vHud').textContent=waveV().toFixed(1)+' m/s';
+ $('nodesHud').textContent=state.m;
+ $('antisHud').textContent=state.m;
+}
+function sync(resetTime=true){
+ state.speed=+$('speed').value;state.A=+$('amp').value;state.L=+$('length').value;state.f=+$('freq').value;state.m=+$('mode').value;
+ if(resetTime)state.t=0;
+ rebuildMarkers();rebuildPersistence();updateUI()
+}
+['amp','length','freq','mode'].forEach(id=>$(id).addEventListener('input',()=>sync(true)));
+$('speed').addEventListener('input',()=>sync(false));
+['showEnvelope','showPersist'].forEach(id=>$(id).addEventListener('change',rebuildPersistence));
+$('startBtn').onclick=()=>state.running=true;$('pauseBtn').onclick=()=>state.running=false;
+function setM(m){$('mode').value=m;sync(true)}$('m1').onclick=()=>setM(1);$('m2').onclick=()=>setM(2);$('m3').onclick=()=>setM(3);
+$('resetBtn').onclick=()=>{
+ Object.assign(state,{running:true,t:0,speed:1,A:.04,L:1.2,f:50,m:2});
+ for(const [id,val] of [['speed',1],['amp',.04],['length',1.2],['freq',50],['mode',2]])$(id).value=val;
+ rebuildMarkers();rebuildPersistence();fitCamera();updateUI()
+};
+$('fitBtn').onclick=fitCamera;
+$('fullscreenBtn').onclick=async()=>{try{if(!document.fullscreenElement)await view.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+document.addEventListener('fullscreenchange',()=>setTimeout(()=>{resize();fitCamera()},80));
+
+const labels=$('labels');
+function mkLabel(t){const e=document.createElement('div');e.className='label3d';e.textContent=t;labels.appendChild(e);return e}
+const lFixed=mkLabel('Đầu cố định · NÚT'),lFree=mkLabel('Đầu tự do · BỤNG');
+function projectLabel(el,p){
+ const q=p.clone().project(camera);el.style.left=((q.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-q.y*.5+.5)*view.clientHeight)+'px';el.style.display=q.z>1?'none':'block'
+}
+function updateLabels(){
+ projectLabel(lFixed,new THREE.Vector3(-5.0,1.65,.3));
+ projectLabel(lFree,new THREE.Vector3(5.25,1.65,.3))
+}
+
+function fitCamera(){
+ controls.target.set(.1,-.15,0);
+ camera.position.set(11.5,5.2,15.8);
+ camera.lookAt(controls.target);controls.update()
+}
+function resize(){camera.aspect=view.clientWidth/view.clientHeight;camera.updateProjectionMatrix();renderer.setSize(view.clientWidth,view.clientHeight,false)}
+window.addEventListener('resize',()=>{resize();fitCamera()});
+
+let rec=null,chunks=[],recStart=0,timer=null;
+function mime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function clock(){const s=Math.floor((performance.now()-recStart)/1000);$('recTime').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+$('recordBtn').onclick=()=>{
+ if(!renderer.domElement.captureStream||!window.MediaRecorder)return;
+ const m=mime();rec=new MediaRecorder(renderer.domElement.captureStream(30),m?{mimeType:m,videoBitsPerSecond:8000000}:{videoBitsPerSecond:8000000});
+ chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ rec.onstop=()=>{clearInterval(timer);$('recLabel').textContent='Đã dừng';const real=rec.mimeType||m||'video/webm',ext=real.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type:real}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`035_Song_dung_mot_dau_co_dinh_mot_dau_tu_do_3D.${ext}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true};
+ rec.start(1000);recStart=performance.now();clock();timer=setInterval(clock,250);$('recLabel').textContent='Đang quay';$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false
+};
+$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+resize();rebuildMarkers();rebuildPersistence();fitCamera();updateUI();
+
+let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);
+ const dt=Math.min(.033,(now-last)/1000);last=now;
+ if(state.running)state.t+=dt*state.speed;
+ updateVisuals();updateUI();updateLabels();controls.update();renderer.render(scene,camera)
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

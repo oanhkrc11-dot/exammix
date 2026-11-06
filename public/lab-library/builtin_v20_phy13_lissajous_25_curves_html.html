@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>One Equation 25 Curves — Lissajous Lab</title>
+  <style>
+    :root {
+      --bg: #03111f;
+      --panel: rgba(6, 20, 36, 0.92);
+      --panel2: rgba(11, 31, 52, 0.92);
+      --line: rgba(154, 198, 255, 0.15);
+      --text: #eef7ff;
+      --muted: #9fb5cb;
+      --accent: #77e3ff;
+      --shadow: 0 10px 40px rgba(0,0,0,.45);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(39,119,191,.22), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(0,255,213,.08), transparent 28%),
+        linear-gradient(180deg, #020912 0%, #071525 100%);
+      color: var(--text);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .wrap {
+      width: min(1180px, 96vw);
+      margin: 16px auto;
+      background: linear-gradient(180deg, rgba(6,18,34,.96), rgba(3,11,22,.96));
+      border: 1px solid rgba(138, 203, 255, 0.12);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: linear-gradient(180deg, rgba(11,28,48,.96), rgba(7,19,34,.96));
+      border-bottom: 1px solid rgba(142, 210, 255, 0.09);
+    }
+
+    .titlebox h1 {
+      margin: 0;
+      font-size: clamp(22px, 3vw, 38px);
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      line-height: 1.1;
+      background: linear-gradient(90deg, #ff7f7f, #ffbf6b, #f7f57a, #7ef1b1, #7cc9ff, #c18cff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 14px rgba(122, 195, 255, .12);
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      border: 1px solid rgba(132, 214, 255, 0.18);
+      background: linear-gradient(180deg, rgba(24,61,96,.95), rgba(11,31,56,.95));
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: .2s ease;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02), 0 6px 16px rgba(0,0,0,.18);
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(132, 214, 255, 0.4);
+      box-shadow: 0 10px 22px rgba(0,0,0,.25);
+    }
+
+    .speed {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(10, 29, 49, 0.95);
+      border: 1px solid rgba(132, 214, 255, 0.12);
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    input[type="range"] {
+      width: 150px;
+      accent-color: #73e4ff;
+    }
+
+    .content {
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 1fr 270px;
+      gap: 18px;
+    }
+
+    .board {
+      position: relative;
+      background: linear-gradient(180deg, rgba(4,15,29,.92), rgba(2,10,20,.95));
+      border: 1px solid rgba(132, 214, 255, 0.12);
+      border-radius: 18px;
+      padding: 16px 16px 18px;
+      min-height: 740px;
+    }
+
+    .formula {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .formula .eq {
+      display: inline-block;
+      font-size: clamp(18px, 2vw, 28px);
+      line-height: 1.45;
+      color: #ffd973;
+      text-shadow: 0 0 10px rgba(255, 220, 91, .18);
+    }
+    .formula .eq .v {
+      color: #9be1ff;
+    }
+
+    canvas {
+      width: 100%;
+      height: calc(100% - 90px);
+      min-height: 620px;
+      display: block;
+      border-radius: 12px;
+    }
+
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(10,29,49,.96), rgba(6,19,35,.96));
+      border: 1px solid rgba(132, 214, 255, 0.11);
+      border-radius: 18px;
+      padding: 14px 15px;
+      box-shadow: inset 0 0 25px rgba(120, 190, 255, 0.02);
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      color: #b7e8ff;
+      letter-spacing: .3px;
+    }
+
+    .card p, .card li {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      margin: 0;
+    }
+    .card ul {
+      padding-left: 18px;
+      margin: 0;
+    }
+    .mini {
+      font-size: 12px;
+      opacity: .95;
+      color: #89a8c2;
+      margin-top: 8px;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: rgba(108, 202, 255, 0.12);
+      border: 1px solid rgba(108, 202, 255, 0.14);
+      color: #c9efff;
+      margin: 3px 4px 0 0;
+    }
+
+    .footer {
+      padding: 0 18px 18px;
+      color: #7f9ab3;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      body { overflow: auto; }
+      .content { grid-template-columns: 1fr; }
+      .board { min-height: 680px; }
+      canvas { min-height: 560px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="titlebox">
+        <h1>One Equation • 25 Curves</h1>
+        <div class="subtitle">Mô phỏng đường cong Lissajous — chạy offline, phong cách neon, giống chuyển động trong video bạn gửi.</div>
+      </div>
+      <div class="controls">
+        <div class="speed">
+          <span>Tốc độ</span>
+          <input id="speed" type="range" min="0.2" max="3" step="0.1" value="1" />
+          <span id="speedVal">1.0×</span>
+        </div>
+        <button id="pauseBtn" class="btn">⏸ Tạm dừng</button>
+        <button id="restartBtn" class="btn">🔄 Chạy lại</button>
+        <button id="trailBtn" class="btn">✨ Bật/Tắt vệt sáng</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="board">
+        <div class="formula">
+          <div class="eq">
+            <span class="v">x</span> = cos(<span class="v">a</span>θ) <br>
+            <span class="v">y</span> = sin(<span class="v">b</span>θ)
+          </div>
+        </div>
+        <canvas id="board"></canvas>
+      </div>
+
+      <div class="side">
+        <div class="card">
+          <h3>Ý nghĩa</h3>
+          <p>
+            Mỗi ô là một đường cong Lissajous ứng với cặp số <b>a</b> và <b>b</b> từ 1 đến 5. Dấu chấm sáng chạy theo tham số θ,
+            còn đường màu là quỹ đạo được tạo thành.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Quan sát nhanh</h3>
+          <ul>
+            <li>a = b → thường cho đường tròn, elip hoặc đường nghiêng đối xứng.</li>
+            <li>Tỉ số a : b càng khác nhau, hình càng phức tạp.</li>
+            <li>Các hình này mô tả sự kết hợp của hai dao động điều hòa vuông góc.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Phong cách hiển thị</h3>
+          <div class="tag">Neon</div>
+          <div class="tag">Nền tối</div>
+          <div class="tag">Hiệu ứng phát sáng</div>
+          <div class="tag">Tracer dot</div>
+          <div class="tag">Grid 5 × 5</div>
+          <div class="mini">Phù hợp trình chiếu trên lớp hoặc nhúng vào website học tập.</div>
+        </div>
+
+        <div class="card">
+          <h3>Gợi ý dùng trên lớp</h3>
+          <p>
+            Cho học sinh dự đoán hình khi thay đổi cặp <b>(a, b)</b>, sau đó quan sát mô phỏng để rút ra quy luật về tỉ số tần số.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Tệp HTML độc lập — mở trực tiếp bằng trình duyệt là chạy. Nếu bạn muốn, mình có thể làm tiếp bản <b>có thanh chỉnh a, b, pha và chế độ toàn màn hình</b>.
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const speedSlider = document.getElementById('speed');
+    const speedVal = document.getElementById('speedVal');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const trailBtn = document.getElementById('trailBtn');
+
+    let running = true;
+    let showTrail = true;
+    let progress = 0;
+    let lastTime = 0;
+    let speedFactor = parseFloat(speedSlider.value);
+    const rows = 5, cols = 5;
+
+    const colors = [
+      '#ff7285', '#ff9d52', '#ffcb4d', '#49eecf', '#51c7ff', '#8c8cff', '#c281ff'
+    ];
+
+    function resize() {
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+
+    function hexToRgba(hex, alpha) {
+      const h = hex.replace('#', '');
+      const bigint = parseInt(h, 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function glowLine(color, width) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = color;
+    }
+
+    function glowFill(color) {
+      ctx.fillStyle = color;
+      ctx.shadowBlur = 14;
+      ctx.shadowColor = color;
+    }
+
+    function drawGridArea() {
+      const padLeft = 56;
+      const padTop = 56;
+      const width = canvas.clientWidth - padLeft - 12;
+      const height = canvas.clientHeight - padTop - 14;
+      const cellW = width / cols;
+      const cellH = height / rows;
+
+      ctx.save();
+
+      ctx.strokeStyle = 'rgba(147, 202, 255, 0.12)';
+      ctx.lineWidth = 1;
+      ctx.shadowBlur = 0;
+      for (let i = 0; i <= cols; i++) {
+        const x = padLeft + i * cellW;
+        ctx.beginPath();
+        ctx.moveTo(x, padTop - 18);
+        ctx.lineTo(x, padTop + height);
+        ctx.stroke();
+      }
+      for (let j = 0; j <= rows; j++) {
+        const y = padTop + j * cellH;
+        ctx.beginPath();
+        ctx.moveTo(padLeft - 18, y);
+        ctx.lineTo(padLeft + width, y);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = 'rgba(222, 242, 255, .92)';
+      ctx.font = '16px Segoe UI';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let c = 0; c < cols; c++) {
+        ctx.fillText(String(c + 1), padLeft + c * cellW + cellW / 2, padTop - 28);
+      }
+      for (let r = 0; r < rows; r++) {
+        ctx.fillText(String(r + 1), padLeft - 28, padTop + r * cellH + cellH / 2);
+      }
+
+      ctx.fillStyle = 'rgba(182, 228, 255, 0.86)';
+      ctx.font = '15px Segoe UI';
+      ctx.fillText('b', padLeft - 14, padTop - 28);
+      ctx.fillText('a', padLeft - 40, padTop - 28);
+      ctx.fillStyle = 'rgba(128, 173, 205, 0.75)';
+      ctx.fillText('/', padLeft - 27, padTop - 28);
+
+      ctx.restore();
+
+      return { padLeft, padTop, width, height, cellW, cellH };
+    }
+
+    function drawCellCurve(cellX, cellY, cellW, cellH, a, b, color) {
+      const cx = cellX + cellW / 2;
+      const cy = cellY + cellH / 2;
+      const amp = Math.min(cellW, cellH) * 0.34;
+      const maxTheta = Math.PI * 2;
+      const thetaNow = maxTheta * progress;
+      const steps = 280;
+
+      ctx.save();
+      ctx.beginPath();
+      for (let i = 0; i <= steps; i++) {
+        const t = thetaNow * (i / steps);
+        const x = cx + amp * Math.cos(a * t);
+        const y = cy + amp * Math.sin(b * t);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      glowLine(color, 2.0);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      if (showTrail) {
+        const trailCount = 18;
+        for (let i = 0; i < trailCount; i++) {
+          const tt = thetaNow - (trailCount - i) * 0.035;
+          if (tt < 0) continue;
+          const alpha = (i + 1) / trailCount * 0.18;
+          const x = cx + amp * Math.cos(a * tt);
+          const y = cy + amp * Math.sin(b * tt);
+          ctx.beginPath();
+          ctx.fillStyle = hexToRgba(color, alpha);
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = color;
+          ctx.arc(x, y, 1.2 + i * 0.08, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      const px = cx + amp * Math.cos(a * thetaNow);
+      const py = cy + amp * Math.sin(b * thetaNow);
+
+      ctx.beginPath();
+      glowFill('#ffffff');
+      ctx.arc(px, py, 2.9, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.fillStyle = color;
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = color;
+      ctx.arc(px, py, 5.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+      bgGrad.addColorStop(0, 'rgba(5,16,30,1)');
+      bgGrad.addColorStop(1, 'rgba(1,9,18,1)');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // subtle stars/glow dots
+      for (let i = 0; i < 40; i++) {
+        const x = (i * 97) % w;
+        const y = ((i * 173) % h);
+        ctx.beginPath();
+        ctx.fillStyle = i % 5 === 0 ? 'rgba(120, 220, 255, .08)' : 'rgba(255,255,255,.03)';
+        ctx.arc(x, y, (i % 3) + .5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const grid = drawGridArea();
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cellX = grid.padLeft + c * grid.cellW;
+          const cellY = grid.padTop + r * grid.cellH;
+          const color = colors[(r + c) % colors.length];
+          drawCellCurve(cellX, cellY, grid.cellW, grid.cellH, c + 1, r + 1, color);
+        }
+      }
+    }
+
+    function animate(time) {
+      if (!lastTime) lastTime = time;
+      const dt = (time - lastTime) / 1000;
+      lastTime = time;
+
+      if (running) {
+        progress += dt * 0.14 * speedFactor;
+        if (progress > 1) progress = 0;
+      }
+
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    speedSlider.addEventListener('input', () => {
+      speedFactor = parseFloat(speedSlider.value);
+      speedVal.textContent = speedFactor.toFixed(1) + '×';
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      running = !running;
+      pauseBtn.textContent = running ? '⏸ Tạm dừng' : '▶ Tiếp tục';
+    });
+
+    restartBtn.addEventListener('click', () => {
+      progress = 0;
+      lastTime = 0;
+    });
+
+    trailBtn.addEventListener('click', () => {
+      showTrail = !showTrail;
+    });
+
+    window.addEventListener('resize', resize);
+    resize();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

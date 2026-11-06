@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dao động điều hòa 3D PRO — Thầy Hùng vật lí</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#071422;
+  --panel:#0d2134;
+  --line:#264155;
+  --text:#e8f7ff;
+  --muted:#a1b8c9;
+  --cyan:#4bdffd;
+  --orange:#ffb55b;
+  --green:#6df3b1;
+  --board:#214f42;
+  --board-2:#1c4a3d;
+  --board-frame:#7b8185;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,system-ui,sans-serif;color:var(--text);background:var(--bg)}
+main{display:flex;min-height:100vh}
+.panel{width:258px;flex:none;padding:13px 12px;background:linear-gradient(160deg,#10283d,#08192a);border-right:1px solid #294457;overflow:auto;max-height:100vh}
+.brand{font-size:18px;font-weight:800;color:var(--cyan);line-height:1.3}
+.sub{color:var(--muted);font-size:11px;margin:5px 0 15px}
+.group{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+.group h3{font-size:12px;letter-spacing:.07em;color:var(--orange);margin:0 0 10px;text-transform:uppercase}
+label{display:flex;justify-content:space-between;gap:6px;font-size:12px;margin:9px 0 3px}
+output{color:var(--cyan);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:#42d3ed}
+select,button{background:#16334a;color:#e9f9ff;border:1px solid #38627a;padding:8px 6px;border-radius:8px;font-size:12px;cursor:pointer}
+select{width:100%}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.buttons button{min-height:35px}
+button:hover{background:#27506c}
+.primary{background:#12617a;border-color:#19adcf}
+.workspace{flex:1;min-width:0;display:flex;flex-direction:column;padding:10px;gap:8px;background:radial-gradient(ellipse at 47% 14%,#183c58 0,#0b1d30 55%,#06111d 100%);height:100vh;overflow:hidden}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.headline{font-size:16px;font-weight:700}
+.formula{font-size:18px;color:var(--orange);text-shadow:0 0 18px #ff9c3344;font-family:Georgia,serif}
+.stage{position:relative;height:52vh;min-height:290px;max-height:430px;flex:none;overflow:hidden;border:1px solid #2b4b61;border-radius:12px;background:radial-gradient(ellipse at 50% 40%,#23405a,#0a1b2c 70%)}
+canvas#scene{width:100%;height:100%;display:block;touch-action:none}
+.hud{position:absolute;bottom:12px;left:12px;font-size:12px;line-height:1.85;padding:8px 11px;border:1px solid #38607c;border-radius:9px;background:#061626b9;pointer-events:none}
+.hud b{color:var(--cyan)}
+.hint{position:absolute;right:12px;bottom:11px;font-size:11px;color:#c2d5e0;background:#091d2a99;padding:6px 8px;border-radius:6px}
+.graphs{display:grid;grid-template-columns:1fr 1fr;gap:10px;height:28vh;min-height:200px;max-height:265px;flex:none}
+.graphcard{
+  background:linear-gradient(180deg,var(--board),var(--board-2));
+  border:3px solid #8f9596;
+  border-radius:10px;
+  padding:6px 8px 8px;
+  min-width:0;
+  position:relative;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.05), inset 0 0 36px rgba(0,0,0,.15), 0 4px 18px rgba(0,0,0,.2);
+}
+.graphcard::after{
+  content:'';
+  position:absolute;
+  left:0;right:0;bottom:-2px;
+  height:6px;
+  background:linear-gradient(180deg,#b8bec3,#7f858b);
+  border-bottom-left-radius:7px;border-bottom-right-radius:7px;
+  opacity:.8;
+}
+.graphcard h4{margin:0 0 4px 0;font-size:12px;color:#eef7ee;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+canvas.plot{width:100%;height:calc(100% - 23px);display:block;border-radius:6px}
+.foot{font-size:11px;color:#91abba;display:flex;justify-content:space-between;gap:15px}
+.pill{color:var(--green)}
+body.light{--bg:#e6edf3;--panel:#f4f7fa;--line:#bfd1dc;--text:#173046;--muted:#506d80;--cyan:#047f9e;--orange:#b35b0b;--board:#dfeadf;--board-2:#d2e1d2}
+body.light .panel{background:#edf4f9}
+body.light .workspace{background:radial-gradient(ellipse at 50% 20%,#e9f6ff,#c9d9e7)}
+body.light .graphcard h4{color:#1f3d2f;text-shadow:none}
+body.light select,body.light button{color:#163047;background:#e0edf5}
+body.light .stage{background:#d8e9f4}
+body.light .hud{color:white}
+body.light .foot{color:#486579}
+@media(max-width:850px){
+  main{flex-direction:column}
+  .panel{width:100%;max-height:none}
+  .workspace{height:auto;overflow:visible}
+  .graphs{grid-template-columns:1fr;height:390px}
+  .stage{height:370px;min-height:370px;max-height:none}
+}
+</style>
+
+<style id="v4-style">
+:root{--cyan:#5ce5f5;--orange:#ffbd68}
+body{background:#061323}
+.panel{width:236px;padding:13px 11px;background:linear-gradient(170deg,#10293c,#071727);scrollbar-width:thin;scrollbar-color:#47657c transparent}
+.brand{font-size:16px;letter-spacing:.025em}
+.group{margin-top:9px;padding-top:9px}
+.group h3{margin-bottom:7px}
+.panel label{margin:7px 0 3px}
+.panel input[type=range]{height:13px}
+.workspace{height:100dvh;min-height:500px;padding:10px 13px 8px;gap:8px;overflow:hidden}
+header{min-height:32px;flex:none}
+.headline{font-size:15px;letter-spacing:.025em}
+.formula{font-size:17px}
+.stage{height:auto;max-height:none;min-height:220px;flex:1 1 0;box-shadow:0 5px 25px #0003}
+.graphs{height:32%;min-height:190px;max-height:none;flex:0 0 32%;gap:8px;overflow:hidden}
+.graphcard{min-height:0;border:2px solid #7c9892;box-shadow:0 4px 15px #0003;display:flex;flex-direction:column}
+.graphcard h4{height:19px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+canvas.plot{height:auto;min-height:0;flex:1}
+.foot{min-height:16px;flex:none}
+.quickbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:auto}
+.quickbar button{white-space:nowrap;background:#133750;border-color:#356581;padding:7px 10px;font-size:12px}
+.quickbar button.active{background:#0d687a;border-color:#46cde5}
+.graphs.one{grid-template-columns:1fr}
+.graphs.one .graphcard[hidden]{display:none!important}
+.graphs.large{flex-basis:53%;height:53%}
+.graphs.large+.foot{display:none}
+.workspace:fullscreen{height:100vh}
+#graphState{font-size:11px;color:#a1dece}
+@media(max-width:1080px){.quickbar button{padding:6px 7px;font-size:11px}.formula{font-size:15px}.headline{font-size:13px}}
+@media(max-width:850px){main{flex-direction:column}.panel{width:100%;max-height:none}.workspace{height:auto;min-height:900px;overflow:visible}.stage{height:400px;flex:none;max-height:none;min-height:300px}.graphs{height:410px;max-height:none;flex:none;grid-template-columns:1fr}.graphs.large{height:520px;flex:none}.graphs.one{grid-template-columns:1fr}.quickbar{margin-left:0}.foot{flex-wrap:wrap}}
+@media(max-height:690px) and (min-width:851px){.graphs{min-height:170px;flex-basis:31%}.stage{min-height:190px}.workspace{min-height:430px}.hud{font-size:11px;line-height:1.4}}
+</style>
+</head>
+<body>
+<main>
+  <aside class="panel">
+    <div class="brand">DAO ĐỘNG ĐIỀU HÒA<br>3D PRO</div>
+    <div class="sub">Phòng thí nghiệm ảo • Thầy Hùng vật lí</div>
+
+    <div class="group">
+      <h3>Mô hình thí nghiệm</h3>
+      <select id="mode">
+        <option value="spring">01 · Con lắc lò xo</option>
+        <option value="pendulum">02 · Con lắc đơn</option>
+      </select>
+      <label>Biên độ <output id="ampOut"></output></label>
+      <input id="amp" type="range" min="2" max="30" step="1" value="16">
+      <label>Pha ban đầu <output id="phaseOut"></output></label>
+      <input id="phase" type="range" min="-180" max="180" step="15" value="0">
+      <label>Hệ số tốc độ <output id="speedOut"></output></label>
+      <input id="speed" type="range" min="0.1" max="3" step="0.1" value="1">
+    </div>
+
+    <div class="group" id="springConfig">
+      <h3>Thông số lò xo</h3>
+      <label>Khối lượng m <output id="massOut"></output></label>
+      <input id="mass" type="range" min="0.2" max="4" step="0.1" value="1">
+      <label>Độ cứng k <output id="kOut"></output></label>
+      <input id="k" type="range" min="5" max="100" step="5" value="25">
+    </div>
+
+    <div class="group" id="pendConfig" hidden>
+      <h3>Thông số con lắc đơn</h3>
+      <label>Chiều dài ℓ <output id="lengthOut"></output></label>
+      <input id="length" type="range" min="0.5" max="3" step="0.1" value="1.6">
+      <label>Gia tốc g <output id="gravityOut"></output></label>
+      <input id="gravity" type="range" min="1.6" max="20" step="0.2" value="9.8">
+      <p style="font-size:11px;color:#acc6d6;line-height:1.5">Góc nhỏ: mô hình dao động điều hòa gần đúng; đồ thị x = ℓθ, với θ tính bằng radian.</p>
+    </div>
+
+    <div class="group">
+      <h3>Điều khiển PRO</h3>
+      <div class="buttons">
+        <button class="primary" id="start">❚❚ Tạm dừng</button>
+        <button id="reset">↺ Đặt lại</button>
+        <button id="cam">◉ Camera tự động</button>
+        <button id="view">◎ Đổi góc nhìn</button>
+        <button id="theme">☀ Nền sáng</button>
+        <button id="light">✦ Đổi ánh sáng</button>
+        <button id="fullscreen">⛶ Toàn màn hình</button>
+        <button id="record">● Bắt đầu quay</button>
+      </div>
+      <p id="recordStatus" style="font-size:11px;color:var(--green)">Sẵn sàng ghi vùng mô phỏng · 00:00</p>
+    </div>
+
+    <div class="group">
+      <h3>Hiển thị</h3>
+      <label><span><input id="trail" type="checkbox" checked> Vết quỹ đạo</span></label>
+      <label><span><input id="showGrid" type="checkbox" checked> Lưới và mốc cân bằng</span></label>
+      <label><span><input id="sync" type="checkbox" checked> Vẽ đồ thị theo vật</span></label>
+    </div>
+  </aside>
+
+  <section class="workspace" id="workspace">
+    <header>
+      <span class="headline" id="title">CON LẮC LÒ XO • DAO ĐỘNG ĐIỀU HÒA</span>
+      <div class="quickbar">
+      <span class="formula" id="formula">x = A cos(ωt + φ)</span>
+      <button id="graphMode" title="Chuyển đổi: cả hai / chỉ li độ / chỉ vận tốc">▤ Hai đồ thị</button>
+      <button id="graphSize" title="Phóng lớn khu vực đồ thị">⤢ Phóng đồ thị</button>
+      <button id="fastPause" class="active">Ⅱ Tạm dừng</button>
+    </div>
+    </header>
+
+    <div class="stage" id="stage">
+      <canvas id="scene"></canvas>
+      <div class="hud" id="hud"></div>
+      <div class="hint">Kéo chuột để xoay • Con lăn để phóng to</div>
+    </div>
+
+    <div class="graphs" id="graphs">
+      <div class="graphcard">
+        <h4 id="g1title">Li độ x (cm) theo thời gian t (s)</h4>
+        <canvas class="plot" id="plot1"></canvas>
+      </div>
+      <div class="graphcard">
+        <h4 id="g2title">Vận tốc v (cm/s) theo thời gian t (s)</h4>
+        <canvas class="plot" id="plot2"></canvas>
+      </div>
+    </div>
+
+    <div class="foot" style="flex:none">
+      <span id="graphState">Đồ thị GeoGebra • Hai đồ thị đồng bộ với vật 3D • Quay video gồm cả đồ thị</span>
+      <span class="pill">Thầy Hùng vật lí</span>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+<script>
+(()=>{
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const ids = ['amp','phase','speed','mass','k','length','gravity'];
+  let mode = 'spring', running = true, t = 0, last = performance.now(), cameraAuto = false, view = 0, lit = 0;
+  let prevX = 0, az = .18, el = .2, zoom = 1, trailPoints = [];
+  let recorder = null, recStart = 0, recordChunks = [], recordStream = null;
+
+  const vals = () => ({
+    A: +$('amp').value / 100,
+    phi: +$('phase').value * Math.PI / 180,
+    speed: +$('speed').value,
+    m: +$('mass').value,
+    k: +$('k').value,
+    L: +$('length').value,
+    g: +$('gravity').value
+  });
+
+  const calc = () => {
+    const p = vals();
+    const omega = mode === 'spring' ? Math.sqrt(p.k / p.m) : Math.sqrt(p.g / p.L);
+    const x = p.A * Math.cos(omega * t + p.phi);
+    const v = -p.A * omega * Math.sin(omega * t + p.phi);
+    const a = -omega * omega * x;
+    return {
+      ...p, omega, x, v, a,
+      period: 2 * Math.PI / omega,
+      angle: mode === 'pendulum' ? x / p.L : 0
+    };
+  };
+
+  function ui(){
+    const p = vals();
+    $('ampOut').textContent = p.A * 100 + ' cm';
+    $('phaseOut').textContent = $('phase').value + '°';
+    $('speedOut').textContent = p.speed.toFixed(1) + '×';
+    $('massOut').textContent = p.m.toFixed(1) + ' kg';
+    $('kOut').textContent = p.k + ' N/m';
+    $('lengthOut').textContent = p.L.toFixed(1) + ' m';
+    $('gravityOut').textContent = p.g.toFixed(1) + ' m/s²';
+    $('springConfig').hidden = mode !== 'spring';
+    $('pendConfig').hidden = mode !== 'pendulum';
+    $('title').textContent = mode === 'spring' ? 'CON LẮC LÒ XO • DAO ĐỘNG ĐIỀU HÒA' : 'CON LẮC ĐƠN • GẦN ĐÚNG GÓC NHỎ';
+    $('formula').textContent = mode === 'spring' ? 'x = A cos(ωt + φ)' : 'θ ≈ θ₀ cos(ωt + φ)';
+    $('g1title').textContent = 'Li độ x (cm) theo thời gian t (s)';
+    $('g2title').textContent = 'Vận tốc v (cm/s) theo thời gian t (s)';
+  }
+
+  $('mode').onchange = e => { mode = e.target.value; t = 0; trailPoints = []; rebuild(); ui(); };
+  ids.forEach(id => $(id).oninput = () => { trailPoints = []; ui(); });
+  $('start').onclick = () => { running = !running; $('start').textContent = running ? '❚❚ Tạm dừng' : '▶ Tiếp tục'; };
+  $('reset').onclick = () => { t = 0; trailPoints = []; };
+  $('cam').onclick = () => { cameraAuto = !cameraAuto; $('cam').textContent = cameraAuto ? '◉ Tắt camera tự động' : '◉ Camera tự động'; };
+  $('view').onclick = () => { view = (view + 1) % 4; cameraAuto = false; az = [.18,1.25,.35,-.9][view]; el = [.2,.12,.55,.1][view]; };
+  $('theme').onclick = () => { document.body.classList.toggle('light'); $('theme').textContent = document.body.classList.contains('light') ? '☾ Nền tối' : '☀ Nền sáng'; };
+  $('light').onclick = () => { lit = (lit + 1) % 3; keyLight.intensity = [3.3,5.2,1.9][lit]; ambient.intensity = [1.2,1.7,.8][lit]; };
+  $('fullscreen').onclick = () => { const e = $('workspace'); document.fullscreenElement ? document.exitFullscreen() : e.requestFullscreen?.(); };
+
+  if(!window.THREE){
+    $('hud').textContent = 'Không tải được thư viện 3D. Vui lòng kết nối Internet để mở thí nghiệm.';
+    return;
+  }
+
+  const renderer = new THREE.WebGLRenderer({canvas:$('scene'),antialias:true,preserveDrawingBuffer:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setClearColor(0x0a1b2c);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(43,1,.1,100);
+  const ambient = new THREE.AmbientLight(0xbad7ff,1.2); scene.add(ambient);
+  const keyLight = new THREE.DirectionalLight(0xffffff,3.3);
+  keyLight.position.set(-3,9,8); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048,2048); scene.add(keyLight);
+  const fillLight = new THREE.PointLight(0x39d4ff,100); fillLight.position.set(2,3,-1); scene.add(fillLight);
+
+  let apparatus = new THREE.Group(); scene.add(apparatus);
+  function mat(color,metalness=.15,roughness=.35){ return new THREE.MeshStandardMaterial({color,metalness,roughness}); }
+  const graphite = mat(0x344657,.7), silver = mat(0xa1bacb,.8), blue = mat(0x0fbfe8,.35), orange = mat(0xffa748,.25);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(20,15),mat(0x10283b,.2,.8));
+  floor.rotation.x = -Math.PI/2; floor.position.y = -1.75; floor.receiveShadow = true; scene.add(floor);
+  const grid = new THREE.GridHelper(18,36,0x3a718d,0x28475b); grid.position.y = -1.742; scene.add(grid);
+
+  const sphere = (r,m) => new THREE.Mesh(new THREE.SphereGeometry(r,32,24),m);
+  const box = (w,h,d,m) => new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
+  let moving, wire, pendRod, trailLine;
+  function add(obj,parent=apparatus){ parent.add(obj); obj.castShadow = true; obj.receiveShadow = true; return obj; }
+  function curveLine(pts,color=0xffb55b){ const g = new THREE.BufferGeometry().setFromPoints(pts); const l = new THREE.Line(g,new THREE.LineBasicMaterial({color})); apparatus.add(l); return l; }
+
+  function rebuild(){
+    scene.remove(apparatus);
+    apparatus = new THREE.Group();
+    scene.add(apparatus);
+    trailPoints = [];
+
+    if(mode === 'spring'){
+      const base = add(box(5.8,.18,1.8,graphite)); base.position.y = -1.35;
+      const rail = add(box(5.4,.07,.12,silver)); rail.position.set(0,-1.19,-.06);
+      const wall = add(box(.18,1.4,1.55,graphite)); wall.position.set(-2.63,-.55,0);
+      moving = add(box(.67,.64,.68,orange)); moving.position.set(0,-.81,0);
+      const mark = add(box(.07,.05,.85,blue)); mark.position.set(0,-1.21,0);
+      wire = curveLine([new THREE.Vector3(-2.52,-.80,0),new THREE.Vector3(0,-.80,0)]);
+      for(let i=-5;i<=5;i++){
+        const tick = add(box(.012,.025,i===0?.34:.18,silver));
+        tick.position.set(i*.4,-1.13,.55);
+      }
+    } else {
+      const beam = add(box(5.1,.19,.35,graphite)); beam.position.y = 2;
+      for(const x of [-2.25,2.25]){ const post = add(box(.14,4,.18,graphite)); post.position.set(x,-.04,0); }
+      const support = add(sphere(.12,silver)); support.position.set(0,1.86,0);
+      pendRod = add(new THREE.Mesh(new THREE.CylinderGeometry(.019,.019,2,12),silver));
+      moving = add(sphere(.30,orange));
+      const baseline = curveLine([new THREE.Vector3(0,1.86,0),new THREE.Vector3(0,-1.5,0)],0x4bdffd);
+      baseline.material.transparent = true; baseline.material.opacity = .35;
+    }
+    trailLine = curveLine([]);
+  }
+
+  function dynamics(d){
+    if(mode === 'spring'){
+      const x = d.x * 9;
+      moving.position.x = x;
+      const start = -2.52, end = x - .34, count = 110, pts = [];
+      for(let i=0;i<=count;i++){
+        const u = i / count;
+        const X = start + (end - start) * u;
+        const turn = i===0 || i===count ? 0 : Math.sin(u*Math.PI*20) * .18;
+        pts.push(new THREE.Vector3(X, -0.80 + turn, Math.cos(u*Math.PI*20) * .18));
+      }
+      wire.geometry.dispose();
+      wire.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+    } else {
+      const L = 1.9 + d.L * .37;
+      const theta = d.angle;
+      const end = new THREE.Vector3(L * Math.sin(theta), 1.86 - L * Math.cos(theta), 0);
+      const start = new THREE.Vector3(0,1.86,0);
+      const center = end.clone().add(start).multiplyScalar(.5);
+      moving.position.copy(end);
+      pendRod.position.copy(center);
+      pendRod.scale.y = L;
+      pendRod.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), start.clone().sub(end).normalize());
+    }
+
+    if(running && Math.floor(t*25) !== Math.floor((t - d.speed/60) * 25)){
+      trailPoints.push(moving.position.clone());
+      if(trailPoints.length > 300) trailPoints.shift();
+    }
+    trailLine.visible = $('trail').checked;
+    if(trailPoints.length > 1){
+      trailLine.geometry.dispose();
+      trailLine.geometry = new THREE.BufferGeometry().setFromPoints(trailPoints);
+    }
+    grid.visible = $('showGrid').checked;
+  }
+
+  let mouseDown = false;
+  $('scene').addEventListener('pointerdown',e=>{ mouseDown = true; prevX = e.clientX; $('scene').setPointerCapture(e.pointerId); });
+  $('scene').addEventListener('pointermove',e=>{ if(mouseDown){ az += (e.clientX - prevX) * .006; el = Math.max(-.3,Math.min(1,(el + (e.movementY || 0) * .006))); prevX = e.clientX; cameraAuto = false; }});
+  $('scene').addEventListener('pointerup',()=> mouseDown = false);
+  $('scene').addEventListener('wheel',e=>{ e.preventDefault(); zoom = Math.min(1.8,Math.max(.65,zoom + e.deltaY * .001)); },{passive:false});
+
+  function drawGeoGebraGraph(canvas,d,kind){
+    const rect = canvas.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    if(w < 1 || h < 1) return;
+    const dpi = Math.min(devicePixelRatio,2);
+    canvas.width = Math.floor(w * dpi);
+    canvas.height = Math.floor(h * dpi);
+    const c = canvas.getContext('2d');
+    c.setTransform(1,0,0,1,0,0);
+    c.scale(dpi,dpi);
+
+    c.clearRect(0,0,w,h);
+
+    const bg = getComputedStyle(document.body).getPropertyValue('--board').trim() || '#214f42';
+    const bg2 = getComputedStyle(document.body).getPropertyValue('--board-2').trim() || '#1c4a3d';
+    const grd = c.createLinearGradient(0,0,0,h);
+    grd.addColorStop(0,bg);
+    grd.addColorStop(1,bg2);
+    c.fillStyle = grd;
+    c.fillRect(0,0,w,h);
+
+    const left = 46, right = 12, top = 8, bottom = h - 26;
+    const gw = w - left - right, gh = bottom - top;
+    const midY = top + gh/2;
+    const duration = Math.max(5, 2.8 * d.period);
+    const tStart = Math.max(0, t - duration * 0.18);
+
+    let peak = kind === 0 ? d.A * 100 : d.A * d.omega * 100;
+    peak = Math.max(10, peak * 1.18);
+
+    c.strokeStyle = 'rgba(255,255,255,.08)';
+    c.lineWidth = 1;
+    for(let i=0;i<=12;i++){
+      const x = left + i * gw / 12;
+      c.beginPath(); c.moveTo(x, top); c.lineTo(x, bottom); c.stroke();
+    }
+    for(let i=0;i<=8;i++){
+      const y = top + i * gh / 8;
+      c.beginPath(); c.moveTo(left, y); c.lineTo(w-right, y); c.stroke();
+    }
+
+    const xAxisY = midY;
+    const yAxisX = left + 16;
+    c.strokeStyle = 'rgba(230,240,230,.85)';
+    c.lineWidth = 1.3;
+    c.beginPath(); c.moveTo(yAxisX, top + 2); c.lineTo(yAxisX, bottom + 4); c.stroke();
+    c.beginPath(); c.moveTo(left, xAxisY); c.lineTo(w-right, xAxisY); c.stroke();
+
+    c.setLineDash([5,4]);
+    c.strokeStyle = 'rgba(240,240,240,.45)';
+    for(const yy of [midY - gh/4, midY + gh/4]){
+      c.beginPath(); c.moveTo(left,yy); c.lineTo(w-right,yy); c.stroke();
+    }
+    c.setLineDash([]);
+
+    const yMap = value => midY - value / peak * (gh/2 - 6);
+    const xMap = time => left + ((time - tStart) / duration) * gw;
+
+    c.beginPath();
+    for(let j=0;j<=640;j++){
+      const time = tStart + duration * j / 640;
+      const yVal = kind === 0
+        ? d.A * Math.cos(d.omega * time + d.phi) * 100
+        : -d.A * d.omega * Math.sin(d.omega * time + d.phi) * 100;
+      const X = xMap(time), Y = yMap(yVal);
+      if(j===0) c.moveTo(X,Y); else c.lineTo(X,Y);
+    }
+    c.strokeStyle = kind === 0 ? '#ffeb4d' : '#ffd46a';
+    c.lineWidth = 2.2;
+    c.shadowColor = 'rgba(255,235,77,.25)';
+    c.shadowBlur = 4;
+    c.stroke();
+    c.shadowBlur = 0;
+
+    const cursorT = Math.min(t, tStart + duration);
+    const cursorX = xMap(cursorT);
+    const cursorY = yMap(kind === 0 ? d.x * 100 : d.v * 100);
+
+    if($('sync').checked){
+      c.setLineDash([3,4]);
+      c.strokeStyle = 'rgba(255,255,255,.55)';
+      c.beginPath(); c.moveTo(cursorX, top); c.lineTo(cursorX, bottom); c.stroke();
+      c.setLineDash([]);
+      c.fillStyle = kind === 0 ? '#ffee58' : '#ffd46a';
+      c.beginPath(); c.arc(cursorX, cursorY, 4.2, 0, Math.PI*2); c.fill();
+    }
+
+    c.fillStyle = 'rgba(245,250,245,.9)';
+    c.font = '11px Arial';
+    c.textAlign = 'right';
+    c.textBaseline = 'middle';
+    c.fillText((peak).toFixed(0), left - 6, yMap(peak));
+    c.fillText((peak/2).toFixed(0), left - 6, yMap(peak/2));
+    c.fillText('0', left - 6, yMap(0));
+    c.fillText((-peak/2).toFixed(0), left - 6, yMap(-peak/2));
+    c.fillText((-peak).toFixed(0), left - 6, yMap(-peak));
+
+    c.textAlign = 'center';
+    c.textBaseline = 'top';
+    for(let i=0;i<=6;i++){
+      const time = tStart + i * duration / 6;
+      c.fillText(time.toFixed(1), left + i * gw / 6, bottom + 5);
+    }
+
+    c.textAlign = 'left';
+    c.textBaseline = 'top';
+    c.fillText(kind === 0 ? 'x' : 'v', yAxisX + 4, top + 1);
+    c.textAlign = 'right';
+    c.fillText('t', w - right - 2, xAxisY + 5);
+  }
+
+  function fit(){
+    const rect = $('stage').getBoundingClientRect();
+    const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
+    if(renderer.domElement.width !== Math.floor(w * Math.min(devicePixelRatio,2)) || renderer.domElement.height !== Math.floor(h * Math.min(devicePixelRatio,2))){
+      renderer.setSize(w,h,false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    }
+  }
+
+  function animate(now){
+    requestAnimationFrame(animate);
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    const p = vals();
+    if(running) t += dt * p.speed;
+    const d = calc();
+    dynamics(d);
+
+    if(cameraAuto){
+      const cycle = now * .00012;
+      const segment = Math.floor(cycle) % 5;
+      const q = cycle % 1;
+      const s = q*q*(3-2*q);
+      const angles = [.1,1.0,-.8,.4,1.8], elev = [.2,.2,.1,.7,.3];
+      az = angles[segment]*(1-s) + angles[(segment+1)%5]*s;
+      el = elev[segment]*(1-s) + elev[(segment+1)%5]*s;
+    }
+
+    const dist = (mode === 'spring' ? 9 : 8) * zoom, cx = 0, cy = mode === 'spring' ? -.15 : .1;
+    camera.position.set(cx + dist * Math.sin(az) * Math.cos(el), cy + dist * Math.sin(el), dist * Math.cos(az) * Math.cos(el));
+    camera.lookAt(cx,cy,0);
+    fit();
+    renderer.render(scene,camera);
+
+    $('hud').innerHTML = `<b>t</b> = ${t.toFixed(2)} s &nbsp; | &nbsp; <b>T</b> = ${d.period.toFixed(2)} s<br><b>ω</b> = ${d.omega.toFixed(2)} rad/s &nbsp; | &nbsp; <b>x</b> = ${(d.x*100).toFixed(1)} cm<br><b>v</b> = ${(d.v*100).toFixed(1)} cm/s &nbsp; | &nbsp; <b>a</b> = ${(d.a*100).toFixed(1)} cm/s²`;
+
+    drawGeoGebraGraph($('plot1'),d,0);
+    drawGeoGebraGraph($('plot2'),d,1);
+    compositeFrame();
+
+    if(recorder && recorder.state === 'recording') $('recordStatus').textContent = '● Đang quay · ' + new Date((now-recStart)).toISOString().substring(14,19);
+  }
+
+  $('record').onclick = () => {
+    if(recorder && recorder.state === 'recording'){ recorder.stop(); return; }
+    if(!window.MediaRecorder || !recordingCanvas.captureStream){ alert('Trình duyệt chưa hỗ trợ ghi video canvas.'); return; }
+    const mime = ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'].find(x => MediaRecorder.isTypeSupported(x));
+    if(!mime){ alert('Không có định dạng ghi video phù hợp'); return; }
+    recordChunks = []; recordStream = recordingCanvas.captureStream(30);
+    try{ recorder = new MediaRecorder(recordStream,{mimeType:mime,videoBitsPerSecond:4500000}); }
+    catch(e){ alert('Không bắt đầu quay được: ' + e.message); return; }
+    recorder.ondataavailable = e => { if(e.data.size) recordChunks.push(e.data); };
+    recorder.onstop = () => {
+      const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+      const blob = new Blob(recordChunks,{type:mime});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'Dao_dong_dieu_hoa_3D_PRO.' + ext; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),60000);
+      recordStream.getTracks().forEach(t => t.stop());
+      $('record').textContent = '● Bắt đầu quay';
+      $('recordStatus').textContent = 'Đã xuất video ' + ext.toUpperCase();
+    };
+    recorder.start(500);
+    recStart = performance.now();
+    $('record').textContent = '■ Dừng quay';
+  };
+
+
+  // Bảng điều khiển nhanh trên thanh công cụ.
+  let graphMode = 0, biggerGraphs = false;
+  const graphPanels = [...document.querySelectorAll('.graphcard')];
+  function refreshGraphLayout(){
+    const graphs = $('graphs');
+    graphs.classList.toggle('one',graphMode !== 0);
+    graphs.classList.toggle('large',biggerGraphs);
+    graphPanels[0].hidden = graphMode === 2;
+    graphPanels[1].hidden = graphMode === 1;
+    $('graphMode').textContent = ['▤ Hai đồ thị','∿ Chỉ li độ','∿ Chỉ vận tốc'][graphMode];
+    $('graphSize').textContent = biggerGraphs ? '⤡ Thu đồ thị' : '⤢ Phóng đồ thị';
+  }
+  $('graphMode').onclick = () => {graphMode = (graphMode+1)%3;refreshGraphLayout();};
+  $('graphSize').onclick = () => {biggerGraphs=!biggerGraphs;refreshGraphLayout();};
+  $('fastPause').onclick = () => $('start').click();
+  $('start').addEventListener('click',()=>{
+    $('fastPause').textContent=running?'Ⅱ Tạm dừng':'▶ Tiếp tục';
+    $('fastPause').classList.toggle('active',running);
+  });
+  // Khung ghi video kết hợp cảnh Three.js cùng hai đồ thị HTML canvas.
+  const recordingCanvas = document.createElement('canvas');
+  recordingCanvas.width=1280; recordingCanvas.height=900;
+  const recordCtx=recordingCanvas.getContext('2d', {alpha:false});
+  function compositeFrame(){
+    if(!recorder || recorder.state!=='recording')return;
+    const W=1280,H=900;
+    recordCtx.fillStyle='#091929';recordCtx.fillRect(0,0,W,H);
+    recordCtx.fillStyle='#e8f7ff';recordCtx.font='bold 25px Arial';
+    recordCtx.fillText(mode==='spring'?'CON LẮC LÒ XO • DAO ĐỘNG ĐIỀU HÒA':'CON LẮC ĐƠN • DAO ĐỘNG GÓC NHỎ',24,37);
+    recordCtx.font='21px Arial';recordCtx.fillStyle='#ffbd68';
+    recordCtx.fillText($('formula').textContent,920,37);
+    recordCtx.drawImage($('scene'),20,54,1240,510);
+    recordCtx.fillStyle='#d9f6eb';recordCtx.font='bold 18px Arial';
+    recordCtx.fillText($('g1title').textContent,28,597);
+    recordCtx.fillText($('g2title').textContent,668,597);
+    recordCtx.drawImage($('plot1'),20,610,610,255);
+    recordCtx.drawImage($('plot2'),650,610,610,255);
+    recordCtx.font='14px Arial';recordCtx.fillStyle='#a1c7ce';
+    recordCtx.fillText('Thầy Hùng vật lí • DAO ĐỘNG ĐIỀU HÒA 3D PRO',24,890);
+  }
+
+  rebuild();
+  ui();
+  requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>

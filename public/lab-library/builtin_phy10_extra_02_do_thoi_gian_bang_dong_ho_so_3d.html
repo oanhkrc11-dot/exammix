@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Đo thời gian bằng đồng hồ số</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#020812;--panel:#071725;--card:#0a1e30;--line:#244963;
+  --cyan:#64ddff;--yellow:#ffda69;--green:#7fffc2;--red:#ff8585;
+  --text:#eefaff;--muted:#9bb9ca;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#020812;color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:365px;min-width:340px;max-width:380px;height:100%;overflow:auto;padding:14px;
+  background:linear-gradient(180deg,#081a2a,#04101b);
+  border-right:1px solid rgba(100,221,255,.22);z-index:20
+}
+#view{position:relative;flex:1;height:100%;overflow:hidden;min-width:0}
+.title{font-weight:800;font-size:15px;letter-spacing:.04em}
+.kicker{font-size:11px;color:var(--muted);margin-top:4px}
+.simTitle{font-size:18px;color:var(--cyan);font-weight:800;margin:12px 0 7px;text-transform:uppercase}
+.desc{font-size:12px;line-height:1.45;color:#cfe5f2}
+.section{margin-top:11px;padding:11px;border:1px solid rgba(100,221,255,.18);border-radius:12px;background:linear-gradient(180deg,rgba(13,36,55,.95),rgba(6,21,34,.94))}
+.section h3{margin:0 0 10px;font-size:12px;color:#b7edff;text-transform:uppercase;letter-spacing:.06em}
+.control{margin:10px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.row label{font-size:12px;font-weight:700}
+.value{font-size:12px;color:var(--yellow);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:#55cffa}
+.check{display:flex;align-items:center;gap:8px;font-size:12px;margin:8px 0}
+.check input{accent-color:#55cffa}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+button{min-height:40px;border:1px solid rgba(120,220,255,.22);border-radius:10px;padding:8px 6px;background:#10314b;color:#fff;font-weight:700;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+#runBtn{background:#17683f}
+#manualBtn{background:#4a5520}
+#resetBtn{background:#593549}
+.note{font-size:11px;line-height:1.48;color:#b7cede}
+#resultBox{padding:9px;border-radius:9px;background:#06131f;border:1px solid rgba(100,221,255,.15);font-size:12px;line-height:1.5}
+.good{color:var(--green);font-weight:700}
+.warn{color:var(--yellow);font-weight:700}
+.bad{color:var(--red);font-weight:700}
+#info{
+  position:absolute;top:14px;right:14px;width:308px;padding:11px 13px;border-radius:13px;
+  background:rgba(4,15,25,.93);border:1px solid rgba(100,221,255,.28);z-index:10;
+  backdrop-filter:blur(5px);font-size:12px;pointer-events:none
+}
+#info .head{font-size:11px;text-transform:uppercase;color:#b8efff;font-weight:800;margin-bottom:6px}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-variant-numeric:tabular-nums}
+#credit{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);color:#ffdc70;font-size:18px;font-weight:800;text-shadow:0 0 12px rgba(255,220,112,.28);z-index:7;pointer-events:none}
+#tooltip{position:absolute;display:none;z-index:30;pointer-events:none;padding:8px 10px;border-radius:9px;background:rgba(4,14,23,.96);border:1px solid rgba(100,219,255,.3);font-size:11px;line-height:1.4;color:#eefaff}
+.label3d{padding:4px 7px;border-radius:8px;background:rgba(4,14,23,.8);border:1px solid rgba(100,219,255,.25);font-size:11px;font-weight:700;color:#e8f8ff;white-space:nowrap}
+.tableWrap{max-height:180px;overflow:auto;border:1px solid rgba(100,221,255,.13);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th,td{padding:6px;border-bottom:1px solid rgba(100,221,255,.10);text-align:center}
+th{position:sticky;top:0;background:#0c263a;color:#bdeeff}
+#screenTime{
+  position:absolute;left:50%;top:18px;transform:translateX(-50%);
+  padding:10px 18px;border-radius:14px;background:rgba(5,20,32,.92);
+  border:1px solid rgba(100,221,255,.26);z-index:12;pointer-events:none;
+  font-size:28px;font-weight:800;color:#9ff5ff;font-family:Consolas,monospace;
+  box-shadow:0 0 14px rgba(100,221,255,.14)
+}
+@media(max-width:1100px){#panel{width:340px;min-width:340px}#info{width:260px}#credit{font-size:15px}#screenTime{font-size:24px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+    <div class="kicker">ĐO LƯỜNG · SAI SỐ</div>
+    <div class="simTitle">02. Đo thời gian bằng đồng hồ số</div>
+    <div class="desc">
+      Mô phỏng đo thời gian chuyển động của xe giữa hai mốc <b>A</b> và <b>B</b> bằng đồng hồ số.
+      Có thể đo tự động bằng cổng quang mô phỏng hoặc đo thủ công để thấy ảnh hưởng của
+      <b>độ phân giải đồng hồ</b> và <b>thời gian phản ứng</b>.
+    </div>
+
+    <div class="section">
+      <h3>Thiết lập chuyển động</h3>
+      <div class="control">
+        <div class="row"><label>Vận tốc xe</label><span class="value" id="speedText">1.20 m/s</span></div>
+        <input id="speedSlider" type="range" min="0.40" max="3.00" step="0.05" value="1.20">
+      </div>
+      <div class="control">
+        <div class="row"><label>Khoảng cách A–B</label><span class="value" id="distText">2.00 m</span></div>
+        <input id="distSlider" type="range" min="0.50" max="5.00" step="0.05" value="2.00">
+      </div>
+      <div class="control">
+        <div class="row"><label>Vị trí trước mốc A</label><span class="value" id="offsetText">0.80 m</span></div>
+        <input id="offsetSlider" type="range" min="0.20" max="2.00" step="0.05" value="0.80">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Đồng hồ số</h3>
+      <div class="control">
+        <div class="row"><label>Độ phân giải</label><span class="value" id="resText">0.01 s</span></div>
+        <input id="resSlider" type="range" min="0" max="2" step="1" value="1">
+      </div>
+      <div class="control">
+        <div class="row"><label>Độ trễ phản ứng</label><span class="value" id="reactText">0.20 s</span></div>
+        <input id="reactSlider" type="range" min="0.00" max="0.50" step="0.01" value="0.20">
+      </div>
+      <div class="check"><input type="checkbox" id="showVectors" checked><label for="showVectors">Hiện véc tơ vận tốc</label></div>
+      <div class="check"><input type="checkbox" id="autoMode" checked><label for="autoMode">Đo tự động bằng cổng quang</label></div>
+      <div class="check"><input type="checkbox" id="snapTime" checked><label for="snapTime">Làm tròn theo độ phân giải đồng hồ</label></div>
+    </div>
+
+    <div class="section">
+      <h3>Điều khiển</h3>
+      <div class="buttons">
+        <button id="runBtn">▶ Bắt đầu chạy xe</button>
+        <button id="pauseBtn">⏸ Tạm dừng</button>
+        <button id="manualBtn">⏱ Bấm đồng hồ thủ công</button>
+        <button id="recordBtn">＋ Ghi kết quả</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+        <button id="fitBtn">⛶ Fit toàn cảnh</button>
+      </div>
+      <div class="note" style="margin-top:8px">
+        Chế độ tự động: đồng hồ tự chạy khi xe qua A và tự dừng khi xe qua B.<br>
+        Chế độ thủ công: bấm nút “Bấm đồng hồ thủ công” lần 1 để bắt đầu, lần 2 để dừng.
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Kết quả đo</h3>
+      <div id="resultBox">Chưa thực hiện phép đo.</div>
+    </div>
+
+    <div class="section">
+      <h3>Bảng số liệu</h3>
+      <div class="tableWrap">
+        <table>
+          <thead><tr><th>Lần</th><th>t đo (s)</th><th>Δt (s)</th></tr></thead>
+          <tbody id="dataBody"></tbody>
+        </table>
+      </div>
+      <button id="clearData" style="width:100%;margin-top:8px">Xóa bảng số liệu</button>
+      <div class="note" id="statText" style="margin-top:8px">Chưa có dữ liệu.</div>
+    </div>
+
+    <div class="section">
+      <h3>Mô hình hóa</h3>
+      <div class="note">
+        Xe chuyển động thẳng đều với vận tốc không đổi. Khoảng thời gian thật giữa hai mốc là
+        <b>t = s/v</b>. Trong chế độ thủ công, đồng hồ chịu ảnh hưởng của thời gian phản ứng ở thao tác bấm bắt đầu và dừng.
+        Trong mô phỏng, sai số phản ứng được mô hình hóa bằng độ trễ có dấu ngẫu nhiên nhỏ quanh giá trị đã chọn để tạo tính thực tế.
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="screenTime">00.00 s</div>
+    <div id="info">
+      <div class="head">Thông số tức thời</div>
+      <div class="infoGrid">
+        <span>t thật A→B</span><b id="trueTimeInfo">1.67 s</b>
+        <span>Vận tốc</span><b id="speedInfo">1.20 m/s</b>
+        <span>Khoảng cách A–B</span><b id="distInfo">2.00 m</b>
+        <span>Vị trí xe</span><b id="posInfo">-0.80 m</b>
+        <span>Trạng thái xe</span><b id="cartStateInfo">Chưa chạy</b>
+        <span>Trạng thái đồng hồ</span><b id="clockStateInfo">Chưa bấm</b>
+      </div>
+    </div>
+    <div id="tooltip"></div>
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* =========================================================
+   1. DOM + STATE
+========================================================= */
+const $=id=>document.getElementById(id);
+const view=$('view');
+const speedSlider=$('speedSlider'), distSlider=$('distSlider'), offsetSlider=$('offsetSlider');
+const resSlider=$('resSlider'), reactSlider=$('reactSlider');
+const showVectors=$('showVectors'), autoMode=$('autoMode'), snapTime=$('snapTime');
+const RES_OPTIONS=[0.1,0.01,0.001];
+
+const state={
+  running:false,
+  paused:true,
+  simTime:0,
+  v:1.20,
+  dist:2.00,
+  offset:0.80,
+  resolution:0.01,
+  reaction:0.20,
+  cartPos:-0.80,        // m, relative to A at x=0
+  cartPassedA:false,
+  cartPassedB:false,
+  cartStatus:'Chưa chạy',
+  clockDisplay:0,
+  clockRunning:false,
+  clockManualArmed:false,
+  clockStatus:'Chưa bấm',
+  auto:true,
+  lastMeasure:null,
+  records:[],
+  pendingEvents:[],
+  lastStamp:performance.now()
+};
+
+function trueABTime(){ return state.dist/state.v; }
+function quantizeTime(t){
+  if(!snapTime.checked) return t;
+  return Math.round(t/state.resolution)*state.resolution;
+}
+function jitterReaction(){
+  return Math.max(0, state.reaction + (Math.random()*2-1)*0.04);
+}
+
+/* =========================================================
+   2. THREE.JS SCENE
+========================================================= */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x020812);
+scene.fog=new THREE.Fog(0x020812,16,40);
+
+const camera=new THREE.PerspectiveCamera(46,view.clientWidth/view.clientHeight,.1,100);
+camera.position.set(12,7,12);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.07;
+controls.minDistance=6;
+controls.maxDistance=28;
+controls.minPolarAngle=.12;
+controls.maxPolarAngle=Math.PI*.47;
+controls.target.set(0,0,0);
+
+/* =========================================================
+   3. LIGHTS / FLOOR
+========================================================= */
+scene.add(new THREE.HemisphereLight(0x8bdfff,0x102030,1.2));
+const key=new THREE.DirectionalLight(0xffffff,1.2);
+key.position.set(8,14,10);
+key.castShadow=true;
+scene.add(key);
+
+const fill=new THREE.PointLight(0x48d4ff,15,28,2);
+fill.position.set(-7,5,8);
+scene.add(fill);
+
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(42,18),
+  new THREE.MeshPhongMaterial({color:0x07131f,shininess:25})
+);
+floor.rotation.x=-Math.PI/2;
+floor.position.y=-1.65;
+floor.receiveShadow=true;
+scene.add(floor);
+
+const grid=new THREE.GridHelper(42,42,0x1e628b,0x123149);
+grid.position.y=-1.63;
+grid.material.transparent=true;
+grid.material.opacity=.28;
+scene.add(grid);
+
+/* =========================================================
+   4. TRACK, GATES, CART
+========================================================= */
+const SCALE=2.5; // 1 m -> 2.5 world units
+function mToX(m){ return m*SCALE; }
+
+const track=new THREE.Mesh(
+  new THREE.BoxGeometry(18,.16,1.6),
+  new THREE.MeshPhongMaterial({color:0x40586a,shininess:30})
+);
+track.receiveShadow=true;
+track.position.y=-0.9;
+scene.add(track);
+
+const rail1=new THREE.Mesh(new THREE.BoxGeometry(18,.08,.08),new THREE.MeshPhongMaterial({color:0x9eb3c0}));
+rail1.position.set(0,-0.72,0.48);
+const rail2=rail1.clone(); rail2.position.z=-0.48;
+scene.add(rail1,rail2);
+
+const gateA=new THREE.Group(), gateB=new THREE.Group();
+scene.add(gateA,gateB);
+
+function buildGate(g,color,text){
+  const left=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,1.5,12),new THREE.MeshPhongMaterial({color, emissive:0x082534}));
+  left.position.set(0,-0.15,-0.55);
+  const right=left.clone(); right.position.z=0.55;
+  const top=new THREE.Mesh(new THREE.BoxGeometry(.10,.10,1.20),new THREE.MeshPhongMaterial({color, emissive:0x082534}));
+  top.position.set(0,0.55,0);
+  g.add(left,right,top);
+  const div=document.createElement('div');
+  div.className='label3d';
+  div.textContent=text;
+  const label=new CSS2DObject(div);
+  label.position.set(0,1.2,0);
+  g.add(label);
+}
+buildGate(gateA,0x7fffc2,'Mốc A');
+buildGate(gateB,0xffda69,'Mốc B');
+
+const cartGroup=new THREE.Group();
+scene.add(cartGroup);
+
+const cartBody=new THREE.Mesh(
+  new THREE.BoxGeometry(1.2,.45,.85),
+  new THREE.MeshPhongMaterial({color:0x2fb6ff,emissive:0x0a3b56,shininess:90})
+);
+cartBody.castShadow=true; cartBody.receiveShadow=true;
+cartBody.position.y=-0.25;
+cartGroup.add(cartBody);
+
+const cabin=new THREE.Mesh(
+  new THREE.BoxGeometry(.45,.30,.75),
+  new THREE.MeshPhongMaterial({color:0xb9ebff,transparent:true,opacity:.75,shininess:90})
+);
+cabin.position.set(.15,.12,0);
+cartGroup.add(cabin);
+
+function wheel(x,z){
+  const w=new THREE.Mesh(new THREE.CylinderGeometry(.14,.14,.12,20),new THREE.MeshPhongMaterial({color:0x1b2530}));
+  w.rotation.z=Math.PI/2;
+  w.position.set(x,-0.47,z);
+  w.castShadow=true;
+  return w;
+}
+cartGroup.add(wheel(-0.35,0.34),wheel(0.35,0.34),wheel(-0.35,-0.34),wheel(0.35,-0.34));
+
+const velocityArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(0,.10,0),1.2,0x66ddff,.28,.16);
+scene.add(velocityArrow);
+
+const cartLabelDiv=document.createElement('div');
+cartLabelDiv.className='label3d';
+cartLabelDiv.textContent='Xe';
+const cartLabel=new CSS2DObject(cartLabelDiv);
+cartLabel.position.set(0,1.0,0);
+cartGroup.add(cartLabel);
+
+/* =========================================================
+   5. POSITIONS / VISUALS
+========================================================= */
+function rebuildGeometryPositions(){
+  gateA.position.set(0,0,0);
+  gateB.position.set(mToX(state.dist),0,0);
+  cartGroup.position.x=mToX(state.cartPos);
+  velocityArrow.position.set(mToX(state.cartPos)-0.65,.10,0);
+  velocityArrow.setLength(Math.max(.75, state.v*0.7),.25,.15);
+  velocityArrow.visible=showVectors.checked;
+  cartLabelDiv.textContent=`Xe | v = ${state.v.toFixed(2)} m/s`;
+}
+
+/* =========================================================
+   6. CLOCK / MEASUREMENT MODEL
+========================================================= */
+function screenTimeString(t){ return t.toFixed(Math.max(0, Math.round(-Math.log10(state.resolution)))); }
+
+function resetClock(){
+  state.clockDisplay=0;
+  state.clockRunning=false;
+  state.clockManualArmed=false;
+  state.clockStatus='Chưa bấm';
+  state.lastMeasure=null;
+  state.pendingEvents=[];
+  $('screenTime').textContent=screenTimeString(0)+' s';
+}
+
+function finalizeMeasure(){
+  const measured=quantizeTime(state.clockDisplay);
+  const trueT=trueABTime();
+  const err=measured-trueT;
+  state.lastMeasure={t:measured, err, trueT};
+  $('resultBox').innerHTML=
+    `<b>Thời gian thật A→B:</b> ${trueT.toFixed(3)} s<br>`+
+    `<b>Thời gian đo được:</b> <span class="${Math.abs(err)<=state.resolution/2?'good':Math.abs(err)<=state.reaction?'warn':'bad'}">${measured.toFixed(3)} s</span><br>`+
+    `<b>Sai lệch:</b> ${err>=0?'+':''}${err.toFixed(3)} s<br>`+
+    `<span class="${state.auto?'good':'warn'}">${state.auto?'Đo tự động: sai số chủ yếu do độ phân giải đồng hồ.':'Đo thủ công: kết quả chịu ảnh hưởng của phản ứng bấm đồng hồ.'}</span>`;
+}
+
+function scheduleClockEvent(type){
+  state.pendingEvents.push({type, delay:jitterReaction()});
+}
+
+function manualPress(){
+  if(state.auto){
+    $('resultBox').innerHTML='<span class="warn">Đang bật chế độ tự động. Hãy bỏ chọn “Đo tự động bằng cổng quang” nếu muốn bấm tay.</span>';
+    return;
+  }
+  if(!state.running){
+    $('resultBox').innerHTML='<span class="warn">Hãy bấm “Bắt đầu chạy xe” trước khi bấm đồng hồ.</span>';
+    return;
+  }
+  if(!state.clockManualArmed){
+    scheduleClockEvent('start');
+    state.clockManualArmed=true;
+    state.clockStatus='Đã bấm START (chờ phản ứng)';
+  }else if(state.clockRunning || state.pendingEvents.some(e=>e.type==='start')){
+    scheduleClockEvent('stop');
+    state.clockStatus='Đã bấm STOP (chờ phản ứng)';
+  }
+}
+
+function processPendingEvents(dt){
+  for(const e of state.pendingEvents) e.delay -= dt;
+  const ready=state.pendingEvents.filter(e=>e.delay<=0);
+  state.pendingEvents=state.pendingEvents.filter(e=>e.delay>0);
+
+  for(const e of ready){
+    if(e.type==='start'){
+      state.clockRunning=true;
+      state.clockStatus='Đồng hồ đang chạy';
+    }else if(e.type==='stop'){
+      state.clockRunning=false;
+      state.clockStatus='Đồng hồ đã dừng';
+      finalizeMeasure();
+    }
+  }
+}
+
+/* =========================================================
+   7. RESET / DATA TABLE
+========================================================= */
+function resetMotion(){
+  state.simTime=0;
+  state.cartPos=-state.offset;
+  state.cartPassedA=false;
+  state.cartPassedB=false;
+  state.cartStatus='Chưa chạy';
+}
+
+function resetAll(){
+  speedSlider.value='1.20';
+  distSlider.value='2.00';
+  offsetSlider.value='0.80';
+  resSlider.value='1';
+  reactSlider.value='0.20';
+  showVectors.checked=true;
+  autoMode.checked=true;
+  snapTime.checked=true;
+
+  state.v=1.20;
+  state.dist=2.00;
+  state.offset=0.80;
+  state.resolution=0.01;
+  state.reaction=0.20;
+  state.auto=true;
+  state.running=false;
+  state.paused=true;
+  state.records=[];
+
+  resetMotion();
+  resetClock();
+  updateUI();
+  renderTable();
+  rebuildGeometryPositions();
+  fitScene();
+  $('resultBox').textContent='Chưa thực hiện phép đo.';
+}
+
+function renderTable(){
+  const body=$('dataBody');
+  body.innerHTML='';
+  state.records.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td><td>${r.t.toFixed(3)}</td><td>${r.err>=0?'+':''}${r.err.toFixed(3)}</td>`;
+    body.appendChild(tr);
+  });
+
+  if(!state.records.length){
+    $('statText').textContent='Chưa có dữ liệu.';
+    return;
+  }
+  const avg=state.records.reduce((s,r)=>s+r.t,0)/state.records.length;
+  const trueT=trueABTime();
+  const meanAbs=state.records.reduce((s,r)=>s+Math.abs(r.t-avg),0)/state.records.length;
+  $('statText').innerHTML=
+    `Trung bình: <b>${avg.toFixed(3)} s</b><br>`+
+    `Sai lệch tuyệt đối TB quanh giá trị trung bình: <b>${meanAbs.toFixed(3)} s</b><br>`+
+    `Sai lệch so với thời gian thật hiện tại: <b>${(avg-trueT>=0?'+':'')+(avg-trueT).toFixed(3)} s</b>`;
+}
+
+/* =========================================================
+   8. UI
+========================================================= */
+function updateUI(){
+  $('speedText').textContent=`${state.v.toFixed(2)} m/s`;
+  $('distText').textContent=`${state.dist.toFixed(2)} m`;
+  $('offsetText').textContent=`${state.offset.toFixed(2)} m`;
+  $('resText').textContent=`${state.resolution.toFixed(3).replace(/0+$/,'').replace(/\.$/,'')} s`;
+  $('reactText').textContent=`${state.reaction.toFixed(2)} s`;
+
+  $('trueTimeInfo').textContent=`${trueABTime().toFixed(3)} s`;
+  $('speedInfo').textContent=`${state.v.toFixed(2)} m/s`;
+  $('distInfo').textContent=`${state.dist.toFixed(2)} m`;
+  $('posInfo').textContent=`${state.cartPos.toFixed(2)} m`;
+  $('cartStateInfo').textContent=state.cartStatus;
+  $('clockStateInfo').textContent=state.clockStatus;
+
+  $('screenTime').textContent=screenTimeString(quantizeTime(state.clockDisplay))+' s';
+}
+
+/* =========================================================
+   9. EVENTS
+========================================================= */
+speedSlider.addEventListener('input',()=>{
+  state.v=parseFloat(speedSlider.value);
+  rebuildGeometryPositions(); updateUI();
+});
+distSlider.addEventListener('input',()=>{
+  state.dist=parseFloat(distSlider.value);
+  rebuildGeometryPositions(); updateUI();
+});
+offsetSlider.addEventListener('input',()=>{
+  state.offset=parseFloat(offsetSlider.value);
+  if(!state.running) state.cartPos=-state.offset;
+  rebuildGeometryPositions(); updateUI();
+});
+resSlider.addEventListener('input',()=>{
+  state.resolution=RES_OPTIONS[parseInt(resSlider.value,10)];
+  updateUI();
+});
+reactSlider.addEventListener('input',()=>{
+  state.reaction=parseFloat(reactSlider.value);
+  updateUI();
+});
+showVectors.addEventListener('change',()=>rebuildGeometryPositions());
+autoMode.addEventListener('change',()=>{
+  state.auto=autoMode.checked;
+  resetClock();
+  updateUI();
+});
+snapTime.addEventListener('change',updateUI);
+
+$('runBtn').addEventListener('click',()=>{
+  state.running=true;
+  state.paused=false;
+  state.cartStatus='Đang chạy';
+  if(state.cartPos>=state.dist+0.6){
+    resetMotion();
+    resetClock();
+  }
+  $('runBtn').textContent='▶ Đang chạy';
+});
+
+$('pauseBtn').addEventListener('click',()=>{
+  if(!state.running) return;
+  state.paused=true;
+  state.cartStatus='Tạm dừng';
+  $('runBtn').textContent='▶ Tiếp tục';
+});
+
+$('manualBtn').addEventListener('click',manualPress);
+
+$('recordBtn').addEventListener('click',()=>{
+  if(!state.lastMeasure){
+    $('resultBox').innerHTML='<span class="warn">Chưa có kết quả đo để ghi. Hãy chạy xe và hoàn thành phép đo trước.</span>';
+    return;
+  }
+  state.records.push({...state.lastMeasure});
+  renderTable();
+});
+
+$('clearData').addEventListener('click',()=>{
+  state.records=[];
+  renderTable();
+});
+
+$('resetBtn').addEventListener('click',resetAll);
+$('fitBtn').addEventListener('click',fitScene);
+
+/* =========================================================
+   10. TOOLTIP
+========================================================= */
+const raycaster=new THREE.Raycaster();
+const mouse=new THREE.Vector2();
+renderer.domElement.addEventListener('mousemove',e=>{
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+
+  const objs=[cartBody,track];
+  const hits=raycaster.intersectObjects(objs,false);
+  if(hits.length){
+    tooltip.style.display='block';
+    tooltip.style.left=`${e.offsetX+14}px`;
+    tooltip.style.top=`${e.offsetY+12}px`;
+    tooltip.innerHTML=(hits[0].object===cartBody)
+      ? `<b>Xe đo thời gian</b><br>v = ${state.v.toFixed(2)} m/s<br>x = ${state.cartPos.toFixed(2)} m`
+      : `<b>Đường ray</b><br>Mốc A ở x = 0 m<br>Mốc B ở x = ${state.dist.toFixed(2)} m`;
+  }else{
+    tooltip.style.display='none';
+  }
+});
+renderer.domElement.addEventListener('mouseleave',()=>tooltip.style.display='none');
+
+/* =========================================================
+   11. CAMERA / RESIZE
+========================================================= */
+function fitScene(){
+  camera.position.set(12,7,12);
+  controls.target.set(mToX(state.dist)/2,0,0);
+  controls.update();
+}
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
+  labelRenderer.setSize(w,h);
+}
+window.addEventListener('resize',resize);
+
+/* =========================================================
+   12. PHYSICS UPDATE
+========================================================= */
+function updatePhysics(dt){
+  if(!state.running || state.paused) return;
+
+  state.simTime += dt;
+  processPendingEvents(dt);
+
+  const prevPos=state.cartPos;
+  state.cartPos += state.v*dt;
+  state.cartStatus='Đang chạy';
+
+  // auto timing gates
+  if(state.auto){
+    if(!state.cartPassedA && prevPos<0 && state.cartPos>=0){
+      state.cartPassedA=true;
+      state.clockRunning=true;
+      state.clockStatus='Đồng hồ đang chạy';
+    }
+    if(!state.cartPassedB && prevPos<state.dist && state.cartPos>=state.dist){
+      state.cartPassedB=true;
+      state.clockRunning=false;
+      state.clockStatus='Đồng hồ đã dừng';
+      finalizeMeasure();
+    }
+  }
+
+  if(state.clockRunning){
+    state.clockDisplay += dt;
+  }
+
+  // stop cart after passing B some extra distance
+  if(state.cartPos > state.dist+0.7){
+    state.running=false;
+    state.paused=true;
+    state.cartStatus='Đã qua mốc B';
+    $('runBtn').textContent='▶ Chạy lại';
+  }
+
+  rebuildGeometryPositions();
+}
+
+/* =========================================================
+   13. ANIMATION
+========================================================= */
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt=(now-state.lastStamp)/1000;
+  state.lastStamp=now;
+  dt=Math.min(Math.max(dt,0),0.03);
+
+  updatePhysics(dt);
+  updateUI();
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+/* =========================================================
+   14. INIT
+========================================================= */
+resetAll();
+resize();
+animate(performance.now());
+</script>
+</body>
+</html>

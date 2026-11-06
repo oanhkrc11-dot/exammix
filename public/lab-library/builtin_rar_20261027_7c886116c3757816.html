@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PHYSICS 11 LAB 08 - Ảnh hưởng của chiều dài con lắc đơn</title>
+<style>
+:root{
+  --ink:#17313d;--muted:#5b7480;--panel:#dfe9ee;--panel2:#d2e1e8;--line:#adc5d0;
+  --accent:#168aad;--accent2:#2f7de1;--green:#2ca58d;--orange:#e68a2e;--red:#d95b59;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#b7ccd6;color:var(--ink);font-family:Inter,Segoe UI,Arial,sans-serif}
+body.dark{--ink:#eefcff;--muted:#bdd4dd;--panel:#0b1c25;--panel2:#0d2732;--line:#285369;background:#17394b}
+#app{display:grid;grid-template-columns:238px 1fr;height:100vh}
+#panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border-right:1px solid var(--line);padding:9px;overflow:auto;scrollbar-width:thin;scrollbar-color:#789baa transparent}
+.eyebrow{font-size:10px;letter-spacing:1.2px;font-weight:800;color:var(--accent);margin-bottom:4px}
+h1{font-size:17px;line-height:1.08;margin:0 0 5px}
+p{font-size:10.5px;line-height:1.32;margin:0;color:var(--muted)}
+hr{border:0;border-top:1px solid var(--line);margin:8px 0}
+.section{font-size:10px;font-weight:800;margin-bottom:5px}
+.control{display:grid;grid-template-columns:62px 1fr 52px;align-items:center;gap:5px;margin:5px 0}
+.control label{font-size:10px}.control output{font-size:9.8px;color:var(--accent);font-weight:700;text-align:right}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:7px 0}
+.check{display:flex;align-items:center;gap:5px;padding:6px;border:1px solid var(--line);border-radius:8px;background:rgba(239,245,248,.72);font-size:9.8px}
+body.dark .check{background:#0c2936}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.btn{border:1px solid var(--line);border-radius:8px;background:#eaf2f5;color:var(--ink);padding:7px 5px;font-size:10px;font-weight:800;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+body.dark .btn{background:#113447;color:#fff;border-color:#315e72}.btn.full{grid-column:1/-1}
+.warn{display:none;margin-top:6px;border:1px solid #d7a85d;background:#f8e8c8;color:#72501b;border-radius:7px;padding:6px;font-size:9.3px;line-height:1.3}
+.legend{font-size:9px;color:var(--muted);display:flex;flex-wrap:wrap;gap:7px;margin:5px 0}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px}.c1{background:#2f7de1}.c2{background:#2ca58d}.c3{background:#e68a2e}
+#graphWrap{height:108px;border:1px solid var(--line);border-radius:9px;background:#e9f0f3;overflow:hidden;position:relative}
+#graph{width:100%;height:100%;display:block}
+.model{display:none;margin-top:6px;border:1px solid var(--line);background:#eaf2f5;border-radius:8px;padding:7px;font-size:9.2px;line-height:1.32;color:var(--muted)}.model.show{display:block}
+body.dark #graphWrap,body.dark .model{background:#0b2531}
+#view{position:relative;min-width:0;height:100vh;background:radial-gradient(circle at 55% 34%,#7fa9bb 0%,#5f8fa4 42%,#426f84 72%,#315a6d 100%)}
+body.dark #view{background:radial-gradient(circle at 55% 34%,#315d74 0%,#15394d 44%,#0b2432 100%)}
+#three,#labels{position:absolute;inset:0}#three{z-index:1}#labels{z-index:6;pointer-events:none}
+.label3d{position:absolute;transform:translate(-50%,-50%);background:rgba(236,243,246,.92);border:1px solid #c4d7df;color:#254653;border-radius:6px;padding:4px 6px;font-size:9.8px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.08)}
+body.dark .label3d{background:rgba(7,28,40,.86);border-color:#4d95b2;color:#effcff}
+#formula{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;background:rgba(229,239,244,.90);border:1px solid #b9ced8;border-radius:9px;padding:6px 10px;font-size:10.5px;color:#20404f}
+body.dark #formula{background:rgba(6,25,35,.82);border-color:#32718a;color:#eefcff}
+#hud{position:absolute;left:12px;bottom:12px;z-index:8;display:flex;gap:9px;align-items:center;background:rgba(226,237,242,.90);border:1px solid #bacfd8;border-radius:11px;padding:7px 9px;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.hudItem{min-width:48px}.hudItem span{display:block;font-size:8.5px;color:#647f8a;margin-bottom:1px}.hudItem b{font-size:10.5px;color:#173c4d}
+body.dark #hud{background:rgba(7,28,40,.87);border-color:#3b7893}.dark .hudItem span{color:#bdd4dd}.dark .hudItem b{color:#eefcff}
+#note{position:absolute;left:12px;bottom:64px;z-index:7;width:214px;background:rgba(229,239,244,.92);border:1px solid #bacfd8;border-radius:9px;padding:7px;font-size:9.5px;color:#466573}
+body.dark #note{background:rgba(7,28,40,.84);color:#dceff6;border-color:#3b7893}
+#hint{position:absolute;right:12px;bottom:12px;z-index:7;font-size:9.5px;color:#dcecf3;background:rgba(34,71,88,.72);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:6px 8px}
+#credit{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);z-index:7;font-size:10px;color:#d7e7ed}
+#tooltip{position:absolute;z-index:30;display:none;pointer-events:none;background:#edf4f7;border:1px solid #b9ced8;border-radius:7px;padding:7px 8px;font-size:9.5px;color:#173c4d}
+@media(max-width:1050px){#app{grid-template-columns:226px 1fr}#formula{font-size:9.5px}.hudItem{min-width:44px}}
+@media(max-height:760px){#panel{padding-top:7px}.control{margin:4px 0}.btn{padding:6px 4px}#graphWrap{height:96px}}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="panel">
+<div class="eyebrow">PHYSICS 11 LAB · 3D</div>
+<h1>08 · Ảnh hưởng của chiều dài con lắc đơn</h1>
+<p>Ba con lắc cùng góc ban đầu và cùng g nhưng có chiều dài khác nhau để so sánh chu kì.</p>
+<hr>
+<div class="section">ĐIỀU KHIỂN</div>
+<div class="control"><label>Tốc độ</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1"><output id="speedOut">1.00×</output></div>
+<div class="control"><label>Chiều dài l</label><input id="length" type="range" min=".6" max="1.6" step=".05" value="1"><output id="lengthOut">1.00 m</output></div>
+<div class="control"><label>Gia tốc g</label><input id="gravity" type="range" min="1.6" max="12" step=".1" value="9.8"><output id="gravityOut">9.8</output></div>
+<div class="control"><label>Góc θ₀</label><input id="theta0" type="range" min="2" max="25" step="1" value="10"><output id="theta0Out">10°</output></div>
+<div class="checks">
+<label class="check"><input id="showGrid" type="checkbox" checked> Lưới</label>
+<label class="check"><input id="showLabels" type="checkbox" checked> Nhãn</label>
+<label class="check"><input id="showTrail" type="checkbox" checked> Quỹ đạo</label>
+<label class="check"><input id="showEq" type="checkbox" checked> VTCB</label>
+</div>
+<div class="btns">
+<button id="startBtn" class="btn primary">▶ Chạy</button><button id="pauseBtn" class="btn">⏸ Dừng</button>
+<button id="resetBtn" class="btn">↻ Đặt lại</button><button id="fitBtn" class="btn">⛶ Căn giữa</button>
+<button id="fullscreenBtn" class="btn">⛶ Vừa màn hình</button><button id="themeBtn" class="btn">☀/🌙 Giao diện</button>
+<button id="clearGraphBtn" class="btn">Xóa đồ thị</button><button id="theoryBtn" class="btn">ⓘ Lý thuyết</button>
+</div>
+<div id="warning" class="warn">⚠ Góc lớn: gần đúng góc nhỏ bắt đầu kém chính xác.</div>
+<hr>
+<div class="section">ĐỒ THỊ θ(t) · 15 s</div>
+<div class="legend"><span><i class="dot c1"></i>0,75l</span><span><i class="dot c2"></i>l</span><span><i class="dot c3"></i>1,25l</span></div>
+<div id="graphWrap"><canvas id="graph"></canvas></div>
+<div id="theoryBox" class="model"><b>Mô hình hóa:</b> θ≈θ₀cos(√(g/l)t), T=2π√(l/g). Ba con lắc dùng cùng g và θ₀, chỉ khác chiều dài.</div>
+</aside>
+
+<main id="view">
+<div id="three"></div><div id="labels"></div>
+<div id="formula">T = 2π√(l/g) &nbsp; → &nbsp; l tăng thì T tăng</div>
+<div id="hud">
+  <div class="hudItem"><span>t</span><b id="tHud">0.00 s</b></div>
+  <div class="hudItem"><span>T₁</span><b id="t1Hud">0.00 s</b></div>
+  <div class="hudItem"><span>T₂</span><b id="t2Hud">0.00 s</b></div>
+  <div class="hudItem"><span>T₃</span><b id="t3Hud">0.00 s</b></div>
+</div>
+<div id="note">Chiều dài càng lớn → con lắc dao động càng chậm. Ba con lắc bắt đầu cùng pha để dễ so sánh.</div>
+<div id="tooltip"></div><div id="credit">Thầy Hùng vật lí</div><div id="hint">Kéo: xoay · Lăn: zoom an toàn · rê quả nặng: xem số liệu</div>
+</main>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const state={running:true,paused:false,t:0,speed:1,l:1,g:9.8,theta0Deg:10,lastGraphT:-1};
+const GRAPH_WINDOW=15,MAX_DT=.033,LENGTH_SCALE=4.0;
+const dom={speed:$('speed'),length:$('length'),gravity:$('gravity'),theta0:$('theta0'),speedOut:$('speedOut'),lengthOut:$('lengthOut'),gravityOut:$('gravityOut'),theta0Out:$('theta0Out'),showGrid:$('showGrid'),showLabels:$('showLabels'),showTrail:$('showTrail'),showEq:$('showEq'),startBtn:$('startBtn'),pauseBtn:$('pauseBtn'),resetBtn:$('resetBtn'),fitBtn:$('fitBtn'),fullscreenBtn:$('fullscreenBtn'),themeBtn:$('themeBtn'),clearGraphBtn:$('clearGraphBtn'),theoryBtn:$('theoryBtn'),theoryBox:$('theoryBox'),warning:$('warning'),tooltip:$('tooltip')};
+
+const view=$('view'),scene=new THREE.Scene();scene.fog=new THREE.Fog(0x557f91,28,54);
+const camera=new THREE.PerspectiveCamera(42,1,.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('three').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=8.5;controls.maxDistance=34;controls.minPolarAngle=.42;controls.maxPolarAngle=Math.PI/2.08;
+
+scene.add(new THREE.HemisphereLight(0xf5fbfe,0x4b6d7b,2.8));
+const key=new THREE.DirectionalLight(0xffffff,2.1);key.position.set(8,14,9);key.castShadow=true;scene.add(key);
+const fill=new THREE.PointLight(0xc7f0ff,1.2,38);fill.position.set(-7,6,5);scene.add(fill);
+
+const lab=new THREE.Group();scene.add(lab);lab.position.y=-1.55;
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(36,22),new THREE.MeshStandardMaterial({color:0x9cb7c2,roughness:.94}));floor.rotation.x=-Math.PI/2;floor.position.y=-4.9;floor.receiveShadow=true;lab.add(floor);
+const grid=new THREE.GridHelper(36,36,0x7aa5b7,0xa9c0ca);grid.position.y=-4.89;(Array.isArray(grid.material)?grid.material:[grid.material]).forEach(m=>{m.transparent=true;m.opacity=.18});lab.add(grid);
+const back=new THREE.Mesh(new THREE.PlaneGeometry(29,15),new THREE.MeshStandardMaterial({color:0xb7ccd5,roughness:.98,side:THREE.DoubleSide}));back.position.set(0,2.7,-6.2);lab.add(back);
+
+// support
+const base=new THREE.Mesh(new THREE.BoxGeometry(11,.42,3.1),new THREE.MeshStandardMaterial({color:0xcbd8de,roughness:.45,metalness:.4}));base.position.set(-2.4,-4.38,0);base.castShadow=true;lab.add(base);
+const post=new THREE.Mesh(new THREE.CylinderGeometry(.16,.18,9.7,22),new THREE.MeshStandardMaterial({color:0xe8eef1,roughness:.22,metalness:.82}));post.position.set(-6.3,.25,0);post.castShadow=true;lab.add(post);
+const arm=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,9.0,22),new THREE.MeshStandardMaterial({color:0xe8eef1,roughness:.22,metalness:.82}));arm.rotation.z=Math.PI/2;arm.position.set(-2.05,5.0,0);arm.castShadow=true;lab.add(arm);
+
+const colors=[0x2f7de1,0x2ca58d,0xe68a2e];
+const xOffsets=[-2.6,-.55,1.5];
+const ratios=[.75,1,1.25];
+const pendulums=[];
+for(let i=0;i<3;i++){
+ const pivot=new THREE.Vector3(xOffsets[i],4.55,0);
+ const pball=new THREE.Mesh(new THREE.SphereGeometry(.11,18,14),new THREE.MeshStandardMaterial({color:0xf4a261,roughness:.25,metalness:.1}));pball.position.copy(pivot);lab.add(pball);
+ const bob=new THREE.Mesh(new THREE.SphereGeometry(.28,28,20),new THREE.MeshStandardMaterial({color:colors[i],roughness:.16,metalness:.18,emissive:colors[i],emissiveIntensity:.05}));bob.castShadow=true;lab.add(bob);
+ const line=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0x4a5860}));lab.add(line);
+ const eq=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineDashedMaterial({color:colors[i],dashSize:.14,gapSize:.10,transparent:true,opacity:.55}));lab.add(eq);
+ const trailGeom=new THREE.BufferGeometry();const trail=new THREE.Line(trailGeom,new THREE.LineBasicMaterial({color:colors[i],transparent:true,opacity:.45}));lab.add(trail);
+ pendulums.push({pivot,bob,line,eq,trail,trailGeom,trailPts:[],ratio:ratios[i],theta:0});
+}
+
+// graph board on right
+const wc=document.createElement('canvas');wc.width=1050;wc.height=450;const wg=wc.getContext('2d'),wtex=new THREE.CanvasTexture(wc);wtex.colorSpace=THREE.SRGBColorSpace;
+const frame=new THREE.Mesh(new THREE.BoxGeometry(7.6,3.35,.13),new THREE.MeshStandardMaterial({color:0xdce6ea,roughness:.44,metalness:.03}));frame.position.set(5.3,1.25,-1.35);lab.add(frame);
+const board=new THREE.Mesh(new THREE.PlaneGeometry(7.35,3.1),new THREE.MeshBasicMaterial({map:wtex,side:THREE.DoubleSide}));board.position.set(5.3,1.25,-1.27);lab.add(board);
+
+const labelsHost=$('labels');function mkLabel(t){const e=document.createElement('div');e.className='label3d';e.textContent=t;labelsHost.appendChild(e);return e}
+const pendLabels=[mkLabel('0,75l'),mkLabel('l'),mkLabel('1,25l')];
+function projectLabel(el,pos){const p=pos.clone().project(camera);if(p.z>1){el.style.display='none';return}el.style.display=dom.showLabels.checked?'block':'none';el.style.left=((p.x*.5+.5)*view.clientWidth)+'px';el.style.top=((-p.y*.5+.5)*view.clientHeight)+'px'}
+
+function period(len){return 2*Math.PI*Math.sqrt(len/state.g)}
+function omega(len){return Math.sqrt(state.g/len)}
+function updatePhysics(dt){
+ if(state.running&&!state.paused)state.t+=dt*state.speed;
+ const th0=state.theta0Deg*Math.PI/180;
+ for(const p of pendulums){const len=state.l*p.ratio;p.theta=th0*Math.cos(omega(len)*state.t)}
+ if(state.running&&!state.paused && state.t-state.lastGraphT>=.04){state.lastGraphT=state.t;pushGraph()}
+}
+function bobPos(p){
+ const L=state.l*p.ratio*LENGTH_SCALE;
+ return new THREE.Vector3(p.pivot.x+L*Math.sin(p.theta),p.pivot.y-L*Math.cos(p.theta),0)
+}
+function updateVisuals(){
+ grid.visible=dom.showGrid.checked;
+ pendulums.forEach((p,i)=>{
+   const pos=bobPos(p);p.bob.position.copy(pos);p.line.geometry.setFromPoints([p.pivot,pos]);
+   const L=state.l*p.ratio*LENGTH_SCALE;p.eq.visible=dom.showEq.checked;p.eq.geometry.setFromPoints([p.pivot,new THREE.Vector3(p.pivot.x,p.pivot.y-L,0)]);p.eq.computeLineDistances();
+   p.trail.visible=dom.showTrail.checked;if(dom.showTrail.checked){p.trailPts.push(pos.clone().add(new THREE.Vector3(0,0,.04)));if(p.trailPts.length>120)p.trailPts.shift();p.trailGeom.setFromPoints(p.trailPts)}
+   projectLabel(pendLabels[i],pos.clone().add(new THREE.Vector3(0,-.48,0)));
+ });
+ drawWorldGraph()
+}
+function drawWorldGraph(){
+ const w=wc.width,h=wc.height;wg.fillStyle='#e9f0f3';wg.fillRect(0,0,w,h);wg.strokeStyle='#c5d4da';wg.lineWidth=2;
+ for(let i=0;i<=10;i++){const x=80+(w-130)*i/10;wg.beginPath();wg.moveTo(x,65);wg.lineTo(x,h-55);wg.stroke()}
+ for(let j=0;j<=6;j++){const y=65+(h-120)*j/6;wg.beginPath();wg.moveTo(80,y);wg.lineTo(w-50,y);wg.stroke()}
+ wg.strokeStyle='#314650';wg.lineWidth=4;wg.beginPath();wg.moveTo(80,h/2);wg.lineTo(w-50,h/2);wg.stroke();wg.beginPath();wg.moveTo(80,65);wg.lineTo(80,h-55);wg.stroke();
+ wg.fillStyle='#29424e';wg.font='bold 28px Segoe UI';wg.fillText('SO SÁNH ẢNH HƯỞNG CỦA CHIỀU DÀI',210,38);
+ const th0=Math.max(state.theta0Deg,1),tMax=data.length?data[data.length-1].t:GRAPH_WINDOW,tMin=Math.max(0,tMax-GRAPH_WINDOW),X=t=>80+(w-130)*(t-tMin)/GRAPH_WINDOW,Y=d=>h/2-d/(th0*1.25)*(h-130)/2;
+ const css=['#2f7de1','#2ca58d','#e68a2e'];
+ ratios.forEach((r,j)=>{
+   wg.strokeStyle=css[j];wg.lineWidth=4;wg.beginPath();let first=true;
+   for(const p of data){if(p.t<tMin)continue;const px=X(p.t),py=Y(p.v[j]);if(first){wg.moveTo(px,py);first=false}else wg.lineTo(px,py)}
+   wg.stroke();
+   if(data.length){const last=data[data.length-1];wg.fillStyle=css[j];wg.beginPath();wg.arc(X(last.t),Y(last.v[j]),8,0,Math.PI*2);wg.fill();wg.strokeStyle='rgba(255,255,255,.55)';wg.lineWidth=2;wg.beginPath();wg.arc(X(last.t),Y(last.v[j]),13,0,Math.PI*2);wg.stroke()}
+ });
+ if(data.length){
+   const px=X(data[data.length-1].t);wg.strokeStyle='rgba(49,70,80,.25)';wg.lineWidth=2;wg.setLineDash([8,8]);wg.beginPath();wg.moveTo(px,65);wg.lineTo(px,h-55);wg.stroke();wg.setLineDash([]);
+ }
+ wg.fillStyle='#536c77';wg.font='18px Segoe UI';wg.fillText('Đồ thị được vẽ theo thời gian thực',360,h-18);wtex.needsUpdate=true
+}
+
+function fmt(n,d=2){return(Math.abs(n)<1e-9?0:n).toFixed(d)}
+function updateUI(){
+ dom.speedOut.value=state.speed.toFixed(2)+'×';dom.lengthOut.value=state.l.toFixed(2)+' m';dom.gravityOut.value=state.g.toFixed(1);dom.theta0Out.value=Math.round(state.theta0Deg)+'°';
+ $('tHud').textContent=fmt(state.t)+' s';$('t1Hud').textContent=fmt(period(state.l*.75))+' s';$('t2Hud').textContent=fmt(period(state.l))+' s';$('t3Hud').textContent=fmt(period(state.l*1.25))+' s';
+ dom.warning.style.display=state.theta0Deg>15?'block':'none';
+}
+function apply(){state.speed=+dom.speed.value;state.l=+dom.length.value;state.g=+dom.gravity.value;state.theta0Deg=+dom.theta0.value;for(const p of pendulums){p.trailPts=[];p.trailGeom.setFromPoints([])}updatePhysics(0);updateUI()}
+[dom.speed,dom.length,dom.gravity,dom.theta0].forEach(e=>e.addEventListener('input',apply));
+dom.startBtn.onclick=()=>{state.running=true;state.paused=false};dom.pauseBtn.onclick=()=>state.paused=true;
+dom.themeBtn.onclick=()=>document.body.classList.toggle('dark');dom.theoryBtn.onclick=()=>dom.theoryBox.classList.toggle('show');
+dom.fullscreenBtn.onclick=async()=>{try{if(!document.fullscreenElement){await view.requestFullscreen()}else await document.exitFullscreen()}catch(e){console.warn(e)}};
+document.addEventListener('fullscreenchange',()=>{dom.fullscreenBtn.textContent=document.fullscreenElement?'🗗 Thoát toàn màn hình':'⛶ Vừa màn hình';setTimeout(()=>{resize();fitCamera()},80)});
+function resetAll(){Object.assign(state,{running:true,paused:false,t:0,speed:1,l:1,g:9.8,theta0Deg:10,lastGraphT:-1});dom.speed.value=1;dom.length.value=1;dom.gravity.value=9.8;dom.theta0.value=10;for(const p of pendulums){p.trailPts=[];p.trailGeom.setFromPoints([])}clearGraph();updatePhysics(0);fitCamera();updateUI()}
+dom.resetBtn.onclick=resetAll;dom.fitBtn.onclick=fitCamera;dom.clearGraphBtn.onclick=clearGraph;
+
+// small panel graph
+const canvas=$('graph'),ctx=canvas.getContext('2d');let data=[];
+function pushGraph(){data.push({t:state.t,v:pendulums.map(p=>p.theta*180/Math.PI)});const t0=state.t-GRAPH_WINDOW;while(data.length&&data[0].t<t0)data.shift()}
+function clearGraph(){data=[];state.lastGraphT=-1}
+function drawGraph(){
+ const dpr=Math.min(devicePixelRatio,2),w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.width!==Math.floor(w*dpr)||canvas.height!==Math.floor(h*dpr)){canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr)}
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=document.body.classList.contains('dark')?'#0b2531':'#e9f0f3';ctx.fillRect(0,0,w,h);
+ const L=24,R=5,T=10,B=13,pw=w-L-R,ph=h-T-B;ctx.strokeStyle=document.body.classList.contains('dark')?'#244654':'#c7d5db';
+ for(let i=0;i<=4;i++){let y=T+ph*i/4;ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(w-R,y);ctx.stroke()}
+ const maxA=Math.max(state.theta0Deg,1),ys=ph/(2*maxA*1.15),tMax=data.length?data[data.length-1].t:GRAPH_WINDOW,tMin=Math.max(0,tMax-GRAPH_WINDOW),X=t=>L+(t-tMin)/GRAPH_WINDOW*pw,Y=v=>T+ph/2-v*ys,cols=['#2f7de1','#2ca58d','#e68a2e'];
+ for(let j=0;j<3;j++){
+   ctx.strokeStyle=cols[j];ctx.lineWidth=1.55;ctx.beginPath();let first=true;
+   for(const p of data){if(p.t<tMin)continue;const x=X(p.t),y=Y(p.v[j]);if(first){ctx.moveTo(x,y);first=false}else ctx.lineTo(x,y)}
+   ctx.stroke();
+   if(data.length){const last=data[data.length-1];ctx.fillStyle=cols[j];ctx.beginPath();ctx.arc(X(last.t),Y(last.v[j]),3.5,0,Math.PI*2);ctx.fill()}
+ }
+ if(data.length){const px=X(data[data.length-1].t);ctx.strokeStyle='rgba(70,92,103,.25)';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(px,T);ctx.lineTo(px,h-B);ctx.stroke();ctx.setLineDash([])}
+}
+
+// Safe fit and safe zoom: keep support top + graph frame inside view.
+function fitCamera(){
+ const important=new THREE.Box3();
+ [post,arm,frame,board,...pendulums.map(p=>p.bob)].forEach(o=>important.expandByObject(o));
+ important.expandByScalar(.65);
+ const size=important.getSize(new THREE.Vector3()),center=important.getCenter(new THREE.Vector3()),maxDim=Math.max(size.x,size.y,size.z),fov=camera.fov*Math.PI/180;
+ const dist=maxDim/(2*Math.tan(fov/2))*1.22;
+ camera.position.set(center.x+dist*.62,center.y+dist*.02,center.z+dist*.66);
+ controls.target.set(center.x+.25,center.y-.85,center.z);
+ controls.update();
+}
+function keepSafeZoom(){
+ const dist=camera.position.distanceTo(controls.target);
+ const minSafe=10.5;
+ if(dist<minSafe){
+   const dir=camera.position.clone().sub(controls.target).normalize();
+   camera.position.copy(controls.target.clone().add(dir.multiplyScalar(minSafe)));
+   controls.update();
+ }
+}
+controls.addEventListener('change',keepSafeZoom);
+
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();
+renderer.domElement.addEventListener('pointermove',e=>{
+ const r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(mouse,camera);
+ let found=-1;for(let i=0;i<3;i++){if(raycaster.intersectObject(pendulums[i].bob,false).length){found=i;break}}
+ if(found>=0){const len=state.l*ratios[found];dom.tooltip.style.display='block';dom.tooltip.style.left=(e.clientX-r.left+14)+'px';dom.tooltip.style.top=(e.clientY-r.top+14)+'px';dom.tooltip.innerHTML=`<b>Con lắc ${found+1}</b><br>l = ${fmt(len)} m<br>T = ${fmt(period(len))} s`}else dom.tooltip.style.display='none'
+});
+renderer.domElement.addEventListener('pointerleave',()=>dom.tooltip.style.display='none');
+
+function resize(){const w=view.clientWidth,h=view.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}
+window.addEventListener('resize',()=>{resize();keepSafeZoom()});
+resize();updatePhysics(0);fitCamera();pushGraph();updateUI();
+
+let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);let dt=(now-last)/1000;last=now;dt=Math.min(MAX_DT,Math.max(0,dt));
+ updatePhysics(dt);updateVisuals();updateUI();drawGraph();controls.update();keepSafeZoom();renderer.render(scene,camera)
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

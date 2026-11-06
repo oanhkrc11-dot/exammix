@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hiệu ứng Doppler</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#eef4ff;color:#0f172a}
+.app{width:min(1240px,96vw);margin:18px auto;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #dbe5f2;box-shadow:0 14px 36px rgba(15,23,42,.15)}
+header{background:#0b3b78;color:#fff;padding:18px 24px}
+header h1{margin:0 0 6px;font-size:32px}
+header p{margin:0;font-size:16px;opacity:.96}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid #e5e7eb}
+button{border:0;border-radius:12px;padding:11px 16px;font-size:15px;font-weight:700;color:white;cursor:pointer}
+#startBtn{background:#16a34a}
+#pauseBtn{background:#f59e0b;color:#111827}
+#resetBtn{background:#2563eb}
+.box{display:flex;align-items:center;gap:9px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;font-size:14px}
+input[type=range]{width:135px;accent-color:#2563eb}
+.main{display:grid;grid-template-columns:1.5fr .8fr;gap:16px;padding:18px}
+.card{border:1px solid #dbe5f2;border-radius:16px;overflow:hidden;background:#fff}
+canvas{display:block;width:100%;height:auto;background:#fff}
+.info{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:0 18px 18px}
+.note{border:1px solid #e2e8f0;border-radius:14px;padding:14px;background:#f8fafc;line-height:1.5;font-size:15px}
+.note b{color:#0b3b78}
+@media(max-width:920px){.main{grid-template-columns:1fr}.info{grid-template-columns:1fr}header h1{font-size:25px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>Hiệu ứng Doppler</h1>
+  <p>Nguồn âm chuyển động làm các mặt sóng phía trước bị nén lại và phía sau giãn ra, khiến tần số người quan sát nhận được thay đổi.</p>
+</header>
+
+<div class="controls">
+  <button id="startBtn">▶ Bắt đầu</button>
+  <button id="pauseBtn">⏸ Tạm dừng</button>
+  <button id="resetBtn">↻ Đặt lại</button>
+
+  <label class="box">Tần số nguồn:
+    <input id="freqSlider" type="range" min="0.5" max="3" step="0.1" value="1.2">
+    <b><span id="freqValue">1.2</span> Hz</b>
+  </label>
+
+  <label class="box">Tốc độ âm:
+    <input id="soundSlider" type="range" min="100" max="220" step="10" value="160">
+    <b><span id="soundValue">160</span> px/s</b>
+  </label>
+
+  <label class="box">Vận tốc nguồn:
+    <input id="sourceSpeedSlider" type="range" min="-100" max="100" step="5" value="50">
+    <b><span id="sourceSpeedValue">50</span> px/s</b>
+  </label>
+
+  <label class="box">Vận tốc người quan sát:
+    <input id="observerSpeedSlider" type="range" min="-80" max="80" step="5" value="0">
+    <b><span id="observerSpeedValue">0</span> px/s</b>
+  </label>
+</div>
+
+<div class="main">
+  <div class="card"><canvas id="dopplerCanvas" width="880" height="540"></canvas></div>
+  <div class="card"><canvas id="infoCanvas" width="430" height="540"></canvas></div>
+</div>
+
+<div class="info">
+  <div class="note"><b>Phía trước nguồn:</b> các mặt sóng gần nhau hơn → bước sóng giảm → tần số quan sát tăng.</div>
+  <div class="note"><b>Phía sau nguồn:</b> các mặt sóng xa nhau hơn → bước sóng tăng → tần số quan sát giảm.</div>
+  <div class="note"><b>Gợi ý:</b> thử cho nguồn đứng yên rồi cho người quan sát chuyển động để thấy Doppler không chỉ do nguồn chuyển động.</div>
+</div>
+</div>
+
+<script>
+const canvas=document.getElementById('dopplerCanvas');
+const ctx=canvas.getContext('2d');
+const infoCanvas=document.getElementById('infoCanvas');
+const ictx=infoCanvas.getContext('2d');
+
+const startBtn=document.getElementById('startBtn');
+const pauseBtn=document.getElementById('pauseBtn');
+const resetBtn=document.getElementById('resetBtn');
+
+const freqSlider=document.getElementById('freqSlider');
+const soundSlider=document.getElementById('soundSlider');
+const sourceSpeedSlider=document.getElementById('sourceSpeedSlider');
+const observerSpeedSlider=document.getElementById('observerSpeedSlider');
+
+const freqValue=document.getElementById('freqValue');
+const soundValue=document.getElementById('soundValue');
+const sourceSpeedValue=document.getElementById('sourceSpeedValue');
+const observerSpeedValue=document.getElementById('observerSpeedValue');
+
+const W=canvas.width,H=canvas.height;
+const trackY=H/2+20;
+
+let f=1.2,c=160,vs=50,vo=0;
+let running=false;
+let t=0,lastTs=null;
+let sourceX=180;
+let observerX=700;
+let nextEmit=0;
+let waves=[];
+
+function updateParams(){
+  f=Number(freqSlider.value);
+  c=Number(soundSlider.value);
+  vs=Number(sourceSpeedSlider.value);
+  vo=Number(observerSpeedSlider.value);
+  freqValue.textContent=f.toFixed(1);
+  soundValue.textContent=c;
+  sourceSpeedValue.textContent=vs;
+  observerSpeedValue.textContent=vo;
+}
+
+function resetState(){
+  running=false;
+  t=0;
+  lastTs=null;
+  sourceX=180;
+  observerX=700;
+  nextEmit=0;
+  waves=[];
+}
+
+function emitWave(){
+  waves.push({x:sourceX,y:trackY,t0:t});
+}
+
+function updateSimulation(dt){
+  sourceX += vs*dt;
+  observerX += vo*dt;
+
+  // wrap source and observer softly inside scene
+  if(sourceX>W-80)sourceX=80;
+  if(sourceX<80)sourceX=W-80;
+  if(observerX>W-70)observerX=70;
+  if(observerX<70)observerX=W-70;
+
+  const period=1/f;
+  while(t>=nextEmit){
+    emitWave();
+    nextEmit += period;
+  }
+
+  waves = waves.filter(w => c*(t-w.t0) < W*1.3);
+}
+
+function drawScene(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f8fbff';
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle='#0b3b78';
+  ctx.font='bold 30px Arial';
+  ctx.textAlign='center';
+  ctx.fillText('Hiệu ứng Doppler',W/2,45);
+
+  // road / propagation axis
+  ctx.strokeStyle='#94a3b8';
+  ctx.lineWidth=2;
+  ctx.setLineDash([7,7]);
+  ctx.beginPath();
+  ctx.moveTo(50,trackY);
+  ctx.lineTo(W-50,trackY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // wavefronts
+  for(const w of waves){
+    const r=c*(t-w.t0);
+    ctx.beginPath();
+    ctx.arc(w.x,w.y,r,0,Math.PI*2);
+    ctx.strokeStyle='rgba(37,99,235,.45)';
+    ctx.lineWidth=2;
+    ctx.stroke();
+  }
+
+  drawSource();
+  drawObserver();
+  drawDirectionArrows();
+  drawWavelengthGuides();
+}
+
+function drawSource(){
+  ctx.fillStyle='#ef4444';
+  ctx.beginPath();
+  ctx.arc(sourceX,trackY,16,0,Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle='#991b1b';
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  ctx.fillStyle='#111827';
+  ctx.font='bold 18px Arial';
+  ctx.textAlign='center';
+  ctx.fillText('Nguồn S',sourceX,trackY-30);
+
+  // simple speaker cone
+  ctx.fillStyle='#64748b';
+  ctx.beginPath();
+  ctx.moveTo(sourceX-7,trackY-8);
+  ctx.lineTo(sourceX+13,trackY-14);
+  ctx.lineTo(sourceX+13,trackY+14);
+  ctx.lineTo(sourceX-7,trackY+8);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawObserver(){
+  ctx.fillStyle='#16a34a';
+  ctx.beginPath();
+  ctx.arc(observerX,trackY,14,0,Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle='#166534';
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  ctx.fillStyle='#111827';
+  ctx.font='bold 18px Arial';
+  ctx.textAlign='center';
+  ctx.fillText('Người quan sát O',observerX,trackY-30);
+
+  // body
+  ctx.strokeStyle='#166534';
+  ctx.lineWidth=3;
+  ctx.beginPath();
+  ctx.moveTo(observerX,trackY+14);
+  ctx.lineTo(observerX,trackY+48);
+  ctx.moveTo(observerX,trackY+25);
+  ctx.lineTo(observerX-14,trackY+38);
+  ctx.moveTo(observerX,trackY+25);
+  ctx.lineTo(observerX+14,trackY+38);
+  ctx.moveTo(observerX,trackY+48);
+  ctx.lineTo(observerX-11,trackY+66);
+  ctx.moveTo(observerX,trackY+48);
+  ctx.lineTo(observerX+11,trackY+66);
+  ctx.stroke();
+}
+
+function arrow(x,y,v,color,label){
+  if(Math.abs(v)<1){
+    ctx.fillStyle=color;
+    ctx.font='bold 14px Arial';
+    ctx.textAlign='center';
+    ctx.fillText(label+' = 0',x,y-10);
+    return;
+  }
+
+  const dir=Math.sign(v);
+  const len=Math.min(70,Math.abs(v)*0.6);
+  const x2=x+dir*len;
+
+  ctx.strokeStyle=color;
+  ctx.fillStyle=color;
+  ctx.lineWidth=2.5;
+  ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.lineTo(x2,y);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(x2,y);
+  ctx.lineTo(x2-dir*10,y-6);
+  ctx.lineTo(x2-dir*10,y+6);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.font='bold 14px Arial';
+  ctx.textAlign='center';
+  ctx.fillText(label,x+dir*len/2,y-10);
+}
+
+function drawDirectionArrows(){
+  arrow(sourceX,trackY+90,vs,'#b91c1c','vS');
+  arrow(observerX,trackY+90,vo,'#166534','vO');
+}
+
+function getObservedFrequency(){
+  // 1D classical Doppler. Positive velocity = to the right.
+  // Choose sign based on whether observer is to right or left of source.
+  const side = observerX>=sourceX ? 1 : -1;
+  const denom = c - side*vs;
+  const numer = c - side*vo;
+  if(Math.abs(denom)<1e-6) return null;
+  return f * numer/denom;
+}
+
+function drawWavelengthGuides(){
+  const lambda0=c/f;
+  const lambdaFront=(c-vs)/f;
+  const lambdaBack=(c+vs)/f;
+
+  ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.strokeStyle='#cbd5e1';
+  ctx.lineWidth=1;
+  ctx.fillRect(35,70,300,112);
+  ctx.strokeRect(35,70,300,112);
+
+  ctx.fillStyle='#0f172a';
+  ctx.font='16px Arial';
+  ctx.textAlign='left';
+  ctx.fillText(`λ₀ = c/f = ${lambda0.toFixed(1)} px`,50,98);
+  ctx.fillText(`λ phía trước ≈ ${(lambdaFront).toFixed(1)} px`,50,126);
+  ctx.fillText(`λ phía sau ≈ ${(lambdaBack).toFixed(1)} px`,50,154);
+  ctx.fillText(`f quan sát ≈ ${formatObserved()} Hz`,50,178);
+}
+
+function formatObserved(){
+  const fo=getObservedFrequency();
+  if(fo===null || !Number.isFinite(fo) || fo<0)return '—';
+  return fo.toFixed(2);
+}
+
+function box(x,y,w,h,fill,stroke){
+  ictx.fillStyle=fill;
+  ictx.strokeStyle=stroke;
+  ictx.lineWidth=2;
+  ictx.beginPath();
+  ictx.roundRect(x,y,w,h,14);
+  ictx.fill();
+  ictx.stroke();
+}
+
+function drawInfo(){
+  ictx.clearRect(0,0,430,540);
+  ictx.fillStyle='#fff';
+  ictx.fillRect(0,0,430,540);
+
+  ictx.fillStyle='#0b3b78';
+  ictx.font='bold 28px Arial';
+  ictx.textAlign='center';
+  ictx.fillText('Thông tin Doppler',215,42);
+
+  box(18,72,394,112,'#f8fafc','#dbe5f2');
+  ictx.fillStyle='#111827';
+  ictx.font='bold 19px Arial';
+  ictx.textAlign='left';
+  ictx.fillText('Thông số',36,104);
+  ictx.font='16px Arial';
+  ictx.fillText(`f nguồn = ${f.toFixed(1)} Hz`,36,134);
+  ictx.fillText(`c = ${c.toFixed(0)} px/s`,220,134);
+  ictx.fillText(`vS = ${vs.toFixed(0)} px/s`,36,160);
+  ictx.fillText(`vO = ${vo.toFixed(0)} px/s`,220,160);
+
+  box(18,206,394,112,'#fff7ed','#fed7aa');
+  ictx.fillStyle='#c2410c';
+  ictx.font='bold 19px Arial';
+  ictx.fillText('Bước sóng',36,238);
+  ictx.fillStyle='#111827';
+  ictx.font='16px Arial';
+  ictx.fillText(`Phía trước: λ ≈ ${((c-vs)/f).toFixed(1)} px`,36,270);
+  ictx.fillText(`Phía sau: λ ≈ ${((c+vs)/f).toFixed(1)} px`,36,298);
+
+  box(18,340,394,112,'#f0fdf4','#bbf7d0');
+  ictx.fillStyle='#15803d';
+  ictx.font='bold 19px Arial';
+  ictx.fillText('Tần số người quan sát nhận được',36,372);
+  ictx.fillStyle='#111827';
+  ictx.font='16px Arial';
+  ictx.fillText(`f' ≈ ${formatObserved()} Hz`,36,404);
+  ictx.fillText(observerX>=sourceX?'Người quan sát đang ở phía trước nguồn.':'Người quan sát đang ở phía sau nguồn.',36,432);
+
+  ictx.fillStyle='#0f172a';
+  ictx.font='bold 16px Arial';
+  ictx.fillText(`t = ${t.toFixed(2)} s`,36,500);
+}
+
+function animate(ts){
+  updateParams();
+
+  if(lastTs===null)lastTs=ts;
+  const dt=Math.min((ts-lastTs)/1000,.04);
+  lastTs=ts;
+
+  if(running){
+    t+=dt;
+    updateSimulation(dt);
+  }
+
+  drawScene();
+  drawInfo();
+  requestAnimationFrame(animate);
+}
+
+startBtn.addEventListener('click',()=>{
+  running=true;
+  lastTs=null;
+});
+pauseBtn.addEventListener('click',()=>{
+  running=false;
+});
+resetBtn.addEventListener('click',resetState);
+
+[freqSlider,soundSlider,sourceSpeedSlider,observerSpeedSlider]
+  .forEach(el=>el.addEventListener('input',updateParams));
+
+updateParams();
+resetState();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

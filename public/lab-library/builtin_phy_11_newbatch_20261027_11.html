@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>050 - Điện trường của một điện tích điểm âm</title>
+<style>
+:root{--text:#eef9ff;--gold:#ffd972}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 66% 34%,#14324a 0%,#07131e 48%,#02070b 100%);color:var(--text);font-family:Inter,Segoe UI,system-ui,sans-serif}
+#app{position:fixed;inset:0}
+#panel{position:fixed;left:12px;top:12px;bottom:12px;width:262px;z-index:40;overflow:auto;padding:11px;border-radius:16px;background:linear-gradient(180deg,rgba(8,18,28,.96),rgba(5,12,20,.94));border:1px solid rgba(111,193,235,.22);box-shadow:0 18px 52px rgba(0,0,0,.42);backdrop-filter:blur(14px);transition:.25s}
+#panel.hide{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none}
+#panel::-webkit-scrollbar{width:6px}#panel::-webkit-scrollbar-thumb{background:#31536a;border-radius:8px}
+h1{font-size:14px;margin:0 0 3px;font-weight:900}.sub{font-size:10.5px;color:#7bdcff;font-weight:800}
+.desc{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(12,28,41,.72);border:1px solid rgba(94,171,211,.14);font-size:10.3px;line-height:1.45;color:#cce1ee}
+.section{margin:10px 0 6px;color:#75d8ff;font-weight:900;font-size:10.5px;letter-spacing:.6px}
+label.control{display:block;margin:7px 0 9px;font-size:10.8px}label.control .value{float:right;color:#9fe9ff;font-weight:800}
+input[type=range]{width:100%;accent-color:#52c9ff;margin-top:4px}
+.buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:7px}
+button{border:1px solid #355a73;background:#122332;color:#eef8ff;border-radius:9px;padding:7px 6px;font-size:10.5px;font-weight:800;cursor:pointer}
+button:hover{filter:brightness(1.12)}button.primary{border-color:#54d692;background:linear-gradient(180deg,#1f5d3e,#153c2a)}
+.checkrow{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:10.4px;color:#cfe2ee}.checkrow input{accent-color:#55cfff}
+.modeling{margin-top:9px;padding:8px 9px;border-radius:10px;background:rgba(21,28,38,.72);border-left:3px solid #d8a447;font-size:10px;line-height:1.42;color:#c8d4dd}
+#graph{width:100%;height:150px;background:#071019;border-radius:9px;margin-top:8px;border:1px solid rgba(104,186,225,.14)}
+#formula{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:28;padding:8px 14px;border-radius:999px;background:rgba(6,16,25,.66);border:1px solid rgba(102,209,255,.2);color:#dff8ff;font-size:15px;font-weight:900;backdrop-filter:blur(9px);box-shadow:0 10px 28px #0004}
+#hud{position:fixed;right:16px;top:16px;z-index:20;width:318px;padding:10px 11px;border-radius:13px;background:rgba(6,14,22,.68);border:1px solid rgba(116,193,234,.18);backdrop-filter:blur(9px);font-size:11px;line-height:1.55}
+#hud b{color:var(--gold)}
+#probar{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:35;display:flex;gap:5px;flex-wrap:wrap;justify-content:center;padding:5px;border-radius:12px;background:rgba(6,14,22,.54);border:1px solid rgba(115,195,235,.16);backdrop-filter:blur(10px)}
+#probar button{padding:6px 8px;font-size:10.3px;border-radius:8px}
+#credit{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:18;color:#ffe075;font-size:14px;font-weight:900}
+#note{position:fixed;left:282px;bottom:16px;z-index:18;color:#a9bfce;font-size:10px;background:rgba(6,14,22,.5);border:1px solid rgba(116,193,234,.11);border-radius:9px;padding:6px 8px}
+#recStatus{position:fixed;right:18px;bottom:84px;z-index:30;display:none;padding:7px 10px;border-radius:10px;background:rgba(125,0,0,.72);border:1px solid rgba(255,120,120,.45);font-size:11px;font-weight:900}
+.status{display:inline-block;padding:3px 7px;border-radius:999px;background:#17374b;color:#a9e7ff;font-weight:800;font-size:9.5px}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="formula">E = k|q|/r² &nbsp; · &nbsp; V = kq/r</div>
+<div id="probar">
+<button id="fullscreenBtn">⛶</button><button id="panelBtn">☰</button>
+<button id="bgBtn">🌗</button><button id="lightBtn">💡</button>
+<button id="camBtn">🎥</button><button id="autoCamBtn">↻ Cam</button>
+<button id="recordBtn">🔴 Quay</button><button id="stopRecordBtn">⏹</button>
+</div>
+
+<div id="panel">
+<h1>PHYSICS 11 LAB · 3D PRO</h1>
+<div class="sub">050 · ĐIỆN TRƯỜNG CỦA MỘT ĐIỆN TÍCH ĐIỂM ÂM</div>
+<div class="desc">
+Với điện tích điểm <b>q &lt; 0</b>, các đường sức điện <b>hướng vào</b> điện tích. Tại điểm cách q một khoảng r:
+<b>E = k|q|/r²</b>, hướng về q; điện thế <b>V = kq/r</b> nên mang dấu âm.
+</div>
+
+<div class="section">ĐIỀU KHIỂN</div>
+<label class="control">Tốc độ mô phỏng <span id="speedVal" class="value">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
+<label class="control">Độ lớn điện tích |q| <span id="qVal" class="value">4.0 nC</span><input id="charge" type="range" min=".5" max="10" step=".1" value="4"></label>
+<label class="control">Tọa độ q theo x <span id="qxVal" class="value">0.0 m</span><input id="qx" type="range" min="-2" max="2" step=".1" value="0"></label>
+<label class="control">Điểm khảo sát x <span id="pxVal" class="value">2.5 m</span><input id="px" type="range" min="-4" max="4" step=".1" value="2.5"></label>
+<label class="control">Điểm khảo sát z <span id="pzVal" class="value">1.5 m</span><input id="pz" type="range" min="-4" max="4" step=".1" value="1.5"></label>
+<label class="control">Mật độ đường sức <span id="densityVal" class="value">18</span><input id="density" type="range" min="8" max="32" step="2" value="18"></label>
+
+<div class="section">NÚT NHANH</div>
+<div class="buttons">
+<button id="start" class="primary">▶ Bắt đầu</button><button id="pause">⏸ Tạm dừng</button>
+<button id="reset">↻ Đặt lại</button><button id="fit">⛶ Fit</button>
+</div>
+<div class="buttons">
+<button id="nearProbe">Điểm gần</button><button id="farProbe">Điểm xa</button>
+<button id="doubleQ">|q| × 2</button><button id="centerQ">q về tâm</button>
+</div>
+
+<div class="section">HIỂN THỊ</div>
+<label class="checkrow"><input id="showLines" type="checkbox" checked> Hiện đường sức điện</label>
+<label class="checkrow"><input id="showE" type="checkbox" checked> Hiện véc tơ E tại điểm khảo sát</label>
+<label class="checkrow"><input id="showEquipotential" type="checkbox" checked> Hiện các mặt đẳng thế</label>
+<label class="checkrow"><input id="showProbe" type="checkbox" checked> Hiện điểm khảo sát</label>
+<label class="checkrow"><input id="showGrid" type="checkbox" checked> Hiện lưới</label>
+
+<canvas id="graph" width="238" height="150"></canvas>
+
+<div class="modeling"><b>Mô hình hóa:</b> điện tích điểm âm đứng yên trong chân không/không khí coi như chân không. Độ dài véc tơ E và mật độ hình vẽ được chuẩn hóa để dễ quan sát; số liệu E, V tính trực tiếp từ công thức thật. Đường sức luôn hướng vào q và không giao nhau.</div>
+</div>
+
+<div id="hud">
+<span class="status">ĐIỆN TÍCH ÂM · ĐƯỜNG SỨC HƯỚNG VÀO</span><br>
+q = <b id="qOut">−4.0 nC</b><br>
+r = <b id="rOut">2.915 m</b><br>
+E = <b id="EOut">4.23 N/C</b><br>
+V = <b id="VOut">12.34 V</b><br>
+Hướng E = <b id="dirOut">hướng về q</b><br>
+E·r²/(kq) = <b id="checkOut">1.000</b><br>
+Trạng thái = <b id="runOut">ĐỨNG YÊN</b>
+</div>
+
+<div id="note">xanh lam: q âm · cyan: đường sức · vàng: véc tơ E hướng vào q · các mặt cầu mờ: đẳng thế</div>
+<div id="credit">Thầy Hùng vật lí</div>
+<div id="recStatus">● ĐANG QUAY 00:00</div>
+<canvas id="recordCanvas" width="1920" height="1080" style="display:none"></canvas>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id), K=8.9875517923e9;
+const state={running:false,paused:false,time:0,speed:1,q:-4e-9,qx:0,px:2.5,pz:1.5,density:18,backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false,pulse:0};
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('app').appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x06131e);
+const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,200);camera.position.set(8,6.5,10);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=4.5;controls.maxDistance=28;controls.minPolarAngle=.18;controls.maxPolarAngle=1.5;controls.target.set(0,.5,0);
+
+const hemi=new THREE.HemisphereLight(0xe3f7ff,0x10202d,1.7);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,1.8);key.position.set(7,10,8);scene.add(key);
+const rim=new THREE.PointLight(0x56d8ff,1.1,30,2);rim.position.set(-5,5,-5);scene.add(rim);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(38,30),new THREE.MeshStandardMaterial({color:0x101c27,roughness:.92}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.5;scene.add(floor);
+const grid=new THREE.GridHelper(38,38,0x2e5b72,0x173241);grid.position.y=-2.49;grid.material.transparent=true;grid.material.opacity=.15;scene.add(grid);
+
+const model=new THREE.Group();scene.add(model);
+const fieldGroup=new THREE.Group(),eqGroup=new THREE.Group(),probeGroup=new THREE.Group();
+model.add(fieldGroup,eqGroup,probeGroup);
+
+const charge=new THREE.Mesh(new THREE.SphereGeometry(.42,32,24),new THREE.MeshStandardMaterial({color:0x4f82ff,emissive:0x102e86,emissiveIntensity:.42,metalness:.1,roughness:.32}));
+model.add(charge);
+
+function clearGroup(g){while(g.children.length){const o=g.children.pop();o.traverse?.(q=>{q.geometry?.dispose?.();q.material?.dispose?.()})}}
+function qPos(){return new THREE.Vector3(state.qx,.5,0)}
+function probePos(){return new THREE.Vector3(state.px,.5,state.pz)}
+function rVec(){return probePos().sub(qPos())}
+function rVal(){return Math.max(.18,rVec().length())}
+function EVal(){return K*Math.abs(state.q)/(rVal()*rVal())}
+function VVal(){return K*state.q/rVal()}
+
+function buildField(){
+ clearGroup(fieldGroup);
+ if(!$('showLines').checked)return;
+ const origin=qPos(),n=state.density;
+ const dirs=[];
+ // Fibonacci sphere -> evenly distributed, non-intersecting radial field lines
+ for(let i=0;i<n;i++){
+   const y=1-(i/(n-1||1))*2;
+   const radius=Math.sqrt(Math.max(0,1-y*y));
+   const theta=Math.PI*(3-Math.sqrt(5))*i;
+   dirs.push(new THREE.Vector3(Math.cos(theta)*radius,y,Math.sin(theta)*radius).normalize());
+ }
+ for(const d of dirs){
+   const start=origin.clone().add(d.clone().multiplyScalar(.48));
+   const end=origin.clone().add(d.clone().multiplyScalar(5.2));
+   const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([start,end]),new THREE.LineBasicMaterial({color:0x67e5ff,transparent:true,opacity:.62}));
+   fieldGroup.add(line);
+   const pos=origin.clone().add(d.clone().multiplyScalar(2.55+0.14*Math.sin(state.pulse+iSafe(d.x))));
+   const cone=new THREE.Mesh(new THREE.ConeGeometry(.07,.22,10),new THREE.MeshBasicMaterial({color:0xbff7ff}));
+   cone.position.copy(pos);cone.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().negate());fieldGroup.add(cone);
+ }
+}
+function iSafe(x){return Math.round((x+1)*7)}
+function buildEquipotential(){
+ clearGroup(eqGroup);
+ if(!$('showEquipotential').checked)return;
+ const center=qPos();
+ for(const r of [1.15,2.0,3.0,4.2]){
+   const m=new THREE.Mesh(new THREE.SphereGeometry(r,32,20),new THREE.MeshBasicMaterial({color:0x5aa6ff,wireframe:true,transparent:true,opacity:.08,depthWrite:false}));
+   m.position.copy(center);eqGroup.add(m);
+ }
+}
+function buildProbe(){
+ clearGroup(probeGroup);
+ if(!$('showProbe').checked)return;
+ const p=probePos(),rv=rVec(),r=rv.length(),dir=rv.clone().normalize().negate();
+ const dot=new THREE.Mesh(new THREE.SphereGeometry(.14,18,14),new THREE.MeshBasicMaterial({color:0xffffff}));dot.position.copy(p);probeGroup.add(dot);
+ if($('showE').checked && r>1e-6){
+   const len=THREE.MathUtils.clamp(.65+Math.log10(1+Math.abs(EVal()))*.75,.65,3);
+   probeGroup.add(new THREE.ArrowHelper(dir,p,len,0xffd65f,.18,.1));
+ }
+}
+function updatePhysics(dt){
+ if(!state.running||state.paused)return;
+ state.time+=dt*state.speed;state.pulse+=dt*state.speed*2.3;
+}
+function updateVisuals(){
+ charge.position.copy(qPos());
+ const s=1+.05*Math.sin(state.pulse);charge.scale.setScalar(s);
+ // animate only arrow marker positions by rebuilding field at modest cadence
+ if(state.running && Math.floor(state.time*10)%2===0)buildField();
+ buildProbe();grid.visible=$('showGrid').checked;
+}
+function drawGraph(){
+ const c=$('graph'),g=c.getContext('2d'),w=c.width,h=c.height;g.fillStyle='#071019';g.fillRect(0,0,w,h);
+ const L=38,T=12,B=24,R=8,pw=w-L-R,ph=h-T-B;
+ g.strokeStyle='rgba(190,225,240,.28)';g.beginPath();g.moveTo(L,T);g.lineTo(L,T+ph);g.lineTo(L+pw,T+ph);g.stroke();
+ const rmin=.5,rmax=6,maxE=K*Math.abs(state.q)/(rmin*rmin);
+ g.strokeStyle='#67e5ff';g.lineWidth=2;g.beginPath();
+ for(let i=0;i<=160;i++){const r=rmin+i/160*(rmax-rmin),E=K*Math.abs(state.q)/(r*r),x=L+i/160*pw,y=T+ph*(1-E/maxE);i?g.lineTo(x,y):g.moveTo(x,y)}g.stroke();
+ const rr=THREE.MathUtils.clamp(rVal(),rmin,rmax),ee=K*Math.abs(state.q)/(rr*rr),gx=L+(rr-rmin)/(rmax-rmin)*pw,gy=T+ph*(1-ee/maxE);g.fillStyle='#ffd65f';g.beginPath();g.arc(gx,gy,4,0,Math.PI*2);g.fill();
+ g.fillStyle='#91aabb';g.font='9px Segoe UI';g.fillText('E(N/C)',3,12);g.fillText('r(m)',w-28,h-6);
+}
+function updateUI(){
+ const r=rVal(),E=EVal(),V=VVal();
+ $('speedVal').textContent=`${state.speed.toFixed(2)}×`;$('qVal').textContent=`${Math.abs(state.q*1e9).toFixed(1)} nC`;$('qxVal').textContent=`${state.qx.toFixed(1)} m`;$('pxVal').textContent=`${state.px.toFixed(1)} m`;$('pzVal').textContent=`${state.pz.toFixed(1)} m`;$('densityVal').textContent=state.density;
+ $('qOut').textContent=`−${Math.abs(state.q*1e9).toFixed(1)} nC`;$('rOut').textContent=`${r.toFixed(3)} m`;$('EOut').textContent=`${E.toFixed(2)} N/C`;$('VOut').textContent=`${V.toFixed(2)} V`;$('checkOut').textContent=(E*r*r/(K*Math.abs(state.q))).toFixed(3);$('runOut').textContent=state.running&&!state.paused?'ĐANG CHẠY':state.paused?'TẠM DỪNG':'ĐỨNG YÊN';drawGraph();
+}
+
+const bgModes=[{b:0x06131e,f:0x101c27},{b:0xeaf2f6,f:0xd6e1e6},{b:0x06162a,f:0x0b2039}];
+function applyBackground(){const m=bgModes[state.backgroundIndex];scene.background.setHex(m.b);floor.material.color.setHex(m.f)}
+function applyLighting(){if(state.lightMode===0){hemi.intensity=1.7;key.intensity=1.8;rim.intensity=1.1}else if(state.lightMode===1){hemi.intensity=2.2;key.intensity=2.3;rim.intensity=.5}else{hemi.intensity=1.05;key.intensity=1.15;rim.intensity=1.9}}
+function setCamera(m){state.cameraMode=m%4;state.autoCamera=false;if(m===0){camera.position.set(0,9,.01);controls.target.set(0,.5,0)}else if(m===1){camera.position.set(8,6.5,10);controls.target.set(0,.5,0)}else if(m===2){camera.position.set(0,3.8,12);controls.target.set(0,.5,0)}else{camera.position.set(5,3.4,5);controls.target.set(0,.5,0)}camera.lookAt(controls.target);controls.update()}
+function updateAutoCam(){if(!state.autoCamera)return;const a=state.time*.13,r=10;camera.position.set(Math.cos(a)*r,5.2,Math.sin(a)*r);camera.lookAt(controls.target)}
+async function toggleFullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}}
+function rebuild(){buildField();buildEquipotential();buildProbe();drawGraph()}
+
+$('speed').oninput=e=>state.speed=+e.target.value;
+$('charge').oninput=e=>{state.q=-Math.abs(+e.target.value)*1e-9;rebuild()};
+$('qx').oninput=e=>{state.qx=+e.target.value;rebuild()};
+$('px').oninput=e=>{state.px=+e.target.value;rebuild()};
+$('pz').oninput=e=>{state.pz=+e.target.value;rebuild()};
+$('density').oninput=e=>{state.density=+e.target.value;buildField()};
+$('showLines').onchange=buildField;$('showE').onchange=buildProbe;$('showEquipotential').onchange=buildEquipotential;$('showProbe').onchange=buildProbe;
+$('start').onclick=()=>{state.running=true;state.paused=false};$('pause').onclick=()=>state.paused=!state.paused;
+$('reset').onclick=()=>{Object.assign(state,{running:false,paused:false,time:0,speed:1,q:-4e-9,qx:0,px:2.5,pz:1.5,density:18,backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false,pulse:0});$('speed').value=1;$('charge').value=4;$('qx').value=0;$('px').value=2.5;$('pz').value=1.5;$('density').value=18;applyBackground();applyLighting();rebuild();setCamera(1)};
+$('fit').onclick=()=>setCamera(1);
+$('nearProbe').onclick=()=>{state.px=1;state.pz=.5;$('px').value=1;$('pz').value=.5;rebuild()};
+$('farProbe').onclick=()=>{state.px=4;state.pz=2.5;$('px').value=4;$('pz').value=2.5;rebuild()};
+$('doubleQ').onclick=()=>{state.q=-Math.min(10e-9,Math.abs(state.q)*2);$('charge').value=Math.abs(state.q)*1e9;rebuild()};
+$('centerQ').onclick=()=>{state.qx=0;$('qx').value=0;rebuild()};
+$('fullscreenBtn').onclick=toggleFullscreen;$('panelBtn').onclick=()=>$('panel').classList.toggle('hide');
+$('bgBtn').onclick=()=>{state.backgroundIndex=(state.backgroundIndex+1)%3;applyBackground()};
+$('lightBtn').onclick=()=>{state.lightMode=(state.lightMode+1)%3;applyLighting()};
+$('camBtn').onclick=()=>setCamera((state.cameraMode+1)%4);$('autoCamBtn').onclick=()=>state.autoCamera=!state.autoCamera;
+
+// recording
+const rc=$('recordCanvas'),rctx=rc.getContext('2d');let rec=null,chunks=[],mime='',recStart=0,recTimer=null;
+function bestMime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function drawRec(){const sw=renderer.domElement.width,sh=renderer.domElement.height,dw=rc.width,dh=rc.height,s=Math.max(dw/sw,dh/sh),rw=sw*s,rh=sh*s;rctx.fillStyle='#06131e';rctx.fillRect(0,0,dw,dh);rctx.drawImage(renderer.domElement,(dw-rw)/2,(dh-rh)/2,rw,rh);rctx.fillStyle='rgba(4,12,20,.72)';rctx.fillRect(34,34,1020,115);rctx.fillStyle='#fff';rctx.font='800 30px Segoe UI';rctx.fillText('050 · ĐIỆN TRƯỜNG CỦA MỘT ĐIỆN TÍCH ĐIỂM ÂM',58,76);rctx.fillStyle='#ffe075';rctx.font='700 23px Segoe UI';rctx.fillText(`q=−${Math.abs(state.q*1e9).toFixed(1)} nC · r=${rVal().toFixed(3)} m · E=${EVal().toFixed(2)} N/C · V=${VVal().toFixed(2)} V`,58,118);rctx.textAlign='center';rctx.font='800 27px Segoe UI';rctx.fillText('Thầy Hùng vật lí',dw/2,dh-34);rctx.textAlign='left'}
+function startRec(){if(rec&&rec.state==='recording')return;mime=bestMime();if(!mime){alert('Trình duyệt chưa hỗ trợ ghi video.');return}chunks=[];const stream=rc.captureStream(60);rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12000000});rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{const ext=mime.includes('mp4')?'mp4':'webm',a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:mime}));a.download=`050_Dien_truong_dien_tich_diem_am.${ext}`;a.click();$('recStatus').style.display='none';clearInterval(recTimer)};rec.start(1000);recStart=performance.now();$('recStatus').style.display='block';recTimer=setInterval(()=>{$('recStatus').textContent=`● ĐANG QUAY ${Math.floor((performance.now()-recStart)/1000)} s`},500)}
+$('recordBtn').onclick=startRec;$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=THREE.MathUtils.clamp((now-last)/1000,0,.033);last=now;updatePhysics(dt);updateVisuals();updateUI();updateAutoCam();controls.update();renderer.render(scene,camera);if(rec&&rec.state==='recording')drawRec()}
+applyBackground();applyLighting();rebuild();setCamera(1);requestAnimationFrame(animate);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>

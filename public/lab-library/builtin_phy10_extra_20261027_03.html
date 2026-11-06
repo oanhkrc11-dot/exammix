@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Chuyển động biến đổi đều 21–26</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#17384f;--panel:#14344d;--card:#123047;--cyan:#74e6ff;--yellow:#ffe47c;
+  --green:#93ffd2;--orange:#ffad76;--text:#f7fcff;--muted:#bfd4df;--line:rgba(130,230,255,.25)
+}
+body.light{
+  --bg:#dceef7;--panel:#eff8fc;--card:#ffffff;--cyan:#087a9a;--yellow:#8b6900;
+  --green:#0b7d53;--orange:#b96531;--text:#17384a;--muted:#607d8c;--line:#b3d3e1
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:282px;min-width:265px;max-width:292px;height:100%;overflow:auto;padding:9px;
+  background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 84%,#000 16%));
+  border-right:1px solid var(--line);z-index:20
+}
+body.light #panel{background:linear-gradient(180deg,#f8fcfe,#e4f2f8)}
+#view{position:relative;flex:1;height:100%;overflow:hidden;min-width:0}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
+.title{font-weight:800;font-size:12.5px}
+.kicker{font-size:9px;color:var(--muted);margin-top:2px}
+#themeBtn{min-height:28px;width:34px;padding:0}
+.simTitle{font-size:14.5px;color:var(--cyan);font-weight:800;margin:7px 0 4px;text-transform:uppercase}
+.section{margin-top:6px;padding:7px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--card) 92%,transparent)}
+.section h3{margin:0 0 5px;font-size:9.5px;color:var(--cyan);text-transform:uppercase}
+.control{margin:6px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:3px}
+.row label{font-size:10.2px;font-weight:700}
+.value{font-size:10.2px;color:var(--yellow);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:15px;accent-color:#65d9f6}
+select{width:100%;height:30px;border:1px solid var(--line);border-radius:7px;background:#17435f;color:white;padding:4px 6px;font-size:10px}
+body.light select{background:#f3fbfe;color:#17384a}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}
+button{min-height:32px;border:1px solid var(--line);border-radius:7px;padding:5px;background:#17435f;color:#fff;font-weight:700;font-size:10px;cursor:pointer}
+body.light button{background:#d9edf5;color:#17384a}
+button:hover{filter:brightness(1.08)}
+#runBtn{background:#1b7750}
+body.light #runBtn{background:#24996a;color:white}
+#resetBtn{background:#6a4053}
+body.light #resetBtn{background:#e0c5cc;color:#512837}
+#info{
+  position:absolute;top:12px;right:12px;width:265px;padding:8px 10px;border-radius:10px;
+  background:rgba(16,38,56,.86);border:1px solid var(--line);z-index:10;
+  backdrop-filter:blur(4px);font-size:10.5px;pointer-events:none
+}
+body.light #info,#graphWrap,#badge{background:rgba(255,255,255,.91)!important;color:#17384a!important;border-color:#b3d3e1!important}
+#info .head{font-size:9.5px;color:var(--cyan);font-weight:800;margin-bottom:4px;text-transform:uppercase}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 9px;font-variant-numeric:tabular-nums}
+#badge{
+  position:absolute;left:14px;top:12px;padding:7px 10px;border-radius:9px;background:rgba(18,42,60,.84);
+  border:1px solid var(--line);font-size:11px;font-weight:800;color:#effcff;z-index:8
+}
+#graphWrap{
+  position:absolute;left:14px;bottom:40px;width:min(48%,620px);height:220px;
+  background:rgba(18,42,60,.84);border:1px solid var(--line);
+  border-radius:11px;padding:7px;z-index:8
+}
+#graph{width:100%;height:100%;display:block}
+#credit{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);color:#ffe17a;font-size:15px;font-weight:800;z-index:7;pointer-events:none}
+body.light #credit{color:#7a5b00}
+.label3d{padding:3px 5px;border-radius:7px;background:rgba(18,40,58,.78);border:1px solid var(--line);font-size:10px;font-weight:700;color:#f5fbff;white-space:nowrap}
+body.light .label3d{background:rgba(255,255,255,.90);color:#17384a}
+@media(max-width:1000px){#panel{width:258px;min-width:258px}#info{width:225px}#graphWrap{width:44%;height:190px}}
+</style>
+</head>
+
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="top">
+      <div>
+        <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+        <div class="kicker">CHUYỂN ĐỘNG BIẾN ĐỔI</div>
+      </div>
+      <button id="themeBtn" title="Sáng/Tối">☀</button>
+    </div>
+
+    <div class="simTitle">21–26. Chuyển động biến đổi đều</div>
+
+    <div class="section">
+      <h3>Chế độ</h3>
+      <select id="mode">
+        <option value="instant">21. Vận tốc tức thời & gia tốc</option>
+        <option value="general">22. Biến đổi đều</option>
+        <option value="speedup">23. Nhanh dần đều</option>
+        <option value="slowdown">24. Chậm dần đều</option>
+        <option value="vt">25. Đồ thị v–t</option>
+        <option value="avt">26. Đồ thị a–t & v–t</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <h3>Thông số</h3>
+      <div class="control">
+        <div class="row"><label>x₀</label><span class="value" id="x0Text">−8.0 m</span></div>
+        <input id="x0" type="range" min="-12" max="8" step="0.5" value="-8">
+      </div>
+      <div class="control">
+        <div class="row"><label>v₀</label><span class="value" id="v0Text">1.0 m/s</span></div>
+        <input id="v0" type="range" min="-5" max="5" step="0.1" value="1">
+      </div>
+      <div class="control">
+        <div class="row"><label>a</label><span class="value" id="aText">0.5 m/s²</span></div>
+        <input id="acc" type="range" min="-2" max="2" step="0.1" value="0.5">
+      </div>
+      <div class="control">
+        <div class="row"><label>t tối đa</label><span class="value" id="tmaxText">8 s</span></div>
+        <input id="tmax" type="range" min="3" max="15" step="1" value="8">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Quan sát</h3>
+      <select id="cameraMode">
+        <option value="all">Toàn cảnh</option>
+        <option value="follow">Theo xe</option>
+      </select>
+      <div class="control">
+        <div class="row"><label>Tốc độ mô phỏng</label><span class="value" id="speedText">1.0×</span></div>
+        <input id="simSpeed" type="range" min="0.5" max="2" step="0.5" value="1">
+      </div>
+      <div class="buttons">
+        <button id="runBtn">▶ Bắt đầu</button>
+        <button id="pauseBtn">⏸ Dừng</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+        <button id="fitBtn">⛶ Fit</button>
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="badge">x = x₀ + v₀t + ½at²</div>
+
+    <div id="info">
+      <div class="head">Số liệu</div>
+      <div class="infoGrid">
+        <span>t</span><b id="tInfo">0.00 s</b>
+        <span>x</span><b id="xInfo">−8.00 m</b>
+        <span>v</span><b id="vInfo">1.00 m/s</b>
+        <span>a</span><b id="aInfo">0.50 m/s²</b>
+        <span>Trạng thái</span><b id="motionInfo">Nhanh dần</b>
+      </div>
+    </div>
+
+    <div id="graphWrap"><canvas id="graph"></canvas></div>
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $=id=>document.getElementById(id);
+const view=$('view');
+
+const state={
+  mode:'instant',
+  x0:-8,v0:1,a:.5,tMax:8,t:0,simSpeed:1,
+  running:false,paused:true,dark:true,cameraMode:'all',
+  lastStamp:performance.now()
+};
+function xNow(){return state.x0+state.v0*state.t+.5*state.a*state.t*state.t;}
+function vNow(){return state.v0+state.a*state.t;}
+function fmt(n,d=2){return n.toFixed(d).replace('-','−');}
+function motionState(){
+  const v=vNow(),a=state.a;
+  if(Math.abs(a)<1e-9)return Math.abs(v)<1e-9?'Đứng yên':'Thẳng đều';
+  if(Math.abs(v)<.03)return 'Đổi chiều';
+  return v*a>0?'Nhanh dần':'Chậm dần';
+}
+
+/* scene */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x17384f);
+scene.fog=new THREE.Fog(0x17384f,25,65);
+
+const camera=new THREE.PerspectiveCamera(45,view.clientWidth/view.clientHeight,.1,120);
+camera.position.set(13,8,15);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.07;
+controls.minDistance=7;controls.maxDistance=34;
+controls.minPolarAngle=.1;controls.maxPolarAngle=Math.PI*.48;
+controls.target.set(0,0,0);
+
+const hemi=new THREE.HemisphereLight(0xe3faff,0x50687a,2.0);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xffffff,2.0);sun.position.set(9,16,10);sun.castShadow=true;scene.add(sun);
+
+const floorMat=new THREE.MeshPhongMaterial({color:0x2a5069,shininess:22});
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,20),floorMat);
+floor.rotation.x=-Math.PI/2;floor.position.y=-1.6;floor.receiveShadow=true;scene.add(floor);
+
+const roadMat=new THREE.MeshPhongMaterial({color:0x455c6b,shininess:18});
+const road=new THREE.Mesh(new THREE.BoxGeometry(48,.17,2.8),roadMat);
+road.position.y=-.70;road.receiveShadow=true;scene.add(road);
+
+for(let x=-22;x<=22;x+=2.3){
+  const dash=new THREE.Mesh(new THREE.BoxGeometry(1.05,.025,.07),new THREE.MeshBasicMaterial({color:0xe8e3ba}));
+  dash.position.set(x,-.60,0);scene.add(dash);
+}
+const axis=new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-22,.04,-1.08),new THREE.Vector3(22,.04,-1.08)]),
+  new THREE.LineBasicMaterial({color:0xc6dde8})
+);
+scene.add(axis);
+for(let x=-20;x<=20;x+=2){
+  const tick=new THREE.Mesh(new THREE.BoxGeometry(.025,.30,.025),new THREE.MeshBasicMaterial({color:x===0?0xffdf75:0xa0c5d4}));
+  tick.position.set(x,-.11,-1.08);scene.add(tick);
+  const d=document.createElement('div');d.className='label3d';d.textContent=x===0?'O':String(x);
+  const l=new CSS2DObject(d);l.position.set(x,-.58,-1.08);scene.add(l);
+}
+
+/* car */
+function makeCar(){
+  const g=new THREE.Group();scene.add(g);
+  const mat=new THREE.MeshPhongMaterial({color:0x3bb8e8,shininess:90});
+  const lower=new THREE.Mesh(new THREE.BoxGeometry(1.75,.34,.80),mat);
+  lower.position.y=.35;lower.castShadow=true;g.add(lower);
+  const hood=new THREE.Mesh(new THREE.BoxGeometry(.62,.18,.75),mat);hood.position.set(.53,.57,0);g.add(hood);
+  const cabin=new THREE.Mesh(new THREE.BoxGeometry(.72,.38,.68),new THREE.MeshPhongMaterial({color:0xcfeeff,transparent:true,opacity:.78}));
+  cabin.position.set(-.06,.73,0);g.add(cabin);
+  const wheels=[];
+  for(const sx of [-.58,.58]) for(const sz of [-.39,.39]){
+    const w=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.12,24),new THREE.MeshPhongMaterial({color:0x1d2a31}));
+    w.rotation.x=Math.PI/2;w.position.set(sx,.14,sz);g.add(w);wheels.push(w);
+  }
+  const d=document.createElement('div');d.className='label3d';d.textContent='Xe';
+  const lab=new CSS2DObject(d);lab.position.set(0,1.30,0);g.add(lab);
+  return {g,wheels,label:d};
+}
+const car=makeCar();
+
+const vArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(0,1.05,0),1,0x74e6ff,.24,.13);
+const aArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(0,1.55,0),1,0xffad76,.24,.13);
+scene.add(vArrow,aArrow);
+
+let trail=null;
+function rebuildTrail(){
+  if(trail){scene.remove(trail);trail.geometry.dispose();trail.material.dispose();}
+  trail=new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(state.x0,.12,.55),new THREE.Vector3(xNow(),.12,.55)]),
+    new THREE.LineBasicMaterial({color:0xffe47c})
+  );
+  scene.add(trail);
+}
+
+function update3D(dt){
+  const x=xNow(),v=vNow(),a=state.a;
+  car.g.position.x=x;
+  car.g.rotation.y=v>=0?0:Math.PI;
+  car.label.textContent=`v = ${fmt(v,1)} m/s`;
+
+  car.wheels.forEach(w=>w.rotation.z-=v*dt*3.0);
+
+  vArrow.position.set(x,1.02,0);
+  vArrow.setDirection(new THREE.Vector3(Math.sign(v)||1,0,0));
+  vArrow.setLength(Math.max(.001,Math.abs(v)*.55),.24,.13);
+  vArrow.visible=Math.abs(v)>1e-8;
+
+  aArrow.position.set(x,1.52,0);
+  aArrow.setDirection(new THREE.Vector3(Math.sign(a)||1,0,0));
+  aArrow.setLength(Math.max(.001,Math.abs(a)*1.2),.24,.13);
+  aArrow.visible=Math.abs(a)>1e-8;
+
+  rebuildTrail();
+}
+
+/* graph */
+const graph=$('graph'),ctx=graph.getContext('2d');
+function resizeGraph(){
+  const dpr=Math.min(devicePixelRatio,2),r=graph.getBoundingClientRect();
+  graph.width=Math.max(10,Math.floor(r.width*dpr));graph.height=Math.max(10,Math.floor(r.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);drawGraph();
+}
+
+function graphTheme(){
+  return {
+    bg:state.dark?'#153047':'#fbfeff',
+    grid:state.dark?'rgba(190,230,245,.15)':'rgba(55,95,115,.14)',
+    text:state.dark?'#d0e8f1':'#456778'
+  };
+}
+
+function drawAxes(L,T,w,h){
+  const th=graphTheme();
+  ctx.strokeStyle=th.grid;ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    let gx=L+w*i/5;ctx.beginPath();ctx.moveTo(gx,T);ctx.lineTo(gx,T+h);ctx.stroke();
+    let gy=T+h*i/5;ctx.beginPath();ctx.moveTo(L,gy);ctx.lineTo(L+w,gy);ctx.stroke();
+  }
+}
+
+function drawGraph(){
+  const W=graph.clientWidth,H=graph.clientHeight,th=graphTheme();
+  ctx.clearRect(0,0,W,H);ctx.fillStyle=th.bg;ctx.fillRect(0,0,W,H);
+
+  if(state.mode==='avt'){
+    drawDualGraph(W,H,th);
+    return;
+  }
+
+  const L=42,R=12,T=12,B=28,w=W-L-R,h=H-T-B;
+  drawAxes(L,T,w,h);
+
+  const tx=t=>L+t/state.tMax*w;
+
+  if(state.mode==='vt' || state.mode==='instant' || state.mode==='speedup' || state.mode==='slowdown' || state.mode==='general'){
+    const v0=state.v0,v1=state.v0+state.a*state.tMax;
+    let ymin=Math.min(v0,v1,0),ymax=Math.max(v0,v1,0);
+    if(Math.abs(ymax-ymin)<1){ymin-=1;ymax+=1;} else {let p=(ymax-ymin)*.15;ymin-=p;ymax+=p;}
+    const yy=v=>T+h-(v-ymin)/(ymax-ymin)*h;
+
+    // full faint
+    ctx.globalAlpha=.28;ctx.strokeStyle='#74e6ff';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(tx(0),yy(v0));ctx.lineTo(tx(state.tMax),yy(v1));ctx.stroke();ctx.globalAlpha=1;
+
+    // current bold
+    ctx.strokeStyle='#74e6ff';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(tx(0),yy(v0));ctx.lineTo(tx(state.t),yy(vNow()));ctx.stroke();
+
+    // current point
+    ctx.fillStyle='#ffe47c';ctx.beginPath();ctx.arc(tx(state.t),yy(vNow()),4,0,Math.PI*2);ctx.fill();
+
+    // area under v-t lightly
+    if(state.mode==='vt'){
+      ctx.globalAlpha=.12;ctx.fillStyle='#74e6ff';
+      const zeroY=yy(0);
+      ctx.beginPath();ctx.moveTo(tx(0),zeroY);ctx.lineTo(tx(0),yy(v0));ctx.lineTo(tx(state.t),yy(vNow()));ctx.lineTo(tx(state.t),zeroY);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+    }
+
+    ctx.fillStyle=th.text;ctx.font='10px Arial';ctx.textAlign='center';
+    for(let i=0;i<=4;i++){const t=state.tMax*i/4;ctx.fillText(t.toFixed(1),tx(t),H-10);}
+    ctx.fillText('t (s)',L+w/2,H-1);
+    ctx.save();ctx.translate(10,T+h/2);ctx.rotate(-Math.PI/2);ctx.fillText('v (m/s)',0,0);ctx.restore();
+    ctx.textAlign='left';
+  }
+}
+
+function drawDualGraph(W,H,th){
+  const pad=8,mid=H/2;
+  // v-t upper
+  const L=42,R=12,T=10,B=18,w=W-L-R,h=mid-T-B;
+  drawAxes(L,T,w,h);
+  const tx=t=>L+t/state.tMax*w;
+  let v0=state.v0,v1=state.v0+state.a*state.tMax;
+  let ymin=Math.min(v0,v1,0),ymax=Math.max(v0,v1,0);
+  if(Math.abs(ymax-ymin)<1){ymin-=1;ymax+=1;}else{let p=(ymax-ymin)*.12;ymin-=p;ymax+=p;}
+  const yv=v=>T+h-(v-ymin)/(ymax-ymin)*h;
+  ctx.globalAlpha=.25;ctx.strokeStyle='#74e6ff';ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.moveTo(tx(0),yv(v0));ctx.lineTo(tx(state.tMax),yv(v1));ctx.stroke();ctx.globalAlpha=1;
+  ctx.strokeStyle='#74e6ff';ctx.lineWidth=2.3;
+  ctx.beginPath();ctx.moveTo(tx(0),yv(v0));ctx.lineTo(tx(state.t),yv(vNow()));ctx.stroke();
+  ctx.fillStyle=th.text;ctx.font='9px Arial';ctx.fillText('v–t',L+4,T+8);
+
+  // a-t lower
+  const T2=mid+6,h2=H-T2-24;
+  drawAxes(L,T2,w,h2);
+  const amin=Math.min(-2.5,state.a-1),amax=Math.max(2.5,state.a+1);
+  const ya=a=>T2+h2-(a-amin)/(amax-amin)*h2;
+  ctx.globalAlpha=.25;ctx.strokeStyle='#ffad76';ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.moveTo(tx(0),ya(state.a));ctx.lineTo(tx(state.tMax),ya(state.a));ctx.stroke();ctx.globalAlpha=1;
+  ctx.strokeStyle='#ffad76';ctx.lineWidth=2.3;
+  ctx.beginPath();ctx.moveTo(tx(0),ya(state.a));ctx.lineTo(tx(state.t),ya(state.a));ctx.stroke();
+  ctx.fillStyle=th.text;ctx.font='9px Arial';ctx.fillText('a–t',L+4,T2+8);
+
+  ctx.textAlign='center';
+  for(let i=0;i<=4;i++){const t=state.tMax*i/4;ctx.fillText(t.toFixed(1),tx(t),H-9);}
+  ctx.fillText('t (s)',L+w/2,H-1);
+  ctx.textAlign='left';
+}
+
+/* theme */
+function applyTheme(){
+  document.body.classList.toggle('light',!state.dark);
+  $('themeBtn').textContent=state.dark?'☀':'🌙';
+  if(state.dark){
+    scene.background.set(0x17384f);scene.fog.color.set(0x17384f);
+    floorMat.color.set(0x2a5069);roadMat.color.set(0x455c6b);hemi.intensity=2.0;sun.intensity=2.0;
+  }else{
+    scene.background.set(0xdceef7);scene.fog.color.set(0xdceef7);
+    floorMat.color.set(0xc8dde8);roadMat.color.set(0x8b9ea8);hemi.intensity=2.6;sun.intensity=2.4;
+  }
+  drawGraph();
+}
+$('themeBtn').addEventListener('click',()=>{state.dark=!state.dark;applyTheme();});
+
+/* presets */
+function applyMode(){
+  const m=state.mode;
+  if(m==='instant'){state.v0=1;state.a=.5;state.x0=-8;state.tMax=8;$('badge').textContent='v = v₀ + at · a = Δv/Δt';}
+  if(m==='general'){state.v0=-1;state.a=.6;state.x0=-6;state.tMax=10;$('badge').textContent='x = x₀ + v₀t + ½at²';}
+  if(m==='speedup'){state.v0=1;state.a=.7;state.x0=-9;state.tMax=8;$('badge').textContent='v·a > 0 → nhanh dần';}
+  if(m==='slowdown'){state.v0=4;state.a=-.6;state.x0=-9;state.tMax=8;$('badge').textContent='v·a < 0 → chậm dần';}
+  if(m==='vt'){state.v0=1;state.a=.5;state.x0=-8;state.tMax=8;$('badge').textContent='Độ dốc đồ thị v–t = a';}
+  if(m==='avt'){state.v0=1;state.a=.6;state.x0=-8;state.tMax=8;$('badge').textContent='a không đổi → v biến thiên tuyến tính';}
+
+  $('x0').value=state.x0;$('v0').value=state.v0;$('acc').value=state.a;$('tmax').value=state.tMax;
+  state.t=0;state.running=false;state.paused=true;
+  $('runBtn').textContent='▶ Bắt đầu';$('pauseBtn').textContent='⏸ Dừng';
+  updateUI();fitScene();drawGraph();
+}
+
+function updateUI(){
+  $('x0Text').textContent=`${fmt(state.x0,1)} m`;
+  $('v0Text').textContent=`${fmt(state.v0,1)} m/s`;
+  $('aText').textContent=`${fmt(state.a,1)} m/s²`;
+  $('tmaxText').textContent=`${state.tMax.toFixed(0)} s`;
+  $('speedText').textContent=`${state.simSpeed.toFixed(1)}×`;
+
+  $('tInfo').textContent=`${state.t.toFixed(2)} s`;
+  $('xInfo').textContent=`${fmt(xNow(),2)} m`;
+  $('vInfo').textContent=`${fmt(vNow(),2)} m/s`;
+  $('aInfo').textContent=`${fmt(state.a,2)} m/s²`;
+  $('motionInfo').textContent=motionState();
+}
+
+/* camera */
+function fitScene(){
+  camera.position.set(13,8,15);controls.target.set(0,0,0);controls.update();
+}
+function updateCamera(){
+  if(state.cameraMode==='follow'){
+    const tx=xNow();
+    controls.target.x+=(tx-controls.target.x)*.08;
+    camera.position.x+=((tx+7)-camera.position.x)*.05;
+  }
+}
+
+/* events */
+$('mode').addEventListener('change',e=>{state.mode=e.target.value;applyMode();});
+$('x0').addEventListener('input',e=>{state.x0=parseFloat(e.target.value);state.t=0;updateUI();drawGraph();});
+$('v0').addEventListener('input',e=>{state.v0=parseFloat(e.target.value);state.t=0;updateUI();drawGraph();});
+$('acc').addEventListener('input',e=>{state.a=parseFloat(e.target.value);state.t=0;updateUI();drawGraph();});
+$('tmax').addEventListener('input',e=>{state.tMax=parseFloat(e.target.value);if(state.t>state.tMax)state.t=state.tMax;updateUI();drawGraph();});
+$('simSpeed').addEventListener('input',e=>{state.simSpeed=parseFloat(e.target.value);updateUI();});
+$('cameraMode').addEventListener('change',e=>{state.cameraMode=e.target.value;if(state.cameraMode==='all')fitScene();});
+
+$('runBtn').addEventListener('click',()=>{
+  if(state.t>=state.tMax)state.t=0;
+  state.running=true;state.paused=false;$('runBtn').textContent='▶ Đang chạy';
+});
+$('pauseBtn').addEventListener('click',()=>{
+  if(!state.running)return;
+  state.paused=!state.paused;$('pauseBtn').textContent=state.paused?'▶ Tiếp tục':'⏸ Dừng';
+});
+$('resetBtn').addEventListener('click',applyMode);
+$('fitBtn').addEventListener('click',fitScene);
+
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);labelRenderer.setSize(w,h);resizeGraph();
+}
+window.addEventListener('resize',resize);
+
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt=(now-state.lastStamp)/1000;state.lastStamp=now;
+  dt=Math.min(Math.max(dt,0),0.028);
+
+  if(state.running&&!state.paused){
+    state.t+=dt*state.simSpeed;
+    if(state.t>=state.tMax){
+      state.t=state.tMax;state.running=false;state.paused=true;$('runBtn').textContent='▶ Chạy lại';
+    }
+  }
+
+  update3D(dt);
+  updateCamera();
+  updateUI();
+  drawGraph();
+
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+applyMode();
+applyTheme();
+resize();
+animate(performance.now());
+</script>
+</body>
+</html>

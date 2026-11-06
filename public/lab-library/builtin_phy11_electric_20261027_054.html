@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>054 - Lực Coulomb giữa hai điện tích</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07131e;color:#eef9ff;font-family:Inter,Segoe UI,system-ui,sans-serif}
+#app{position:fixed;inset:0}
+#panel{position:fixed;left:12px;top:12px;bottom:12px;width:304px;z-index:40;overflow:auto;padding:11px;border-radius:16px;background:linear-gradient(180deg,rgba(8,18,28,.97),rgba(5,12,20,.95));border:1px solid rgba(111,193,235,.22);box-shadow:0 18px 52px rgba(0,0,0,.42);transition:.25s}
+#panel.hide{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none}
+#panel::-webkit-scrollbar{width:6px}#panel::-webkit-scrollbar-thumb{background:#31536a;border-radius:8px}
+h1{font-size:14px;margin:0 0 3px;font-weight:900}.sub{font-size:10.6px;color:#7bdcff;font-weight:800}
+.desc{margin:8px 0;padding:8px 9px;border-radius:10px;background:rgba(12,28,41,.72);font-size:10.3px;line-height:1.45;color:#cce1ee}
+.section{margin:10px 0 6px;color:#75d8ff;font-weight:900;font-size:10.5px}
+label.control{display:block;margin:7px 0 9px;font-size:10.8px}label.control .value{float:right;color:#9fe9ff;font-weight:800}
+input[type=range]{width:100%;accent-color:#52c9ff;margin-top:4px}
+.buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:7px}
+button{border:1px solid #355a73;background:#122332;color:#eef8ff;border-radius:9px;padding:7px 6px;font-size:10.5px;font-weight:800;cursor:pointer}
+button:hover{filter:brightness(1.12)}
+button.primary{border-color:#54d692;background:#1b5136}
+button.active{border-color:#6ad9ff;background:#123c56}
+.checkrow{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:10.4px;color:#cfe2ee}
+.modeling{margin-top:9px;padding:8px 9px;border-radius:10px;background:rgba(21,28,38,.72);border-left:3px solid #d8a447;font-size:10px;line-height:1.42;color:#c8d4dd}
+#graph{width:100%;height:150px;background:#071019;border-radius:9px;margin-top:8px;border:1px solid rgba(104,186,225,.14)}
+#formula{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:28;padding:8px 14px;border-radius:999px;background:rgba(6,16,25,.68);border:1px solid rgba(102,209,255,.2);font-size:15px;font-weight:900}
+#hud{position:fixed;right:16px;top:16px;z-index:20;width:350px;padding:10px 11px;border-radius:13px;background:rgba(6,14,22,.70);border:1px solid rgba(116,193,234,.18);font-size:11px;line-height:1.55}
+#hud b{color:#ffd972}
+#probar{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:35;display:flex;gap:5px;padding:5px;border-radius:12px;background:rgba(6,14,22,.54);border:1px solid rgba(115,195,235,.16)}
+#probar button{padding:6px 8px;font-size:10.3px}
+#credit{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:18;color:#ffe075;font-size:14px;font-weight:900}
+#recStatus{position:fixed;right:18px;bottom:84px;z-index:30;display:none;padding:7px 10px;border-radius:10px;background:rgba(125,0,0,.72);font-size:11px;font-weight:900}
+#tooltip{position:fixed;z-index:60;display:none;pointer-events:none;padding:6px 8px;border-radius:8px;background:rgba(4,12,20,.92);border:1px solid rgba(135,213,250,.28);font-size:10px;color:#eaf7ff}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="formula">F = k|q₁q₂|/r²</div>
+
+<div id="probar">
+<button id="fullscreenBtn">⛶</button><button id="panelBtn">☰</button>
+<button id="bgBtn">🌗</button><button id="lightBtn">💡</button>
+<button id="camBtn">🎥</button><button id="autoCamBtn">↻ Cam</button>
+<button id="recordBtn">🔴 Quay</button><button id="stopRecordBtn">⏹</button>
+</div>
+
+<div id="panel">
+<h1>PHYSICS 11 LAB · 3D PRO</h1>
+<div class="sub">054 · LỰC COULOMB GIỮA HAI ĐIỆN TÍCH</div>
+
+<div class="desc">
+Hai điện tích tương tác bằng lực Coulomb nằm trên đường nối chúng. <b>Cùng dấu đẩy nhau, trái dấu hút nhau</b>. Hai lực tương tác luôn bằng nhau về độ lớn và ngược chiều.
+</div>
+
+<div class="section">CẤU HÌNH NHANH</div>
+<div class="buttons">
+<button id="modePP" class="active">(+,+) Đẩy</button>
+<button id="modeNN">(−,−) Đẩy</button>
+<button id="modePN">(+,-) Hút</button>
+<button id="modeNP">(−,+) Hút</button>
+</div>
+
+<div class="section">ĐIỀU KHIỂN</div>
+<label class="control">Tốc độ mô phỏng <span id="speedVal" class="value">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
+<label class="control">Độ lớn |q₁| <span id="q1Val" class="value">4.0 nC</span><input id="q1" type="range" min=".5" max="10" step=".1" value="4"></label>
+<label class="control">Độ lớn |q₂| <span id="q2Val" class="value">6.0 nC</span><input id="q2" type="range" min=".5" max="10" step=".1" value="6"></label>
+<label class="control">Khoảng cách r <span id="rVal" class="value">3.0 m</span><input id="distance" type="range" min=".6" max="7" step=".1" value="3"></label>
+<label class="control">Độ dày véc tơ <span id="thickVal" class="value">1.00×</span><input id="thick" type="range" min=".6" max="1.7" step=".05" value="1"></label>
+
+<div class="section">NÚT NHANH</div>
+<div class="buttons">
+<button id="start" class="primary">▶ Bắt đầu</button><button id="pause">⏸ Tạm dừng</button>
+<button id="reset">↻ Đặt lại</button><button id="fit">⛶ Fit</button>
+<button id="halfR">r / 2</button><button id="doubleR">r × 2</button>
+<button id="doubleQ1">q₁ × 2</button><button id="doubleQ2">q₂ × 2</button>
+</div>
+
+<div class="section">HIỂN THỊ</div>
+<label class="checkrow"><input id="showForces" type="checkbox" checked> Hiện F₁₂ và F₂₁</label>
+<label class="checkrow"><input id="showAxis" type="checkbox" checked> Hiện đường nối hai điện tích</label>
+<label class="checkrow"><input id="showLabels" type="checkbox" checked> Hiện nhãn q₁, q₂</label>
+<label class="checkrow"><input id="showGrid" type="checkbox" checked> Hiện lưới</label>
+
+<canvas id="graph" width="268" height="150"></canvas>
+
+<div class="modeling">
+<b>Mô hình hóa:</b> hai điện tích điểm đứng yên trong chân không. Kích thước quả cầu và độ dài véc tơ lực được phóng đại trực quan; số liệu lực dùng đúng \(F=k|q_1q_2|/r^2\).
+</div>
+</div>
+
+<div id="hud">
+<b>LỰC COULOMB · TƯƠNG TÁC HAI ĐIỆN TÍCH</b><br>
+q₁ = <b id="q1Out">+4.0 nC</b> · q₂ = <b id="q2Out">+6.0 nC</b><br>
+r = <b id="rOut">3.00 m</b><br>
+F = <b id="fOut">...</b><br>
+F₁₂ = <b id="f12Out">...</b><br>
+F₂₁ = <b id="f21Out">...</b><br>
+Quan hệ = <b id="relationOut">ĐẨY NHAU</b><br>
+Kiểm tra Newton III = <b id="newtonOut">|F₁₂| = |F₂₁|</b><br>
+Trạng thái = <b id="runOut">ĐỨNG YÊN</b>
+</div>
+
+<div id="credit">Thầy Hùng vật lí</div>
+<div id="recStatus">● ĐANG QUAY 00:00</div>
+<div id="tooltip"></div>
+<canvas id="recordCanvas" width="1920" height="1080" style="display:none"></canvas>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id),K=8.9875517923e9;
+const MODES={
+ pp:{s1:1,s2:1,name:'(+,+) · Đẩy'},
+ nn:{s1:-1,s2:-1,name:'(−,−) · Đẩy'},
+ pn:{s1:1,s2:-1,name:'(+,−) · Hút'},
+ np:{s1:-1,s2:1,name:'(−,+) · Hút'}
+};
+const state={mode:'pp',running:false,paused:false,time:0,speed:1,q1mag:4e-9,q2mag:6e-9,r:3,thick:1,backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false,pulse:0};
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('app').appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x06131e);
+const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,200);camera.position.set(8,5.6,10);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=4;controls.maxDistance=26;controls.minPolarAngle=.18;controls.maxPolarAngle=1.5;controls.target.set(0,.4,0);
+
+const hemi=new THREE.HemisphereLight(0xe3f7ff,0x10202d,1.7);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,1.8);key.position.set(7,10,8);scene.add(key);
+const rim=new THREE.PointLight(0x56d8ff,1.1,30,2);rim.position.set(-5,5,-5);scene.add(rim);
+
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(34,26),new THREE.MeshStandardMaterial({color:0x101c27,roughness:.92}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.3;scene.add(floor);
+const grid=new THREE.GridHelper(34,34,0x2e5b72,0x173241);grid.position.y=-2.29;grid.material.transparent=true;grid.material.opacity=.14;scene.add(grid);
+
+const root=new THREE.Group();scene.add(root);
+const chargeGroup=new THREE.Group(),forceGroup=new THREE.Group(),axisGroup=new THREE.Group(),labelGroup=new THREE.Group();
+root.add(chargeGroup,forceGroup,axisGroup,labelGroup);
+
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();
+
+function signs(){return MODES[state.mode]}
+function qvals(){const s=signs();return [s.s1*state.q1mag,s.s2*state.q2mag]}
+function p1(){return new THREE.Vector3(-state.r/2,.4,0)}
+function p2(){return new THREE.Vector3(state.r/2,.4,0)}
+function forceMag(){return K*state.q1mag*state.q2mag/(state.r*state.r)}
+function relation(){const [q1,q2]=qvals();return q1*q2>0?'ĐẨY NHAU':'HÚT NHAU'}
+function fmtQ(q){return `${q>=0?'+':'−'}${Math.abs(q*1e9).toFixed(1)} nC`}
+function fmtF(f){if(f<1e-6)return `${(f*1e9).toFixed(2)} nN`;if(f<1e-3)return `${(f*1e6).toFixed(2)} μN`;if(f<1)return `${(f*1e3).toFixed(2)} mN`;return `${f.toFixed(3)} N`}
+function clearGroup(g){while(g.children.length){const o=g.children.pop();o.traverse?.(q=>{q.geometry?.dispose?.();q.material?.dispose?.()})}}
+
+function makeTextSprite(text,color='#fff'){
+ const c=document.createElement('canvas');c.width=256;c.height=80;const ctx=c.getContext('2d');
+ ctx.fillStyle='rgba(5,14,22,.74)';ctx.fillRect(0,0,256,80);ctx.font='bold 30px Segoe UI';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=color;ctx.fillText(text,128,42);
+ const tex=new THREE.CanvasTexture(c);const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));spr.scale.set(1.45,.46,1);return spr;
+}
+
+function buildCharges(){
+ clearGroup(chargeGroup);clearGroup(labelGroup);
+ const [q1,q2]=qvals();
+ [[p1(),q1,1],[p2(),q2,2]].forEach(([pos,q,idx])=>{
+  const color=q>0?0xff6654:0x5688ff;
+  const m=new THREE.Mesh(new THREE.SphereGeometry(.42,30,24),new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.22,roughness:.34}));
+  m.position.copy(pos);m.userData={kind:'charge',idx,q};chargeGroup.add(m);
+  const halo=new THREE.Mesh(new THREE.TorusGeometry(.53,.02,10,40),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.22}));
+  halo.rotation.x=Math.PI/2;halo.position.copy(pos);chargeGroup.add(halo);
+  if($('showLabels').checked){const s=makeTextSprite(`q${idx} ${fmtQ(q)}`,q>0?'#ffd2c7':'#d8e5ff');s.position.copy(pos).add(new THREE.Vector3(0,.85,0));labelGroup.add(s);}
+ });
+}
+
+function buildAxis(){
+ clearGroup(axisGroup);if(!$('showAxis').checked)return;
+ const a=p1().clone().add(new THREE.Vector3(-1,0,0)),b=p2().clone().add(new THREE.Vector3(1,0,0));
+ const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),new THREE.LineDashedMaterial({color:0xd9edf8,dashSize:.18,gapSize:.12,transparent:true,opacity:.42}));
+ l.computeLineDistances();axisGroup.add(l);
+}
+
+function buildForces(){
+ clearGroup(forceGroup);if(!$('showForces').checked)return;
+ const [q1,q2]=qvals(),F=forceMag(),dir12=p2().clone().sub(p1()).normalize();
+ const same=q1*q2>0;
+ const d1=same?dir12.clone().negate():dir12.clone();
+ const d2=same?dir12.clone():dir12.clone().negate();
+ const len=THREE.MathUtils.clamp(.9+.55*Math.log10(1+F*1e6),.85,3.5)*state.thick;
+ forceGroup.add(new THREE.ArrowHelper(d1,p1(),len,0x61e6ff,.22*state.thick,.12*state.thick));
+ forceGroup.add(new THREE.ArrowHelper(d2,p2(),len,0xffd45f,.22*state.thick,.12*state.thick));
+}
+
+function drawGraph(){
+ const c=$('graph'),g=c.getContext('2d'),w=c.width,h=c.height;g.fillStyle='#071019';g.fillRect(0,0,w,h);
+ const L=38,T=12,B=24,R=8,pw=w-L-R,ph=h-T-B;g.strokeStyle='rgba(190,225,240,.28)';g.beginPath();g.moveTo(L,T);g.lineTo(L,T+ph);g.lineTo(L+pw,T+ph);g.stroke();
+ const rmin=.6,rmax=7,maxF=K*state.q1mag*state.q2mag/(rmin*rmin);g.strokeStyle='#72e7ff';g.lineWidth=2;g.beginPath();
+ for(let i=0;i<=180;i++){const r=rmin+i/180*(rmax-rmin),F=K*state.q1mag*state.q2mag/(r*r),x=L+i/180*pw,y=T+ph*(1-F/maxF);i?g.lineTo(x,y):g.moveTo(x,y)}g.stroke();
+ const rr=THREE.MathUtils.clamp(state.r,rmin,rmax),ff=forceMag(),gx=L+(rr-rmin)/(rmax-rmin)*pw,gy=T+ph*(1-ff/maxF);g.fillStyle='#ffd65f';g.beginPath();g.arc(gx,gy,4,0,Math.PI*2);g.fill();
+ g.fillStyle='#91aabb';g.font='9px Segoe UI';g.fillText('F',10,12);g.fillText('r',w-16,h-6);
+}
+
+function updatePhysics(dt){if(!state.running||state.paused)return;state.time+=dt*state.speed;state.pulse+=dt*state.speed*2.2}
+function updateVisuals(){
+ const sc=1+.04*Math.sin(state.pulse);chargeGroup.children.forEach(o=>{if(o.geometry?.type==='SphereGeometry')o.scale.setScalar(sc)});
+ grid.visible=$('showGrid').checked;
+ if(state.autoCamera){const a=state.time*.14;camera.position.set(Math.cos(a)*9,5.2,Math.sin(a)*9);camera.lookAt(controls.target)}
+}
+function updateUI(){
+ const [q1,q2]=qvals(),F=forceMag();
+ $('speedVal').textContent=`${state.speed.toFixed(2)}×`;$('q1Val').textContent=`${(state.q1mag*1e9).toFixed(1)} nC`;$('q2Val').textContent=`${(state.q2mag*1e9).toFixed(1)} nC`;$('rVal').textContent=`${state.r.toFixed(1)} m`;$('thickVal').textContent=`${state.thick.toFixed(2)}×`;
+ $('q1Out').textContent=fmtQ(q1);$('q2Out').textContent=fmtQ(q2);$('rOut').textContent=`${state.r.toFixed(2)} m`;$('fOut').textContent=fmtF(F);$('f12Out').textContent=fmtF(F);$('f21Out').textContent=fmtF(F);$('relationOut').textContent=relation();$('newtonOut').textContent='|F₁₂| = |F₂₁|, ngược chiều';$('runOut').textContent=state.running&&!state.paused?'ĐANG CHẠY':state.paused?'TẠM DỪNG':'ĐỨNG YÊN';drawGraph();
+}
+function rebuild(){buildCharges();buildAxis();buildForces();drawGraph();updateUI()}
+
+const bgModes=[{b:0x06131e,f:0x101c27},{b:0xeaf2f6,f:0xd6e1e6},{b:0x06162a,f:0x0b2039}];
+function applyBackground(){const m=bgModes[state.backgroundIndex];scene.background.setHex(m.b);floor.material.color.setHex(m.f)}
+function applyLighting(){if(state.lightMode===0){hemi.intensity=1.7;key.intensity=1.8;rim.intensity=1.1}else if(state.lightMode===1){hemi.intensity=2.2;key.intensity=2.3;rim.intensity=.5}else{hemi.intensity=1.05;key.intensity=1.15;rim.intensity=1.9}}
+function setCamera(m){state.cameraMode=m%4;state.autoCamera=false;if(m===0)camera.position.set(0,8,.01);else if(m===1)camera.position.set(8,5.6,10);else if(m===2)camera.position.set(0,3.5,11);else camera.position.set(5,3.2,5);controls.target.set(0,.4,0);camera.lookAt(controls.target);controls.update()}
+async function toggleFullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}}
+
+function setMode(m){
+ state.mode=m;['modePP','modeNN','modePN','modeNP'].forEach(id=>$(id).classList.remove('active'));
+ const map={pp:'modePP',nn:'modeNN',pn:'modePN',np:'modeNP'};$(map[m]).classList.add('active');rebuild();
+}
+$('modePP').onclick=()=>setMode('pp');$('modeNN').onclick=()=>setMode('nn');$('modePN').onclick=()=>setMode('pn');$('modeNP').onclick=()=>setMode('np');
+
+$('speed').oninput=e=>state.speed=+e.target.value;
+$('q1').oninput=e=>{state.q1mag=+e.target.value*1e-9;rebuild()};
+$('q2').oninput=e=>{state.q2mag=+e.target.value*1e-9;rebuild()};
+$('distance').oninput=e=>{state.r=+e.target.value;rebuild()};
+$('thick').oninput=e=>{state.thick=+e.target.value;buildForces();updateUI()};
+$('showForces').onchange=buildForces;$('showAxis').onchange=buildAxis;$('showLabels').onchange=buildCharges;
+
+$('start').onclick=()=>{state.running=true;state.paused=false};$('pause').onclick=()=>state.paused=!state.paused;$('fit').onclick=()=>setCamera(1);
+$('halfR').onclick=()=>{state.r=Math.max(.6,state.r/2);$('distance').value=state.r;rebuild()};
+$('doubleR').onclick=()=>{state.r=Math.min(7,state.r*2);$('distance').value=state.r;rebuild()};
+$('doubleQ1').onclick=()=>{state.q1mag=Math.min(10e-9,state.q1mag*2);$('q1').value=state.q1mag*1e9;rebuild()};
+$('doubleQ2').onclick=()=>{state.q2mag=Math.min(10e-9,state.q2mag*2);$('q2').value=state.q2mag*1e9;rebuild()};
+
+$('reset').onclick=()=>{Object.assign(state,{mode:'pp',running:false,paused:false,time:0,speed:1,q1mag:4e-9,q2mag:6e-9,r:3,thick:1,backgroundIndex:0,lightMode:0,cameraMode:1,autoCamera:false,pulse:0});$('speed').value=1;$('q1').value=4;$('q2').value=6;$('distance').value=3;$('thick').value=1;applyBackground();applyLighting();setCamera(1);setMode('pp')};
+
+$('fullscreenBtn').onclick=toggleFullscreen;$('panelBtn').onclick=()=>$('panel').classList.toggle('hide');$('bgBtn').onclick=()=>{state.backgroundIndex=(state.backgroundIndex+1)%3;applyBackground()};$('lightBtn').onclick=()=>{state.lightMode=(state.lightMode+1)%3;applyLighting()};$('camBtn').onclick=()=>setCamera((state.cameraMode+1)%4);$('autoCamBtn').onclick=()=>state.autoCamera=!state.autoCamera;
+
+// tooltip
+renderer.domElement.addEventListener('pointermove',e=>{
+ const rect=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-rect.left)/rect.width)*2-1;mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(mouse,camera);
+ const hits=raycaster.intersectObjects(chargeGroup.children.filter(o=>o.userData?.kind==='charge'));
+ const tip=$('tooltip');
+ if(hits.length){const d=hits[0].object.userData;tip.style.display='block';tip.style.left=(e.clientX+12)+'px';tip.style.top=(e.clientY+12)+'px';tip.textContent=`q${d.idx} = ${fmtQ(d.q)}`;}else tip.style.display='none';
+});
+
+// recording
+const rc=$('recordCanvas'),rctx=rc.getContext('2d');let rec=null,chunks=[],mime='',recStart=0,recTimer=null;
+function bestMime(){for(const m of ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
+function drawRec(){const sw=renderer.domElement.width,sh=renderer.domElement.height,dw=rc.width,dh=rc.height,s=Math.max(dw/sw,dh/sh),rw=sw*s,rh=sh*s;rctx.fillStyle='#06131e';rctx.fillRect(0,0,dw,dh);rctx.drawImage(renderer.domElement,(dw-rw)/2,(dh-rh)/2,rw,rh);rctx.fillStyle='rgba(4,12,20,.72)';rctx.fillRect(34,34,1280,115);rctx.fillStyle='#fff';rctx.font='800 30px Segoe UI';rctx.fillText('054 · LỰC COULOMB GIỮA HAI ĐIỆN TÍCH',58,76);const [q1,q2]=qvals();rctx.fillStyle='#ffe075';rctx.font='700 23px Segoe UI';rctx.fillText(`q₁=${fmtQ(q1)} · q₂=${fmtQ(q2)} · r=${state.r.toFixed(2)} m · F=${fmtF(forceMag())} · ${relation()}`,58,118);rctx.textAlign='center';rctx.font='800 27px Segoe UI';rctx.fillText('Thầy Hùng vật lí',dw/2,dh-34);rctx.textAlign='left'}
+function startRec(){if(rec&&rec.state==='recording')return;mime=bestMime();if(!mime){alert('Trình duyệt chưa hỗ trợ ghi video.');return}chunks=[];const stream=rc.captureStream(60);rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12000000});rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{const ext=mime.includes('mp4')?'mp4':'webm',a=document.createElement('a');a.href=URL.createObjectURL(new Blob(chunks,{type:mime}));a.download=`054_Luc_Coulomb.${ext}`;a.click();$('recStatus').style.display='none';clearInterval(recTimer)};rec.start(1000);recStart=performance.now();$('recStatus').style.display='block';recTimer=setInterval(()=>{$('recStatus').textContent=`● ĐANG QUAY ${Math.floor((performance.now()-recStart)/1000)} s`},500)}
+$('recordBtn').onclick=startRec;$('stopRecordBtn').onclick=()=>{if(rec&&rec.state==='recording')rec.stop()};
+
+let last=performance.now();
+function animate(now){requestAnimationFrame(animate);const dt=THREE.MathUtils.clamp((now-last)/1000,0,.033);last=now;updatePhysics(dt);updateVisuals();updateUI();controls.update();renderer.render(scene,camera);if(rec&&rec.state==='recording')drawRec()}
+applyBackground();applyLighting();rebuild();setCamera(1);requestAnimationFrame(animate);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>

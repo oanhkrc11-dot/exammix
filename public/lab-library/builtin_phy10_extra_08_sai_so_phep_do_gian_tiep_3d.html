@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PHYSICS 10 LAB · Sai số phép đo gián tiếp</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --bg:#020812;--panel:#071725;--cyan:#64ddff;--yellow:#ffda69;
+  --green:#7fffc2;--red:#ff8585;--text:#eefaff;--muted:#9bb9ca;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#020812;color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:288px;min-width:270px;max-width:300px;height:100%;overflow:auto;padding:10px;
+  background:linear-gradient(180deg,#081a2a,#04101b);
+  border-right:1px solid rgba(100,221,255,.22);z-index:20
+}
+#view{position:relative;flex:1;height:100%;overflow:hidden;min-width:0}
+.title{font-weight:800;font-size:13px;letter-spacing:.035em}
+.kicker{font-size:9px;color:var(--muted);margin-top:3px}
+.simTitle{font-size:15px;color:var(--cyan);font-weight:800;margin:8px 0 5px;text-transform:uppercase}
+.desc{font-size:10.5px;line-height:1.34;color:#cfe5f2}
+.section{margin-top:7px;padding:8px;border:1px solid rgba(100,221,255,.16);border-radius:9px;background:linear-gradient(180deg,rgba(13,36,55,.92),rgba(6,21,34,.92))}
+.section h3{margin:0 0 6px;font-size:10px;color:#b7edff;text-transform:uppercase;letter-spacing:.05em}
+.control{margin:7px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px}
+.row label{font-size:10.5px;font-weight:700}
+.value{font-size:10.5px;color:var(--yellow);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:16px;accent-color:#55cffa}
+select{width:100%;padding:6px 7px;border-radius:7px;background:#0b2638;color:white;border:1px solid rgba(100,221,255,.2);font-size:10.5px}
+.check{display:flex;align-items:center;gap:6px;font-size:10.5px;margin:5px 0}
+.check input{accent-color:#55cffa}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}
+button{min-height:34px;border:1px solid rgba(120,220,255,.20);border-radius:8px;padding:6px 5px;background:#10314b;color:#fff;font-weight:700;font-size:10.5px;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+#measureBtn{background:#17683f}
+#resetBtn{background:#593549}
+.note{font-size:9.5px;line-height:1.38;color:#b7cede}
+#resultBox{padding:7px;border-radius:8px;background:#06131f;border:1px solid rgba(100,221,255,.13);font-size:10.5px;line-height:1.42}
+.good{color:var(--green);font-weight:700}
+.warn{color:var(--yellow);font-weight:700}
+#info{
+  position:absolute;top:12px;right:12px;width:286px;padding:9px 11px;border-radius:11px;
+  background:rgba(4,15,25,.92);border:1px solid rgba(100,221,255,.26);z-index:10;
+  backdrop-filter:blur(4px);font-size:11px;pointer-events:none
+}
+#info .head{font-size:10px;text-transform:uppercase;color:#b8efff;font-weight:800;margin-bottom:5px}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-variant-numeric:tabular-nums}
+#credit{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);color:#ffdc70;font-size:16px;font-weight:800;text-shadow:0 0 12px rgba(255,220,112,.28);z-index:7;pointer-events:none}
+#tooltip{position:absolute;display:none;z-index:30;pointer-events:none;padding:7px 9px;border-radius:8px;background:rgba(4,14,23,.96);border:1px solid rgba(100,219,255,.3);font-size:10px;line-height:1.35;color:#eefaff}
+.label3d{padding:3px 5px;border-radius:7px;background:rgba(4,14,23,.8);border:1px solid rgba(100,219,255,.22);font-size:10px;font-weight:700;color:#e8f8ff;white-space:nowrap}
+.formula{padding:7px;background:#06131f;border-radius:7px;font-size:10.5px;line-height:1.45;color:#d8eff8}
+#barChart{width:100%;height:126px;display:block;background:#06131f;border-radius:7px}
+@media(max-width:1000px){#panel{width:265px;min-width:265px}#info{width:250px}#credit{font-size:14px}}
+</style>
+</head>
+
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+    <div class="kicker">ĐO LƯỜNG · SAI SỐ</div>
+    <div class="simTitle">08. Sai số phép đo gián tiếp</div>
+    <div class="desc">
+      Đo trực tiếp các đại lượng thành phần rồi suy ra đại lượng cần tìm.
+      Mô phỏng tự tính sai số của phép đo gián tiếp theo quy tắc phù hợp.
+    </div>
+
+    <div class="section">
+      <h3>Chọn bài toán</h3>
+      <select id="mode">
+        <option value="area">Diện tích: S = a·b</option>
+        <option value="speed">Vận tốc: v = s/t</option>
+        <option value="density">Khối lượng riêng: ρ = m/V</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <h3>Đại lượng 1</h3>
+      <div class="control">
+        <div class="row"><label id="labelA">a</label><span class="value" id="aText">12.0 cm</span></div>
+        <input id="aSlider" type="range" min="5" max="20" step="0.1" value="12">
+      </div>
+      <div class="control">
+        <div class="row"><label>Sai số Δ1</label><span class="value" id="daText">0.1 cm</span></div>
+        <input id="daSlider" type="range" min="0.01" max="0.50" step="0.01" value="0.10">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Đại lượng 2</h3>
+      <div class="control">
+        <div class="row"><label id="labelB">b</label><span class="value" id="bText">8.0 cm</span></div>
+        <input id="bSlider" type="range" min="3" max="15" step="0.1" value="8">
+      </div>
+      <div class="control">
+        <div class="row"><label>Sai số Δ2</label><span class="value" id="dbText">0.1 cm</span></div>
+        <input id="dbSlider" type="range" min="0.01" max="0.50" step="0.01" value="0.10">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Thao tác</h3>
+      <div class="buttons">
+        <button id="measureBtn">🧮 Tính kết quả</button>
+        <button id="fitBtn">⛶ Fit</button>
+        <button id="resetBtn">↻ Đặt lại</button>
+        <button id="randomBtn">🎲 Tạo bộ số liệu</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Kết quả</h3>
+      <div id="resultBox">Chọn thông số rồi bấm “Tính kết quả”.</div>
+    </div>
+
+    <div class="section">
+      <h3>Độ đóng góp sai số</h3>
+      <canvas id="barChart"></canvas>
+    </div>
+
+    <div class="section">
+      <h3>Quy tắc</h3>
+      <div class="formula" id="formulaBox">
+        S = a·b<br>
+        δS ≈ δa + δb<br>
+        ΔS = S·δS
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Mô hình hóa</h3>
+      <div class="note">
+        Với phép nhân hoặc chia, sai số tỉ đối gần đúng bằng tổng sai số tỉ đối của các đại lượng thành phần.
+        Công thức này phù hợp khi sai số nhỏ. Mô phỏng dùng sai số tuyệt đối dương và không xét tương quan giữa các phép đo.
+      </div>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div id="info">
+      <div class="head">Kết quả tức thời</div>
+      <div class="infoGrid">
+        <span id="infoAName">a</span><b id="infoA">12.0 ± 0.1 cm</b>
+        <span id="infoBName">b</span><b id="infoB">8.0 ± 0.1 cm</b>
+        <span>Đại lượng gián tiếp</span><b id="derivedInfo">—</b>
+        <span>Sai số tuyệt đối</span><b id="absInfo">—</b>
+        <span>Sai số tỉ đối</span><b id="relInfo">—</b>
+      </div>
+    </div>
+    <div id="tooltip"></div>
+    <div id="credit">Thầy Hùng vật lí</div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $=id=>document.getElementById(id);
+const view=$('view');
+const modeEl=$('mode'),aSlider=$('aSlider'),bSlider=$('bSlider'),daSlider=$('daSlider'),dbSlider=$('dbSlider');
+
+const state={
+  mode:'area',
+  a:12,da:.1,
+  b:8,db:.1,
+  calculated:false
+};
+
+const configs={
+  area:{
+    aName:'a',bName:'b',aUnit:'cm',bUnit:'cm',outName:'S',outUnit:'cm²',
+    aMin:5,aMax:20,aStep:.1,aDefault:12,daDefault:.1,
+    bMin:3,bMax:15,bStep:.1,bDefault:8,dbDefault:.1,
+    formula:'S = a·b<br>δS ≈ δa + δb<br>ΔS = S·δS'
+  },
+  speed:{
+    aName:'s',bName:'t',aUnit:'m',bUnit:'s',outName:'v',outUnit:'m/s',
+    aMin:1,aMax:20,aStep:.1,aDefault:10,daDefault:.1,
+    bMin:.5,bMax:10,bStep:.1,bDefault:4,dbDefault:.05,
+    formula:'v = s/t<br>δv ≈ δs + δt<br>Δv = v·δv'
+  },
+  density:{
+    aName:'m',bName:'V',aUnit:'g',bUnit:'cm³',outName:'ρ',outUnit:'g/cm³',
+    aMin:10,aMax:200,aStep:1,aDefault:78,daDefault:1,
+    bMin:5,bMax:100,bStep:1,bDefault:10,dbDefault:.5,
+    formula:'ρ = m/V<br>δρ ≈ δm + δV<br>Δρ = ρ·δρ'
+  }
+};
+
+function cfg(){return configs[state.mode];}
+function relativeContribution(value,err){return value!==0?Math.abs(err/value):0;}
+function compute(){
+  let y;
+  if(state.mode==='area')y=state.a*state.b;
+  else y=state.a/state.b;
+  const ra=relativeContribution(state.a,state.da);
+  const rb=relativeContribution(state.b,state.db);
+  const r=ra+rb;
+  const dy=Math.abs(y)*r;
+  return {y,dy,r,ra,rb};
+}
+
+/* Scene */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x020812);
+scene.fog=new THREE.Fog(0x020812,18,44);
+
+const camera=new THREE.PerspectiveCamera(45,view.clientWidth/view.clientHeight,.1,100);
+camera.position.set(10,7,14);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.07;
+controls.minDistance=7;controls.maxDistance=28;
+controls.minPolarAngle=.1;controls.maxPolarAngle=Math.PI*.48;
+controls.target.set(0,.25,0);
+
+scene.add(new THREE.HemisphereLight(0xa8e7ff,0x142331,1.25));
+const light=new THREE.DirectionalLight(0xffffff,1.25);
+light.position.set(8,14,10);light.castShadow=true;scene.add(light);
+
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(36,24),new THREE.MeshPhongMaterial({color:0x07131f,shininess:20}));
+floor.rotation.x=-Math.PI/2;floor.position.y=-2.1;floor.receiveShadow=true;scene.add(floor);
+
+const grid=new THREE.GridHelper(36,36,0x1e628b,0x123149);
+grid.position.y=-2.08;grid.material.transparent=true;grid.material.opacity=.22;scene.add(grid);
+
+const visualGroup=new THREE.Group();scene.add(visualGroup);
+
+function clearGroup(g){
+  while(g.children.length){
+    const o=g.children.pop();
+    if(o.geometry)o.geometry.dispose();
+    if(o.material && !Array.isArray(o.material))o.material.dispose?.();
+  }
+}
+function label(text,pos){
+  const d=document.createElement('div');d.className='label3d';d.textContent=text;
+  const l=new CSS2DObject(d);l.position.copy(pos);visualGroup.add(l);
+}
+function rebuildVisual(){
+  clearGroup(visualGroup);
+  if(state.mode==='area'){
+    const w=Math.max(1,state.a*.28),h=Math.max(.8,state.b*.28);
+    const box=new THREE.Mesh(
+      new THREE.BoxGeometry(w,.45,h),
+      new THREE.MeshPhongMaterial({color:0x3fb9ff,emissive:0x07374e,shininess:80,transparent:true,opacity:.9})
+    );
+    box.position.y=.1;box.castShadow=true;visualGroup.add(box);
+
+    const geomA=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-w/2,-.4,h/2+.4),new THREE.Vector3(w/2,-.4,h/2+.4)]);
+    const lineA=new THREE.Line(geomA,new THREE.LineBasicMaterial({color:0x7fffc2}));visualGroup.add(lineA);
+    label(`${state.a.toFixed(1)} ${cfg().aUnit}`,new THREE.Vector3(0,-.25,h/2+.65));
+
+    const geomB=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(w/2+.4,-.4,-h/2),new THREE.Vector3(w/2+.4,-.4,h/2)]);
+    const lineB=new THREE.Line(geomB,new THREE.LineBasicMaterial({color:0xffda69}));visualGroup.add(lineB);
+    label(`${state.b.toFixed(1)} ${cfg().bUnit}`,new THREE.Vector3(w/2+.75,-.15,0));
+  }else if(state.mode==='speed'){
+    const track=new THREE.Mesh(new THREE.BoxGeometry(9,.18,1.2),new THREE.MeshPhongMaterial({color:0x4b5d69}));
+    track.position.y=-.7;visualGroup.add(track);
+    const car=new THREE.Mesh(new THREE.BoxGeometry(1.2,.55,.75),new THREE.MeshPhongMaterial({color:0x3fb9ff,emissive:0x07374e}));
+    car.position.set(-3,.0,0);visualGroup.add(car);
+    const arrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(-2.4,.15,0),Math.min(4,state.a/state.b),0x7fffc2,.25,.14);
+    visualGroup.add(arrow);
+    label(`s = ${state.a.toFixed(1)} m`,new THREE.Vector3(0,1.2,0));
+    label(`t = ${state.b.toFixed(1)} s`,new THREE.Vector3(0,.7,0));
+  }else{
+    const cubeSize=Math.max(1.2,Math.cbrt(state.b)*.55);
+    const cube=new THREE.Mesh(
+      new THREE.BoxGeometry(cubeSize,cubeSize,cubeSize),
+      new THREE.MeshPhongMaterial({color:0x3fb9ff,transparent:true,opacity:.75,shininess:80})
+    );
+    cube.position.y=0;visualGroup.add(cube);
+    label(`m = ${state.a.toFixed(0)} g`,new THREE.Vector3(0,cubeSize/2+.7,0));
+    label(`V = ${state.b.toFixed(0)} cm³`,new THREE.Vector3(0,-cubeSize/2-.45,0));
+  }
+}
+
+/* Chart */
+const canvas=$('barChart'),ctx=canvas.getContext('2d');
+function resizeChart(){
+  const dpr=Math.min(devicePixelRatio,2),r=canvas.getBoundingClientRect();
+  canvas.width=Math.max(10,Math.floor(r.width*dpr));canvas.height=Math.max(10,Math.floor(r.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);drawChart();
+}
+function drawChart(){
+  const W=canvas.clientWidth,H=canvas.clientHeight;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#06131f';ctx.fillRect(0,0,W,H);
+  const c=compute(),vals=[c.ra*100,c.rb*100,c.r*100];
+  const labels=[`δ${cfg().aName}`,`δ${cfg().bName}`,'δ tổng'];
+  const max=Math.max(...vals,1);
+  const L=28,R=8,T=10,B=24,w=W-L-R,h=H-T-B;
+  const bw=w/3*.52;
+  vals.forEach((v,i)=>{
+    const x=L+w*(i+.5)/3;
+    const bh=h*v/max;
+    ctx.fillStyle=i===2?'rgba(255,218,105,.75)':i===0?'rgba(100,221,255,.72)':'rgba(127,255,194,.72)';
+    ctx.fillRect(x-bw/2,T+h-bh,bw,bh);
+    ctx.fillStyle='#c8dce7';ctx.font='9px Arial';ctx.textAlign='center';
+    ctx.fillText(labels[i],x,H-7);ctx.fillText(v.toFixed(2)+'%',x,T+h-bh-3);
+  });
+  ctx.textAlign='left';
+}
+
+/* UI */
+function applyConfig(){
+  const c=cfg();
+  aSlider.min=c.aMin;aSlider.max=c.aMax;aSlider.step=c.aStep;aSlider.value=c.aDefault;
+  bSlider.min=c.bMin;bSlider.max=c.bMax;bSlider.step=c.bStep;bSlider.value=c.bDefault;
+  daSlider.min=Math.max(c.aStep/10,.001);daSlider.max=Math.max(c.daDefault*5,c.aStep*2);daSlider.step=Math.max(c.aStep/10,.001);daSlider.value=c.daDefault;
+  dbSlider.min=Math.max(c.bStep/10,.001);dbSlider.max=Math.max(c.dbDefault*5,c.bStep*2);dbSlider.step=Math.max(c.bStep/10,.001);dbSlider.value=c.dbDefault;
+
+  state.a=parseFloat(aSlider.value);state.b=parseFloat(bSlider.value);
+  state.da=parseFloat(daSlider.value);state.db=parseFloat(dbSlider.value);
+  state.calculated=false;
+  $('formulaBox').innerHTML=c.formula;
+  $('resultBox').textContent='Chọn thông số rồi bấm “Tính kết quả”.';
+  refresh();
+}
+function updateUI(){
+  const c=cfg(),r=compute();
+  $('labelA').textContent=c.aName;$('labelB').textContent=c.bName;
+  $('aText').textContent=`${state.a.toFixed(c.aStep<1?2:0)} ${c.aUnit}`;
+  $('bText').textContent=`${state.b.toFixed(c.bStep<1?2:0)} ${c.bUnit}`;
+  $('daText').textContent=`${state.da.toFixed(2)} ${c.aUnit}`;
+  $('dbText').textContent=`${state.db.toFixed(2)} ${c.bUnit}`;
+
+  $('infoAName').textContent=c.aName;$('infoBName').textContent=c.bName;
+  $('infoA').textContent=`${state.a.toFixed(2)} ± ${state.da.toFixed(2)} ${c.aUnit}`;
+  $('infoB').textContent=`${state.b.toFixed(2)} ± ${state.db.toFixed(2)} ${c.bUnit}`;
+  $('derivedInfo').textContent=state.calculated?`${r.y.toFixed(3)} ${c.outUnit}`:'—';
+  $('absInfo').textContent=state.calculated?`${r.dy.toFixed(3)} ${c.outUnit}`:'—';
+  $('relInfo').textContent=state.calculated?`${(r.r*100).toFixed(2)}%`:'—';
+
+  if(state.calculated){
+    $('resultBox').innerHTML=
+      `<b>${c.outName} =</b> ${r.y.toFixed(3)} ${c.outUnit}<br>`+
+      `<b>δ${c.aName} =</b> ${(r.ra*100).toFixed(2)}%<br>`+
+      `<b>δ${c.bName} =</b> ${(r.rb*100).toFixed(2)}%<br>`+
+      `<b>δ${c.outName} ≈</b> <span class="good">${(r.r*100).toFixed(2)}%</span><br>`+
+      `<b>Δ${c.outName} =</b> ${r.dy.toFixed(3)} ${c.outUnit}<br>`+
+      `<b>Kết quả:</b> ${c.outName} = (${r.y.toFixed(3)} ± ${r.dy.toFixed(3)}) ${c.outUnit}`;
+  }
+}
+function refresh(){updateUI();rebuildVisual();drawChart();}
+
+/* Events */
+modeEl.addEventListener('change',()=>{state.mode=modeEl.value;applyConfig();});
+[aSlider,bSlider,daSlider,dbSlider].forEach(el=>el.addEventListener('input',()=>{
+  state.a=parseFloat(aSlider.value);state.b=parseFloat(bSlider.value);
+  state.da=parseFloat(daSlider.value);state.db=parseFloat(dbSlider.value);
+  state.calculated=false;
+  $('resultBox').textContent='Thông số đã thay đổi. Bấm “Tính kết quả”.';
+  refresh();
+}));
+$('measureBtn').addEventListener('click',()=>{state.calculated=true;refresh();});
+$('randomBtn').addEventListener('click',()=>{
+  const c=cfg();
+  const rnd=(min,max,step)=>Math.round((min+Math.random()*(max-min))/step)*step;
+  state.a=rnd(c.aMin,c.aMax,c.aStep);
+  state.b=rnd(c.bMin,c.bMax,c.bStep);
+  state.da=Math.max(parseFloat(daSlider.min),rnd(parseFloat(daSlider.min),parseFloat(daSlider.max),parseFloat(daSlider.step)));
+  state.db=Math.max(parseFloat(dbSlider.min),rnd(parseFloat(dbSlider.min),parseFloat(dbSlider.max),parseFloat(dbSlider.step)));
+  aSlider.value=state.a;bSlider.value=state.b;daSlider.value=state.da;dbSlider.value=state.db;
+  state.calculated=true;refresh();
+});
+$('fitBtn').addEventListener('click',fitScene);
+$('resetBtn').addEventListener('click',resetAll);
+
+/* Tooltip */
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();
+renderer.domElement.addEventListener('mousemove',e=>{
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const hits=raycaster.intersectObjects(visualGroup.children.filter(o=>o.isMesh),false);
+  if(hits.length){
+    tooltip.style.display='block';tooltip.style.left=`${e.offsetX+12}px`;tooltip.style.top=`${e.offsetY+10}px`;
+    tooltip.innerHTML=`<b>Phép đo gián tiếp</b><br>${cfg().outName} được suy ra từ ${cfg().aName} và ${cfg().bName}.`;
+  }else tooltip.style.display='none';
+});
+renderer.domElement.addEventListener('mouseleave',()=>tooltip.style.display='none');
+
+function fitScene(){
+  camera.position.set(10,7,14);controls.target.set(0,.25,0);controls.update();
+}
+function resetAll(){
+  state.mode='area';modeEl.value='area';applyConfig();fitScene();
+}
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);labelRenderer.setSize(w,h);resizeChart();
+}
+window.addEventListener('resize',resize);
+
+function animate(){
+  requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);labelRenderer.render(scene,camera);
+}
+
+resetAll();resize();animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mô phỏng chuyển động qua ngã tư O · PHYSICS 3D PRO</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --panel:#ffffff; --text:#172033; --muted:#667085;
+    --road:#8f98a3; --road-edge:#4ca7d8; --mark:#1d2939; --accent:#2563eb;
+    --accent2:#0f9d76; --warn:#d97706; --soft:#eef4ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  .app{max-width:1180px;margin:0 auto;padding:18px}
+  h1{font-size:clamp(22px,3vw,34px);margin:0 0 6px}
+  .sub{color:var(--muted);margin-bottom:16px}
+  .layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,.9fr);gap:16px;align-items:start}
+  .card{background:var(--panel);border:1px solid #e4e7ec;border-radius:18px;padding:14px}
+  .sim-wrap{overflow:hidden;border-radius:14px;background:#eaf5e8}
+  svg{width:100%;height:auto;display:block}
+  .controls{display:grid;gap:12px}
+  label{font-weight:650;font-size:14px}
+  input,select,button{font:inherit}
+  input[type=number],select{
+    width:100%;padding:10px 12px;border:1px solid #cfd4dc;border-radius:10px;background:white;color:var(--text)
+  }
+  input[type=range]{width:100%}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px}
+  button{border:0;border-radius:10px;padding:10px 13px;cursor:pointer;font-weight:700}
+  button.primary{background:var(--accent);color:white}
+  button.secondary{background:#eef2f6;color:#1f2937}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .metric{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .box{background:#f8fafc;border:1px solid #e4e7ec;border-radius:12px;padding:10px}
+  .box b{display:block;font-size:20px;margin-top:2px}
+  .result{background:#ecfdf3;border:1px solid #abefc6;border-radius:12px;padding:12px;line-height:1.5}
+  .formula{font-family:"Cambria Math","STIX Two Math",serif;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:12px}
+  details{border:1px solid #d0d5dd;border-radius:12px;background:white;padding:10px 12px}
+  details summary{cursor:pointer;font-weight:750}
+  .guide{color:#344054;line-height:1.55}
+  .checkline{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .legend{font-size:13px;color:#475467;margin-top:8px;display:flex;gap:14px;flex-wrap:wrap}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .target-dot{background:#f59e0b}.car-dot{background:#2563eb}
+  .status{min-height:22px;color:#344054;font-size:14px}
+  @media (max-width:860px){.layout{grid-template-columns:1fr}.row{grid-template-columns:1fr 1fr}}
+  @media (max-width:480px){.app{padding:10px}.row,.metric{grid-template-columns:1fr}.card{padding:10px}}
+  @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+<style>
+:root{--pro:#0c718d}body{overflow-x:hidden} .probar{position:sticky;top:0;z-index:9999;background:linear-gradient(110deg,#102b42,#164a5d);border-bottom:2px solid #4ccbd9;color:white;padding:8px 13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:600 12px 'Segoe UI',Arial,sans-serif}.probar strong{margin-right:auto;letter-spacing:.3px}.probar button,.probar select{width:auto!important;max-width:none!important;margin:0!important;background:#215977!important;color:#f0faff!important;border:1px solid #53899d!important;border-radius:7px!important;padding:7px 10px!important;font:600 12px 'Segoe UI',Arial,sans-serif!important;box-shadow:none!important;cursor:pointer}.probar button:hover{background:#287da0!important}.probar label{display:inline!important;margin:0!important;color:white!important;font:600 12px 'Segoe UI',Arial,sans-serif!important}.probar input{vertical-align:middle}.proStage{box-shadow:0 16px 35px #1237491d!important}.proLight{background:#f5f9ff}.proDark{background:#0c1c2b!important;color:#e8f6ff!important}.proDark .card,.proDark .side,.proDark .box,.proDark .stat,.proDark .sceneCard,.proDark .controls>section{background:#173247!important;color:#e8f6ff!important;border-color:#315469!important}.proDark h1,.proDark h2,.proDark .stat .v{color:#a7eaff!important}.proDark .intro,.proDark .sub{color:#afcddd!important}.proDark .result,.proDark .formula,.proDark .explain,.proDark .status{color:#173247!important}.proDark .k,.proDark .small,.proDark .notice{color:#a9c8d9!important}.proScale{position:absolute;bottom:9px;right:11px;background:#0b3047da;color:white;padding:5px 9px;border-radius:7px;font:600 12px Arial;pointer-events:none;z-index:99}.proHide .story,.proHide .segmentInfo,.proHide .legend{display:none!important} .probar button:focus-visible{outline:2px solid #fff!important}
+</style></head>
+<body><div class="probar"><strong>✦ PHYSICS 3D PRO · NÂNG CẤP CHUYỂN ĐỘNG</strong><label>Nhịp: <select id="proRate"><option value="1">1×</option><option value="0.5">0,5×</option><option value="0.25">0,25×</option><option value="0.1">0,1×</option></select></label><button id="proTheme">☀ Sáng / Tối</button><button id="proInfo">◫ Chú thích</button><button id="proFull">⛶ Toàn màn</button><button id="proShot">▣ Chụp ảnh</button><button id="proVideo">● Quay WebM</button></div>
+<div class="app">
+  <h1>Mô phỏng chuyển động qua ngã tư O · PHYSICS 3D PRO</h1>
+  <div class="sub">Bài gốc: xe tới O với tốc độ 36 km/h, rồi tiếp tục chuyển động thẳng đều. Mặc định xe đi từ <b>Bắc → Nam</b>.</div>
+
+  <div class="layout">
+    <section class="card">
+      <div class="sim-wrap">
+        <svg id="scene" viewBox="0 0 900 620" role="img" aria-label="Ngã tư bốn hướng có các điểm A đến M và xe chuyển động từ O">
+          <defs>
+            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".18"/>
+            </filter>
+          </defs>
+
+          <!-- nền -->
+          <rect x="0" y="0" width="900" height="620" fill="#eaf5e8"/>
+          <rect x="390" y="0" width="120" height="620" fill="#9199a2"/>
+          <rect x="0" y="250" width="900" height="120" fill="#9199a2"/>
+          <line x1="390" y1="0" x2="390" y2="250" stroke="#35a7df" stroke-width="4"/>
+          <line x1="510" y1="0" x2="510" y2="250" stroke="#35a7df" stroke-width="4"/>
+          <line x1="390" y1="370" x2="390" y2="620" stroke="#35a7df" stroke-width="4"/>
+          <line x1="510" y1="370" x2="510" y2="620" stroke="#35a7df" stroke-width="4"/>
+          <line x1="0" y1="250" x2="390" y2="250" stroke="#35a7df" stroke-width="4"/>
+          <line x1="510" y1="250" x2="900" y2="250" stroke="#35a7df" stroke-width="4"/>
+          <line x1="0" y1="370" x2="390" y2="370" stroke="#35a7df" stroke-width="4"/>
+          <line x1="510" y1="370" x2="900" y2="370" stroke="#35a7df" stroke-width="4"/>
+
+          <!-- tim đường -->
+          <g stroke="white" stroke-width="3" stroke-dasharray="14 12" opacity=".9">
+            <line x1="450" y1="0" x2="450" y2="620"/>
+            <line x1="0" y1="310" x2="900" y2="310"/>
+          </g>
+
+          <!-- mũi tên hướng -->
+          <g fill="white" font-weight="700" font-size="18" text-anchor="middle">
+            <text x="450" y="26">Bắc ↑</text>
+            <text x="450" y="604">Nam ↓</text>
+            <text x="42" y="335" transform="rotate(-90 42 335)">Tây</text>
+            <text x="858" y="335" transform="rotate(90 858 335)">Đông</text>
+          </g>
+
+          <g opacity=".9"><g fill="#d8f4d3" stroke="#5d986e" stroke-width="2"><circle cx="210" cy="90" r="31"/><circle cx="710" cy="105" r="36"/><circle cx="204" cy="525" r="30"/><circle cx="724" cy="514" r="34"/></g><g stroke="#f4f8fb" stroke-width="7" opacity=".85"><line x1="403" y1="224" x2="403" y2="246"/><line x1="403" y1="374" x2="403" y2="397"/><line x1="421" y1="224" x2="421" y2="246"/><line x1="421" y1="374" x2="421" y2="397"/><line x1="439" y1="224" x2="439" y2="246"/><line x1="439" y1="374" x2="439" y2="397"/><line x1="457" y1="224" x2="457" y2="246"/><line x1="457" y1="374" x2="457" y2="397"/><line x1="475" y1="224" x2="475" y2="246"/><line x1="475" y1="374" x2="475" y2="397"/><line x1="493" y1="224" x2="493" y2="246"/><line x1="493" y1="374" x2="493" y2="397"/></g></g>
+          <!-- các điểm -->
+          <g id="markers" font-size="17" font-weight="800" fill="#1d2939" text-anchor="middle">
+            <!-- north -->
+            <g data-name="A"><circle cx="450" cy="100" r="7" fill="#1d2939"/><text x="470" y="106">A</text></g>
+            <g data-name="B"><circle cx="450" cy="170" r="7" fill="#1d2939"/><text x="470" y="176">B</text></g>
+            <g data-name="C"><circle cx="450" cy="240" r="7" fill="#1d2939"/><text x="470" y="246">C</text></g>
+            <!-- center -->
+            <g data-name="O"><circle cx="450" cy="310" r="8" fill="#111827"/><text x="470" y="316">O</text></g>
+            <!-- south -->
+            <g data-name="D"><circle cx="450" cy="380" r="7" fill="#1d2939"/><text x="470" y="386">D</text></g>
+            <g data-name="E"><circle cx="450" cy="450" r="7" fill="#1d2939"/><text x="470" y="456">E</text></g>
+            <g data-name="F"><circle cx="450" cy="520" r="7" fill="#1d2939"/><text x="470" y="526">F</text></g>
+            <!-- west -->
+            <g data-name="G"><circle cx="240" cy="310" r="7" fill="#1d2939"/><text x="240" y="338">G</text></g>
+            <g data-name="H"><circle cx="310" cy="310" r="7" fill="#1d2939"/><text x="310" y="338">H</text></g>
+            <g data-name="I"><circle cx="380" cy="310" r="7" fill="#1d2939"/><text x="380" y="338">I</text></g>
+            <!-- east -->
+            <g data-name="K"><circle cx="520" cy="310" r="7" fill="#1d2939"/><text x="520" y="338">K</text></g>
+            <g data-name="L"><circle cx="590" cy="310" r="7" fill="#1d2939"/><text x="590" y="338">L</text></g>
+            <g data-name="M"><circle cx="660" cy="310" r="7" fill="#1d2939"/><text x="660" y="338">M</text></g>
+          </g>
+
+          <!-- thước tỉ lệ -->
+          <g transform="translate(65 560)" font-size="15" fill="#344054">
+            <line x1="0" y1="0" x2="70" y2="0" stroke="#344054" stroke-width="3"/>
+            <line x1="0" y1="-7" x2="0" y2="7" stroke="#344054" stroke-width="3"/>
+            <line x1="70" y1="-7" x2="70" y2="7" stroke="#344054" stroke-width="3"/>
+            <text x="35" y="-12" text-anchor="middle">50 m</text>
+          </g>
+
+          <!-- điểm đích -->
+          <circle id="targetHalo" cx="450" cy="450" r="18" fill="none" stroke="#f59e0b" stroke-width="6" opacity=".9"/>
+
+          <!-- xe -->
+          <g id="car" transform="translate(450 310)" filter="url(#shadow)">
+            <rect x="-23" y="-13" width="46" height="29" rx="10" fill="#177cc0" stroke="#0b3856" stroke-width="2"/><path d="M-14 -9 L14 -9 L18 1 L-18 1 Z" fill="#9fe8fd"/><path d="M-19 8 L19 8" stroke="#8ad7fa" stroke-width="3"/>
+            <rect x="-12" y="-9" width="24" height="9" rx="3" fill="#dbeafe"/>
+            <circle cx="-13" cy="13" r="5" fill="#111827"/>
+            <circle cx="13" cy="13" r="5" fill="#111827"/>
+            <path d="M0 -19 L8 -9 H-8 Z" fill="#fbbf24"/>
+          </g>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><span class="dot car-dot"></span>Xe đang chạy</span>
+        <span><span class="dot target-dot"></span>Vị trí sau thời gian đã chọn</span>
+        <span>Mỗi khoảng O → điểm kế tiếp: 50 m</span>
+      </div>
+    </section>
+
+    <aside class="controls">
+      <section class="card">
+        <div class="row">
+          <div>
+            <label for="direction">Hướng xe tiếp tục</label>
+            <select id="direction">
+              <option value="south" selected>Bắc → Nam</option>
+              <option value="north">Nam → Bắc</option>
+              <option value="east">Tây → Đông</option>
+              <option value="west">Đông → Tây</option>
+            </select>
+          </div>
+          <div>
+            <label for="simRate">Tốc độ mô phỏng</label>
+            <select id="simRate">
+              <option value="1">1×</option>
+              <option value="2" selected>2×</option>
+              <option value="5">5×</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label for="speed">Tốc độ (km/h)</label>
+            <input id="speed" type="number" min="0" max="180" step="1" value="36">
+          </div>
+          <div>
+            <label for="timeLimit">Thời gian cần xét (s)</label>
+            <input id="timeLimit" type="number" min="0" max="30" step="1" value="10">
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label for="timeSlider">Thời điểm đang quan sát: <span id="timeText">0.0 s</span></label>
+          <input id="timeSlider" type="range" min="0" max="10" step="0.1" value="0">
+        </div>
+
+        <div class="btns" style="margin-top:10px">
+          <button class="primary" id="play">▶ Chạy</button>
+          <button class="secondary" id="pause">⏸ Tạm dừng</button>
+          <button class="secondary" id="step">+1 s</button>
+          <button class="secondary" id="reset">↺ Làm lại</button>
+        </div>
+        <div id="status" class="status" aria-live="polite"></div>
+      </section>
+
+      <section class="card">
+        <div class="metric">
+          <div class="box">Vận tốc đã đổi<b id="ms">10.0 m/s</b></div>
+          <div class="box">Quãng đường hiện tại<b id="distanceNow">0 m</b></div>
+        </div>
+        <div class="formula" id="formula" style="margin-top:10px">
+          36 km/h = 10 m/s<br>
+          s = v·t = 10·10 = <b>100 m</b>
+        </div>
+        <div class="result" id="result" style="margin-top:10px">
+          Sau 10 s, xe đi thêm <b>100 m</b>. Với hướng Bắc → Nam, xe ở <b>điểm E</b>.
+        </div>
+      </section>
+
+      <details id="guide">
+        <summary>📘 Hướng dẫn sử dụng</summary>
+        <div class="guide">
+          <ol>
+            <li>Giữ mặc định <b>36 km/h</b> và <b>10 s</b> để mô phỏng đúng bài.</li>
+            <li>Chọn hướng xe tiếp tục đi qua O.</li>
+            <li>Nhấn <b>Chạy</b> để quan sát; có thể tạm dừng hoặc kéo thanh thời gian.</li>
+            <li>Quan sát công thức đổi đơn vị, quãng đường và điểm xe đạt tới.</li>
+          </ol>
+          <label class="checkline"><input id="readGuide" type="checkbox"> Đã đọc xong – thu gọn hướng dẫn</label>
+        </div>
+      </details>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const pxPerMeter = 70/50;
+  const center = {x:450,y:310};
+  const markerMaps = {
+    north: {50:"C",100:"B",150:"A"},
+    south: {50:"D",100:"E",150:"F"},
+    west:  {50:"I",100:"H",150:"G"},
+    east:  {50:"K",100:"L",150:"M"}
+  };
+  const dirText = {north:"Nam → Bắc", south:"Bắc → Nam", west:"Đông → Tây", east:"Tây → Đông"};
+  const vectors = {north:[0,-1], south:[0,1], west:[-1,0], east:[1,0]};
+  const rotations = {north:0, east:90, south:180, west:-90};
+
+  const $ = id => document.getElementById(id);
+  const car = $("car"), halo = $("targetHalo"), speed = $("speed"), timeLimit = $("timeLimit"),
+        slider = $("timeSlider"), timeText = $("timeText"), ms = $("ms"), distNow = $("distanceNow"),
+        formula = $("formula"), result = $("result"), direction = $("direction"), simRate = $("simRate"),
+        status = $("status"), guide = $("guide"), readGuide = $("readGuide");
+
+  let t = 0, timer = null;
+
+  function clamp(n,a,b){ return Math.min(b,Math.max(a,n)); }
+  function num(el, fallback){ const n = Number(el.value); return Number.isFinite(n) ? n : fallback; }
+  function fmt(n){ return Math.abs(n-Math.round(n))<1e-9 ? String(Math.round(n)) : n.toFixed(1); }
+
+  function targetName(distance, dir){
+    for (const d of [50,100,150]) if (Math.abs(distance-d)<0.01) return markerMaps[dir][d];
+    return null;
+  }
+
+  function pointAt(distance, dir){
+    const [dx,dy] = vectors[dir];
+    return {x:center.x + dx*distance*pxPerMeter, y:center.y + dy*distance*pxPerMeter};
+  }
+
+  function update(){
+    let kmh = clamp(num(speed,36),0,180);
+    let maxT = clamp(num(timeLimit,10),0,30);
+    if (String(kmh) !== speed.value) speed.value = kmh;
+    if (String(maxT) !== timeLimit.value) timeLimit.value = maxT;
+
+    slider.max = maxT || 0;
+    t = clamp(t,0,maxT);
+    slider.value = t;
+
+    const v = kmh/3.6;
+    const d = v*t;
+    const finalD = v*maxT;
+    const dir = direction.value;
+    const p = pointAt(d,dir);
+    car.setAttribute("transform",`translate(${p.x} ${p.y}) rotate(${rotations[dir]})`);
+
+    const fp = pointAt(finalD,dir);
+    halo.setAttribute("cx",fp.x);
+    halo.setAttribute("cy",fp.y);
+
+    timeText.textContent = `${t.toFixed(1)} s`;
+    ms.textContent = `${v.toFixed(1)} m/s`;
+    distNow.textContent = `${fmt(d)} m`;
+
+    const name = targetName(finalD,dir);
+    const loc = name ? `điểm ${name}` : `vị trí cách O ${fmt(finalD)} m theo hướng ${dirText[dir]}`;
+    formula.innerHTML = `${fmt(kmh)} km/h = ${v.toFixed(1)} m/s<br>s = v·t = ${v.toFixed(1)}·${fmt(maxT)} = <b>${fmt(finalD)} m</b>`;
+    result.innerHTML = `Sau ${fmt(maxT)} s, xe đi thêm <b>${fmt(finalD)} m</b>. Với hướng ${dirText[dir]}, xe ở <b>${loc}</b>.`;
+
+    document.querySelectorAll("#markers g").forEach(g=>{
+      const c = g.querySelector("circle");
+      if (!c) return;
+      const isTarget = name && g.dataset.name===name;
+      c.setAttribute("fill", isTarget ? "#f59e0b" : (g.dataset.name==="O" ? "#111827" : "#1d2939"));
+      c.setAttribute("r", isTarget ? "10" : (g.dataset.name==="O" ? "8" : "7"));
+    });
+  }
+
+  function stop(){
+    if(timer!==null){ cancelAnimationFrame(timer); timer=null; }
+  }
+  function play(){
+    stop();
+    const maxT = clamp(num(timeLimit,10),0,30);
+    if (maxT<=0){ status.textContent="Thời gian phải lớn hơn 0 s."; return; }
+    if (t>=maxT) t=0;
+    const rate = clamp(num(simRate,2),1,5);
+    status.textContent="Xe đang chuyển động...";
+    let last=performance.now();
+    const tick=(now)=>{
+      if(timer===null)return;
+      const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
+      t += dt*rate*(+document.getElementById('proRate').value);
+      if(t>=maxT){t=maxT;stop();status.textContent="Đã tới thời điểm cần xét.";}
+      update();
+      if(timer!==null)timer=requestAnimationFrame(tick);
+    };
+    timer=requestAnimationFrame(tick);
+  }
+
+  $("play").addEventListener("click",play);
+  $("pause").addEventListener("click",()=>{stop();status.textContent="Đã tạm dừng.";});
+  $("reset").addEventListener("click",()=>{stop();t=0;status.textContent="Đã đưa xe về O.";update();});
+  $("step").addEventListener("click",()=>{stop();t=clamp(t+1,0,clamp(num(timeLimit,10),0,30));update();});
+  slider.addEventListener("input",()=>{stop();t=num(slider,0);update();});
+  [speed,timeLimit,direction,simRate].forEach(el=>el.addEventListener("input",()=>{stop();update();}));
+  readGuide.addEventListener("change",()=>{if(readGuide.checked) guide.open=false;});
+
+  update();
+})();
+</script>
+
+<script>
+(()=>{'use strict';
+ const $=id=>document.getElementById(id),scene=document.querySelector('.scene,.sim-wrap,.sim'),canvasNode=document.querySelector('svg#scene');
+ let rec=null, chunks=[], movieTimer=null;
+ $('proTheme').onclick=()=>document.body.classList.toggle('proDark');
+ $('proInfo').onclick=()=>document.body.classList.toggle('proHide');
+ $('proFull').onclick=()=>{let node=scene||document.documentElement;if(document.fullscreenElement)document.exitFullscreen();else node.requestFullscreen?.()};
+ function snap(){
+   const svg=canvasNode||document.querySelector('svg'); if(!svg)throw Error('Không tìm thấy cảnh SVG');
+   const cl=svg.cloneNode(true);cl.setAttribute('xmlns','http://www.w3.org/2000/svg');
+   const bb=svg.viewBox?.baseVal;const w=(bb?.width||920),h=(bb?.height||620);
+   cl.setAttribute('width',w);cl.setAttribute('height',h);
+   const ser=new XMLSerializer().serializeToString(cl); const url=URL.createObjectURL(new Blob([ser],{type:'image/svg+xml'}));
+   return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=w*2;c.height=h*2;const x=c.getContext('2d');x.scale(2,2);x.fillStyle='#f4f9fd';x.fillRect(0,0,w,h);x.drawImage(im,0,0,w,h);URL.revokeObjectURL(url);resolve(c)};im.onerror=()=>{URL.revokeObjectURL(url);reject(Error('Không thể chụp SVG'))};im.src=url});
+ }
+ $('proShot').onclick=async()=>{try{const c=await snap(),a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='PHYSICS_3D_PRO.png';a.click()}catch(e){alert(e.message)}};
+ $('proVideo').onclick=async()=>{if(rec?.state==='recording'){rec.stop();return}try{
+   const c=await snap();if(!c.captureStream||!window.MediaRecorder)throw Error('Trình duyệt không hỗ trợ ghi hình');
+   const mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(x=>MediaRecorder.isTypeSupported(x));
+   rec=new MediaRecorder(c.captureStream(30),mime?{mimeType:mime}:undefined);chunks=[];
+   rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+   rec.onstop=()=>{clearInterval(movieTimer);const blob=new Blob(chunks,{type:'video/webm'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='PHYSICS_3D_PRO.webm';a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);$('proVideo').textContent='● Quay WebM'};
+   rec.start();$('proVideo').textContent='■ Dừng quay';const x=c.getContext('2d'),w=c.width,h=c.height;
+   let busy=false;movieTimer=setInterval(async()=>{if(busy)return;busy=true;try{const fresh=await snap();x.clearRect(0,0,w,h);x.drawImage(fresh,0,0,w,h)}finally{busy=false}},33);
+ }catch(e){alert(e.message)}};
+})();
+</script></body>
+</html>

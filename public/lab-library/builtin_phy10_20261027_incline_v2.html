@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PHYSICS 10 LAB · 56–57. Mặt phẳng nghiêng</title>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --panel:#173445;--panel2:#112736;--line:#436679;--text:#f4fbff;--muted:#b7cdd8;
+  --cyan:#71defd;--yellow:#ffe27b;--green:#8ef2c4;--red:#ff9f9f;--orange:#ffb071
+}
+body.soft{
+  --panel:#d8e3e8;--panel2:#c7d5dc;--line:#97b2c0;--text:#15384a;--muted:#5a7583;
+  --cyan:#0c7c9d;--yellow:#866600;--green:#0d7b57;--red:#a94a4a;--orange:#af6332
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#132937;color:var(--text)}
+#app{display:flex;width:100%;height:100%}
+#panel{
+  width:278px;min-width:262px;max-width:286px;height:100%;overflow:auto;padding:9px;
+  background:linear-gradient(180deg,var(--panel),var(--panel2));border-right:1px solid var(--line)
+}
+#view{position:relative;flex:1;min-width:0;height:100%;overflow:hidden}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.title{font-weight:900;font-size:12.5px}
+.kicker{font-size:9px;color:var(--muted);margin-top:2px}
+.simTitle{font-size:14px;color:var(--cyan);font-weight:900;margin:7px 0 4px;text-transform:uppercase}
+.section{margin-top:6px;padding:7px;border:1px solid var(--line);border-radius:9px;background:rgba(10,31,43,.35)}
+body.soft .section{background:rgba(245,249,251,.7)}
+.section h3{margin:0 0 5px;font-size:9.5px;color:var(--cyan);text-transform:uppercase}
+.control{margin:6px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:3px}
+.row label{font-size:10px;font-weight:700}
+.value{font-size:10px;color:var(--yellow);font-weight:800;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:15px;accent-color:#18a0c8}
+select{width:100%;height:30px;border:1px solid var(--line);border-radius:7px;background:#274f64;color:var(--text);padding:4px 6px;font-size:10px}
+body.soft select{background:#eef5f8}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}
+button{min-height:32px;border:1px solid var(--line);border-radius:7px;padding:5px;background:#244b60;color:#fff;font-weight:800;font-size:10px;cursor:pointer}
+body.soft button{background:#dce8ee;color:#17384a}
+#runBtn{background:#219265}
+#resetBtn{background:#6a4252}
+body.soft #resetBtn{background:#dec7ce;color:#4d2534}
+#recordBtn{background:#ab2d3f}
+#recordBtn.recording{animation:pulse 1s infinite}
+@keyframes pulse{50%{filter:brightness(1.2)}}
+#themeBtn{width:34px;height:30px}
+
+#badge,#info,#graphWrap,#recHud{
+  position:absolute;z-index:10;background:rgba(10,29,41,.86);border:1px solid #446879;
+  border-radius:10px;backdrop-filter:blur(5px);color:#f4fbff
+}
+body.soft #badge,body.soft #info,body.soft #graphWrap,body.soft #recHud{
+  background:rgba(240,246,249,.92);border-color:#99b4c2;color:#15384a
+}
+#badge{left:14px;top:12px;padding:7px 10px;font-size:11px;font-weight:900}
+#recHud{left:14px;top:48px;padding:5px 8px;border-radius:8px;font-size:10px;font-weight:900;display:none}
+#info{right:12px;top:12px;width:295px;padding:8px 10px;font-size:10.4px}
+#info .head{font-size:9.5px;color:var(--cyan);font-weight:900;margin-bottom:4px;text-transform:uppercase}
+.infoGrid{display:grid;grid-template-columns:1fr auto;gap:3px 9px;font-variant-numeric:tabular-nums}
+#graphWrap{left:14px;bottom:40px;width:min(42%,560px);height:185px;padding:7px}
+#graph{width:100%;height:100%;display:block}
+#credit{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:15px;font-weight:900;color:#ffe27b;pointer-events:none}
+body.soft #credit{color:#765900}
+.lab{
+  padding:3px 5px;border-radius:7px;background:rgba(11,32,45,.88);border:1px solid #496b7c;color:#fff;
+  font-size:10px;font-weight:800;white-space:nowrap
+}
+body.soft .lab{background:rgba(240,246,249,.95);border-color:#9db7c4;color:#15384a}
+</style>
+</head>
+
+<body>
+<div id="app">
+<aside id="panel">
+  <div class="top">
+    <div>
+      <div class="title">PHYSICS 10 LAB · 3D CINEMATIC</div>
+      <div class="kicker">MẶT PHẲNG NGHIÊNG · LỰC PHÂN TÍCH</div>
+    </div>
+    <button id="themeBtn" title="Đổi nền">◐</button>
+  </div>
+
+  <div class="simTitle">56–57. Mặt phẳng nghiêng</div>
+
+  <div class="section">
+    <h3>Chế độ</h3>
+    <select id="mode">
+      <option value="smooth">56. Không ma sát</option>
+      <option value="rough">57. Có ma sát</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <h3>Thông số</h3>
+    <div class="control">
+      <div class="row"><label>Khối lượng m</label><span class="value" id="mText">2.0 kg</span></div>
+      <input id="mass" type="range" min="0.5" max="10" step="0.5" value="2">
+    </div>
+    <div class="control">
+      <div class="row"><label>Góc nghiêng θ</label><span class="value" id="thetaText">30°</span></div>
+      <input id="theta" type="range" min="5" max="50" step="1" value="30">
+    </div>
+    <div class="control" id="muControl" style="display:none">
+      <div class="row"><label>Hệ số ma sát μ</label><span class="value" id="muText">0.30</span></div>
+      <input id="mu" type="range" min="0" max="0.9" step="0.05" value="0.30">
+    </div>
+    <div class="control">
+      <div class="row"><label>g</label><span class="value" id="gText">9.8 m/s²</span></div>
+      <input id="g" type="range" min="5" max="15" step="0.1" value="9.8">
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Quan sát</h3>
+    <select id="cameraMode">
+      <option value="all">Toàn cảnh</option>
+      <option value="follow">Theo vật</option>
+      <option value="side">Nhìn cạnh mặt phẳng</option>
+    </select>
+    <div class="control">
+      <div class="row"><label>Tốc độ mô phỏng</label><span class="value" id="speedText">1.0×</span></div>
+      <input id="simSpeed" type="range" min="0.5" max="2" step="0.5" value="1">
+    </div>
+    <div class="buttons">
+      <button id="runBtn">▶ Bắt đầu</button>
+      <button id="pauseBtn">⏸ Dừng</button>
+      <button id="resetBtn">↻ Đặt lại</button>
+      <button id="fitBtn">⛶ Fit</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Quay thí nghiệm</h3>
+    <div class="buttons">
+      <button id="recordBtn">🎥 Bắt đầu quay</button>
+      <button id="stopRecordBtn">⏹ Dừng quay</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <label>Thời gian quay</label><span class="value" id="recTimeText">00:00</span>
+    </div>
+  </div>
+</aside>
+
+<main id="view">
+  <div id="badge">Không ma sát: a = g sinθ</div>
+  <div id="recHud">● REC 00:00</div>
+
+  <div id="info">
+    <div class="head">Số liệu tức thời</div>
+    <div class="infoGrid">
+      <span>t</span><b id="tInfo">0.00 s</b>
+      <span>N</span><b id="nInfo">16.97 N</b>
+      <span>mg sinθ</span><b id="parallelInfo">9.80 N</b>
+      <span>f</span><b id="frictionInfo">0.00 N</b>
+      <span>a</span><b id="aInfo">4.90 m/s²</b>
+      <span>v</span><b id="vInfo">0.00 m/s</b>
+      <span>Trạng thái</span><b id="stateInfo">Trượt xuống</b>
+    </div>
+  </div>
+
+  <div id="graphWrap"><canvas id="graph"></canvas></div>
+  <div id="credit">Thầy Hùng vật lí</div>
+</main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $=id=>document.getElementById(id);
+const view=$('view');
+const fmt=(n,d=2)=>n.toFixed(d).replace('-','−');
+const rad=d=>d*Math.PI/180;
+
+const state={
+  mode:'smooth',m:2,theta:30,mu:.3,g:9.8,
+  t:0,s:0,v:0,simSpeed:1,
+  running:false,paused:true,soft:false,cameraMode:'all',
+  lastStamp:performance.now(),
+  recording:false,recordStart:0
+};
+
+function forces(){
+  const th=rad(state.theta);
+  const N=state.m*state.g*Math.cos(th);
+  const down=state.m*state.g*Math.sin(th);
+
+  if(state.mode==='smooth'){
+    return {N,down,f:0,a:state.g*Math.sin(th),willSlide:true};
+  }
+
+  const fMax=state.mu*N;
+  if(down<=fMax){
+    return {N,down,f:down,a:0,willSlide:false};
+  }
+  const f=state.mu*N;
+  return {N,down,f,a:(down-f)/state.m,willSlide:true};
+}
+
+/* ---------- scene ---------- */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x132937);
+scene.fog=new THREE.Fog(0x132937,36,100);
+
+const camera=new THREE.PerspectiveCamera(44,view.clientWidth/view.clientHeight,.1,180);
+camera.position.set(14,8,17);
+
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(view.clientWidth,view.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+view.prepend(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(view.clientWidth,view.clientHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.inset='0';
+labelRenderer.domElement.style.pointerEvents='none';
+view.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.06;
+controls.minDistance=6;controls.maxDistance=45;
+controls.minPolarAngle=.08;controls.maxPolarAngle=Math.PI*.49;
+controls.target.set(0,2.5,0);
+
+const hemi=new THREE.HemisphereLight(0xe8f7ff,0x4e6874,2.1);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xf6fbff,2.0);sun.position.set(8,16,12);sun.castShadow=true;scene.add(sun);
+
+const floorMat=new THREE.MeshPhongMaterial({color:0x304a58,shininess:16});
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(52,30),floorMat);
+floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+
+const wallMat=new THREE.MeshPhongMaterial({color:0x28424f});
+const backWall=new THREE.Mesh(new THREE.PlaneGeometry(52,16),wallMat);
+backWall.position.set(0,8,-10);scene.add(backWall);
+
+const leftWall=new THREE.Mesh(new THREE.PlaneGeometry(30,16),new THREE.MeshPhongMaterial({color:0x263c49}));
+leftWall.rotation.y=Math.PI/2;leftWall.position.set(-18,8,0);scene.add(leftWall);
+
+const windowMat=new THREE.MeshPhongMaterial({color:0x6e95a8,transparent:true,opacity:.22});
+for(let i=0;i<4;i++){
+  const w=new THREE.Mesh(new THREE.PlaneGeometry(5.2,7),windowMat);
+  w.position.set(-14+i*5.8,10,-9.92);scene.add(w);
+}
+
+/* incline */
+const inclineGroup=new THREE.Group();scene.add(inclineGroup);
+
+const rampLength=11;
+const rampThickness=.35;
+const rampWidth=4.2;
+
+const rampMat=new THREE.MeshPhongMaterial({color:0x7d909a,shininess:28});
+const ramp=new THREE.Mesh(new THREE.BoxGeometry(rampLength,rampThickness,rampWidth),rampMat);
+ramp.castShadow=true;ramp.receiveShadow=true;inclineGroup.add(ramp);
+
+const supportMat=new THREE.MeshPhongMaterial({color:0x596d77});
+const support=new THREE.Mesh(new THREE.BoxGeometry(.35,5.5,3.2),supportMat);
+inclineGroup.add(support);
+
+const base=new THREE.Mesh(new THREE.BoxGeometry(13,.3,5),new THREE.MeshPhongMaterial({color:0x667c87}));
+base.position.y=.15;scene.add(base);
+
+/* block */
+const block=new THREE.Group();scene.add(block);
+const blockBody=new THREE.Mesh(new THREE.BoxGeometry(1.3,1.0,1.15),new THREE.MeshPhongMaterial({color:0x3ea8d7,shininess:70}));
+blockBody.castShadow=true;block.add(blockBody);
+
+const blockDiv=document.createElement('div');blockDiv.className='lab';blockDiv.textContent='Vật';
+const blockLab=new CSS2DObject(blockDiv);blockLab.position.set(0,.95,0);block.add(blockLab);
+
+/* force arrows */
+const weightArrow=new THREE.ArrowHelper(new THREE.Vector3(0,-1,0),new THREE.Vector3(),1,0xffad76,.22,.12);
+const normalArrow=new THREE.ArrowHelper(new THREE.Vector3(0,1,0),new THREE.Vector3(),1,0x8ef2c4,.22,.12);
+const parallelArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1,0x73ddff,.22,.12);
+const frictionArrow=new THREE.ArrowHelper(new THREE.Vector3(-1,0,0),new THREE.Vector3(),1,0xff8f8f,.22,.12);
+scene.add(weightArrow,normalArrow,parallelArrow,frictionArrow);
+
+/* angle arc */
+let angleLine=null;
+function updateInclineGeometry(){
+  const th=rad(state.theta);
+
+  // Local +x of the ramp points DOWN the slope (to the right).
+  ramp.rotation.z=-th;
+
+  // Keep the lower end of the ramp at a fixed height near the base.
+  const lowY=0.55;
+  ramp.position.set(0, lowY+(rampLength/2)*Math.sin(th), 0);
+
+  // Vertical support under the high end.
+  const highX=-(rampLength/2)*Math.cos(th);
+  const highY=lowY+rampLength*Math.sin(th);
+  const supportHeight=Math.max(.2, highY-.3);
+  support.scale.y=supportHeight/5.5;
+  support.position.set(highX, .3+supportHeight/2, 0);
+
+  if(angleLine){
+    scene.remove(angleLine);
+    angleLine.geometry.dispose();
+    angleLine.material.dispose();
+  }
+
+  // Mark theta at the lower end.
+  const lowX=(rampLength/2)*Math.cos(th);
+  const r=1.1,n=24;
+  const pts=[new THREE.Vector3(lowX-r,lowY+.03,2.15),
+             new THREE.Vector3(lowX,lowY+.03,2.15)];
+  for(let i=0;i<=n;i++){
+    const a=Math.PI-th+(th*i/n);
+    pts.push(new THREE.Vector3(lowX+r*Math.cos(a), lowY+r*Math.sin(a), 2.15));
+  }
+  angleLine=new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color:0xffe27b})
+  );
+  scene.add(angleLine);
+}
+function blockPosition(){
+  const th=rad(state.theta);
+
+  // Coordinate u along the ramp:
+  // u<0 near the high end; increasing u means sliding DOWN the slope.
+  const u0=-3.9;
+  const u=u0+state.s;
+
+  const rampCenterY=0.55+(rampLength/2)*Math.sin(th);
+
+  // Distance from ramp mid-plane to block center along the normal.
+  // ramp half thickness + block half height + small visual gap.
+  const d=rampThickness/2+0.50+0.03;
+
+  return {
+    x:u*Math.cos(th) + d*Math.sin(th),
+    y:rampCenterY - u*Math.sin(th) + d*Math.cos(th),
+    z:0
+  };
+}
+function updateScene(){
+  updateInclineGeometry();
+  const th=rad(state.theta);
+  const p=blockPosition();
+
+  block.position.set(p.x,p.y,0);
+  block.rotation.z=-th;
+  blockDiv.textContent=state.mode==='smooth'?'Vật · không ma sát':'Vật · có ma sát';
+
+  const f=forces();
+  const P=state.m*state.g;
+
+  // weight is vertical in world
+  weightArrow.position.set(p.x,p.y+.3,-.35);
+  weightArrow.setDirection(new THREE.Vector3(0,-1,0));
+  weightArrow.setLength(Math.max(.3,P*.06),.22,.12);
+
+  // Normal force: perpendicular outward from the plane.
+  const nvec=new THREE.Vector3(Math.sin(th),Math.cos(th),0);
+  normalArrow.position.set(p.x,p.y+.2,.35);
+  normalArrow.setDirection(nvec);
+  normalArrow.setLength(Math.max(.3,f.N*.06),.22,.12);
+
+  // Component mg sin(theta): DOWN the slope (right and downward).
+  const downSlope=new THREE.Vector3(Math.cos(th),-Math.sin(th),0);
+  parallelArrow.position.set(p.x,p.y+.65,-.18);
+  parallelArrow.setDirection(downSlope);
+  parallelArrow.setLength(Math.max(.3,f.down*.06),.22,.12);
+
+  // Friction opposes the tendency/motion down the slope.
+  const upSlope=new THREE.Vector3(-Math.cos(th),Math.sin(th),0);
+  frictionArrow.position.set(p.x,p.y+.95,.18);
+  frictionArrow.setDirection(upSlope);
+  frictionArrow.setLength(Math.max(.001,f.f*.06),.22,.12);
+  frictionArrow.visible=state.mode==='rough'&&f.f>1e-6;
+}
+
+/* ---------- physics ---------- */
+function resetState(){
+  state.t=0;state.s=0;state.v=0;state.running=false;state.paused=true;
+  $('runBtn').textContent='▶ Bắt đầu';$('pauseBtn').textContent='⏸ Dừng';
+  updateScene();updateUI();fitScene();
+}
+
+function step(dt){
+  const f=forces();
+  if(!f.willSlide){
+    state.v=0;
+    return;
+  }
+  state.v += f.a*dt;
+  state.s += state.v*dt;
+
+  if(state.s>=7.2){
+    state.s=7.2;
+    state.running=false;state.paused=true;
+    $('runBtn').textContent='▶ Chạy lại';
+  }
+}
+
+/* ---------- graph ---------- */
+const graph=$('graph'),ctx=graph.getContext('2d');
+function resizeGraph(){
+  const dpr=Math.min(devicePixelRatio,2),r=graph.getBoundingClientRect();
+  graph.width=Math.max(10,Math.floor(r.width*dpr));
+  graph.height=Math.max(10,Math.floor(r.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);drawGraph();
+}
+function drawGraph(){
+  const W=graph.clientWidth,H=graph.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=state.soft?'#f3f8fa':'#173444';ctx.fillRect(0,0,W,H);
+
+  const L=42,R=12,T=12,B=28,w=W-L-R,h=H-T-B,tmax=6;
+  const tx=t=>L+t/tmax*w;
+  const a=forces().a;
+  const vmax=Math.max(1,a*tmax*1.15);
+  const yy=v=>T+h-(v/vmax)*h;
+
+  ctx.strokeStyle=state.soft?'rgba(60,95,110,.15)':'rgba(200,230,240,.14)';
+  for(let i=0;i<=5;i++){
+    const gx=L+w*i/5;ctx.beginPath();ctx.moveTo(gx,T);ctx.lineTo(gx,T+h);ctx.stroke();
+    const gy=T+h*i/5;ctx.beginPath();ctx.moveTo(L,gy);ctx.lineTo(L+w,gy);ctx.stroke();
+  }
+
+  ctx.globalAlpha=.25;ctx.strokeStyle='#73ddff';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(tx(0),yy(0));ctx.lineTo(tx(tmax),yy(a*tmax));ctx.stroke();ctx.globalAlpha=1;
+
+  ctx.strokeStyle='#73ddff';ctx.lineWidth=2.5;
+  const tc=Math.min(state.t,tmax);
+  ctx.beginPath();ctx.moveTo(tx(0),yy(0));ctx.lineTo(tx(tc),yy(a*tc));ctx.stroke();
+
+  ctx.fillStyle=state.soft?'#456778':'#d9edf5';ctx.font='10px Arial';ctx.textAlign='center';
+  for(let i=0;i<=4;i++){const t=tmax*i/4;ctx.fillText(t.toFixed(1),tx(t),H-9);}
+  ctx.fillText('t (s)',L+w/2,H-1);
+  ctx.save();ctx.translate(10,T+h/2);ctx.rotate(-Math.PI/2);ctx.fillText('v (m/s)',0,0);ctx.restore();
+  ctx.textAlign='left';
+}
+
+/* ---------- ui ---------- */
+function updateUI(){
+  const f=forces();
+
+  $('mText').textContent=`${state.m.toFixed(1)} kg`;
+  $('thetaText').textContent=`${state.theta.toFixed(0)}°`;
+  $('muText').textContent=state.mu.toFixed(2);
+  $('gText').textContent=`${state.g.toFixed(1)} m/s²`;
+  $('speedText').textContent=`${state.simSpeed.toFixed(1)}×`;
+
+  $('muControl').style.display=state.mode==='rough'?'block':'none';
+
+  $('tInfo').textContent=`${state.t.toFixed(2)} s`;
+  $('nInfo').textContent=`${f.N.toFixed(2)} N`;
+  $('parallelInfo').textContent=`${f.down.toFixed(2)} N`;
+  $('frictionInfo').textContent=`${f.f.toFixed(2)} N`;
+  $('aInfo').textContent=`${f.a.toFixed(2)} m/s²`;
+  $('vInfo').textContent=`${state.v.toFixed(2)} m/s`;
+
+  if(state.mode==='smooth'){
+    $('badge').textContent='Không ma sát: vật trượt dọc mặt phẳng, a = g sinθ';
+    $('stateInfo').textContent='Trượt xuống';
+  }else{
+    const crit=Math.tan(rad(state.theta));
+    if(!f.willSlide){
+      $('badge').textContent='Ma sát nghỉ giữ vật đứng yên';
+      $('stateInfo').textContent=`Không trượt · μ ≥ tanθ ≈ ${crit.toFixed(2)}`;
+    }else{
+      $('badge').textContent='Khi đã trượt: a = g(sinθ − μcosθ)';
+      $('stateInfo').textContent='Đang trượt xuống';
+    }
+  }
+}
+
+/* ---------- camera ---------- */
+function fitScene(){
+  camera.position.set(14,8,17);controls.target.set(0,2.8,0);controls.update();
+}
+function updateCamera(){
+  const p=block.position;
+  if(state.cameraMode==='follow'){
+    controls.target.x+=(p.x-controls.target.x)*.08;
+    controls.target.y+=(p.y-controls.target.y)*.08;
+    camera.position.x+=((p.x+6)-camera.position.x)*.05;
+    camera.position.y+=((p.y+3)-camera.position.y)*.05;
+  }
+  if(state.cameraMode==='side'){
+    controls.target.x+=(p.x-controls.target.x)*.05;
+    controls.target.y+=(p.y-controls.target.y)*.05;
+    camera.position.set(controls.target.x+1.5,controls.target.y+3.5,15);
+  }
+}
+
+/* ---------- theme ---------- */
+function applyTheme(){
+  document.body.classList.toggle('soft',state.soft);
+  if(state.soft){
+    scene.background.set(0xb9c9d1);scene.fog.color.set(0xb9c9d1);
+    floorMat.color.set(0x9eb0b8);wallMat.color.set(0xb9c7ce);leftWall.material.color.set(0xb0bec6);
+    windowMat.color.set(0x9dbac8);windowMat.opacity=.30;hemi.intensity=2.25;sun.intensity=2.1;
+  }else{
+    scene.background.set(0x132937);scene.fog.color.set(0x132937);
+    floorMat.color.set(0x304a58);wallMat.color.set(0x28424f);leftWall.material.color.set(0x263c49);
+    windowMat.color.set(0x6e95a8);windowMat.opacity=.22;hemi.intensity=2.1;sun.intensity=2.0;
+  }
+  drawGraph();
+}
+$('themeBtn').addEventListener('click',()=>{state.soft=!state.soft;applyTheme();});
+
+/* ---------- recording ---------- */
+const recCanvas=document.createElement('canvas');recCanvas.width=1280;recCanvas.height=720;
+const rctx=recCanvas.getContext('2d');
+let mediaRecorder=null,chunks=[],mime='';
+function chooseMime(){
+  for(const m of ['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']){
+    if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;
+  }
+  return '';
+}
+function drawRec(){
+  const W=1280,H=720;
+  rctx.fillStyle='#132937';rctx.fillRect(0,0,W,H);
+  rctx.drawImage(renderer.domElement,0,0,W,H);
+
+  rctx.fillStyle='rgba(8,23,32,.66)';rctx.fillRect(0,0,W,52);
+  rctx.fillStyle='#fff';rctx.font='bold 22px Arial';
+  rctx.fillText('PHYSICS 10 LAB · MẶT PHẲNG NGHIÊNG',22,33);
+
+  const f=forces();
+  rctx.fillStyle='rgba(8,23,32,.72)';rctx.fillRect(W-315,72,292,170);
+  rctx.fillStyle='#fff';rctx.font='bold 17px Arial';
+  rctx.fillText(`θ = ${state.theta.toFixed(0)}°`,W-295,103);
+  rctx.fillText(`N = ${f.N.toFixed(2)} N`,W-295,132);
+  rctx.fillText(`f = ${f.f.toFixed(2)} N`,W-295,161);
+  rctx.fillText(`a = ${f.a.toFixed(2)} m/s²`,W-295,190);
+  rctx.fillText(`v = ${state.v.toFixed(2)} m/s`,W-295,219);
+
+  rctx.fillStyle='rgba(8,23,32,.76)';rctx.fillRect(18,H-215,490,195);
+  rctx.drawImage(graph,24,H-209,478,183);
+  rctx.fillStyle='#ffe27b';rctx.font='bold 18px Arial';rctx.fillText('Thầy Hùng vật lí',W-175,H-22);
+}
+async function startRecording(){
+  if(state.recording)return;
+  if(!window.MediaRecorder||!recCanvas.captureStream){alert('Trình duyệt này chưa hỗ trợ quay trực tiếp.');return;}
+  mime=chooseMime();const stream=recCanvas.captureStream(30);
+  try{mediaRecorder=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:6000000}:{videoBitsPerSecond:6000000});}
+  catch(e){mediaRecorder=new MediaRecorder(stream);mime=mediaRecorder.mimeType||'video/webm';}
+  chunks=[];mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size>0)chunks.push(e.data);};
+  mediaRecorder.onstop=()=>{
+    const mt=mediaRecorder.mimeType||mime||'video/webm',ext=mt.includes('mp4')?'mp4':'webm';
+    const blob=new Blob(chunks,{type:mt}),url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=`Physics10_56_57_Mat_phang_nghieng.${ext}`;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  };
+  mediaRecorder.start(250);state.recording=true;state.recordStart=performance.now();
+  $('recordBtn').classList.add('recording');$('recordBtn').textContent='● Đang quay';$('recHud').style.display='block';
+}
+function stopRecording(){
+  if(!state.recording)return;
+  state.recording=false;$('recordBtn').classList.remove('recording');$('recordBtn').textContent='🎥 Bắt đầu quay';$('recHud').style.display='none';
+  if(mediaRecorder&&mediaRecorder.state!=='inactive')mediaRecorder.stop();
+}
+function updateRecClock(now){
+  if(!state.recording){$('recTimeText').textContent='00:00';return;}
+  const sec=Math.floor((now-state.recordStart)/1000),mm=String(Math.floor(sec/60)).padStart(2,'0'),ss=String(sec%60).padStart(2,'0');
+  $('recTimeText').textContent=`${mm}:${ss}`;$('recHud').textContent=`● REC ${mm}:${ss}`;
+}
+
+/* ---------- events ---------- */
+$('mode').addEventListener('change',e=>{state.mode=e.target.value;resetState();});
+$('mass').addEventListener('input',e=>{state.m=parseFloat(e.target.value);resetState();});
+$('theta').addEventListener('input',e=>{state.theta=parseFloat(e.target.value);resetState();});
+$('mu').addEventListener('input',e=>{state.mu=parseFloat(e.target.value);resetState();});
+$('g').addEventListener('input',e=>{state.g=parseFloat(e.target.value);resetState();});
+$('simSpeed').addEventListener('input',e=>{state.simSpeed=parseFloat(e.target.value);updateUI();});
+$('cameraMode').addEventListener('change',e=>{state.cameraMode=e.target.value;if(state.cameraMode==='all')fitScene();});
+
+$('runBtn').addEventListener('click',()=>{if(!state.running&&state.s>=7.2)resetState();state.running=true;state.paused=false;$('runBtn').textContent='▶ Đang chạy';});
+$('pauseBtn').addEventListener('click',()=>{if(!state.running)return;state.paused=!state.paused;$('pauseBtn').textContent=state.paused?'▶ Tiếp tục':'⏸ Dừng';});
+$('resetBtn').addEventListener('click',resetState);
+$('fitBtn').addEventListener('click',fitScene);
+$('recordBtn').addEventListener('click',startRecording);
+$('stopRecordBtn').addEventListener('click',stopRecording);
+
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);labelRenderer.setSize(w,h);resizeGraph();
+}
+window.addEventListener('resize',resize);
+
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt=(now-state.lastStamp)/1000;state.lastStamp=now;
+  dt=Math.min(Math.max(dt,0),.028);
+
+  if(state.running&&!state.paused){
+    state.t+=dt*state.simSpeed;
+    step(dt*state.simSpeed);
+  }
+
+  updateScene();
+  updateCamera();
+  updateUI();
+  drawGraph();
+  updateRecClock(now);
+
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+  if(state.recording)drawRec();
+}
+
+resetState();
+applyTheme();
+resize();
+animate(performance.now());
+</script>
+</body>
+</html>

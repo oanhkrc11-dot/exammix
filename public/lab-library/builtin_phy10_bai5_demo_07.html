@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Ca nô dòng nước V4 - Vận tốc tương đối</title>
+<style>
+body{font-family:Arial;background:#eaf6ff;margin:0}
+.box{max-width:1200px;margin:auto;padding:15px}
+h1{text-align:center;color:#075985}
+canvas{width:100%;background:#7ec8e8;border-radius:20px;box-shadow:0 5px 20px #999}
+.panel{background:white;padding:20px;border-radius:18px;margin-top:15px}
+.grid{display:flex;gap:30px;flex-wrap:wrap}
+.item{flex:1;min-width:300px;background:#f1f8ff;padding:15px;border-radius:15px}
+input{width:100%}
+button{padding:10px 25px;border:0;border-radius:12px;background:#16a34a;color:white;font-size:18px}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>🚤 Ca nô cùng chiều dòng nước - Vận tốc tương đối</h1>
+<canvas id="cv" width="1200" height="560"></canvas>
+<div class="panel">
+<div class="grid">
+<div class="item">
+<b>🚤 Vận tốc ca nô đối với nước v₁₂</b>
+<input id="boat" type="range" min="0" max="120" value="50">
+<span id="btxt">50 km/h</span>
+</div>
+<div class="item">
+<b>🌊 Vận tốc dòng nước đối với bờ v₂₃</b>
+<input id="water" type="range" min="-50" max="50" value="50">
+<span id="wtxt">50 km/h</span>
+</div>
+</div>
+<br>
+<button onclick="reset()">🔄 Chạy lại</button>
+<p id="result"></p>
+</div>
+</div>
+<script>
+const c=document.getElementById("cv"),ctx=c.getContext("2d");
+let boatX=200,woodX=650,t=0;
+const scale=0.015; // cùng một tỉ lệ cho mọi vật
+
+function reset(){boatX=200;woodX=650;t=0}
+
+function drawBoat(x){
+ctx.save();ctx.translate(x,300);
+ctx.fillStyle="#e63946";
+ctx.beginPath();ctx.moveTo(-80,20);ctx.lineTo(80,20);ctx.lineTo(50,60);ctx.lineTo(-50,60);ctx.fill();
+ctx.fillStyle="white";ctx.fillRect(-35,-15,70,35);
+ctx.fillStyle="#f2b36f";ctx.beginPath();ctx.arc(0,-45,16,0,7);ctx.fill();
+ctx.strokeStyle="white";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(-100,45);ctx.lineTo(-150,45);ctx.stroke();
+ctx.restore();
+}
+
+function draw(){
+ctx.clearRect(0,0,1200,560);
+
+// cảnh
+ctx.fillStyle="#75c56b";ctx.fillRect(0,0,1200,130);
+ctx.fillStyle="#55b9e8";ctx.fillRect(0,130,1200,430);
+
+// sóng nước
+let vw=Number(water.value);
+if(vw!=0){
+ctx.strokeStyle="white";
+for(let y=180;y<520;y+=45){
+ctx.beginPath();
+for(let x=-100;x<1300;x+=40){
+let xx=x+t*Math.sign(vw);
+ctx.moveTo(xx,y);
+ctx.quadraticCurveTo(xx+20,y-8,xx+40,y);
+}
+ctx.stroke();
+}
+}
+
+// gỗ = vận tốc nước
+ctx.fillStyle="#8b5a2b";
+ctx.fillRect(woodX-45,390,90,18);
+
+// thuyền
+drawBoat(boatX);
+
+let vb=Number(boat.value);
+let total=vb+vw;
+
+boatX += total*scale;
+woodX += vw*scale;
+
+if(boatX>1250)boatX=-100;
+if(woodX>1250)woodX=-100;
+if(woodX<0)woodX=1250;
+
+document.getElementById("btxt").innerHTML=vb+" km/h";
+document.getElementById("wtxt").innerHTML=vw+" km/h";
+document.getElementById("result").innerHTML=
+`<b>v₁₃ = v₁₂ + v₂₃ = ${vb} + ${vw} = ${total} km/h</b>`;
+
+ctx.fillStyle="#073b4c";ctx.font="25px Arial";
+ctx.fillText("Ca nô: v₁₃ = "+total+" km/h",70,220);
+ctx.fillText("Khúc gỗ: v₂₃ = "+vw+" km/h",760,220);
+ctx.fillText("Ca nô / khúc gỗ = "+(vw? (total/vw).toFixed(2):"∞")+" lần",800,480);
+
+t+=Math.abs(vw)/5;
+requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
