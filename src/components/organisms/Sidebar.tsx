@@ -4,12 +4,10 @@ import { NAV_ITEMS } from "@/lib/nav-items";
 import { ThemeToggle } from "./ThemeToggle";
 
 export function Sidebar({
-  isAdmin,
   displayName,
   email,
   role,
 }: {
-  isAdmin: boolean;
   displayName: string | null;
   email: string | null;
   role: "teacher" | "admin";
@@ -50,7 +48,6 @@ export function Sidebar({
         {NAV_ITEMS.map((item) => (
           <NavItem key={item.href} {...item} />
         ))}
-        {isAdmin ? <NavItem href="/admin" glyph="🛠️" label="Quản trị" accent={["239,68,68", "249,115,22"]} /> : null}
       </nav>
 
       <div

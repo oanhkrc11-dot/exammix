@@ -8,12 +8,10 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { user, profile } = await getCurrentUserAndProfile();
-  const isAdmin = profile?.role === "admin";
 
   return (
     <div className="min-h-screen bg-bg">
       <Sidebar
-        isAdmin={isAdmin}
         displayName={profile?.display_name ?? null}
         email={user?.email ?? null}
         role={profile?.role ?? "teacher"}

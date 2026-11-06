@@ -2,14 +2,67 @@
 
 Phase 1 of the migration from the legacy single-file `legacy/index.html` app
 to a real multi-user Next.js + Supabase application. See
-`/Users/khanhdang/.claude/plans/purring-questing-lamport.md` for the full
-migration plan and rationale.
+`/Users/khanhdang/.claude/plans/purring-questing-lamport.md` for the Phase 1
+plan and `/Users/khanhdang/.claude/plans/parsed-greeting-pebble.md` for the
+Phase 2 UI/UX-reconciliation plan described below.
 
-## Phase 1 scope
+## Phase 1 scope (superseded — see Phase 2)
 
-Auth (email/password + Google), Dashboard, Ngân hàng câu hỏi, Trộn đề thi,
-Chấm điểm nhanh (OMR) + in phiếu trả lời, Thống kê, Admin (user management +
-system stats).
+Original Phase 1 scope was Auth, Dashboard, Ngân hàng câu hỏi, Trộn đề thi,
+Chấm điểm nhanh (OMR) + in phiếu trả lời, Thống kê, Admin. Several of these
+(`Ngân hàng câu hỏi`, `Chấm điểm nhanh`, `Thống kê`, `Admin`) were Next.js-only
+additions with **no tab in the legacy app's own nav** — confirmed by grepping
+`Exam_mix_6_nov.html`'s nav markup, which only has: Trang chủ, Trộn đề thi,
+Lớp học LIVE, Học viện tri thức, Phòng thí nghiệm ảo, Gemini AI, Game Center.
+Phase 2 (below) removed those extra pages/routes to bring the app back to
+exactly the legacy feature set, and is now reconciling each remaining page's
+UI/UX against the legacy reference file one feature at a time.
+
+## Phase 2 — UI/UX reconciliation against `Exam_mix_6_nov.html`
+
+The original legacy file this app was ported from turned out to be an older
+snapshot; `/Users/khanhdang/Projects/exam_mix/Exam_mix_6_nov.html` (not in
+`legacy/`, different hash from every file there) is the current/authoritative
+reference. A feature-by-feature audit against it found that most of Phase
+1's "ported" features only carried over the core logic, not the full
+UI/UX — see the Phase 2 plan file for the complete dossier. Status so far:
+
+- **Done**: sidebar/route pruned to the legacy 7-tab set (dashboard +
+  6 features); `src/app/(dashboard)/dashboard` cleaned to drop the
+  Next.js-only "Tổng quan của bạn" stats section.
+- **Done — Trộn đề thi**: `ExamMixerPanel` was a single flat form exposing
+  ~4 of the legacy screen's ~25 controls. Rebuilt into Easy/Advanced modes
+  with the full header-metadata block, the "chọn câu trước khi trộn"
+  question selector, custom/auto exam-code settings, fixed-item locking,
+  full output-format selection (Word/merged/answer-key Word/Excel/TNMaker
+  QR/print manifest, bundled into one ZIP via `buildExportZip`), the author
+  guide, and the "kiểm định nâng cao" verification panel (source inspection,
+  self-tests, session save/restore, report/log download). All of this reuses
+  options `buildVariant`/`analyzeSourceXml` already accepted (em217SelectedIds,
+  fixedQuestionNums, fixedTFItems, header injection, etc.) — see
+  `src/lib/logic/docx/generate.ts`, `mixerSession.ts`, `questionPicker.ts`.
+  **Explicitly deferred** (not silently dropped — flagged here like the
+  Presentation Studio/Whiteboard exclusions below): legacy's
+  `exammixSpaceAudit` (safe whitespace/label auto-fix with undo),
+  `em175Review` (option-label integrity review), and
+  `exammixRunIntegritySelfTest` (the real OOXML-level A–D/Đ–S recognizer
+  self-test, distinct from the lightweight `runIntegrityTests` ported here)
+  were not ported — they mutate `document.xml` directly and need the same
+  careful AST-traced porting `legacy-mixer.ts` got, with real sample `.docx`
+  files to verify against. The "tải bản sao Word bôi vàng câu lỗi" highlighted
+  download is deferred for the same reason. `buildMergedDocxBlob` (used by
+  "Đề ghép Word"/"File ghép ĐỂ IN") is new code (concatenates each variant's
+  body into one document) rather than a port — verify it against a real
+  multi-variant source file before relying on it for printing.
+- **Not started**: Lớp học LIVE (missing Presentation Studio, an
+  undocumented "Active Lesson 2.0" 5E lesson player, Whiteboard, "Chia nhóm
+  nhanh", "Câu hỏi ngẫu nhiên"), Học viện tri thức (missing the grade-level
+  curriculum/Question Registry/Game Show builder layer beneath the 18-game
+  shelf), Phòng thí nghiệm ảo (missing lesson-grouped navigation), Gemini AI
+  (missing the "xu ExamMix" coin system, docx-context "generate similar
+  exam" flow, and the sibling Matrix AI generator), Game Center (UI already
+  matches legacy verbatim; only the native Word-upload parser is still a
+  workaround). See the Phase 2 plan file for the full per-feature dossier.
 
 ## Phòng thi trực tuyến (Realtime exam room)
 
@@ -124,30 +177,33 @@ pattern loads as Game Center's "short answer" type instead.
    - `SUPABASE_SERVICE_ROLE_KEY` — the **service role key** (older), or the
      **Secret key** (`sb_secret_...`) under a "Secret keys" section on newer
      projects — create one there if none exists yet. **Never** expose this
-     to the client; it's only used server-side in the admin area
-     (`src/lib/supabase/admin.ts`).
+     to the client; it's only used server-side (`src/lib/supabase/admin.ts`).
 5. **Install deps and run**:
    ```bash
    npm install
    npm run dev
    ```
-6. **Promote your first admin** (after registering/logging in once):
-   ```sql
-   update public.profiles set role = 'admin' where id = '<your-auth-user-uuid>';
-   ```
-   Find the UUID in Supabase → Authentication → Users.
 
 ## Project structure
 
 - `src/components/atoms` / `molecules` / `organisms` — design-system layers.
 - `src/features/<domain>` — Server Actions + queries per feature (auth,
-  question-bank, exam-mixer, omr, stats, admin). This is where API calls
-  live, not inside components.
-- `src/lib/supabase` — browser/server/middleware/admin Supabase clients.
+  exam-mixer, classroom, academy, virtual-lab, gemini, game-center). This is
+  where API calls live, not inside components. `features/question-bank`
+  has no page of its own anymore (see Phase 2 above) but its Server Actions
+  are still a real dependency of classroom-tools, game-center, and the
+  Gemini "Lưu vào ngân hàng câu hỏi" button — don't delete it.
+- `src/lib/supabase` — browser/server/middleware clients (no more
+  `admin.ts` consumer now that the admin page is gone — kept for when an
+  admin surface is reintroduced, since the `profiles.role` column and RLS
+  policies for it are still in `schema.sql`).
 - `src/lib/logic` — pure business logic ported from the legacy app:
-  `scoring.ts` (OMR grading formula), `answerSheet.ts` (printable sheet
-  generator), `xlsx.ts` (hand-rolled XLSX writer), `docx/legacy-mixer.ts`
-  (the DOCX exam-mixer pipeline — see note below).
+  `answerSheet.ts` (printable sheet generator), `xlsx.ts` (hand-rolled XLSX
+  writer), `docx/legacy-mixer.ts` (the DOCX exam-mixer pipeline — see note
+  below), `docx/generate.ts`/`mixerSession.ts`/`questionPicker.ts` (Phase 2
+  orchestration/UI-state glue around legacy-mixer.ts, not ports themselves).
+  `scoring.ts` (OMR's `gradeQuick`) was removed along with OMR/exam-room —
+  re-port it from `Exam_mix_6_nov.html:8945` if either feature comes back.
 - `supabase/schema.sql` — table definitions + RLS policies.
 
 ## About `src/lib/logic/docx/legacy-mixer.ts`

@@ -1,17 +1,6 @@
 import Link from "next/link";
-import { StatTile } from "@/components/molecules";
-import { createClient } from "@/lib/supabase/server";
-import { getCurrentUserAndProfile } from "@/features/auth/queries";
 
 export default async function DashboardPage() {
-  const { user } = await getCurrentUserAndProfile();
-  const supabase = await createClient();
-
-  const [{ count: questionCount }, { count: resultCount }] = await Promise.all([
-    supabase.from("questions").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
-    supabase.from("exam_results").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
-  ]);
-
   return (
     <div className="flex flex-col gap-8">
       <section
@@ -108,15 +97,7 @@ export default async function DashboardPage() {
           <FlowStep href="/virtual-lab" num="02" title="Khám phá" desc="Mô phỏng / thí nghiệm ảo" />
           <FlowStep href="/exam-mixer" num="03" title="Luyện tập" desc="Quiz Word có đồng hồ" />
           <FlowStep href="/classroom-tools" num="04" title="Vận dụng" desc="Thi đua / Buzzer" />
-          <FlowStep href="/stats" num="05" title="Kết thúc" desc="Chốt bài / điểm đội" />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-lg font-bold text-text">Tổng quan của bạn</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <StatTile label="Câu hỏi trong ngân hàng" value={questionCount ?? 0} />
-          <StatTile label="Lượt chấm điểm" value={resultCount ?? 0} />
+          <FlowStep href="/classroom-tools" num="05" title="Kết thúc" desc="Chốt bài / điểm đội" />
         </div>
       </section>
     </div>
